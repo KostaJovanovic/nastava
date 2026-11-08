@@ -8,7 +8,13 @@ const status = document.querySelector("nav.status");
 const rowTpl = document.getElementById("row-tpl");
 const resTpl = document.getElementById("res-tpl");
 const years = JSON.parse(document.querySelector("script[data-years]").dataset.years);
-const pagefind = await import("/pagefind/pagefind.js");
+// No index (a build Pagefind did not run on, or no network): the board index shows, with a note, not "Tražim…".
+const pagefind = await import("/pagefind/pagefind.js").catch(() => null);
+if (!pagefind) {
+	document.documentElement.classList.remove("searching");
+	heading.append(build("p", { className: "note", textContent: "Pretraga trenutno nije dostupna." }, []));
+	throw new Error("pagefind.js did not load");
+}
 await pagefind.options({ excerptLength: 30 });
 // A search returns counts only for the filter groups that are loaded, so load all of them first.
 // These are also the counts of the whole archive: a search that would match every item takes about a second.

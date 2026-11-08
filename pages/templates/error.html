@@ -1,25 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Greška {{ status_code | default(404) }}{% endblock %}
+{% block title %}Greška 404{% endblock %}
 
 {% block navbar %}{% endblock %}
 
 {% block main %}
-{%- set _code = (status_code | default(404)) | int -%}
-{%- set _msg = message | default(detail | default('')) -%}
-{%- set _titles = {
-  400: 'Neispravan zahtev',
-  403: 'Nemate pristup',
-  404: 'Stranica nije pronađena',
-  500: 'Greška na serveru',
-  503: 'Arhiva trenutno nije dostupna'
-} -%}
+{#- The site is static: GitHub Pages serves this page for every path it does not have. -#}
 <section class="err" aria-labelledby="err-title">
-  <h1 id="err-title">{{ _titles.get(_code, 'Nešto nije u redu') }}</h1>
-  <p>
-    {%- if _msg and _msg not in ('Not Found', 'Internal Server Error') %}{{ _msg }}
-    {%- elif _code == 404 %}Obaveštenje ili dokument ne postoji u arhivi, ili je adresa pogrešna.    {%- else %}Pokušajte ponovo za nekoliko trenutaka.{% endif -%}
-  </p>
+  <h1 id="err-title">Stranica nije pronađena</h1>
+  <p>Obaveštenje ili dokument ne postoji u arhivi, ili je adresa pogrešna.</p>
   <ul>
     <li><a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg>najnovije u arhivi</a></li>
     <li><a href="/?q=rezultati+ispita"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg>rezultati ispita</a></li>
