@@ -119,8 +119,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .brand { grid-area: brand; display: flex; align-items: center; gap: 12px; min-width: 0; color: inherit; text-decoration: none; }
 .brand:hover { color: inherit; }
 .brand__mark svg { display: block; width: 38px; height: 38px; fill: none; stroke-width: 2.5; }
-/* Light: a white disc, so the red wave stands out on the blue header; dark: a slate ring. */
-.brand__mark circle { stroke: light-dark(#ffffff, var(--slate)); fill: light-dark(#ffffff, transparent); }
+/* The ring: white on the light theme's blue header, slate on the dark one. */
+.brand__mark circle { stroke: light-dark(#ffffff, var(--slate)); }
 .brand__mark path { stroke: #c4163c; stroke-linecap: round; }
 .brand__name { display: grid; min-width: 0; line-height: 1.15; }
 .brand__name b { font: 800 20px/1.1 var(--sans); letter-spacing: .01em; }
