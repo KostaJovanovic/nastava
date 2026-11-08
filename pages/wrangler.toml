@@ -1,0 +1,9 @@
+name = "nastava"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+# The Worker has no static assets: GitHub Pages serves the site; the files link to the faculty's site.
+routes = [
+  { pattern = "nastava.valjdakosta.com", custom_domain = true }
+]

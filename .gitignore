@@ -1,0 +1,13 @@
+*.db
+*.db.*
+*.db-*
+*.log
+files/
+__pycache__/
+.build/
+test/*.png
+test/dom.html
+.wrangler/
+# Phase 1 probes and Omar's dlwms (the base of this repo), local only.
+recon/
+ref/

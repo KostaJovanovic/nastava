@@ -1,0 +1,70 @@
+name: sync
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/*.py"
+      - name: Test the parsers
+        run: uv run --with beautifulsoup4 --with requests python test/parsers_test.py
+      - name: Get the state
+        run: ci/state.sh pull
+      - name: Scrape the posts
+        run: uv run nastava.py sync
+      # Right after the scrape, so a post made since then does not count as missing.
+      # It fails the run at the end (last step), not here, so the state is still saved and deployed.
+      - name: Check the counts
+        id: counts
+        run: uv run nastava.py stats
+        continue-on-error: true
+      # A broken page on www.mas.bg.ac.rs must not stop the posts from being saved and deployed.
+      - name: Scrape the schedule pages and their files
+        id: studije
+        run: uv run studije.py sync
+        continue-on-error: true
+      - name: Scrape the teachers
+        id: nastavnici
+        run: uv run nastavnici.py sync
+        continue-on-error: true
+      # The attachments are not downloaded (documents.py): the site links them on the faculty's site.
+      - name: Save the state
+        run: ci/state.sh push
+      - name: Build the site
+        run: |
+          uv run pages/build.py nastava.db pages/.build
+          npx -y pagefind@1.6.0 --site pages/.build/site
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: pages/.build/site
+      - id: deploy
+        uses: actions/deploy-pages@v4
+      # A red run (and GitHub's e-mail) when the archive misses posts or a side scraper failed.
+      - name: Report failures
+        if: steps.counts.outcome == 'failure' || steps.studije.outcome == 'failure' || steps.nastavnici.outcome == 'failure'
+        run: |
+          echo "counts: ${{ steps.counts.outcome }}, studije: ${{ steps.studije.outcome }}, nastavnici: ${{ steps.nastavnici.outcome }}"
+          exit 1

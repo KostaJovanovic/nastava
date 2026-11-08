@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "rows.html" import item_rows %}
+
+{% block title %}{{ subj.name }}{% endblock %}
+
+{% block main %}
+<section class="pane pane--list" aria-labelledby="title">
+  <div class="mh">
+    <nav class="crumbs" aria-label="Navigacija">
+      <a href="/"><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>početna</a>
+      <svg class="i crumbs__sep" aria-hidden="true"><use href="#i-chevron-right"></use></svg><a href="/smer/{{ subj.smer.id }}/">{{ subj.smer.name }}</a>
+    </nav>
+    <h1 id="title"><b>{{ subj.name }}</b> · {{ subj.count }} obaveštenja{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}</h1>
+    <a class="tag" href="/?smer={{ subj.smer.name | urlencode }}&amp;subject={{ subj.name | urlencode }}"><span>pretraži u ovom predmetu</span></a>
+  </div>
+  {%- if subj.teachers %}
+  <p class="sugg">nastavnici:{% for t in subj.teachers %} <a href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a>{% endfor %}</p>
+  {%- endif %}
+  {{ item_rows(items) }}
+</section>
+{% endblock %}

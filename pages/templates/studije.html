@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block main %}
+<div class="shell shell--detail">
+  <article class="art" aria-labelledby="title">
+    <nav class="crumbs" aria-label="Navigacija">
+      <a href="/"><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>početna</a>
+    </nav>
+    <p class="meta">
+      <span class="k"><svg class="i" aria-hidden="true"><use href="#i-calendar"></use></svg>Studije</span>
+      <span>provereno {{ (page.last_seen or '')[:10] }}</span>
+    </p>
+    <h1 class="title" id="title">{{ page.title }}</h1>
+    <div class="prose prose--html">{{ html | safe }}</div>
+  </article>
+  <aside class="dside" aria-label="Izvor">
+    <div>
+      <div class="grp">
+        <p class="sec">Original</p>
+        <a class="lnk" href="{{ source_url }}" rel="noopener" target="_blank">otvori na mas.bg.ac.rs <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

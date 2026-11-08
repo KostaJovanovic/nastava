@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "rows.html" import item_rows, subject_rows %}
+
+{% block title %}{{ smer.name }}{% endblock %}
+
+{% block main %}
+<section class="pane pane--list" aria-labelledby="title">
+  <div class="mh">
+    <nav class="crumbs" aria-label="Navigacija">
+      <a href="/"><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>početna</a>
+    </nav>
+    <h1 id="title"><b>{{ smer.name }}</b> · {{ subjects | length }} predmeta, {{ smer.count }} obaveštenja</h1>
+  </div>
+  {% if subjects %}{{ subject_rows(subjects) }}{% endif %}
+  {% if items %}
+  <div class="mh"><h2>Opšta obaveštenja smera</h2></div>
+  {{ item_rows(items) }}
+  {% endif %}
+</section>
+{% endblock %}

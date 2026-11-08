@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Nastavnici{% endblock %}
+
+{% block main %}
+<section class="pane pane--list" aria-labelledby="title">
+  <div class="mh">
+    <h1 id="title"><b data-shown>{{ teachers | length }}</b> nastavnika</h1>
+  </div>
+  <div class="tfind">
+    <label class="vh" for="t-q">Traži nastavnika</label>
+    <input class="field" id="t-q" type="search" placeholder="Ime, predmet, katedra, kabinet, mejl…" autocomplete="off">
+    <label class="vh" for="t-k">Katedra</label>
+    <select class="field" id="t-k">
+      <option value="">Sve katedre</option>
+      {#- value: pismo.js changes the option text, not the value the rows are matched against. -#}
+      {%- for k in katedre %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
+    </select>
+    <label class="vh" for="t-z">Zvanje</label>
+    <select class="field" id="t-z">
+      <option value="">Sva zvanja</option>
+      {%- for z in teachers | map(attribute='title') | unique | sort %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="th" aria-hidden="true"><span></span><span>Objava</span><span>Katedra</span><span>Ime</span></div>
+  <ol class="rows" data-teachers>
+    {%- for t in teachers %}
+    <li class="row" data-find="{{ t.find }}" data-k="{{ t.katedra or '' }}" data-z="{{ t.title or '' }}">
+      <span class="k" aria-hidden="true"><svg class="i"><use href="#i-user"></use></svg></span>
+      <span class="d">{{ t.posts | length or '' }}</span>
+      <span class="s">{{ t.katedra_short }}</span>
+      <div class="tx">
+        <h2 class="t"><a href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a></h2>
+        <p class="x">{{ t.title }}{% if t.office %} · kabinet {{ t.office }}{% endif %}{% if t.email %} · <span data-notx>{{ t.email }}</span>{% endif %}</p>
+      </div>
+    </li>
+    {%- endfor %}
+  </ol>
+  <p class="empty" data-none hidden>Nema nastavnika za ovu pretragu.</p>
+</section>
+<script>
+/* Filter in the page: the list is small, so every row is here. data-find is folded like the search (build.py fold). */
+(function () {
+  var d = document, q = d.getElementById('t-q'), k = d.getElementById('t-k'), z = d.getElementById('t-z');
+  var rows = [].slice.call(d.querySelectorAll('[data-teachers] .row'));
+  var run = function () {
+    /* pismo.js loads after this script, so look it up at run time. */
+    var words = window.pismoFold(q.value.trim()).split(/\s+/).filter(Boolean), shown = 0;
+    rows.forEach(function (r) {
+      var ok = (!k.value || r.dataset.k === k.value) && (!z.value || r.dataset.z === z.value)
+        && words.every(function (w) { return r.dataset.find.indexOf(w) > -1; });
+      r.hidden = !ok;
+      if (ok) shown++;
+    });
+    d.querySelector('[data-shown]').textContent = shown;
+    d.querySelector('[data-none]').hidden = shown > 0;
+    var p = new URLSearchParams();
+    if (q.value.trim()) p.set('q', q.value.trim());
+    if (k.value) p.set('katedra', k.value);
+    if (z.value) p.set('zvanje', z.value);
+    history.replaceState(null, '', p.size ? '?' + p : location.pathname);
+  };
+  var p = new URLSearchParams(location.search);
+  q.value = p.get('q') || ''; k.value = p.get('katedra') || ''; z.value = p.get('zvanje') || '';
+  q.addEventListener('input', run); k.addEventListener('change', run); z.addEventListener('change', run);
+  if (p.size) addEventListener('DOMContentLoaded', run);
+})();
+</script>
+{% endblock %}

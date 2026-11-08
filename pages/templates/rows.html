@@ -1,0 +1,31 @@
+{#- Lists for the smer and subject pages, in the markup of the search results. -#}
+
+{%- macro item_rows(items) -%}
+<div class="th" aria-hidden="true"><span></span><span>Datum</span><span>Autor</span><span>Naslov</span></div>
+<ol class="rows">
+  {%- for r in items %}
+  <li class="row">
+    {%- if r.kind == 'document' %}<span class="k k--doc" title="Dokument"><svg class="i" aria-hidden="true"><use href="#i-file"></use></svg><span class="vh">Dokument</span></span>
+    {%- else %}<span class="k k--post" title="Obaveštenje"><svg class="i" aria-hidden="true"><use href="#i-megaphone"></use></svg><span class="vh">Obaveštenje</span></span>{% endif %}
+    <time class="d" datetime="{{ r.date or '' }}">{{ r.date or '' }}</time>
+    {%- set _t = teacher_of.get((r.author or '') | lower) %}
+    {%- if _t %}<span class="s" title="{{ r.author }}">{{ _t.full_name }}</span>{% else %}<span class="s" data-notx>{{ r.author or '' }}</span>{% endif %}
+    <div class="tx"><h2 class="t"><a href="/item/{{ r.id }}/">{{ r.title }}</a></h2></div>
+  </li>
+  {%- endfor %}
+</ol>
+{%- endmacro -%}
+
+{%- macro subject_rows(subjects) -%}
+<div class="th" aria-hidden="true"><span></span><span>Poslednje</span><span>Obaveštenja</span><span>Predmet</span></div>
+<ol class="rows">
+  {%- for s in subjects %}
+  <li class="row">
+    <span class="k" aria-hidden="true"><svg class="i"><use href="#i-list"></use></svg></span>
+    <time class="d" datetime="{{ s.last or '' }}">{{ s.last or '' }}</time>
+    <span class="s">{{ s.count }}</span>
+    <div class="tx"><h2 class="t"><a href="/predmet/{{ s.id }}/">{{ s.name }}</a></h2></div>
+  </li>
+  {%- endfor %}
+</ol>
+{%- endmacro -%}

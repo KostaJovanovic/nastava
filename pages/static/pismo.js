@@ -1,0 +1,90 @@
+// Script switch for the whole page: Latin (the default), Cyrillic, or the text as it was posted.
+// It rewrites the text nodes in the browser and keeps each original, so a switch back is exact.
+// New content (search results, the subject list) is converted as it arrives. The choice is kept in localStorage.
+(function () {
+	const KEY = "pismo";
+	const L = Object.fromEntries([..."абвгдђежзијклљмнњопрстћуфхцчџш"].map((c, i) =>
+		[c, "a b v g d đ e ž z i j k l lj m n nj o p r s t ć u f h c č dž š".split(" ")[i]]));
+	const C = Object.fromEntries(Object.entries(L).map(([c, l]) => [l, c]));
+	// Elements whose text stays as it is: code, the hidden search copy (.pf), and the switch itself.
+	const SKIP = "script, style, textarea, code, .pf, [data-notx]";
+	const ATTRS = ["placeholder", "title", "aria-label"];
+
+	function toLat(s) {
+		return s.replace(/[Ѐ-ӿ]/g, (c, i) => {
+			const low = c.toLowerCase();
+			const l = L[low];
+			if (l === undefined || c === low) return l ?? c;
+			// Љ is "LJ" inside an all-capitals word, "Lj" otherwise.
+			const next = s[i + 1];
+			return next && next !== next.toLowerCase() ? l.toUpperCase() : l[0].toUpperCase() + l.slice(1);
+		});
+	}
+
+	function toCyr(s) {
+		return s.replace(/\S+/g, (w) =>
+			// Foreign words, addresses and file names stay in Latin.
+			// The file extension or domain ends the word, so "maš.inž." is still converted.
+			/[qwxyQWXY@]|:\/\/|www\.|\.[a-z]{2,4}[)\],.;:!?]*$/.test(w) ? w
+				: w.replace(/dž|lj|nj|[a-zčćšžđ]/gi, (m) => {
+					const c = C[m.toLowerCase()];
+					return !c ? m : m === m.toLowerCase() ? c : c.toUpperCase();
+				}));
+	}
+
+	// For comparing names in either script (the subject search in the side panel).
+	window.pismoFold = (s) => toLat(s).toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/g, "dj");
+
+	let mode = localStorage.getItem(KEY) || "lat";
+	const text = new WeakMap();
+	const attrs = new WeakMap();
+	const convert = (s) => (mode === "lat" ? toLat(s) : mode === "cyr" ? toCyr(s) : s);
+
+	function convertNode(n) {
+		if (!text.has(n)) text.set(n, n.nodeValue);
+		const v = convert(text.get(n));
+		if (n.nodeValue !== v) n.nodeValue = v;
+	}
+
+	function apply(root) {
+		if (root.nodeType === Node.TEXT_NODE) {
+			if (!root.parentElement?.closest(SKIP)) convertNode(root);
+			return;
+		}
+		if (root.nodeType !== Node.ELEMENT_NODE || root.closest(SKIP)) return;
+		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+			acceptNode: (n) => (n.parentElement.closest(SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+		});
+		for (let n = walker.nextNode(); n; n = walker.nextNode()) convertNode(n);
+		for (const el of [root, ...root.querySelectorAll(ATTRS.map((a) => `[${a}]`).join(","))]) {
+			if (el.closest(SKIP)) continue;
+			const saved = attrs.get(el) ?? {};
+			for (const a of ATTRS) {
+				if (!el.hasAttribute(a)) continue;
+				saved[a] ??= el.getAttribute(a);
+				el.setAttribute(a, convert(saved[a]));
+			}
+			attrs.set(el, saved);
+		}
+	}
+
+	const title = document.title;
+	function set(m) {
+		mode = m;
+		localStorage.setItem(KEY, m);
+		document.documentElement.lang = m === "cyr" ? "sr-Cyrl" : m === "lat" ? "sr-Latn" : "sr";
+		document.title = convert(title);
+		apply(document.body);
+		for (const b of document.querySelectorAll("[data-pismo]")) b.setAttribute("aria-pressed", String(b.dataset.pismo === m));
+	}
+
+	// Our own changes are to text (characterData), which this does not watch, so it cannot loop.
+	new MutationObserver((records) => {
+		for (const r of records) for (const n of r.addedNodes) apply(n);
+	}).observe(document.body, { childList: true, subtree: true });
+	document.addEventListener("click", (e) => {
+		const b = e.target.closest("[data-pismo]");
+		if (b) set(b.dataset.pismo);
+	});
+	set(mode);
+})();

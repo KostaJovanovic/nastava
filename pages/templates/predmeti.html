@@ -1,0 +1,4 @@
+{#- The subject choices of the side panel: inline on the search page, /predmeti.html for the other pages. -#}
+{%- for s in side.subjects %}
+<label class="opt"><input type="checkbox" name="subject" value="{{ s }}" form="sf"><i class="cb" aria-hidden="true"></i><span class="opt__name">{{ s }}</span><span class="n">{{ side.subject_counts[s] }}</span></label>
+{%- endfor %}
