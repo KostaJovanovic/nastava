@@ -4,27 +4,39 @@
 {% block title %}{{ t.full_name }}{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
 
+{#- A forum's member profile: the card (photo, contact), the subjects, the posts here; the faculty's full profile last,
+    folded, as it is long (education, bibliography). -#}
 {% block main %}
-<div class="mh">
-  <h1 id="title">{{ t.full_name }}</h1>
-  <p class="mh__sub">{{ t.title }}{% if t.katedra %} · <a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a>{% endif %}
-    {%- if t.username %} · <span data-notx>{{ t.username }}</span>{% endif %}</p>
-</div>
 <div class="split">
-  <article class="panel">
-    <div class="prose prose--html">{{ html | safe }}</div>
-    <p class="panel__foot">sa mas.bg.ac.rs, provereno {{ t.last_seen | dmy }} ·<a href="{{ source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
-  </article>
-  {%- set archived = t.subjects | selectattr('subj') | selectattr('subj.count') | unique(attribute='subj.id') | list %}
-  {%- if archived %}
+  <section class="panel prof">
+    {%- if t.photo %}<img class="prof__img" src="{{ t.photo }}" alt="" width="96" loading="lazy">{% endif %}
+    <div class="prof__main">
+      <h1 id="title">{{ t.full_name }}</h1>
+      <p class="mh__sub">{{ t.title }}{% if t.katedra %} · <a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a>{% endif %}</p>
+      <dl class="prof__dl">
+        {%- if t.office %}<dt>Kabinet</dt><dd>{{ t.office }}</dd>{% endif %}
+        {%- if t.email %}<dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd>{% endif %}
+        {%- if t.phone %}<dt>Telefon</dt><dd>{{ t.phone }}</dd>{% endif %}
+        {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}
+        {%- if t.research %}<dt>Oblast</dt><dd>{{ t.research }}</dd>{% endif %}
+        {%- if t.username %}<dt>Na forumu</dt><dd><span data-notx>{{ t.username }}</span>{% if t.posts %} · <a href="#objave">{{ t.posts | length }} {{ t.posts | length | pl('objava') }}</a>{% endif %}</dd>{% endif %}
+      </dl>
+    </div>
+  </section>
+  {%- if t.courses %}
   <section class="fb fb--side">
-    <div class="fb__h"><h2>Predmeti u arhivi</h2><span>Objave</span></div>
+    <div class="fb__h"><h2>Predmeti</h2><span>Objave</span></div>
     <ol class="fb__rows">
-      {%- for s in archived %}
+      {%- for c in t.courses %}
       <li class="fr">
         <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-book"></use></svg></span>
-        <div class="fr__t"><a class="fr__a" href="/predmet/{{ s.subj.id }}/">{{ s.subj.name }}</a><p class="fr__sub">{{ s.subj.smer.name }}</p></div>
-        <div class="fr__more"><span class="fr__n" data-l="{{ s.subj.count | pl('objava') }}">{{ s.subj.count }}</span></div>
+        {%- if c.subj %}
+        <div class="fr__t"><a class="fr__a" href="{{ c.subj.href }}">{{ c.subj.name }}</a><p class="fr__sub">{{ c.subj.smer.name }}</p></div>
+        <div class="fr__more"><span class="fr__n" data-l="{{ c.subj.count | pl('objava') }}">{{ c.subj.count }}</span></div>
+        {%- else %}
+        <div class="fr__t"><a class="fr__a" href="{{ c.url }}" rel="noopener" target="_blank">{{ c.name }}</a><p class="fr__sub">šifra {{ c.codes | join(', ') }} · nema u arhivi</p></div>
+        <div class="fr__more"></div>
+        {%- endif %}
       </li>
       {%- endfor %}
     </ol>
@@ -32,7 +44,12 @@
   {%- endif %}
 </div>
 {% if t.posts %}
-{{ post_rows(t.posts | length ~ ' ' ~ t.posts | length | pl('objava') ~ ' na forumu', t.posts) }}
+<div id="objave">{{ post_rows(t.posts | length ~ ' ' ~ t.posts | length | pl('objava') ~ ' na forumu', t.posts) }}</div>
 <p class="acts"><a class="btn" href="/?autor={{ t.username | urlencode }}">Pretraži samo objave ovog nastavnika</a></p>
 {% endif %}
+<details class="fb bio">
+  <summary class="fb__h"><h2>Profil sa mas.bg.ac.rs <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg></h2></summary>
+  <div class="bio__body prose prose--html">{{ html | safe }}</div>
+  <p class="panel__foot">provereno {{ t.last_seen | dmy }} · <a href="{{ source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+</details>
 {% endblock %}

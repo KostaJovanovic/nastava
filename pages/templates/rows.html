@@ -7,7 +7,7 @@
 
 {#- The author: a teacher links to their page by full name; another author is a username, which stays in Latin. -#}
 {%- macro who(r) -%}
-{%- if r.teacher %}<a href="/nastavnik/{{ r.teacher.id }}/">{{ r.teacher.full_name }}</a>
+{%- if r.teacher %}<a href="{{ r.teacher.href }}">{{ r.teacher.full_name }}</a>
 {%- else %}<span data-notx>{{ r.author or '' }}</span>{% endif -%}
 {%- endmacro -%}
 
@@ -25,17 +25,17 @@
 </div>
 {%- endmacro -%}
 
-{#- Smerovi (home) or the subjects of a smer: href is '/smer/' or '/predmet/'. -#}
-{%- macro forum_rows(title, places, href) -%}
+{#- Smerovi (home) or the subjects of a smer; icon: 'folder' or 'book'. -#}
+{%- macro forum_rows(title, places, icon) -%}
 <section class="fb fb--forums">
   <div class="fb__h"><h2>{{ title }}</h2><span>Teme</span><span>Objave</span><span>Poslednja objava</span></div>
   <ol class="fb__rows">
     {%- for s in places %}
     <li class="fr">
-      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'folder' if href == '/smer/' else 'book' }}"></use></svg></span>
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span>
       <div class="fr__t">
-        <a class="fr__a" href="{{ href }}{{ s.id }}/">{{ s.name }}</a>
-        {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
+        <a class="fr__a" href="{{ s.href }}">{{ s.name }}</a>
+        {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="{{ t.href }}">{{ t.full_name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
         {%- elif s.subjects is number %}<p class="fr__sub">{{ s.subjects }} {{ s.subjects | pl('predmet') }}</p>{% endif %}
       </div>
       <div class="fr__more"><span class="fr__n" data-l="{{ s.topics | pl('tema') }}">{{ s.topics }}</span><span class="fr__n" data-l="{{ s.count | pl('objava') }}">{{ s.count }}</span>{{ last(s.last) }}</div>
@@ -58,7 +58,7 @@
       <div class="fr__t">
         <a class="fr__a" href="{{ t.href }}">{{ t.title }}</a>
         <p class="fr__sub">od {{ who(t.first) }} » <time datetime="{{ t.first.date or '' }}">{{ t.first.when }}</time>
-          {%- if place and t.subj %} · <a href="/predmet/{{ t.subj.id }}/">{{ t.subj.name }}</a>{% elif place and t.smer %} · <a href="/smer/{{ t.smer.id }}/">{{ t.smer.name }}</a>{% endif %}</p>
+          {%- if place and t.subj %} · <a href="{{ t.subj.href }}">{{ t.subj.name }}</a>{% elif place and t.smer %} · <a href="{{ t.smer.href }}">{{ t.smer.name }}</a>{% endif %}</p>
       </div>
       {%- set n = t.posts | length - 1 %}
       <div class="fr__more"><span class="fr__n" data-l="{{ n | pl('odgovor') }}">{{ n }}</span>{{ last(t.last, title=false, same=not many) }}</div>
@@ -79,7 +79,7 @@
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'file' if r.kind == 'document' else 'msg' }}"></use></svg></span>
       <div class="fr__t"><a class="fr__a" href="{{ post_href(r) }}">{{ r.title }}</a></div>
       <div class="fr__more">
-        <span class="fr__s">{% if r.subj %}<a href="/predmet/{{ r.subj.id }}/">{{ r.subj.name }}</a>{% elif r.smer %}<a href="/smer/{{ r.smer.id }}/">{{ r.smer.name }}</a>{% endif %}</span>
+        <span class="fr__s">{% if r.subj %}<a href="{{ r.subj.href }}">{{ r.subj.name }}</a>{% elif r.smer %}<a href="{{ r.smer.href }}">{{ r.smer.name }}</a>{% endif %}</span>
         <time class="fr__d" datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
       </div>
     </li>
@@ -104,7 +104,7 @@
     <span class="av" aria-hidden="true"{% if not w %} data-notx{% endif %}>{% if w %}{{ w[0][0] }}{{ w[-1][0] }}{% else %}{{ (r.author or '?')[:2] | upper }}{% endif %}</span>
     <div>
       {%- if r.teacher %}
-      <a class="post__name" href="/nastavnik/{{ r.teacher.id }}/">{{ r.teacher.full_name }}</a>
+      <a class="post__name" href="{{ r.teacher.href }}">{{ r.teacher.full_name }}</a>
       <span class="post__user" data-notx>{{ r.author }}</span>
       {%- if r.teacher.title %}<span>{{ r.teacher.title }}</span>{% endif %}
       {%- if r.teacher.katedra %}<span class="post__k">{{ r.teacher.katedra }}</span>{% endif %}

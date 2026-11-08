@@ -2,14 +2,14 @@
 {% from "rows.html" import crumb, topic_rows %}
 
 {% block title %}{{ subj.name }}{% endblock %}
-{% block crumbs %}{{ crumb('/smer/' ~ subj.smer.id ~ '/', subj.smer.name) }}{% endblock %}
+{% block crumbs %}{{ crumb(subj.smer.href, subj.smer.name) }}{% endblock %}
 
 {% block main %}
 <div class="mh">
   <h1 id="title">{{ subj.name }}</h1>
   <p class="mh__sub">{{ subj.topics }} {{ subj.topics | pl('tema') }} · {{ subj.count }} {{ subj.count | pl('objava') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}</p>
   {%- if subj.teachers %}
-  <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
+  <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.full_name }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
   {%- endif %}
 </div>
 {% call topic_rows('Teme', topics, filter=true) %}

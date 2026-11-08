@@ -16,6 +16,7 @@ import sqlite3
 import sys
 import unicodedata
 from collections import Counter, defaultdict
+from html import unescape
 from pathlib import Path
 from urllib.parse import quote, urljoin
 
@@ -56,6 +57,23 @@ def fold(s):
     """Serbian Cyrillic to Latin, no diacritics, lower case. search.js folds the query the same way."""
     s = "".join(CYR.get(ch, ch) for ch in (s or "").lower()).replace("đ", "dj")
     return "".join(ch for ch in unicodedata.normalize("NFD", s) if not unicodedata.combining(ch))
+
+
+def slug(s):
+    """A name as a URL part: 'Душан Љ. Ђукић' -> 'dusan-lj-djukic'."""
+    return re.sub(r"[^a-z0-9]+", "-", fold(s)).strip("-")
+
+
+def set_hrefs(rows, path):
+    """Give each row href path(row); a name that folds the same as an earlier row's gets the row's id appended.
+    rows: in the order they first appeared, so an existing page keeps its URL when a namesake is added later."""
+    seen = set()
+    for r in rows:
+        href = path(r)
+        if href in seen:
+            href = f"{href[:-1]}-{r['id']}/"
+        seen.add(href)
+        r["href"] = href
 
 
 def parse_date(*values):
@@ -111,6 +129,9 @@ def load_places(db):
         subject = subjects.setdefault((top["id"], name), {"id": f["id"], "name": name, "smer": smer, "codes": []})
         subject["codes"] += re.findall(r"\((\d+)\)\s*$", f["name"])
         place[f["id"]] = (smer, subject)
+    # The same subject name is in several smerovi, so a subject's URL has its smer's.
+    set_hrefs(smerovi.values(), lambda m: f"/smer/{slug(short_smer(m['name']))}/")
+    set_hrefs(subjects.values(), lambda s: f"{s['smer']['href'].replace('/smer/', '/predmet/', 1)}{slug(s['name'])}/")
     return place, smerovi, subjects
 
 
@@ -242,7 +263,7 @@ def render_places(site, topics, smerovi, subjects):
         s["topics"], s["count"], s["last"] = len(rows), sum(len(t["posts"]) for t in rows), rows[0]["last"] if rows else None
         if rows:
             authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
-            write(site / "predmet" / str(s["id"]) / "index.html",
+            write(site / s["href"].strip("/") / "index.html",
                   env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors))
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m and s["count"]), key=lambda s: fold(s["name"]))
@@ -250,7 +271,7 @@ def render_places(site, topics, smerovi, subjects):
         m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
         m["count"] = sum(len(t["posts"]) for t in rows) + sum(s["count"] for s in subs)
         m["last"] = max([t["last"] for t in rows[:1]] + [s["last"] for s in subs], key=lambda r: r["posted"], default=None)
-        write(site / "smer" / str(m["id"]) / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, topics=rows))
+        write(site / m["href"].strip("/") / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, topics=rows))
     for t in topics:
         if len(t["posts"]) > 1:
             write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t))
@@ -284,7 +305,12 @@ def load_teachers(db, subjects):
     for r in db.execute("SELECT * FROM teacher_subjects ORDER BY name"):
         taught[r["teacher"]].append(dict(code=r["code"], name=r["name"], subj=by_code.get(r["code"])))
     # A teacher who left the faculty's list (gone) keeps their page and their posts' links; only the list hides them.
-    teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers"))]
+    teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers ORDER BY rowid"))]
+    set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
+    for t in teachers:
+        # The profile's photo, for the card at the top of the teacher's page.
+        m = re.search(r'<img[^>]+src="([^"]*_media/fakultet/nastavnici/[^"]+)"', t["html"] or "")
+        t["photo"] = m and urljoin(STUDY_SITE, unescape(m[1]))
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
@@ -301,11 +327,19 @@ def render_teachers(site, teachers, items):
     posts = defaultdict(list)
     for it in items:
         posts[(it["author"] or "").lower()].append(it)
-    pages = {f"/fakultet/nastavnici/{t['id']}": f"/nastavnik/{t['id']}/" for t in teachers}
-    subj_pages = {f"/studije/predmeti/{s['code']}": f"/predmet/{s['subj']['id']}/"
+    pages = {f"/fakultet/nastavnici/{t['id']}": t["href"] for t in teachers}
+    subj_pages = {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
                   for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("count")}
     for t in teachers:
         t["posts"] = newest(posts[t["username"]]) if t["username"] else []
+        # The profile's subjects: one row per archive subject (it can have several codes), archived first.
+        courses = {}
+        for s in t["subjects"]:
+            archived = s["subj"] if s["subj"] and s["subj"].get("count") else None
+            row = courses.setdefault(archived["id"] if archived else s["code"],
+                                     dict(name=s["name"], subj=archived, codes=[], url=f"{STUDY_SITE}studije/predmeti/{s['code']}"))
+            row["codes"].append(s["code"])
+        t["courses"] = sorted(courses.values(), key=lambda c: (not c["subj"], azbuka(c["name"])))
         t["find"] = fold(" ".join([t["full_name"], t["title"] or "", t["katedra"] or "", t["email"] or "", t["research"] or "",
                                    t["office"] or ""] + [s["name"] for s in t["subjects"]]))
     for t in teachers:
@@ -313,7 +347,7 @@ def render_teachers(site, teachers, items):
         local = lambda v: pages.get(v.split("?")[0]) or subj_pages.get(v.split("?")[0])
         # The profile repeats the name as its first heading; the page has it as h1.
         html = clean_html(re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S), source, local)
-        write(site / "nastavnik" / t["id"] / "index.html",
+        write(site / t["href"].strip("/") / "index.html",
               env.get_template("nastavnik.html").render(t=t, html=html, source_url=source))
     listed = [t for t in teachers if not t["gone"]]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
@@ -366,6 +400,14 @@ def main(db_path, out):
     global shell
     shell = split_page(env.get_template("base.html").render())[0]
     (site / "shell.html").write_text(shell, encoding="utf-8")
+    # The faculty's subject code often differs from the board's: a subject of the same name the teacher posted in wins.
+    posted = defaultdict(dict)
+    for it in items:
+        if it["teacher"] and it["subj"]:
+            posted[it["teacher"]["username"]][fold(it["subj"]["name"])] = it["subj"]
+    for t in teachers:
+        for s in t["subjects"]:
+            s["subj"] = posted[t["username"]].get(fold(s["name"])) or s["subj"]
     for t in teachers:
         if t["gone"]:
             continue
@@ -385,6 +427,10 @@ def main(db_path, out):
 
 if __name__ == "__main__":
     assert fold("Ђачки распоред, Čas") == "djacki raspored, cas"
+    assert slug(" Душан Љ. Ђукић ") == "dusan-lj-djukic" and slug(short_smer("основне академске студије - МИ")) == "oas-mi"
+    _r = [dict(id=1, n="Мата 1"), dict(id=7, n="Mata 1"), dict(id=9, n="Друго")]
+    set_hrefs(_r, lambda r: f"/p/{slug(r['n'])}/")
+    assert [r["href"] for r in _r] == ["/p/mata-1/", "/p/mata-1-7/", "/p/drugo/"]
     assert subject_name("﻿Цевни  водови (1044) ") == "Цевни водови"
     assert [plural(n, "tema") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "tema teme tema tema tema tema teme tema tema".split()
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."

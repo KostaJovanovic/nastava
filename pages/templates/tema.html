@@ -3,8 +3,8 @@
 
 {% block title %}{{ t.title }}{% endblock %}
 {% block crumbs %}
-{%- if t.smer %}{{ crumb('/smer/' ~ t.smer.id ~ '/', t.smer.name) }}{% endif %}
-{%- if t.subj %}{{ crumb('/predmet/' ~ t.subj.id ~ '/', t.subj.name) }}{% endif %}
+{%- if t.smer %}{{ crumb(t.smer.href, t.smer.name) }}{% endif %}
+{%- if t.subj %}{{ crumb(t.subj.href, t.subj.name) }}{% endif %}
 {%- endblock %}
 
 {% block main %}
@@ -19,6 +19,6 @@
   {%- endfor %}
 </div>
 {%- if t.subj %}
-<p class="acts"><a class="btn" href="/predmet/{{ t.subj.id }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Nazad na {{ t.subj.name }}</a></p>
+<p class="acts"><a class="btn" href="{{ t.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Nazad na {{ t.subj.name }}</a></p>
 {%- endif %}
 {% endblock %}

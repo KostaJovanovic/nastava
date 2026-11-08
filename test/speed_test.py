@@ -15,7 +15,7 @@ print('index.html:', os.path.getsize(os.path.join(site, 'index.html')) // 1024, 
 done = "document.querySelector('#res-h')?.textContent.includes('rezultat')"
 with sync_playwright() as p:
 	page = p.chromium.launch(channel='msedge').new_page()
-	for path in ('/smer/4/', '/smer/5/'):
+	for path in ('/smer/oas-mi/', '/smer/mas-mi/'):
 		t = time.time()
 		page.goto(base + path, wait_until='load')
 		print(f'{path} load: {time.time() - t:.2f}s')

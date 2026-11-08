@@ -8,6 +8,6 @@
   <h1 id="title">{{ smer.name }}</h1>
   <p class="mh__sub">{{ smer.subjects }} {{ smer.subjects | pl('predmet') }} · {{ smer.topics }} {{ smer.topics | pl('tema') }} · {{ smer.count }} {{ smer.count | pl('objava') }}</p>
 </div>
-{% if subjects %}{{ forum_rows('Predmeti', subjects, '/predmet/') }}{% endif %}
+{% if subjects %}{{ forum_rows('Predmeti', subjects, 'book') }}{% endif %}
 {% if topics %}{{ topic_rows('Opšta obaveštenja smera', topics) }}{% endif %}
 {% endblock %}

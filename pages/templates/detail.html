@@ -3,8 +3,8 @@
 
 {% block title %}{{ it.title }}{% endblock %}
 {% block crumbs %}
-{%- if it.smer %}{{ crumb('/smer/' ~ it.smer.id ~ '/', it.smer.name) }}{% endif %}
-{%- if it.subj %}{{ crumb('/predmet/' ~ it.subj.id ~ '/', it.subj.name) }}{% endif %}
+{%- if it.smer %}{{ crumb(it.smer.href, it.smer.name) }}{% endif %}
+{%- if it.subj %}{{ crumb(it.subj.href, it.subj.name) }}{% endif %}
 {%- endblock %}
 
 {% block main %}
@@ -39,7 +39,7 @@
 {{ post(it, 'h1', link=false) }}
 <p class="acts">
   {%- if _many %}<a class="btn btn--pri" href="{{ it.thread.href }}#p{{ it.num }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-msgs"></use></svg>Cela tema</a>{% endif %}
-  {%- if it.subj %}<a class="btn" href="/predmet/{{ it.subj.id }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Sve teme: {{ it.subj.name }}</a>{% endif %}
+  {%- if it.subj %}<a class="btn" href="{{ it.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Sve teme: {{ it.subj.name }}</a>{% endif %}
 </p>
 {% endif %}
 {% endblock %}

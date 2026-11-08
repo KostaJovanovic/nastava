@@ -30,7 +30,7 @@
     <li class="fr" data-find="{{ t.find }}" data-k="{{ t.katedra or '' }}" data-z="{{ t.title or '' }}">
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-user"></use></svg></span>
       <div class="fr__t">
-        <a class="fr__a" href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a>
+        <a class="fr__a" href="{{ t.href }}">{{ t.full_name }}</a>
         <p class="fr__sub">{{ t.title }}{% if t.office %} · kabinet {{ t.office }}{% endif %}{% if t.email %} · <span data-notx>{{ t.email }}</span>{% endif %}</p>
       </div>
       <div class="fr__more"><span class="fr__s">{{ t.katedra or '' }}</span><span class="fr__n" data-l="{{ t.posts | length | pl('objava') }}">{{ t.posts | length }}</span></div>

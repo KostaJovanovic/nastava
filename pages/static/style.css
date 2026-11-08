@@ -471,7 +471,26 @@ a.post__name:hover { color: var(--accent); text-decoration: underline; }
 .panel__foot { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--line-2); color: var(--dim); font-size: 13px; }
 @container main (min-width: 760px) { .panel { padding: 14px 18px 18px; } }
 .split { display: grid; gap: 14px; align-items: start; }
-@container main (min-width: 1000px) { .split { grid-template-columns: minmax(0, 1fr) 340px; } }
+@container main (min-width: 1000px) { .split { grid-template-columns: minmax(0, 1fr) 340px; } .split > :only-child { grid-column: 1 / -1; } }
+
+/* A teacher's card, as a forum's member profile: the photo, then the name and the faculty's contact fields. */
+.prof { display: flex; gap: 16px; align-items: flex-start; }
+.prof__img { flex: none; width: 96px; height: auto; border: 1px solid var(--line); border-radius: 4px; }
+.prof__main { min-width: 0; }
+.prof h1 { color: var(--fg); font: 800 22px/1.2 var(--sans); overflow-wrap: anywhere; }
+.prof__dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 14px; margin: 10px 0 0; font-size: 13.5px; }
+.prof__dl dt { color: var(--dim); }
+.prof__dl dd { margin: 0; overflow-wrap: anywhere; }
+.prof__dl a { color: var(--link); }
+@container main (max-width: 520px) { .prof__img { width: 64px; } .prof h1 { font-size: 19px; } }
+/* The faculty's full profile, folded under the posts: a table header that opens. */
+.bio summary { cursor: pointer; list-style: none; }
+.bio summary::-webkit-details-marker { display: none; }
+.bio summary h2 { display: flex; align-items: center; gap: 8px; }
+.bio summary .i { transition: transform .15s; }
+.bio[open] summary .i { transform: rotate(90deg); }
+.bio__body { padding: 14px 18px; max-width: none; }
+.bio .panel__foot { margin: 0 18px 14px; }
 
 /* A document's text, line by line. */
 .code { margin: 0; padding: 8px 0; list-style: none; counter-reset: ln; border: 1px solid var(--line); border-radius: 8px; background: var(--alt); font: 400 12.5px/1.65 var(--mono); }

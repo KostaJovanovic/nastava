@@ -69,9 +69,12 @@ schedule page or file adds a new version. Keep that invariant in any schema or s
 the state is still saved and the site deployed; a final step turns the run red if any of them failed.
 
 **Site build (`pages/build.py` + `pages/templates/` + `pages/static/`):** Jinja2 templates, post HTML sanitized with
-nh3 (`clean_html`). Pages: home (smerovi), `/smer/<id>/`, subject pages, `/tema/<id>/` (topics with several posts),
-`/item/<id>/` (one post; this is what Pagefind indexes), `/nastavnici/` and a page per teacher, schedule pages. A forum
-author is linked to a teacher when the username equals the teacher's e-mail before `@`.
+nh3 (`clean_html`). Pages: home (smerovi), `/smer/<smer>/`, `/predmet/<smer>/<subject>/`, `/tema/<id>/` (topics with
+several posts), `/item/<id>/` (one post; this is what Pagefind indexes), `/nastavnici/` and `/nastavnik/<name>/`,
+schedule pages. Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
+appended); templates link with `.href`, never build these paths themselves. A forum author is linked to a teacher when
+the username equals the teacher's e-mail before `@`; a teacher's profile subject is matched to the board by code, or by
+name when they posted in a subject of that name.
 
 **Cyrillic/Latin search:** the board mixes both scripts. `fold()` in `build.py` turns text into Latin, no diacritics,
 lower case for the Pagefind index; the browser folds the query the same way (`pismoFold` in `pages/static/pismo.js`,

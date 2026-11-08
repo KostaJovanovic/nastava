@@ -23,8 +23,8 @@ with sync_playwright() as p:
 	print('+ docent:', shown())
 	page.goto(base + '/nastavnici/?katedra=' + 'Катедра за математику')
 	print('from url:', shown())
-	page.goto(base + '/nastavnik/52/')
-	print('profile h1:', page.inner_text('h1'), '| archived subjects:', page.locator('.fb--side .fr__a').count(),
+	page.goto(base + '/nastavnik/dusan-lj-djukic/')
+	print('profile h1:', page.inner_text('h1'), '| archived subjects:', page.locator('.fb--side .fr__a[href^="/predmet/"]').count(),
 		'| posts:', page.locator('.fb--posts .fr').count())
 	page.screenshot(path='test/nastavnik.png')
 	page.click('#pismo')
