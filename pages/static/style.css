@@ -40,10 +40,15 @@
   --link: light-dark(#105289, #f0ebe7);
   --text: light-dark(#333333, #dcd6d1);
   --dim: light-dark(#536482, #8ea4b5);
-  --accent: light-dark(#d31141, #e0627a);
+  --accent: light-dark(#bc2a4d, #e0627a);
   --accent-fg: light-dark(#ffffff, #011321);
-  --red: light-dark(#d31141, #8e0926);
-  --red-2: light-dark(#a80e34, #a70b2d);
+  --red: light-dark(#bc2a4d, #8e0926);
+  --red-2: light-dark(#9e1f3e, #a70b2d);
+  /* The header's line, search button and logo wave: no red on the light theme's blue, which it clashes with. */
+  --head-line: light-dark(#00608f, #8e0926);
+  --go: light-dark(#105289, #8e0926);
+  --go-2: light-dark(#0d4473, #a70b2d);
+  --wave: light-dark(#ffffff, #c4163c);
   --field: light-dark(#ffffff, #031421);
   --icon-bg: light-dark(#e1ebf2, #0d2638);
 }
@@ -114,14 +119,14 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   padding: 12px;
   background: var(--head);
   color: var(--head-fg);
-  border-bottom: 3px solid var(--red);
+  border-bottom: 3px solid var(--head-line);
 }
 .brand { grid-area: brand; display: flex; align-items: center; gap: 12px; min-width: 0; color: inherit; text-decoration: none; }
 .brand:hover { color: inherit; }
 .brand__mark svg { display: block; width: 38px; height: 38px; fill: none; stroke-width: 2.5; }
 /* The ring: white on the light theme's blue header, slate on the dark one. */
 .brand__mark circle { stroke: light-dark(#ffffff, var(--slate)); }
-.brand__mark path { stroke: #c4163c; stroke-linecap: round; }
+.brand__mark path { stroke: var(--wave); stroke-linecap: round; }
 .brand__name { display: grid; min-width: 0; line-height: 1.15; }
 .brand__name b { font: 800 20px/1.1 var(--sans); letter-spacing: .01em; }
 /* The subtitle: wide screens only (a phone has no room for it). */
@@ -145,10 +150,10 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .cmd kbd { display: none; border-color: rgba(90, 122, 147, .5); color: var(--head-dim); }
 .cmd__go {
   height: 32px; padding: 0 14px;
-  border: 0; border-radius: 7px; background: var(--red); color: #fff;
+  border: 0; border-radius: 7px; background: var(--go); color: #fff;
   font: 400 13px var(--sans); cursor: pointer;
 }
-.cmd__go:hover { background: var(--red-2); }
+.cmd__go:hover { background: var(--go-2); }
 
 /* The script button (pismo.js: lat → ćir → orig) and the theme button (site.js: light ↔ dark). */
 .hd__ctl { grid-area: pismo; justify-self: end; display: flex; gap: 6px; }
