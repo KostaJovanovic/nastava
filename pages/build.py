@@ -283,8 +283,8 @@ def load_teachers(db, subjects):
     taught = defaultdict(list)
     for r in db.execute("SELECT * FROM teacher_subjects ORDER BY name"):
         taught[r["teacher"]].append(dict(code=r["code"], name=r["name"], subj=by_code.get(r["code"])))
-    teachers = [dict(t, subjects=taught[t["id"]])
-                for t in map(dict, db.execute("SELECT * FROM teachers WHERE gone = 0"))]
+    # A teacher who left the faculty's list (gone) keeps their page and their posts' links; only the list hides them.
+    teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers"))]
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
@@ -315,8 +315,9 @@ def render_teachers(site, teachers, items):
         html = clean_html(re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S), source, local)
         write(site / "nastavnik" / t["id"] / "index.html",
               env.get_template("nastavnik.html").render(t=t, html=html, source_url=source))
-    katedre = sorted({t["katedra"] for t in teachers if t["katedra"]})
-    write(site / "nastavnici" / "index.html", env.get_template("nastavnici.html").render(teachers=teachers, katedre=katedre))
+    listed = [t for t in teachers if not t["gone"]]
+    katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
+    write(site / "nastavnici" / "index.html", env.get_template("nastavnici.html").render(teachers=listed, katedre=katedre))
 
 
 def write_bytes(path, data):
@@ -354,8 +355,9 @@ def main(db_path, out):
     place, smerovi, subjects = load_places(db)
     items = load_items(db, place)
     teachers = load_teachers(db, subjects)
-    # A board author is a teacher when the username is the teacher's e-mail before @.
-    teacher_of = {t["username"]: t for t in teachers if t["username"]}
+    # A board author is a teacher when the username is the teacher's e-mail before @. When two rows share it (a
+    # teacher who became emeritus), the one still listed comes last and wins.
+    teacher_of = {t["username"]: t for t in sorted(teachers, key=lambda t: not t["gone"]) if t["username"]}
     for it in items:
         it["teacher"] = teacher_of.get((it["author"] or "").lower())
         it["who"] = it["teacher"]["full_name"] if it["teacher"] else it["author"]
@@ -365,6 +367,8 @@ def main(db_path, out):
     shell = split_page(env.get_template("base.html").render())[0]
     (site / "shell.html").write_text(shell, encoding="utf-8")
     for t in teachers:
+        if t["gone"]:
+            continue
         for s in t["subjects"]:
             if s["subj"] and t not in s["subj"].setdefault("teachers", []):
                 s["subj"]["teachers"].append(t)
@@ -373,7 +377,7 @@ def main(db_path, out):
         write(site / "item" / it["id"] / "index.html", render_item(it))
     render_teachers(site, teachers, items)
     render_study_pages(site, db)
-    (site / "index.html").write_text(render_home(topics, smerovi, side, len(teachers)), encoding="utf-8")
+    (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers)), encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(status_code=404), encoding="utf-8")
     print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['count'])} subjects, "
           f"{len(smerovi)} smerovi, {len(teachers)} teachers")

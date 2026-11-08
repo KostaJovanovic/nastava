@@ -1,6 +1,7 @@
 """The scrapers' parsers on saved pages (test/fixtures), no network:
 uv run --with beautifulsoup4 --with requests python test/parsers_test.py
 A change on the board or on www.mas.bg.ac.rs: save the new page over the fixture and fix the parser until this passes."""
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -30,6 +31,29 @@ first = posts[0]
 assert (first['id'], first['author'], first['date'], first['posted']) == (29307, 'apejcev', '30.10.2026. 20:26', '2026-10-30T19:26:27+00:00')
 assert first['title'].startswith('Analiticka geometrija') and first['content'] and 'attachbox' in first['html']
 assert first['files'] == [(23874, 'Pravairavan.pdf')] and posts[1]['files'] == []
+# A topic page where no post parses (the board changed its markup) is an error, not a topic with no posts.
+empty = soup('viewtopic.html')
+for p in empty.select('div.post'):
+	p.decompose()
+nastava.get = lambda path: empty
+try:
+	nastava.read_topic(21088)
+	raise AssertionError('no error for a topic page without posts')
+except ValueError:
+	pass
+
+# Nothing is deleted: a post that leaves the board stays, marked gone; a topic that 404s is marked gone.
+db = sqlite3.connect(':memory:')
+db.executescript(nastava.SCHEMA)
+db.execute('insert into topics (id, forum, last_post) values (1, 5, 11)')
+post = lambda i: dict(id=i, title='t', author='a', date='', posted='', content='c', html='h', files=[], images=set())
+assert nastava.store_topic(db, 1, 11, (5, 'F', [post(10), post(11)])) == 2
+nastava.store_topic(db, 1, 11, (5, 'F', [post(11)]))
+assert db.execute('select id, gone from posts order by id').fetchall() == [(10, 1), (11, 0)]
+nastava.store_topic(db, 1, 11, (5, 'F', [post(10), post(11)]))
+assert db.execute('select sum(gone) from posts').fetchone() == (0,)
+nastava.store_topic(db, 1, 11, None)
+assert db.execute('select gone from topics').fetchone() == (1,) and db.execute('select count(*), sum(gone) from posts').fetchone() == (2, 2)
 
 # The teacher list, a profile and the emeritus page.
 listed = nastavnici.parse_list(read('nastavnici.html'))

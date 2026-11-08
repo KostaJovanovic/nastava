@@ -17,13 +17,9 @@ const TOTALS = await pagefind.filters();
 const home = { heading: heading.innerHTML, res: res.innerHTML };
 
 // The index holds a folded copy of each text (build.py fold): Cyrillic to Latin, no diacritics.
-// Folding the query the same way finds "распоред", "raspored" and "rasporedjen" alike.
-const CYR = Object.fromEntries([..."абвгдђежзијклљмнњопрстћуфхцчџш"].map((c, i) =>
-	[c, "a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s".split(" ")[i]]));
-function fold(s) {
-	const latin = [...s.toLowerCase()].map((c) => CYR[c] ?? c).join("").replaceAll("đ", "dj");
-	return latin.normalize("NFD").replace(/\p{M}/gu, "");
-}
+// Folding the query the same way finds "распоред", "raspored" and "rasporedjen" alike. pismo.js, a classic script
+// at the end of the body, has run before this module.
+const fold = window.pismoFold;
 
 function build(tag, props, children) {
 	const node = Object.assign(document.createElement(tag), props);

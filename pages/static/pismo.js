@@ -35,7 +35,9 @@
 	// For comparing names in either script (the subject search in the side panel).
 	window.pismoFold = (s) => toLat(s).toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/g, "dj");
 
-	let mode = localStorage.getItem(KEY) || "lat";
+	// Blocked storage throws: the switch then lasts for this page only (as head.js and site.js do for the theme).
+	let mode = "lat";
+	try { mode = localStorage.getItem(KEY) || mode; } catch (e) {}
 	const text = new WeakMap();
 	const attrs = new WeakMap();
 	const convert = (s) => (mode === "lat" ? toLat(s) : mode === "cyr" ? toCyr(s) : s);
@@ -76,7 +78,7 @@
 	const title = document.title;
 	function set(m) {
 		mode = m;
-		localStorage.setItem(KEY, m);
+		try { localStorage.setItem(KEY, m); } catch (e) {}
 		document.documentElement.lang = m === "cyr" ? "sr-Cyrl" : m === "lat" ? "sr-Latn" : "sr";
 		document.title = convert(title);
 		apply(document.body);

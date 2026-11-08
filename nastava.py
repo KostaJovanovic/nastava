@@ -72,10 +72,6 @@ create table if not exists documents (
 	filename text, path text, size integer, mime text, uploaded_at text,
 	text text, fetched integer not null default 0, error text
 );
--- The site searches with Pagefind; the old full-text index of the posts goes from databases that have it.
-drop trigger if exists posts_ai;
-drop trigger if exists posts_au;
-drop table if exists posts_fts;
 '''
 
 
@@ -231,6 +227,9 @@ def read_topic(topic_id):
 					for i in [param(a['href'], 'id')] if i],
 				'images': {int(i) for i in re.findall(r'download/file\.php\?id=(\d+)', ' '.join(img.get('src', '') for img in content.find_all('img')))},
 			})
+	if forum and not posts:
+		# The page is there but no post parses: a markup change, not a deleted topic. Not stored, tried again next run.
+		raise ValueError(f'topic {topic_id}: no posts parsed')
 	return (forum, name, posts) if posts or forum else None
 
 
@@ -271,8 +270,10 @@ def fetch_topics(db, quiet=False, recent=False):
 			topic_id, last_post = futures[future]
 			try:
 				posts += store_topic(db, topic_id, last_post, future.result())
-			except requests.RequestException as error:
-				print(f'skip topic {topic_id}: {error}', flush=True)
+			except Exception as error:
+				# One topic that fails (network, or a page the parser cannot read) must not stop the run. It is not
+				# marked done, so the next run tries it again, and stats reports its missing posts.
+				print(f'skip topic {topic_id}: {type(error).__name__}: {error}', flush=True)
 				continue
 			done += 1
 			if done % 100 == 0 or done == len(pending):

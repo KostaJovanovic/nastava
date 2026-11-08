@@ -24,8 +24,9 @@ async function page(url) {
 		return new Response(null, { status: response.status, headers: { Location: location.slice(PAGES.length) } });
 	}
 	if (response.status !== 200 || !response.headers.get("Content-Type")?.startsWith("text/html")) return response;
-	const fragment = await response.text();
-	if (!fragment.startsWith(FRAGMENT)) return new Response(fragment, response);
+	// A whole page goes out untouched; only a fragment is read and joined.
+	const fragment = await response.clone().text();
+	if (!fragment.startsWith(FRAGMENT)) return response;
 	const shell = await fetch(PAGES + "/shell.html");
 	if (!shell.ok) return new Response("shell.html missing", { status: 502 });
 	return new Response(join(await shell.text(), fragment), response);

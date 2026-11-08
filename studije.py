@@ -12,6 +12,7 @@ The site shows the newest version (pages/build.py).
 import hashlib
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from urllib.parse import unquote, urljoin, urlparse
 
@@ -52,8 +53,8 @@ def sync(db):
 	# Imported here: pages/build.py imports this module for media_path and has none of these installed.
 	from bs4 import BeautifulSoup
 	from documents import is_html_page
-	from nastava import session
-	now =datetime.now(timezone.utc).isoformat(timespec='seconds')
+	from nastava import DELAY, session
+	now = datetime.now(timezone.utc).isoformat(timespec='seconds')
 	files = set()
 	for slug, title in PAGES.items():
 		r = session().get(f'{SITE}studije/{slug}', timeout=60)
@@ -66,6 +67,7 @@ def sync(db):
 		files |= {p for tag in main.select('a[href], img[src]') for p in [media_path(tag.get('href') or tag.get('src'))] if p and safe(p)}
 	ok = skipped = 0
 	for path in sorted(files):
+		time.sleep(DELAY)
 		r = session().get(SITE + '_media/' + path, timeout=300)
 		if r.status_code == 404 or is_html_page(r.content):
 			print(f'skip {path}: {r.status_code}, html page' if r.ok else f'skip {path}: {r.status_code}', flush=True)
