@@ -2,11 +2,12 @@
 
 {% block title %}Predmeti{% endblock %}
 
-{#- One row of the list. The data-* are what site.js filters, groups and sorts by: k katedra, p program, n name,
+{#- One row of the list. The data-* are what site.js filters, groups and sorts by: k katedra, p program (Latin slugs,
+    as in the URL; the filter's option has the name), n name,
     e ECTS, c forum topics, i the place in the plans. A subject in several plans (master modules) has a row in each;
     data-id tells site.js they are one subject. -#}
 {% macro srow(s) -%}
-<li class="sr" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra or '' }}" data-p="{{ s.program }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
+<li class="sr" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
   <a class="sr__a" href="{{ s.href }}">{{ s.name }}</a>
   <span class="sr__h">{% if s.holder_t %}{{ s.holder_t.shown }}{% endif %}</span>
   <span class="sr__e">{% if s.ects %}{{ s.ects }} ESPB{% endif %}</span>
@@ -25,12 +26,12 @@
   <label class="vh" for="s-p">Studijski program</label>
   <select class="field" id="s-p" name="program" data-f="p">
     <option value="">Svi programi</option>
-    {%- for p in programs %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+    {%- for p in programs %}<option value="{{ p | slug }}" data-label="{{ p }}">{{ p }}</option>{% endfor %}
   </select>
   <label class="vh" for="s-k">Katedra</label>
   <select class="field" id="s-k" name="katedra" data-f="k">
     <option value="">Sve katedre</option>
-    {%- for k in katedre %}<option value="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
+    {%- for k in katedre %}<option value="{{ k | slug }}" data-label="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
   </select>
   <span class="fbar__n">prikazano <b data-shown>{{ n }}</b></span>
   {#- Grouping and order need site.js; without it the list stays as the plans have it. -#}

@@ -1,4 +1,5 @@
 """Real searches and screenshots in Edge: python browser_test.py <base url> <out dir>."""
+import re
 import sys
 
 from playwright.sync_api import sync_playwright
@@ -34,11 +35,16 @@ with sync_playwright() as p:
 	if sys.argv[3:]:
 		phone.goto(f'{base}/{sys.argv[3]}/')
 		phone.screenshot(path=f'{out}/phone-{sys.argv[3].replace("/", "-")}.png')
-	# A smer filter from the URL, as the subject page links it.
-	page.goto(f'{base}/?smer=катедре')
+	# A smer filter from the URL: the smer's Latin slug (a URL never has Cyrillic).
+	page.goto(f'{base}/?smer=katedre')
 	page.wait_for_function(done)
 	page.wait_for_load_state('networkidle')
 	print('smer filter:', page.inner_text('#res-h'), '| first:', page.locator('#res .fr__s .s1').first.inner_text())
+	assert page.locator('.chip').first.inner_text() == 'katedre'
+	# A Cyrillic query: the URL has it folded to Latin.
+	page.fill('#q', 'распоред')
+	page.wait_for_function("location.search.includes('q=raspored')")
+	assert not re.search(r'[Ѐ-ӿ]|%D[01]', page.url, re.I), page.url
 	# An author filter from the URL, as a teacher page links it.
 	page.goto(f'{base}/?autor=ddjukic')
 	page.wait_for_function(done)

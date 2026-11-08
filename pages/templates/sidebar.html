@@ -24,7 +24,7 @@
         <div>
           <label class="opt is-on"><input type="radio" name="smer" value="" form="sf" checked><i class="rb" aria-hidden="true"></i><span class="opt__name">Svi</span><span class="n">{{ side.total }}</span></label>
           {%- for m in side.smerovi %}
-          <label class="opt" title="{{ m.name }}"><input type="radio" name="smer" value="{{ m.name }}" data-name="{{ m.name }}" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">{{ m.short }}</span><span class="n">{{ m.count }}</span></label>
+          <label class="opt" title="{{ m.name }}"><input type="radio" name="smer" value="{{ m.key }}" data-name="{{ m.name }}" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">{{ m.short }}</span><span class="n">{{ m.count }}</span></label>
           {%- endfor %}
         </div>
       </fieldset>

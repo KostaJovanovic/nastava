@@ -66,6 +66,10 @@ def slug(s):
     return re.sub(r"[^a-z0-9]+", "-", fold(s)).strip("-")
 
 
+# A filter's value in a URL (?katedra=katedra-za-matematiku): Latin only, the shown text stays the name.
+env.filters["slug"] = slug
+
+
 def set_hrefs(rows, path):
     """Give each row href path(row); a name that folds the same as an earlier row's gets the row's id appended.
     rows: in the order they first appeared, so an existing page keeps its URL when a namesake is added later."""
@@ -99,8 +103,9 @@ def clean_html(html, base=BASE, local=lambda value: None):
             return value if tag == "img" and value.startswith("data:image/") else None
         # Posts link relative to the board page, so attachments and images resolve to the faculty's site.
         # shortcut: board files are not hosted here; when the board deletes one, the link dies.
-        # Drop the scraper's phpBB session id from the link.
-        return local(value) or urljoin(base, re.sub(r"([?&])sid=[0-9a-f]+&?", r"\1", value).rstrip("?&"))
+        # Drop the scraper's phpBB session id from the link, and the board's search highlight (hilit=, often Cyrillic).
+        value = re.sub(r"([?&])hilit=[^&#]*&?", r"\1", re.sub(r"([?&])sid=[0-9a-f]+&?", r"\1", value))
+        return local(value) or urljoin(base, re.sub(r"[?&]+(?=#|$)", "", value))
 
     # The board's attachment box is in English; in Serbian it reads right in both scripts.
     html = re.sub(r"Downloaded (\d+) times?", r"preuzeto \1 puta", re.sub(r">\s*Attachments\s*<", ">Prilozi<", html or ""))
@@ -133,6 +138,9 @@ def load_places(db):
         place[f["id"]] = (smer, subject)
     # The same subject name is in several smerovi, so a subject's URL has its smer's.
     set_hrefs(smerovi.values(), lambda m: f"/smer/{slug(short_smer(m['name']))}/")
+    for m in smerovi.values():
+        # The smer in a search URL and in the index's filter: its URL's slug ('oas-mi'), never its Cyrillic name.
+        m["key"] = m["href"].strip("/").split("/")[-1]
     set_hrefs(subjects.values(), lambda s: f"{s['smer']['href'].replace('/smer/', '/predmet/', 1)}{slug(s['name'])}/")
     return place, smerovi, subjects
 
@@ -166,9 +174,9 @@ def pagefind_tags(it):
     kind = KIND[it["kind"]]
     tags = [("meta", "title", it["title"] or ""), ("filter", "vrsta", kind), ("meta", "vrsta", kind)]
     if it["smer"]:
-        tags += [("filter", "smer", it["smer"]["name"]), ("meta", "smer", it["smer"]["name"])]
+        tags += [("filter", "smer", it["smer"]["key"]), ("meta", "smer", it["smer"]["name"])]
     if it["subject"]:
-        tags += [("filter", "predmet", it["subject"]), ("meta", "predmet", it["subject"])]
+        tags += [("filter", "predmet", slug(it["subject"])), ("meta", "predmet", it["subject"])]
     if it["author"]:
         tags += [("filter", "autor", it["author"].lower()), ("meta", "autor", it["who"])]
     if it["year"]:
@@ -545,6 +553,10 @@ if __name__ == "__main__":
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
     assert slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4" and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"
     assert fold(short_smer(PROGRAMS[0].replace(" — ", " - "))) == fold("ОАС - МИ")
+    _a = lambda v: re.search(r'href="([^"]*)"', clean_html(f'<a href="{v}">x</a>'))[1].replace("&amp;", "&")
+    assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
+    assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
+    assert env.filters["slug"]("Катедра за математику") == "katedra-za-matematiku" and env.filters["slug"](None) == ""
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if sys.argv[1] == "--strip":

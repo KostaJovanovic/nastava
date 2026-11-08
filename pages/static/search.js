@@ -42,7 +42,8 @@ function readState() {
 
 function writeUrl(s, page) {
 	const p = new URLSearchParams();
-	if (s.q) p.set("q", s.q);
+	// The query folded (Latin, no diacritics), so a URL never has Cyrillic; the search folds it anyway.
+	if (s.q) p.set("q", fold(s.q));
 	if (s.kind) p.set("kind", s.kind);
 	if (s.smer) p.set("smer", s.smer);
 	for (const x of s.subjects) p.append("subject", x);

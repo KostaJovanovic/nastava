@@ -11,15 +11,16 @@
   <label class="vh" for="t-q">Traži nastavnika</label>
   <input class="field" id="t-q" name="q" type="search" placeholder="Ime, predmet, katedra, kabinet, mejl…" autocomplete="off" data-f="find">
   <label class="vh" for="t-k">Katedra</label>
-  {#- value: the full name, which ?katedra= links and the rows' data-k use; pismo.js changes the text, not the value. -#}
+  {#- value: the name's Latin slug, which ?katedra= links and the rows' data-k use (no Cyrillic in a URL);
+      data-label: the full name, a group's heading (site.js). -#}
   <select class="field" id="t-k" name="katedra" data-f="k">
     <option value="">Sve katedre</option>
-    {%- for k in katedre %}<option value="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
+    {%- for k in katedre %}<option value="{{ k | slug }}" data-label="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
   </select>
   <label class="vh" for="t-z">Zvanje</label>
   <select class="field" id="t-z" name="zvanje" data-f="z">
     <option value="">Sva zvanja</option>
-    {%- for z in teachers | map(attribute='title') | unique | sort %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+    {%- for z in teachers | map(attribute='title') | unique | sort %}<option value="{{ z | slug }}" data-label="{{ z }}">{{ z }}</option>{% endfor %}
   </select>
   <span class="fbar__n">prikazano <b data-shown>{{ teachers | length }}</b></span>
   {#- Grouping and order need site.js; without it the list stays by surname. -#}
@@ -42,7 +43,7 @@
 <div class="groups" data-groups>
 <ol class="people" data-rows>
   {%- for t in teachers %}
-  <li class="pc" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra or '' }}" data-z="{{ t.title or '' }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
+  <li class="pc" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
     {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
     <div class="pc__t">

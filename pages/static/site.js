@@ -27,8 +27,13 @@
        (a subject in two plans) is only in the page's own grouping. */
     var box = d.querySelector('[data-groups]'), gsel = bar.querySelector('[data-group]'), ssel = bar.querySelector('[data-sort]');
     var own = box ? [].slice.call(box.children) : [], home = rows.map(function (r) { return [r, r.parentNode]; }), made = null;
-    // A group's heading: the value in full ('Катедра за бродоградњу'; without the prefix it reads in the wrong case).
-    var label = function (v) { return v ? v[0].toUpperCase() + v.slice(1) : 'Bez podatka'; };
+    // A group's heading: the row's value is a Latin slug (it goes in the URL), so the name is the filter option's
+    // data-label, in full ('Катедра за бродоградњу'; without the prefix it reads in the wrong case).
+    var label = function (g, v) {
+      var o = v && bar.querySelector('[data-f="' + g + '"] option[value="' + v + '"]');
+      v = o ? o.dataset.label : v;
+      return v ? v[0].toUpperCase() + v.slice(1) : 'Bez podatka';
+    };
     var arrange = function () {
       var g = gsel ? gsel.value : '', s = ssel ? ssel.value : '';
       home.forEach(function (h) { h[1].appendChild(h[0]); });
@@ -45,13 +50,13 @@
         made = d.createElement('div');
         made.className = 'groups';
         // The groups by name, the rows without a value last.
-        Object.keys(groups).sort(function (a, b) { return !a - !b || a.localeCompare(b, 'sr'); }).forEach(function (v) {
+        Object.keys(groups).sort(function (a, b) { return !a - !b || label(g, a).localeCompare(label(g, b), 'sr'); }).forEach(function (v) {
           var sec = d.createElement('section'), ol = d.createElement('ol');
           sec.className = 'sg';
           if (g !== '-') {
             var h = d.createElement('h2');
             h.className = 'sg__h';
-            h.textContent = label(v);
+            h.textContent = label(g, v);
             sec.appendChild(h);
           }
           ol.className = home[0][1].className;

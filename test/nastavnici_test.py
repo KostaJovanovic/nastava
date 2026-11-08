@@ -17,12 +17,15 @@ with sync_playwright() as p:
 		page.fill('#t-q', q)
 		print(f'{q!r}:', shown(), page.locator('[data-rows] > li:visible .pc__a').all_inner_texts()[:3])
 	page.fill('#t-q', '')
-	page.select_option('#t-k', 'Катедра за математику')
+	# A filter's value is the name's Latin slug: the URL has no Cyrillic.
+	page.select_option('#t-k', 'katedra-za-matematiku')
 	print('katedra matematika:', shown(), '| url:', page.url.split('/', 3)[-1])
-	page.select_option('#t-z', 'доцент')
+	assert page.url.endswith('?katedra=katedra-za-matematiku'), page.url
+	page.select_option('#t-z', 'docent')
 	print('+ docent:', shown())
-	page.goto(base + '/nastavnici/?katedra=' + 'Катедра за математику')
+	page.goto(base + '/nastavnici/?katedra=katedra-za-matematiku')
 	print('from url:', shown())
+	assert shown() == 8
 	page.goto(base + '/nastavnik/dusan-lj-djukic/')
 	print('profile h1:', page.inner_text('h1'), '| archived subjects:', page.locator('.tp__subj a[href^="/predmet/"]').count(),
 		'| posts:', page.locator('.tp__posts li').count())

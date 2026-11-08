@@ -16,7 +16,7 @@
   {%- endif %}
   <div class="tp__who">
     <h1 id="title">{{ t.shown }}</h1>
-    <p>{{ t.title }}{% if t.katedra %}, <a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a>{% endif %}</p>
+    <p>{{ t.title }}{% if t.katedra %}, <a href="/nastavnici/?katedra={{ t.katedra | slug }}">{{ t.katedra }}</a>{% endif %}</p>
     <dl class="tp__dl">
       {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}
       {%- if t.office %}<dt>Kabinet</dt><dd>{{ t.office }}</dd>{% endif %}
