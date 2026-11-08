@@ -40,6 +40,10 @@ pipeline and site, with new scrapers for phpBB.
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
   a forum author is linked to a teacher when the username is the e-mail before @.
+- `predmeti.py`: archive the faculty's subject book (all subjects of every program), every subject page, and where
+  each subject is in the plans (program, master module, semester, elective slot such as 5.4) into the `subjects` and
+  `subject_places` tables. The site has `/predmeti/`, grouped as the plans by default, and a page per subject.
+  Both lists (subjects, teachers) can be grouped and sorted in the browser.
 - `pages/build.py`: render `nastava.db` as the static site, in the board's layout: the index of smerovi, a page per
   smer and subject (its topics, filtered by text or author in the page), a page per topic of several posts (`/tema/`),
   and a page per post (`/item/`, what search finds). The header stays at the top; the side panel (page links,
@@ -54,6 +58,7 @@ pipeline and site, with new scrapers for phpBB.
     uv run nastava.py sync
     uv run studije.py sync
     uv run nastavnici.py sync
+    uv run predmeti.py sync
     uv run nastava.py stats
     gh repo create KostaJovanovic/nastava --public --source . --push
     bash ci/state.sh push

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb %}
+
+{% block title %}{{ s.name }}{% endblock %}
+{% block crumbs %}{{ crumb('/predmeti/', 'Predmeti') }}{% endblock %}
+
+{#- A subject of the faculty's subject book: its head (where it is taught, by whom), its forum topics here, then the
+    faculty's page (goals, syllabus, literature). -#}
+{% block main %}
+<section class="tp tp--subj" aria-labelledby="title">
+  <div class="tp__who">
+    <h1 id="title">{{ s.name }}</h1>
+    <p>{{ s.program }}{% if s.ects %} · {{ s.ects }} ESPB{% endif %}{% if s.gone %} · <b>više nije u Knjizi predmeta</b>{% endif %}</p>
+    <dl class="tp__dl">
+      <dt>Šifra</dt><dd>{{ s.id }}</dd>
+      {%- if s.kind %}<dt>Vrsta</dt><dd>{{ s.kind }}</dd>{% endif %}
+      {%- if s.exam %}<dt>Ispit</dt><dd>{{ s.exam }}</dd>{% endif %}
+      {%- if s.katedra %}<dt>Katedra</dt><dd>{{ s.katedra }}</dd>{% endif %}
+      {%- if s.teachers %}<dt>Nastavnici</dt><dd>{% for t in s.teachers %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if t is sameas s.holder_t %} (nosilac){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
+      {%- if s.places %}<dt>U planu</dt><dd>
+        {%- for p in s.places %}{% if p.module %}{{ p.module }}, {% elif p.program != s.program %}{{ p.program }}, {% endif %}{{ p.semester }}. semestar{% if p.label %}, {{ p.label | lower }}{% endif %}{% if not loop.last %}; {% endif %}{% endfor %}</dd>{% endif %}
+      {%- if s.forum %}<dt>Forum</dt><dd><a href="{{ s.forum.href }}">{{ s.forum.topics }} {{ s.forum.topics | pl('tema') }}, {{ s.forum.count }} {{ s.forum.count | pl('objava') }}</a></dd>{% endif %}
+    </dl>
+  </div>
+</section>
+<div class="prose prose--html tp__opis">{{ html | safe }}</div>
+<p class="tp__src">Preuzeto {{ s.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">mas.bg.ac.rs <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+{% endblock %}

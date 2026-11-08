@@ -50,6 +50,10 @@ jobs:
         id: nastavnici
         run: uv run nastavnici.py sync
         continue-on-error: true
+      - name: Scrape the subjects and the plans
+        id: predmeti
+        run: uv run predmeti.py sync
+        continue-on-error: true
       # The attachments are not downloaded (documents.py): the site links them on the faculty's site.
       - name: Save the state
         run: ci/state.sh push
@@ -65,7 +69,7 @@ jobs:
         uses: actions/deploy-pages@v4
       # A red run (and GitHub's e-mail) when the archive misses posts or a side scraper failed.
       - name: Report failures
-        if: steps.counts.outcome == 'failure' || steps.studije.outcome == 'failure' || steps.nastavnici.outcome == 'failure'
+        if: steps.counts.outcome == 'failure' || steps.studije.outcome == 'failure' || steps.nastavnici.outcome == 'failure' || steps.predmeti.outcome == 'failure'
         run: |
-          echo "counts: ${{ steps.counts.outcome }}, studije: ${{ steps.studije.outcome }}, nastavnici: ${{ steps.nastavnici.outcome }}"
+          echo "counts: ${{ steps.counts.outcome }}, studije: ${{ steps.studije.outcome }}, nastavnici: ${{ steps.nastavnici.outcome }}, predmeti: ${{ steps.predmeti.outcome }}"
           exit 1

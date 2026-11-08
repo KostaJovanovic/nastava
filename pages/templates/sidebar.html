@@ -5,6 +5,7 @@
   <nav class="snav" aria-label="Stranice">
     <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Forum</a>
     <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
+    <a href="/predmeti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Predmeti</a>
     {%- for slug, name in side.study_pages.items() %}
     <a href="/studije/{{ slug }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>{{ name }}</a>
     {%- endfor %}

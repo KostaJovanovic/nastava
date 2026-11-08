@@ -15,6 +15,7 @@ Every script is a uv script with inline dependencies (`# /// script` header), so
     uv run nastava.py stats         # board counts vs stored rows; exit 1 when posts are missing
     uv run studije.py sync          # schedule pages + their files (versioned by sha256)
     uv run nastavnici.py sync       # teacher list, profiles, emeritus page
+    uv run predmeti.py sync         # subject book, subject pages, where each is in the plans (~815 requests)
     uv run documents.py sync        # attachments into files/ + text extraction (not run by CI)
     uv run pages/build.py nastava.db pages/.build      # render the site to pages/.build/site
     npx -y pagefind@1.6.0 --site pages/.build/site     # search index; must run after build.py
@@ -53,8 +54,9 @@ them per request (the raw GitHub Pages URL shows bare fragments); `pages/serve.p
 the two in step. A template that changes anything outside `<title>`/`<main>` per page fails `write()`'s assert.
 
 **Scrapers share one database.** `nastava.py` owns the schema for `forums`, `topics`, `posts`, `documents` and the
-`connect()`/`get()`/`session()` helpers; `documents.py` imports `nastava`. `studije.py` (`study_pages`, `study_files`)
-and `nastavnici.py` (`teachers`, `teacher_subjects`) each declare their own tables with `create table if not exists`.
+`connect()`/`get()`/`session()` helpers; `documents.py` imports `nastava`. `studije.py` (`study_pages`, `study_files`),
+`nastavnici.py` (`teachers`, `teacher_subjects`) and `predmeti.py` (`subjects`, `subject_places`) each declare their own
+tables with `create table if not exists`.
 `build.py` imports `PAGES`, `SITE`, `media_path` from `studije.py`.
 
 **Incremental sync = completeness check.** Each phpBB forum listing shows subforum topic/post counts and the last post

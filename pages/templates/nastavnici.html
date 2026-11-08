@@ -22,10 +22,26 @@
     {%- for z in teachers | map(attribute='title') | unique | sort %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
   </select>
   <span class="fbar__n">prikazano <b data-shown>{{ teachers | length }}</b></span>
+  {#- Grouping and order need site.js; without it the list stays by surname. -#}
+  <div class="arrange" data-arrange hidden>
+    <label for="t-g">Grupiši</label>
+    <select class="field" id="t-g" name="grupa" data-group>
+      <option value="">bez grupa</option>
+      <option value="k">po katedri</option>
+      <option value="z">po zvanju</option>
+    </select>
+    <label for="t-s">Poređaj</label>
+    <select class="field" id="t-s" name="red" data-sort>
+      <option value="">po prezimenu</option>
+      <option value="n">po imenu</option>
+      <option value="-c">po broju objava</option>
+    </select>
+  </div>
 </form>
+<div class="groups" data-groups>
 <ol class="people" data-rows>
   {%- for t in teachers %}
-  <li class="pc" data-find="{{ t.find }}" data-k="{{ t.katedra or '' }}" data-z="{{ t.title or '' }}">
+  <li class="pc" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra or '' }}" data-z="{{ t.title or '' }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}">
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
     {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
     <div class="pc__t">
@@ -37,5 +53,6 @@
   </li>
   {%- endfor %}
 </ol>
+</div>
 <p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
 {% endblock %}

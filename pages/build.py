@@ -328,14 +328,17 @@ def azbuka(word):
     return [AZBUKA.get(c, 100 + ord(c)) for c in word.lower()]
 
 
-def render_teachers(site, teachers, items):
+def render_teachers(site, teachers, items, book):
     """A list of all teachers with a filter, and one page per teacher: the faculty's profile and their posts here."""
     posts = defaultdict(list)
     for it in items:
         posts[(it["author"] or "").lower()].append(it)
     pages = {f"/fakultet/nastavnici/{t['id']}": t["href"] for t in teachers}
-    subj_pages = {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
-                  for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("count")}
+    # A subject's link: its forum page, else its page in the subject list.
+    book_href = {s["id"]: s["href"] for s in book}
+    subj_pages = {f"/studije/predmeti/{c}": h for c, h in book_href.items()}
+    subj_pages |= {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
+                   for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("count")}
     for t in teachers:
         t["posts"] = newest(posts[t["username"]]) if t["username"] else []
         # The profile's subjects: one row per archive subject (it can have several codes), archived first.
@@ -345,7 +348,7 @@ def render_teachers(site, teachers, items):
             archived = s["subj"] if s["subj"] and s["subj"].get("count") else None
             row = courses.setdefault(archived["id"] if archived else s["code"],
                                      dict(name=s["name"], subj=archived, codes=[], mine=archived and mine[archived["id"]],
-                                          url=f"{STUDY_SITE}studije/predmeti/{s['code']}"))
+                                          url=book_href.get(s["code"]) or f"{STUDY_SITE}studije/predmeti/{s['code']}"))
             row["codes"].append(s["code"])
         # Where they post most first; subjects without their posts after, by name.
         t["courses"] = sorted(courses.values(), key=lambda c: (-(c["mine"] or 0), not c["subj"], azbuka(c["name"])))
@@ -362,6 +365,95 @@ def render_teachers(site, teachers, items):
     listed = [t for t in teachers if not t["gone"]]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
     write(site / "nastavnici" / "index.html", env.get_template("nastavnici.html").render(teachers=listed, katedre=katedre))
+
+
+# The programs in the order of the faculty's studies; a subject book program not here goes last.
+PROGRAMS = ["Основне академске студије — МИ", "Основне академске студије — ИТМ", "Мастер академске студије — МИ",
+            "Мастер академске студије — Индустрија 4.0", "Докторске студије — МИ"]
+
+
+def slot_label(slot_name, slot):
+    """'Изборни предмет 5.4.5', '5.4' -> 'Изборни предмет 5.4': the cell's last number is the ECTS."""
+    return re.sub(r"\s*[\d.]+$", "", slot_name) + " " + slot
+
+
+def load_book(db, subjects, teachers):
+    """The faculty's subjects (predmeti.py), each with its places in the plans, its teachers and its forum subject:
+    the same code, or else the same name in the board's smer of the same program."""
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone():
+        return []
+    # Before render_places, so the forum pages can link here; a forum subject with no topics (no page) is dropped later.
+    by_code = {c: s for s in subjects.values() for c in s["codes"]}
+    by_name = {(fold(s["smer"]["short"]), fold(s["name"])): s for s in subjects.values()}
+    teacher = {t["id"]: t for t in teachers}
+    book = [dict(r, places=[]) for r in db.execute("SELECT * FROM subjects ORDER BY rowid")]
+    set_hrefs(book, lambda s: f"/predmeti/{slug(s['name'])}/")
+    by_id = {s["id"]: s for s in book}
+    for s in book:
+        s["forum"] = by_code.get(s["id"]) or by_name.get((fold(short_smer(s["program"].replace(" — ", " - "))), fold(s["name"])))
+        # The holder first, then the other teachers of the page's head ('Извођачи').
+        m = re.search(r"Извођачи</strong>(.*?)<br", s["html"] or "", re.S)
+        ids = [s["holder"]] + re.findall(r"/fakultet/nastavnici/(\d+)", m[1] if m else "")
+        s["teachers"] = [teacher[i] for i in dict.fromkeys(ids) if i in teacher]
+        s["holder_t"] = teacher.get(s["holder"])
+    # i: the order the plans were read in (predmeti.py: programs, then the modules as the master's page lists them).
+    for i, r in enumerate(db.execute("SELECT * FROM subject_places ORDER BY rowid")):
+        if r["subject"] in by_id:
+            by_id[r["subject"]]["places"].append(dict(r, i=i, label=slot_label(r["slot_name"], r["slot"]) if r["slot"] else None))
+    for s in book:
+        s["find"] = fold(" ".join([s["name"], s["id"], s["katedra"] or "", s["program"]]
+                                  + [t["name"] for t in s["teachers"]] + [p["module"] or "" for p in s["places"]]))
+        if s["forum"]:
+            s["forum"].setdefault("info", s)
+    return book
+
+
+def plan_groups(book):
+    """The list's default grouping, as the faculty's plans: program (and module) > semester > the required subjects,
+    then one group per elective slot. A subject in no plan is listed under its program at the end."""
+    plans, first = {}, {}
+    for s in book:
+        if s["gone"]:
+            continue
+        for p in s["places"]:
+            first[(p["program"], p["module"])] = min(p["i"], first.get((p["program"], p["module"]), p["i"]))
+            plan = plans.setdefault((p["program"], p["module"]), {})
+            sem = plan.setdefault(p["semester"], dict(sem=p["semester"], req=[], slots={}))
+            if p["slot"]:
+                sem["slots"].setdefault((p["pos"], p["slot"]), dict(label=p["label"], rows=[]))["rows"].append(s)
+            else:
+                sem["req"].append((p["pos"], s))
+        if not s["places"]:
+            plans.setdefault((s["program"], "ван наставног плана"), {}).setdefault(0, dict(sem=0, req=[], slots={}))["req"].append((0, s))
+    order = {p: i for i, p in enumerate(PROGRAMS)}
+    out = []
+    # Programs in study order; modules in the order of the master's page; 'not in a plan' last in its program.
+    for (program, module), sems in sorted(plans.items(), key=lambda kv: (order.get(kv[0][0], len(order)), first.get(kv[0], 1e9))):
+        out.append(dict(program=program, module=module, sems=[
+            dict(sem=n, req=[s for _, s in sorted(v["req"], key=lambda x: (x[0], azbuka(x[1]["name"])))],
+                 slots=[v["slots"][k] for k in sorted(v["slots"])]) for n, v in sorted(sems.items())]))
+    return out
+
+
+def render_book(site, book):
+    """A list of all subjects with a filter, grouping and sorting, and one page per subject: the faculty's page."""
+    pages = {f"/studije/predmeti/{s['id']}": s["href"] for s in book}
+    for s in book:
+        if s["forum"] and not s["forum"]["count"]:
+            s["forum"] = None
+    for s in book:
+        source = f"{STUDY_SITE}studije/predmeti/{s['id']}"
+        # The page's name and head (ID, ECTS, teachers, katedra) are above it, from the same fields.
+        html = re.sub(r"<h1[^>]*>.*?</h1>", "", s["html"] or "", count=1, flags=re.S)
+        html = re.sub(r'<div class="wrap_box[^"]*">.*?</div>', "", html, count=1, flags=re.S)
+        # 'Извођења' (semester, position) is the 'U planu' line above.
+        html = re.sub(r'<h2[^>]*id="извођења".*?</h2>\s*<div class="level2">.*?</div>', "", html, count=1, flags=re.S)
+        write(site / s["href"].strip("/") / "index.html", env.get_template("predmet_opis.html").render(
+            s=s, html=clean_html(html, source, lambda v: pages.get(v.split("?")[0])), source_url=source))
+    listed = [s for s in book if not s["gone"]]
+    write(site / "predmeti" / "index.html", env.get_template("predmeti.html").render(
+        plans=plan_groups(book), n=len(listed), katedre=sorted({s["katedra"] for s in listed if s["katedra"]}),
+        programs=[p for p in PROGRAMS if any(s["program"] == p for s in listed)]))
 
 
 def write_bytes(path, data):
@@ -424,15 +516,17 @@ def main(db_path, out):
         for s in t["subjects"]:
             if s["subj"] and t not in s["subj"].setdefault("teachers", []):
                 s["subj"]["teachers"].append(t)
+    book = load_book(db, subjects, teachers)
     render_places(site, topics, smerovi, subjects)
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it))
-    render_teachers(site, teachers, items)
+    render_teachers(site, teachers, items, book)
+    render_book(site, book)
     render_study_pages(site, db)
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers)), encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(status_code=404), encoding="utf-8")
     print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['count'])} subjects, "
-          f"{len(smerovi)} smerovi, {len(teachers)} teachers")
+          f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects")
 
 
 if __name__ == "__main__":
@@ -446,6 +540,8 @@ if __name__ == "__main__":
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
     assert env.filters["katedra"]("Катедра за мехнику флуида") == "мехнику флуида" and env.filters["katedra"](None) == ""
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
+    assert slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4" and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"
+    assert fold(short_smer(PROGRAMS[0].replace(" — ", " - "))) == fold("ОАС - МИ")
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if sys.argv[1] == "--strip":

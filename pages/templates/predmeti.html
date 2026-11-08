@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Predmeti{% endblock %}
+
+{#- One row of the list. The data-* are what site.js filters, groups and sorts by: k katedra, p program, n name,
+    e ECTS, c forum topics, i the place in the plans. A subject in several plans (master modules) has a row in each;
+    data-id tells site.js they are one subject. -#}
+{% macro srow(s) -%}
+<li class="sr" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra or '' }}" data-p="{{ s.program }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
+  <a class="sr__a" href="{{ s.href }}">{{ s.name }}</a>
+  <span class="sr__h">{% if s.holder_t %}{{ s.holder_t.shown }}{% endif %}</span>
+  <span class="sr__e">{% if s.ects %}{{ s.ects }} ESPB{% endif %}</span>
+  <span class="sr__c">{% if s.forum %}<a href="{{ s.forum.href }}" title="Teme na forumu">{{ s.forum.topics }} {{ s.forum.topics | pl('tema') }}</a>{% endif %}</span>
+</li>
+{%- endmacro %}
+
+{% block main %}
+<div class="mh">
+  <h1 id="title">Predmeti</h1>
+  <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj tema je sa foruma nastave.</p>
+</div>
+<form class="people__bar subj__bar" data-filter role="search" onsubmit="return false">
+  <label class="vh" for="s-q">Traži predmet</label>
+  <input class="field" id="s-q" name="q" type="search" placeholder="Naziv, šifra, nastavnik, katedra, modul…" autocomplete="off" data-f="find">
+  <label class="vh" for="s-p">Studijski program</label>
+  <select class="field" id="s-p" name="program" data-f="p">
+    <option value="">Svi programi</option>
+    {%- for p in programs %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+  </select>
+  <label class="vh" for="s-k">Katedra</label>
+  <select class="field" id="s-k" name="katedra" data-f="k">
+    <option value="">Sve katedre</option>
+    {%- for k in katedre %}<option value="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
+  </select>
+  <span class="fbar__n">prikazano <b data-shown>{{ n }}</b></span>
+  {#- Grouping and order need site.js; without it the list stays as the plans have it. -#}
+  <div class="arrange" data-arrange hidden>
+    <label for="s-g">Grupiši</label>
+    <select class="field" id="s-g" name="grupa" data-group>
+      <option value="">po nastavnom planu</option>
+      <option value="p">po programu</option>
+      <option value="k">po katedri</option>
+      <option value="-">bez grupa</option>
+    </select>
+    <label for="s-s">Poređaj</label>
+    <select class="field" id="s-s" name="red" data-sort>
+      <option value="">kao u planu</option>
+      <option value="n">po nazivu</option>
+      <option value="-e">po ESPB</option>
+      <option value="-c">po broju tema</option>
+    </select>
+  </div>
+</form>
+<div class="groups" data-groups>
+  {%- for g in plans %}
+  <section class="sg">
+    <h2 class="sg__h">{{ g.program }}{% if g.module %} <span>· {{ g.module }}</span>{% endif %}</h2>
+    {%- for sem in g.sems %}
+    <div class="sg__s">
+    {%- if sem.sem %}<h3 class="sg__sem">{{ (sem.sem + 1) // 2 }}. godina · {{ sem.sem }}. semestar</h3>{% endif %}
+    {%- if sem.req %}
+    <ol class="subj" data-rows>{% for s in sem.req %}{{ srow(s) }}{% endfor %}</ol>
+    {%- endif %}
+    {%- for slot in sem.slots %}
+    <div class="sg__slot">
+      <h4>{{ slot.label }} <span>· bira se jedan od {{ slot.rows | length }}</span></h4>
+      <ol class="subj" data-rows>{% for s in slot.rows %}{{ srow(s) }}{% endfor %}</ol>
+    </div>
+    {%- endfor %}
+    </div>
+    {%- endfor %}
+  </section>
+  {%- endfor %}
+</div>
+<p class="empty" data-none hidden>Nijedan predmet ne odgovara pretrazi. Probaj deo naziva ili šifru.</p>
+{% endblock %}

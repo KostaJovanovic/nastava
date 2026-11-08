@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import nastava  # noqa: E402
 import nastavnici  # noqa: E402
+import predmeti  # noqa: E402
 
 FIX = ROOT / 'test' / 'fixtures'
 read = lambda name: (FIX / name).read_text(encoding='utf-8')
@@ -68,4 +69,24 @@ assert len(emeriti) == 6 and emeriti[0]['id'] == 'emeritus-madzic' and emeriti[0
 # The name of a listed teacher whose profile is missing: the same as the profile's.
 assert nastavnici.plain_name(next(t['full_name'] for t in listed if t['id'] == '52')) == profile['name']
 assert nastavnici.plain_name('мастер маш. инж. Јована Р. Антић') == 'Јована Р. Антић'
+
+# The subject book, the plans (a grid of rowspans; an elective slot is a link to its list) and a subject page.
+book = predmeti.parse_book(read('predmeti.html'))
+assert len(book) == 784 and book['1623'] == ('Математика 1', 'Основне академске студије — МИ')
+electives = predmeti.parse_electives(read('oas-izborni.html'))
+assert len(electives['section54']) == 19
+rows = predmeti.places(predmeti.parse_plan(read('oas.html'), 0), lambda href: electives.get(href.split('#')[1], []))
+assert (1, 1, None, None, '1623') in rows and (1, 3, None, None, '0203') in rows and (1, 3, None, None, '1415') in rows
+assert len([r for r in rows if r[2] == '5.4']) == 19
+# The final subject's cell has no link; its list is linked elsewhere on the page.
+assert len([r for r in rows if r[2] == '6.5']) == 102
+assert [s for s, p, td in predmeti.parse_plan(read('oas.html'), 1)].count(1) == 6
+modules = predmeti.parse_modules(read('mas.html'))
+assert len(modules) == 21 and modules[0] == ('Аутоматско управљање', 'studije/mas/modul-18')
+modul = read('modul.html')
+rows = predmeti.places(predmeti.parse_plan(modul), lambda href: predmeti.parse_electives(modul).get(href.split('#')[1], []))
+assert (1, 1, None, None, '1554') in rows and len([r for r in rows if r[2] == '1.5']) == 4
+subject = predmeti.parse_subject(read('predmet.html'))
+assert {k: subject[k] for k in ('name', 'ects', 'katedra', 'holder')} == dict(name='Математика 1', ects=6, katedra='Катедра за математику', holder='494')
+assert '<p>' in subject['html'], 'the page text keeps its paragraphs'
 print('parsers ok')
