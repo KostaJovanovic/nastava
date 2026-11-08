@@ -1,7 +1,14 @@
-{#- The side panel of every page (base.html): the search filters, short enough to fit the screen (the page links are
-    in the header). It is static: search.js sets the choices from the URL on the search page; on other pages a choice
-    submits the search form to the search page. side: the archive's counts (build.py side_panel). -#}
-<aside class="side" aria-label="Filteri">
+{#- The side panel of every page (base.html): the page links and the search filters, short enough to fit the screen.
+    It is static: search.js sets the choices from the URL on the search page; on other pages a choice submits the
+    search form to the search page. side: the archive's counts (build.py side_panel). -#}
+<aside class="side" aria-label="Meni i filteri">
+  <nav class="snav" aria-label="Stranice">
+    <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Forum</a>
+    <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
+    {%- for slug, name in side.study_pages.items() %}
+    <a href="/studije/{{ slug }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>{{ name }}</a>
+    {%- endfor %}
+  </nav>
   <details class="filters" open>
     <summary class="filters__sum">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>

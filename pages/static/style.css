@@ -106,17 +106,17 @@ kbd {
 
 /* ---- Header -------------------------------------------------------------- */
 /* The header stays at the top while the page scrolls. --hd: its height (the side panel and the anchors go under it). */
-:root { --hd: 146px; }
-@media (min-width: 760px) { :root { --hd: 96px; } }
+:root { --hd: 117px; }
+@media (min-width: 760px) { :root { --hd: 65px; } }
 html { scroll-padding-top: calc(var(--hd) + 12px); }
 .hd {
   position: sticky; top: 0; z-index: 10;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "brand pismo" "cmd cmd" "tabs tabs";
+  grid-template-areas: "brand pismo" "cmd cmd";
   align-items: center;
   gap: 10px 12px;
-  padding: 12px 12px 0;
+  padding: 12px;
   background: var(--head);
   color: var(--head-fg);
   border-bottom: 3px solid var(--head-line);
@@ -169,23 +169,9 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 #tema { padding: 0 8px; }
 .tg span { display: none; }
 
-/* The site's sections, a row of tabs on the header's bottom edge; the current one is underlined (site.js).
-   Phone: the row scrolls sideways. */
-.tabs { grid-area: tabs; display: flex; gap: 2px; margin: -4px -12px 0; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
-.tabs a {
-  display: flex; align-items: center; gap: 7px; flex: none;
-  min-height: 38px; padding: 0 10px;
-  border-bottom: 3px solid transparent; margin-bottom: -3px;
-  color: var(--head-dim); text-decoration: none; font-size: 13.5px; white-space: nowrap;
-}
-.tabs a .i { width: 15px; height: 15px; }
-.tabs a:hover { color: var(--head-fg); background: rgba(240, 235, 231, .08); }
-.tabs a[aria-current] { color: var(--head-fg); font-weight: 800; border-bottom-color: var(--head-fg); }
-
 @media (min-width: 760px) {
   /* Equal side columns, so the search is in the middle of the header. */
-  .hd { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); grid-template-areas: "brand cmd pismo" "tabs tabs tabs"; gap: 6px 24px; padding: 10px 24px 0; }
-  .tabs { margin: 0 -24px; padding: 0 14px; }
+  .hd { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); grid-template-areas: "brand cmd pismo"; gap: 24px; padding: 10px 24px; }
   .cmd input { font-size: 14px; }
   .cmd kbd { display: inline-block; }
   .tg span { display: inline; }
@@ -203,12 +189,24 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .side { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
 @media (min-width: 900px) {
   /* Under the header, the whole panel on the screen. Only on a screen too low for it do the filters scroll: their
-     scrollbar ends above the bottom, clear of the rounded corners. */
+     scrollbar starts under the page links and ends above the bottom, clear of the rounded corners. */
   /* top: the frame's top padding (16px), so the panel sticks where it already is and does not move. */
   .side { position: sticky; top: calc(var(--hd) + 16px); display: flex; flex-direction: column; max-height: calc(100vh - var(--hd) - 32px); overflow: hidden; }
+  .snav { flex: none; }
   .filters { flex: 1 1 auto; min-height: 0; margin-bottom: 8px; overflow-y: auto; overscroll-behavior: contain;
     scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--slate) 55%, transparent) transparent; }
 }
+/* Phone: the page links are one row that scrolls sideways; wide: a list. */
+.snav { display: flex; gap: 2px; padding: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line-2); }
+.snav a {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  min-height: 34px; padding: 0 10px; border-radius: 7px;
+  color: var(--link); text-decoration: none; font-size: 14px; white-space: nowrap;
+}
+.snav a .i { width: 16px; height: 16px; color: var(--slate); }
+.snav a:hover { background: var(--hover); color: var(--accent); }
+@media (min-width: 900px) { .snav { display: grid; gap: 0; padding: 6px; } .snav a { gap: 10px; min-height: 27px; } }
+
 .sec {
   display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
   width: 100%; padding: 0 16px; margin: 0 0 6px;
@@ -289,18 +287,27 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .acts { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ---- Breadcrumbs (the board's navbar) ----------------------------------- */
+/* One line above the heading: links up, then the page itself. Long names shorten with an ellipsis (the full name is
+   their title); the page's own name gives way first. */
 .crumbs {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px;
-  padding: 3px 12px;
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
-  color: var(--dim); font-size: 13.5px;
+  display: flex; align-items: center; gap: 6px;
+  min-width: 0; padding: 0 2px;
+  color: var(--dim); font-size: 13.5px; white-space: nowrap;
 }
-.crumbs a { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; color: var(--link); text-decoration: none; }
+.crumbs a { min-width: 0; max-width: 32ch; line-height: 28px; color: var(--link); text-decoration: none; }
+.crumbs a, .crumbs__here { overflow: hidden; text-overflow: ellipsis; }
 .crumbs a:hover { color: var(--accent); text-decoration: underline; }
 .crumbs .i { width: 15px; height: 15px; }
+.crumbs a .i { margin-right: 6px; }
 .crumbs__sep { color: var(--dim); opacity: .6; }
-/* Phone: a plain line above the heading, not a card. */
-@media (max-width: 899px) { .crumbs { padding: 0 2px; background: none; border: 0; } }
+.crumbs__here { flex: 1 1 0; min-width: 4ch; color: var(--fg); font-weight: 800; }
+/* Phone: only "‹ parent", a way back that fits the width. */
+@media (max-width: 899px) {
+  .crumbs > :not(a:last-of-type) { display: none; }
+  .crumbs a:last-of-type { max-width: none; }
+  .crumbs a:last-of-type .i { display: none; }
+  .crumbs a:last-of-type::before { content: "‹ "; font-size: 18px; }
+}
 
 /* ---- Page heading -------------------------------------------------------- */
 .mh { display: grid; gap: 2px; padding: 0 2px; }

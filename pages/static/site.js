@@ -46,15 +46,6 @@
     if (p.size) runRows();
   }
 
-  /* Header tabs: mark the section of this page; data-for lists its path prefixes ("/" only the home page itself). */
-  var path = location.pathname;
-  [].forEach.call(d.querySelectorAll('.tabs a'), function (a) {
-    var on = (a.dataset.for || a.getAttribute('href')).split(' ').some(function (p) {
-      return p === '/' ? path === '/' : path.indexOf(p) === 0;
-    });
-    if (on) a.setAttribute('aria-current', 'page');
-  });
-
   /* Theme button: light ↔ dark. Until the first click the system's scheme applies; head.js applies the saved one
      before the first paint. */
   var root = d.documentElement, tb = d.getElementById('tema');

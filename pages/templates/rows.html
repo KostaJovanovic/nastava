@@ -2,7 +2,7 @@
     A row: icon, title with a line under it, then .fr__more (the count columns; one line on a phone). -#}
 
 {%- macro crumb(href, name) -%}
-<svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><a href="{{ href }}">{{ name }}</a>
+<svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><a href="{{ href }}" title="{{ name }}">{{ name }}</a>
 {%- endmacro -%}
 
 {#- The author: a teacher links to their page by full name; another author is a username, which stays in Latin. -#}
