@@ -21,6 +21,7 @@ Every script is a uv script with inline dependencies (`# /// script` header), so
     npx -y pagefind@1.6.0 --site pages/.build/site     # search index; must run after build.py
     uv run pages/build.py --strip pages/.build/site    # then drop the hidden text Pagefind read (~50 MB)
     server.bat [build]              # (re)build and serve on http://localhost:3000 (asks for admin: firewall rule)    python pages/serve.py [port]    # serve the last build; /static/ live from pages/static (no build for CSS/JS)
+    bash ci/deploy.sh [sync]        # (scrape,) build, upload the site, run deploy.yml: publishes from this PC
     bash ci/state.sh pull|push      # get/save nastava.db as an asset of the `state` GitHub release
     cd pages && wrangler deploy     # the Cloudflare Worker
     save.bat quick "message"        # git add + commit + push
@@ -44,9 +45,11 @@ There is no test runner; each test is a plain script.
 ## Architecture
 
 **Data flow:** scrapers → one SQLite file `nastava.db` → `pages/build.py` → static HTML → Pagefind → GitHub Pages →
-Cloudflare Worker (`pages/src/index.js`) on the custom domain. The daily GitHub Action (`.github/workflows/sync.yml`)
-runs that whole chain. There is no server and no backend; the database is never committed (it lives as a zstd tarball
-on the `state` release; the two newest are kept).
+Cloudflare Worker (`pages/src/index.js`) on the custom domains (nastava.valjdakosta.com, nastava.masinci.org). For now
+the chain runs on a PC: `ci/deploy.sh` scrapes and builds there, uploads the site to the `site` release, and
+`.github/workflows/deploy.yml` only publishes it. `sync.yml` runs the whole chain on GitHub but has no schedule until
+the daily run moves to Actions. There is no server and no backend; the database is never committed (it lives as a zstd
+tarball on the `state` release; the two newest are kept).
 
 **Pages are stored as fragments.** `build.py write()` stores each page (all but home and 404) as `<html lang="sr">` +
 its `<title>` + the inside of `<main>`; the rest, the same on every page, is `site/shell.html`. The Worker `join()`s

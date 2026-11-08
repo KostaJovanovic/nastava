@@ -1,0 +1,37 @@
+name: deploy
+
+# Publish a site built on a PC (ci/deploy.sh): the newest asset of the "site" release, as it is. Nothing is scraped
+# or built here.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Get the site
+        run: |
+          name=$(gh release view site -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | sort | tail -n 1)
+          [[ -n $name ]] || { echo "no site asset: run ci/deploy.sh" >&2; exit 1; }
+          mkdir site
+          gh release download site -R "$GITHUB_REPOSITORY" -p "$name" -O - | tar -xz -C site
+          echo "site $name, $(find site -type f | wc -l) files"
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
