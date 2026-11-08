@@ -115,6 +115,73 @@
     if (p.size) { arrange(); runRows(); }
   }
 
+  /* My subjects: the subjects this browser follows, [{href, name}] in localStorage. A subject's page has the star;
+     the home page shows their newest topics, merged from each subject's novo.json (build.py, rows as the home page's).
+     shortcut: a followed subject whose URL changes (a rename) shows no rows until it is followed again. */
+  var mine = function () { try { return JSON.parse(localStorage.getItem('moji')) || []; } catch (e) { return []; } };
+  var keepMine = function (list) { try { localStorage.setItem('moji', JSON.stringify(list)); } catch (e) {} };
+  var star = d.querySelector('[data-star]');
+  if (star) {
+    var showStar = function () {
+      var on = mine().some(function (s) { return s.href === star.dataset.star; });
+      star.setAttribute('aria-pressed', on);
+      star.querySelector('use').setAttribute('href', '/static/icons.svg#i-star' + (on ? '-on' : ''));
+      star.querySelector('span').textContent = on ? 'Pratiš' : 'Prati';
+    };
+    star.addEventListener('click', function () {
+      var list = mine(), rest = list.filter(function (s) { return s.href !== star.dataset.star; });
+      keepMine(rest.length < list.length ? rest : list.concat([{ href: star.dataset.star, name: star.dataset.name }]));
+      showStar();
+    });
+    star.hidden = false;
+    showStar();
+  }
+  var fillMine = function () {
+    var sec = d.getElementById('moji'), list = mine();
+    if (!sec) return;
+    sec.hidden = !list.length;
+    var names = sec.querySelector('.moji__s');
+    names.textContent = '';
+    list.forEach(function (s) {
+      var chip = d.createElement('span'), a = d.createElement('a'), x = d.createElement('button');
+      chip.className = 'chip';
+      a.href = s.href;
+      a.textContent = s.name;
+      x.type = 'button';
+      x.setAttribute('aria-label', 'Ne prati: ' + s.name);
+      x.innerHTML = '<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg>';
+      x.addEventListener('click', function () {
+        keepMine(mine().filter(function (m) { return m.href !== s.href; }));
+        fillMine();
+      });
+      chip.appendChild(a);
+      chip.appendChild(x);
+      names.appendChild(chip);
+    });
+    Promise.all(list.map(function (s) {
+      return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
+        .catch(function () { return { rows: [] }; });
+    })).then(function (all) {
+      // [last post time, row HTML]: the newest across the subjects first. The rows are this site's own build.
+      var rows = [].concat.apply([], all.map(function (j) { return j.rows; }));
+      rows.sort(function (a, b) { return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0; });
+      sec.querySelector('ol').innerHTML = rows.slice(0, 10).map(function (r) { return r[1]; }).join('');
+    });
+  };
+  fillMine();
+  // search.js puts the home page back when the search is cleared, without these rows.
+  d.addEventListener('pocetna', fillMine);
+
+  /* A post's link in a topic: the click goes to it as a link does, and copies its full address. */
+  d.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[data-copy]');
+    if (!a || !navigator.clipboard) return;
+    navigator.clipboard.writeText(a.href).then(function () {
+      a.textContent = 'kopirano';
+      setTimeout(function () { a.textContent = 'link'; }, 1500);
+    }, function () {});
+  });
+
   /* Theme button: light ↔ dark. Until the first click the system's scheme applies; head.js applies the saved one
      before the first paint. */
   var root = d.documentElement, tb = d.getElementById('tema');

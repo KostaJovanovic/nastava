@@ -30,6 +30,8 @@ from studije import PAGES as STUDY_PAGES, SITE as STUDY_SITE, media_path  # noqa
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
 KIND = {"post": "obavestenje", "document": "dokument"}
 RECENT = 20
+# A followed subject's newest topics in its novo.json (the home page's "Moji predmeti", site.js).
+MINE = 10
 PAGEFIND = "pagefind@1.6.0"
 # shortcut: a document page shows and indexes at most this much text; raise it if GitHub Pages' 1 GB allows.
 PAGE_TEXT = 300_000
@@ -156,7 +158,7 @@ def load_items(db, place):
         items.append(dict(id=f"p{p['id']}", kind="post", title=p["title"], smer=smer, subj=subj,
                           subject=subj and subj["name"], date=iso, year=year,
                           topic=p["topic"], num=p["id"], when=p["date"], posted=p["posted"] or "",
-                          author=p["author"], body=p["content"], html=clean_html(p["html"]),
+                          author=p["author"], body=p["content"], html=clean_html(p["html"]), gone=p["gone"],
                           source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}"))
     for d in docs.values():
         p = posts.get(d["post"]) or {}
@@ -251,11 +253,13 @@ def load_topics(db, items):
         rows.sort(key=lambda r: r["num"])
         t = dict(id=tid, title=titles.get(tid) or rows[0]["title"], posts=rows, first=rows[0],
                  last=max(rows, key=lambda r: r["posted"]), subj=rows[0]["subj"], smer=rows[0]["smer"],
+                 gone=all(r["gone"] for r in rows),
                  href=f"/tema/{tid}/" if len(rows) > 1 else f"/item/{rows[0]['id']}/",
                  authors="|".join(sorted({(r["author"] or "").lower() for r in rows})),
                  find=fold(" ".join([titles.get(tid) or ""] + [f"{r['title']} {r['who'] or ''}" for r in rows])))
-        for r in rows:
-            r["thread"] = t
+        for i, r in enumerate(rows):
+            # The posts before and after it in the topic, for a post's own page.
+            r["thread"], r["prev"], r["next"] = t, rows[i - 1] if i else None, rows[i + 1] if i + 1 < len(rows) else None
         topics.append(t)
     return sorted(topics, key=lambda t: t["last"]["posted"], reverse=True)
 
@@ -263,6 +267,7 @@ def load_topics(db, items):
 def render_places(site, topics, smerovi, subjects):
     """One page per smer (its subjects and its own topics) and one per subject (its topics), as the board's forum pages.
     Empty subjects get none."""
+    topic_row = env.get_template("rows.html").module.topic_row
     in_subject, in_smer = defaultdict(list), defaultdict(list)
     for t in topics:
         if t["subj"]:
@@ -276,6 +281,10 @@ def render_places(site, topics, smerovi, subjects):
             authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
             write(site / s["href"].strip("/") / "index.html",
                   env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors))
+            # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
+            (site / s["href"].strip("/") / "novo.json").write_text(json.dumps(
+                {"name": s["name"], "rows": [[t["last"]["posted"], str(topic_row(t, place=True))] for t in rows[:MINE]]},
+                ensure_ascii=False), encoding="utf-8")
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m and s["count"]), key=lambda s: fold(s["name"]))
         rows = in_smer[m["id"]]
@@ -289,22 +298,43 @@ def render_places(site, topics, smerovi, subjects):
 
 
 def render_study_pages(site, db):
-    """The schedule pages of www.mas.bg.ac.rs (studije.py), newest version, with their files served from this site."""
+    """The schedule pages of www.mas.bg.ac.rs (studije.py), with their files served from this site. The newest version
+    of a page is at /studije/<slug>/; each older one has a page of its own, linking the files as they were then."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'study_pages'").fetchone():
         return
-    files = {}
-    for r in db.execute("SELECT path, data FROM study_files f WHERE last_seen = (SELECT max(last_seen) FROM study_files WHERE path = f.path)"):
-        files[r["path"]] = f"/studije/files/{quote(r['path'])}"
-        write_bytes(site / "studije" / "files" / r["path"], r["data"])
-    for r in db.execute("SELECT * FROM study_pages p WHERE last_seen = (SELECT max(last_seen) FROM study_pages WHERE slug = p.slug)"):
-        source = f"{STUDY_SITE}studije/{r['slug']}"
-        html = clean_html(r["html"], source, lambda value: files.get(media_path(value))) or ""
-        # The page's first heading is usually its title, which the page already has as h1.
-        m = re.search(r"<h([12])[^>]*>(.*?)</h\1>", html, re.S)
-        if m and fold(re.sub(r"<[^>]+>", "", m[2]).strip()) == fold(r["title"]):
-            html = html[:m.start()] + html[m.end():]
-        write(site / "studije" / r["slug"] / "index.html",
-              env.get_template("studije.html").render(page=dict(r), html=html, source_url=source))
+    # Every version of every file: the one seen last keeps the plain URL, an older one is under its hash.
+    newest, versions_of = {}, defaultdict(list)
+    for r in db.execute("SELECT path, sha, data, first_seen FROM study_files ORDER BY path, last_seen DESC"):
+        rel = f"v/{r['sha'][:12]}/{r['path']}" if r["path"] in newest else r["path"]
+        write_bytes(site / "studije" / "files" / rel, r["data"])
+        url = f"/studije/files/{quote(rel)}"
+        newest.setdefault(r["path"], url)
+        versions_of[r["path"]].append((r["first_seen"], url))
+
+    def file_then(path, when):
+        """A file as an older page version linked it: the version first seen last by then, else the oldest.
+        shortcut: a file that went back to an earlier version links the one before; fine while that is rare."""
+        seen = sorted(versions_of.get(path, []))
+        then = [url for first, url in seen if first <= when]
+        return then[-1] if then else seen[0][1] if seen else None
+
+    pages = defaultdict(list)
+    for r in db.execute("SELECT * FROM study_pages ORDER BY slug, last_seen DESC"):
+        pages[r["slug"]].append(dict(r))
+    for name, versions in pages.items():
+        source = f"{STUDY_SITE}studije/{name}"
+        for i, v in enumerate(versions):
+            v["href"] = f"/studije/{name}/" if i == 0 else f"/studije/{name}/{v['first_seen'][:10]}-{v['sha'][:6]}/"
+        for v in versions:
+            when = None if v is versions[0] else v["last_seen"]
+            local = lambda value: (p := media_path(value)) and (file_then(p, when) if when else newest.get(p))
+            html = clean_html(v["html"], source, local) or ""
+            # The page's first heading is usually its title, which the page already has as h1.
+            m = re.search(r"<h([12])[^>]*>(.*?)</h\1>", html, re.S)
+            if m and fold(re.sub(r"<[^>]+>", "", m[2]).strip()) == fold(v["title"]):
+                html = html[:m.start()] + html[m.end():]
+            write(site / v["href"].strip("/") / "index.html", env.get_template("studije.html").render(
+                page=v, current=versions[0], versions=versions, html=html, source_url=source))
 
 
 def load_teachers(db, subjects):

@@ -39,7 +39,9 @@
 {{ post(it, 'h1', link=false) }}
 <p class="acts">
   {%- if _many %}<a class="btn btn--pri" href="{{ it.thread.href }}#p{{ it.num }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-msgs"></use></svg>Cela tema</a>{% endif %}
-  {%- if it.subj %}<a class="btn" href="{{ it.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Sve teme: {{ it.subj.name }}</a>{% endif %}
+  {%- if it.prev %}<a class="btn" href="/item/{{ it.prev.id }}/" rel="prev" title="{{ it.prev.title }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Prethodna objava</a>{% endif %}
+  {%- if it.next %}<a class="btn" href="/item/{{ it.next.id }}/" rel="next" title="{{ it.next.title }}">Sledeća objava<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg></a>{% endif %}
+  {%- if it.subj %}<a class="btn" href="{{ it.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Sve teme: {{ it.subj.name }}</a>{% endif %}
 </p>
 {% endif %}
 {% endblock %}

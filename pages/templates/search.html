@@ -13,6 +13,13 @@
   <h1 id="res-h">Arhiva foruma nastave</h1>
 </div>
 <div id="res">
+  {#- The subjects this browser follows (a star on a subject's page) and their newest topics: site.js fills it from each
+      subject's novo.json. Hidden when none is followed, or without site.js. -#}
+  <section class="fb fb--topics" id="moji" hidden>
+    <div class="fb__h"><h2>Moji predmeti</h2><span>Odgovori</span><span>Poslednja objava</span></div>
+    <p class="chips moji__s"></p>
+    <ol class="fb__rows"></ol>
+  </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
   {{ topic_rows('Najnovije teme', recent, place=true) }}
   <p class="stats">Ukupno objava <b>{{ stats.posts }}</b> · tema <b>{{ stats.topics }}</b> · nastavnika <b>{{ stats.teachers }}</b></p>

@@ -33,9 +33,13 @@ function build(tag, props, children) {
 	return node;
 }
 
+// The order of a search with a query: by relevance, or newest first (?red=novije). Without a query: always newest.
+let newest = false;
+
 function readState() {
 	const f = new FormData(form);
 	return {
+		newest,
 		q: String(f.get("q") ?? "").trim(),
 		kind: String(f.get("kind") ?? ""),
 		smer: String(f.get("smer") ?? ""),
@@ -50,6 +54,7 @@ function writeUrl(s, page) {
 	const p = new URLSearchParams();
 	// The query folded (Latin, no diacritics), so a URL never has Cyrillic; the search folds it anyway.
 	if (s.q) p.set("q", fold(s.q));
+	if (s.q && s.newest) p.set("red", "novije");
 	if (s.kind) p.set("kind", s.kind);
 	if (s.smer) p.set("smer", s.smer);
 	for (const x of s.subjects) p.append("subject", x);
@@ -130,6 +135,20 @@ function renderRow(data) {
 function renderHeading(s, total) {
 	const h1 = build("h1", { id: "res-h", role: "status" }, [build("b", { textContent: String(total) }, []), rezultata(total)]);
 	if (s.q) h1.append(" za ", build("span", { className: "q", textContent: `„${s.q}“` }, []));
+	heading.replaceChildren(h1);
+	if (s.q) {
+		const order = build("p", { className: "order" }, ["Redosled: "]);
+		for (const [value, label] of [[false, "najrelevantnije"], [true, "najnovije"]]) {
+			const b = build("button", { type: "button", textContent: label }, []);
+			b.setAttribute("aria-pressed", String(s.newest === value));
+			b.addEventListener("click", () => {
+				newest = value;
+				run();
+			});
+			order.append(b);
+		}
+		heading.append(order);
+	}
 	const chips = build("p", { className: "chips" }, []);
 	const active = '.filters input[form="sf"]:checked, .filters input[type="number"][form="sf"], #sf input[type="hidden"]';
 	for (const input of document.querySelectorAll(active)) {
@@ -145,7 +164,6 @@ function renderHeading(s, total) {
 		});
 		chips.append(chip);
 	}
-	heading.replaceChildren(h1);
 	if (chips.children.length) heading.append(chips);
 }
 
@@ -229,9 +247,12 @@ async function showPage(page, id = runs) {
 	} else {
 		const batch = await Promise.all(results.slice((page - 1) * PAGE, page * PAGE).map((r) => r.data()));
 		if (id !== runs) return false;
-		// A teacher from a link (/?autor=username): the chip shows their name, which every result has.
-		const author = form.querySelectorAll('input[name="autor"]');
-		if (author.length === 1 && batch[0].meta.autor) author[0].dataset.name = batch[0].meta.autor;
+		// A teacher or a subject from a link (/?autor=username, /?subject=slug): the chip shows the name, which every
+		// result has.
+		for (const [name, meta] of [["autor", "autor"], ["subject", "predmet"]]) {
+			const input = form.querySelectorAll(`input[name="${name}"]`);
+			if (input.length === 1 && batch[0].meta[meta]) input[0].dataset.name = batch[0].meta[meta];
+		}
 		const table = resTpl.content.firstElementChild.cloneNode(true);
 		table.querySelector("ol").append(...batch.map(renderRow));
 		res.replaceChildren(table);
@@ -253,6 +274,8 @@ function showHome() {
 	status.querySelector(".pg")?.remove();
 	updateCounts({ vrsta: TOTALS.vrsta ?? {}, smer: TOTALS.smer ?? {} });
 	shown();
+	// site.js fills "Moji predmeti" again.
+	document.dispatchEvent(new Event("pocetna"));
 }
 
 // wait: the debounce in ms. Only typing needs one; a click searches at once.
@@ -267,7 +290,8 @@ async function run(page = 1, wait = 0) {
 	}
 	if (!s.q && !s.kind && !s.smer && !s.subjects.length && !s.authors.length && !s.from && !s.to) return showHome();
 	const query = s.q ? fold(s.q) : null;
-	const search = await pagefind.debouncedSearch(query, { filters: filtersOf(s), sort: s.q ? undefined : { datum: "desc" } }, wait);
+	const sort = s.q && !s.newest ? undefined : { datum: "desc" };
+	const search = await pagefind.debouncedSearch(query, { filters: filtersOf(s), sort }, wait);
 	if (search === null || id !== runs) return;
 	const counts = await groupCounts(s, query, search);
 	if (id !== runs) return;
@@ -284,6 +308,10 @@ async function run(page = 1, wait = 0) {
 function restoreFromUrl() {
 	const p = new URLSearchParams(location.search);
 	form.elements.q.value = p.get("q") ?? "";
+	newest = p.get("red") === "novije";
+	// "Pretraži tekst objava" on a subject's page: the box is where the search goes on (wide screens; on a phone the
+	// keyboard would cover the results).
+	if (!p.get("q") && p.has("subject") && matchMedia("(min-width: 900px)").matches) form.elements.q.focus();
 	for (const input of document.querySelectorAll('input[form="sf"]')) {
 		if (input.name === "kind" || input.name === "smer") input.checked = input.value === (p.get(input.name) ?? "");
 		else if (input.name === "from" || input.name === "to") input.value = p.get(input.name) ?? "";

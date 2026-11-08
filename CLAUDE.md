@@ -77,7 +77,9 @@ if any of them failed.
 **Site build (`pages/build.py` + `pages/templates/` + `pages/static/`):** Jinja2 templates, post HTML sanitized with
 nh3 (`clean_html`). Pages: home (smerovi), `/smer/<smer>/`, `/predmet/<smer>/<subject>/`, `/tema/<id>/` (topics with
 several posts), `/item/<id>/` (one post; this is what Pagefind indexes), `/nastavnici/` and `/nastavnik/<name>/`,
-schedule pages. Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
+schedule pages (the newest at `/studije/<slug>/`, each older version at `/studije/<slug>/<date>-<sha>/` with the files
+as they were then). Each subject page has a `novo.json` beside it (its newest topic rows), which `site.js` merges into
+"Moji predmeti" on the home page for the subjects a browser follows (a star, kept in localStorage). Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
 appended); templates link with `.href`, never build these paths themselves. A forum author is linked to a teacher when
 the username equals the teacher's e-mail before `@`; a teacher's profile subject is matched to the board by code, or by
 name when they posted in a subject of that name.
