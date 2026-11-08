@@ -17,7 +17,7 @@ with sync_playwright() as p:
 		page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('rezultat')", timeout=20000)
 		page.wait_for_load_state('networkidle')  # the rows render after the heading, once their fragments load
 		heading = page.inner_text('#res-h')
-		first = page.locator('.row .t a').first
+		first = page.locator('#res .fr__a').first
 		print(f'{q!r:20} -> {heading!r:40} {first.inner_text() if first.count() else "-"}')
 	done = "document.querySelector('#res-h')?.textContent.includes('rezultat')"
 	page.goto(f'{base}/?q=rezultati')
@@ -38,6 +38,16 @@ with sync_playwright() as p:
 	page.goto(f'{base}/?smer=катедре')
 	page.wait_for_function(done)
 	page.wait_for_load_state('networkidle')
-	print('smer filter:', page.inner_text('#res-h'), '| first:', page.locator('.row .s').first.inner_text())
+	print('smer filter:', page.inner_text('#res-h'), '| first:', page.locator('#res .fr__s .s1').first.inner_text())
+	# An author filter from the URL, as a teacher page links it.
+	page.goto(f'{base}/?autor=ddjukic')
+	page.wait_for_function(done)
+	page.wait_for_load_state('networkidle')
+	chip = page.locator('.chip').first.inner_text()
+	print('autor filter:', page.inner_text('#res-h'), '| first author:', page.locator('#res .fr__s .s2').first.inner_text(), '| chip:', chip)
+	assert 'Đukić' in chip, chip  # the teacher's name, not the username
+	page.click('.chip')  # removing the chip clears the filter: the board index again
+	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('Arhiva')")
+	assert 'autor' not in page.url, page.url
 	print('page errors:', errors or 'none')
 	browser.close()

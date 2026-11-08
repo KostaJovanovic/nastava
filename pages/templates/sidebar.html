@@ -1,8 +1,14 @@
-{#- The side panel of every page (base.html). It is static: search.js sets the choices from the URL on the
-    search page; on other pages a choice submits the search form to the search page.
-    side: the archive's counts (build.py side_panel). full_side: the search page, which needs the subject list
-    in the page; other pages load it from /predmeti.html (84 KB, too much for every one of the 23,000 pages). -#}
-<aside class="side" aria-label="Filteri">
+{#- The side panel of every page (base.html): the page links and the search filters, short enough to fit the screen.
+    It is static: search.js sets the choices from the URL on the search page; on other pages a choice submits the
+    search form to the search page. side: the archive's counts (build.py side_panel). -#}
+<aside class="side" aria-label="Meni i filteri">
+  <nav class="snav" aria-label="Stranice">
+    <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Forum</a>
+    <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
+    {%- for slug, name in side.study_pages.items() %}
+    <a href="/studije/{{ slug }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>{{ name }}</a>
+    {%- endfor %}
+  </nav>
   <details class="filters" open>
     <summary class="filters__sum">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
@@ -11,71 +17,43 @@
     </summary>
     <div class="filters__body">
 
-      <fieldset class="fgroup">
-        <legend class="sec">Vrsta</legend>
-        <div>
-          <label class="opt is-on"><input type="radio" name="kind" value="" form="sf" checked><span class="k" aria-hidden="true"><svg class="i"><use href="#i-list"></use></svg></span><span class="opt__name">Sve</span><span class="n">{{ side.total }}</span></label>
-          <label class="opt"><input type="radio" name="kind" value="obavestenje" form="sf"><span class="k k--post" aria-hidden="true"><svg class="i"><use href="#i-megaphone"></use></svg></span><span class="opt__name">Obaveštenja</span><span class="n">{{ side.kinds.get('obavestenje', 0) }}</span></label>
-          <label class="opt"><input type="radio" name="kind" value="dokument" form="sf"><span class="k k--doc" aria-hidden="true"><svg class="i"><use href="#i-file"></use></svg></span><span class="opt__name">Dokumenti</span><span class="n">{{ side.kinds.get('dokument', 0) }}</span></label>
-        </div>
-      </fieldset>
-
-      {#- The faculty's schedules, archived with their files (studije.py), and the teachers (nastavnici.py). -#}
-      <nav class="fgroup" aria-label="Rasporedi i nastavnici">
-        <div>
-          {%- for slug, name in side.study_pages.items() %}
-          <a class="opt" href="/studije/{{ slug }}/"><span class="k" aria-hidden="true"><svg class="i"><use href="#i-calendar"></use></svg></span><span class="opt__name">{{ name }}</span></a>
-          {%- endfor %}
-          <a class="opt" href="/nastavnici/"><span class="k" aria-hidden="true"><svg class="i"><use href="#i-user"></use></svg></span><span class="opt__name">Nastavnici</span></a>
-        </div>
-      </nav>
-
+      {#- The short name (OAS, MAS) keeps each smer on one line; the title and the chip have the full name. -#}
       <fieldset class="fgroup">
         <legend class="sec">Smer</legend>
         <div>
-          <label class="opt is-on"><input type="radio" name="smer" value="" form="sf" checked><span class="k" aria-hidden="true"><svg class="i"><use href="#i-list"></use></svg></span><span class="opt__name">Svi</span><span class="n">{{ side.total }}</span></label>
+          <label class="opt is-on"><input type="radio" name="smer" value="" form="sf" checked><i class="rb" aria-hidden="true"></i><span class="opt__name">Svi</span><span class="n">{{ side.total }}</span></label>
           {%- for m in side.smerovi %}
-          <label class="opt"><input type="radio" name="smer" value="{{ m.name }}" form="sf"><i class="cb" aria-hidden="true"></i><span class="opt__name">{{ m.name }}</span><span class="n">{{ m.count }}</span></label>
+          <label class="opt" title="{{ m.name }}"><input type="radio" name="smer" value="{{ m.name }}" data-name="{{ m.name }}" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">{{ m.short }}</span><span class="n">{{ m.count }}</span></label>
           {%- endfor %}
         </div>
       </fieldset>
 
+      {#- Documents are not archived for now (documents.py is not run); the group shows when there are some. -#}
+      {%- if side.kinds.get('dokument') %}
       <fieldset class="fgroup">
-        <legend class="sec">Predmet <span>više izbora</span></legend>
+        <legend class="sec">Vrsta</legend>
         <div>
-          <div class="sfind" data-subject-search hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
-            <label class="vh" for="subj-q">Traži predmet</label>
-            <input id="subj-q" type="search" placeholder="Traži predmet…" autocomplete="off">
-            <kbd aria-hidden="true">p</kbd>
-          </div>
-          <div class="subj" data-subject-list{% if not full_side %} data-src="/predmeti.html"{% endif %}>
-            {%- if full_side %}{% include "predmeti.html" %}{% endif -%}
-          </div>
-          <p class="hint" data-subject-hint aria-live="polite"></p>
+          <label class="opt is-on"><input type="radio" name="kind" value="" form="sf" checked><i class="rb" aria-hidden="true"></i><span class="opt__name">Sve</span><span class="n">{{ side.total }}</span></label>
+          <label class="opt"><input type="radio" name="kind" value="obavestenje" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">Obaveštenja</span><span class="n">{{ side.kinds.get('obavestenje', 0) }}</span></label>
+          <label class="opt"><input type="radio" name="kind" value="dokument" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">Dokumenti</span><span class="n">{{ side.kinds.get('dokument', 0) }}</span></label>
         </div>
       </fieldset>
+      {%- endif %}
 
+      {#- A year applies when it changes (site.js), as the other choices do. -#}
       <fieldset class="fgroup">
         <legend class="sec">Godina</legend>
-        <div>
-          {% if side.year_hist %}
-          {%- set _mx = (side.year_hist | map(attribute=1) | max) or 1 -%}
-          <div class="hist" aria-hidden="true">
-            {%- for y, c in side.year_hist %}<i class="in" style="height:{{ [2, (c / _mx * 40) | round | int] | max }}px" title="{{ y }}: {{ c }}"></i>{% endfor %}
-          </div>
-          <div class="hist-l" aria-hidden="true"><span>{{ side.year_hist[0][0] }}</span><span>{{ side.year_hist[-1][0] }}</span></div>
-          {% endif %}
-          <div class="years">
-            <label for="f-from">od<input class="field" type="number" id="f-from" name="from" min="2014" max="2100" inputmode="numeric" placeholder="2014" form="sf"></label>
-            <label for="f-to">do<input class="field" type="number" id="f-to" name="to" min="2014" max="2100" inputmode="numeric" placeholder="danas" form="sf"></label>
-          </div>
+        {%- if side.year_hist %}
+        {%- set _mx = (side.year_hist | map(attribute=1) | max) or 1 %}
+        <div class="hist" aria-hidden="true">
+          {%- for y, c in side.year_hist %}<i style="height:{{ [2, (c / _mx * 28) | round | int] | max }}px" title="{{ y }}: {{ c }}"></i>{% endfor %}
+        </div>
+        {%- endif %}
+        <div class="years">
+          <label for="f-from">od</label><input class="field" type="number" id="f-from" name="from" min="2014" max="2100" inputmode="numeric" placeholder="{{ side.year_hist[0][0] if side.year_hist else 2014 }}" form="sf">
+          <label for="f-to">do</label><input class="field" type="number" id="f-to" name="to" min="2014" max="2100" inputmode="numeric" placeholder="{{ side.year_hist[-1][0] if side.year_hist else 'danas' }}" form="sf">
         </div>
       </fieldset>
-
-      <div class="factions">
-        <button class="btn btn--inv" type="submit" form="sf">Primeni</button>
-      </div>
     </div>
   </details>
 </aside>

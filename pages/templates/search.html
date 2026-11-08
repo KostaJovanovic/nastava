@@ -1,132 +1,52 @@
 {% extends "base.html" %}
+{% from "rows.html" import forum_rows, topic_rows %}
 
-{% block title %}{% if q %}{{ q }} – pretraga{% else %}Pretraga{% endif %}{% endblock %}
+{% block title %}Forum nastave{% endblock %}
+
+{% block navbar %}{% endblock %}
 
 {% block main %}
-{#- ---------------------------------------------------------------------
-    Settings. Change these if your routes or "kind" values differ.
-    --------------------------------------------------------------------- -#}
-{%- set _item = item_prefix | default('/item/') -%}
-{%- set KIND_POST = 'obavestenje' -%}
-{%- set KIND_DOC = 'dokument' -%}
-
-{#- Current filters. p.subject may be one string or a list (multi-select). -#}
-{%- set f_kind = p.kind or '' -%}
-{%- set f_subjects = (p.subject if (p.subject is iterable and p.subject is not string) else ([p.subject] if p.subject else [])) | list -%}
-{%- set f_from = p.from or '' -%}
-{%- set f_to = p.to or '' -%}
-{%- set n_active = (1 if f_kind else 0) + (f_subjects | length) + (1 if (f_from or f_to) else 0) -%}
-{%- set is_home = not q and n_active == 0 -%}
-{%- set n_total = total if total is defined else (results | length if results else 0) -%}
-
-{#- Optional facet counts: facets = {'kind': {...}, 'subject': {...}}; year_hist = [(year, count), ...] -#}
-{%- set _fk = (facets.kind if (facets is defined and facets and facets.kind) else {}) -%}
-{%- set _fs = (facets.subject if (facets is defined and facets and facets.subject) else {}) -%}
-
-{#- Query string from the current search. drop: keys to leave out; drop_subject: one subject to leave out. -#}
-{%- macro qs(drop=[], drop_subject=none) -%}
-{%- set pairs = [('q', q), ('kind', f_kind)] -%}
-{%- for s in f_subjects %}{% if s != drop_subject %}{% set _ = pairs.append(('subject', s)) %}{% endif %}{% endfor -%}
-{%- set _ = pairs.extend([('from', f_from), ('to', f_to)]) -%}
-{%- for k, v in pairs if v and k not in drop -%}
-{{ k }}={{ v | urlencode }}{% if not loop.last %}&amp;{% endif %}
-{%- endfor -%}
-{%- endmacro -%}
-
-{#- Link to page n. "args" can be a ready query string or a dict. -#}
-{%- macro page_href(n) -%}
-?{% if args is mapping %}{% for k, v in args.items() if v and k != 'page' %}{% if v is iterable and v is not string %}{% for x in v %}{{ k | urlencode }}={{ x | urlencode }}&amp;{% endfor %}{% else %}{{ k | urlencode }}={{ v | urlencode }}&amp;{% endif %}{% endfor %}{% elif args %}{{ args }}&amp;{% endif %}page={{ n }}
-{%- endmacro -%}
-
-{%- macro is_doc(kind) -%}{{ 'y' if (kind | string | lower) in (KIND_DOC, 'document', 'doc', 'dokumenti') else '' }}{%- endmacro -%}
-
-{%- macro kletter(kind) -%}
-{%- if is_doc(kind) -%}<span class="k k--doc" title="Dokument"><svg class="i" aria-hidden="true"><use href="#i-file"></use></svg><span class="vh">Dokument</span></span>
-{%- else -%}<span class="k k--post" title="Obaveštenje"><svg class="i" aria-hidden="true"><use href="#i-megaphone"></use></svg><span class="vh">Obaveštenje</span></span>{%- endif -%}
-{%- endmacro -%}
-
-{%- set X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>' | safe -%}
-
-<div class="shell">
-
-  {#- The filters are the side panel of base.html (sidebar.html). -#}
-
-  {# ===================== Results ===================== #}
-  <section class="pane" aria-labelledby="res-h">
-    <div class="mh">
-      {% if is_home %}
-      <h1 id="res-h"><b>Najnovije</b> u arhivi</h1>
-      {% else %}
-      <h1 id="res-h" role="status"><b>{{ n_total }}</b> rezultata{% if q %} za <span class="q">„{{ q }}“</span>{% endif %}</h1>
-      {% endif %}
-      {% if f_kind %}<a class="tag" href="?{{ qs(['kind']) }}" aria-label="Ukloni filter vrste"><span>{{ 'Dokumenti' if is_doc(f_kind) else 'Obaveštenja' }}</span>{{ X }}</a>{% endif %}
-      {% for s in f_subjects %}<a class="tag" href="?{{ qs(drop_subject=s) }}" aria-label="Ukloni predmet {{ s }}"><span>{{ s }}</span>{{ X }}</a>{% endfor %}
-      {% if f_from or f_to %}<a class="tag" href="?{{ qs(['from', 'to']) }}" aria-label="Ukloni filter godina"><span>{{ f_from or '2014' }}–{{ f_to or 'danas' }}</span>{{ X }}</a>{% endif %}
-      {% if n_active > 1 %}<a class="clear" href="?{{ qs(['kind', 'subject', 'from', 'to']) }}">očisti sve</a>{% endif %}
-    </div>
-
-    <div id="res">
-    {% if is_home %}
-    {% if smerovi %}
-    <p class="sugg"><span>smerovi:</span>
-      {%- for m in smerovi %}
-      <a href="/smer/{{ m.id }}/">{{ m.name }}</a>
-      {%- endfor %}
-    </p>
-    {% endif %}
-    <p class="sugg"><span>česte pretrage:</span>
-      {%- for s in ['rezultati ispita', 'raspored', 'termin ispita', 'uvid u radove', 'kolokvijum', 'predavanja'] %}
-      <a href="?q={{ s | urlencode }}">{{ s }}</a>
-      {%- endfor %}
-    </p>
-    {% endif %}
-
-    {%- set _rows = results if results else (recent if (is_home and recent is defined and recent) else []) -%}
-    {% if _rows %}
-    <div class="th" aria-hidden="true"><span></span><span>Datum</span><span>Predmet</span><span>Naslov</span></div>
-    <ol class="rows">
-      {%- for r in _rows %}
-      <li class="row">
-        {{ kletter(r.kind | default(KIND_POST)) }}
-        {% if r.date %}<time class="d" datetime="{{ r.date }}">{{ r.date }}</time>{% elif r.year %}<time class="d" datetime="{{ r.year }}">{{ r.year }}</time>{% else %}<span class="d"></span>{% endif %}
-        <span class="s">{{ r.subject }}</span>
-        <div class="tx">
-          <h2 class="t"><a href="{{ _item }}{{ r.id }}/">{{ r.title }}</a></h2>
-          {% if r.snippet %}<p class="x">{{ r.snippet | safe }}</p>{% endif %}
-        </div>
+{#- The home page is the board index; search.js shows the results in #res when the URL has a search or a filter.
+    Until then the board index is hidden, so it never shows under a search (style.css .searching). -#}
+<script>if (/[?&](q|kind|smer|subject|autor|from|to)=./.test(location.search)) document.documentElement.classList.add("searching");</script>
+<div class="mh">
+  <h1 id="res-h">Arhiva foruma nastave</h1>
+  <p class="mh__sub">Sva obaveštenja sa nastava.mas.bg.ac.rs od 2014. Pretraga radi ćirilicom i latinicom, sa kvačicama i bez njih.</p>
+</div>
+<div id="res">
+  {{ forum_rows('Studije', smerovi, '/smer/') }}
+  <section class="fb fb--forums">
+    <div class="fb__h"><h2>Fakultet</h2><span></span><span></span><span>Sa sajta mas.bg.ac.rs</span></div>
+    <ol class="fb__rows">
+      <li class="fr">
+        <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-users"></use></svg></span>
+        <div class="fr__t"><a class="fr__a" href="/nastavnici/">Nastavnici</a><p class="fr__sub">{{ stats.teachers }} {{ stats.teachers | pl('nastavnik') }}: katedre, kabineti, mejlovi, konsultacije i predmeti</p></div>
+        <div class="fr__more"></div>
+      </li>
+      {%- for slug, name in side.study_pages.items() %}
+      <li class="fr">
+        <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-calendar"></use></svg></span>
+        <div class="fr__t"><a class="fr__a" href="/studije/{{ slug }}/">{{ name }}</a><p class="fr__sub">poslednja verzija stranice, sa svim fajlovima</p></div>
+        <div class="fr__more"></div>
       </li>
       {%- endfor %}
     </ol>
-    {% elif not is_home %}
-    <div class="empty">
-      <h2>0 rezultata{% if q %} za „{{ q }}“{% endif %}</h2>
-      <ul>
-        <li>proverite pravopis ili upišite kraći pojam</li>
-        {% if n_active %}<li><a href="?{{ qs(['kind', 'subject', 'from', 'to']) }}">uklonite filtere</a> i tražite u celoj arhivi</li>{% endif %}
-        <li>upišite opštiji pojam: „ispit“ umesto „ispit iz Mehanike 1 u junu“</li>
-      </ul>
-      <p class="try">probajte: <a href="?q=rezultati+ispita">rezultati ispita</a> <a href="?q=kolokvijum">kolokvijum</a> <a href="?q=raspored">raspored</a></p>
-    </div>
-    {% endif %}
-    </div>
-
-    <nav class="status" aria-label="Stranice">
-      <span class="keys"><span><kbd>/</kbd> traži</span><span><kbd>j</kbd><kbd>k</kbd> kretanje</span><span><kbd><svg class="i" aria-hidden="true"><use href="#i-enter"></use></svg><span class="vh">Enter</span></kbd> otvori</span><span><kbd>p</kbd> predmet</span></span>
-      {%- set _prev = '<svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>nazad' | safe -%}
-      {%- set _next = 'dalje<svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg>' | safe -%}
-      {% if pages and pages > 1 %}
-      <span class="pg">
-        {% if page > 1 %}<a class="btn" href="{{ page_href(page - 1) }}" rel="prev">{{ _prev }}</a>{% else %}<span class="btn" aria-disabled="true">{{ _prev }}</span>{% endif %}
-        <span>stranica <b>{{ page }}</b> od {{ pages }}</span>
-        {% if page < pages %}<a class="btn" href="{{ page_href(page + 1) }}" rel="next">{{ _next }}</a>{% else %}<span class="btn" aria-disabled="true">{{ _next }}</span>{% endif %}
-      </span>
-      {% endif %}
-    </nav>
   </section>
+  {{ topic_rows('Najnovije teme', recent, place=true) }}
+  <p class="stats">Ukupno objava <b>{{ stats.posts }}</b> · tema <b>{{ stats.topics }}</b> · nastavnika <b>{{ stats.teachers }}</b></p>
 </div>
-{#- Static build: search.js fills #res from Pagefind with this row markup. -#}
+<nav class="status" aria-label="Stranice">
+  <span class="keys"><span><kbd>/</kbd> traži</span><span><kbd>j</kbd><kbd>k</kbd> kretanje</span><span><kbd><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-enter"></use></svg><span class="vh">Enter</span></kbd> otvori</span></span>
+</nav>
+{#- search.js fills #res from Pagefind with this markup. -#}
+<template id="res-tpl">
+  <section class="fb fb--posts">
+    <div class="fb__h"><h2>Rezultati</h2><span>Predmet · autor</span><span>Datum</span></div>
+    <ol class="fb__rows"></ol>
+  </section>
+</template>
 <template id="row-tpl">
-  <li class="row"><span class="k"><svg class="i" aria-hidden="true"><use href="#i-megaphone"></use></svg><span class="vh"></span></span><time class="d"></time><span class="s"></span><div class="tx"><h2 class="t"><a></a></h2><p class="x"></p></div></li>
+  <li class="fr"><span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-msg"></use></svg></span><div class="fr__t"><a class="fr__a"></a><p class="fr__x"></p></div><div class="fr__more"><span class="fr__s"><span class="s1"></span><span class="s2"></span></span><time class="fr__d"></time></div></li>
 </template>
 <script type="module" src="/static/search.js" data-years="{{ years_json }}"></script>
 {% endblock %}

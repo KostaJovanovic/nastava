@@ -1,21 +1,28 @@
 {% extends "base.html" %}
-{% from "rows.html" import item_rows %}
+{% from "rows.html" import crumb, topic_rows %}
 
 {% block title %}{{ subj.name }}{% endblock %}
+{% block crumbs %}{{ crumb('/smer/' ~ subj.smer.id ~ '/', subj.smer.name) }}{% endblock %}
 
 {% block main %}
-<section class="pane pane--list" aria-labelledby="title">
-  <div class="mh">
-    <nav class="crumbs" aria-label="Navigacija">
-      <a href="/"><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>početna</a>
-      <svg class="i crumbs__sep" aria-hidden="true"><use href="#i-chevron-right"></use></svg><a href="/smer/{{ subj.smer.id }}/">{{ subj.smer.name }}</a>
-    </nav>
-    <h1 id="title"><b>{{ subj.name }}</b> · {{ subj.count }} obaveštenja{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}</h1>
-    <a class="tag" href="/?smer={{ subj.smer.name | urlencode }}&amp;subject={{ subj.name | urlencode }}"><span>pretraži u ovom predmetu</span></a>
-  </div>
+<div class="mh">
+  <h1 id="title">{{ subj.name }}</h1>
+  <p class="mh__sub">{{ subj.topics }} {{ subj.topics | pl('tema') }} · {{ subj.count }} {{ subj.count | pl('objava') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}</p>
   {%- if subj.teachers %}
-  <p class="sugg">nastavnici:{% for t in subj.teachers %} <a href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a>{% endfor %}</p>
+  <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
   {%- endif %}
-  {{ item_rows(items) }}
-</section>
+</div>
+{% call topic_rows('Teme', topics, filter=true) %}
+<form class="fbar" data-filter role="search" onsubmit="return false">
+  <label class="vh" for="f-q">Filtriraj teme</label>
+  <input class="field" id="f-q" name="q" type="search" placeholder="Filtriraj teme ovog predmeta…" autocomplete="off" data-f="find">
+  <label class="vh" for="f-a">Autor</label>
+  {#- value: the username; pismo.js changes the option text, not the value. -#}
+  <select class="field" id="f-a" name="autor" data-f="a">
+    <option value="">Svi autori</option>
+    {%- for key, name in authors %}<option value="{{ key }}">{{ name }}</option>{% endfor %}
+  </select>
+  <span class="fbar__n">prikazano <b data-shown>{{ topics | length }}</b></span>
+</form>
+{% endcall %}
 {% endblock %}

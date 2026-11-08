@@ -68,6 +68,11 @@
 		}
 	}
 
+	// The button's label per mode (the part in <span> shows on wide screens), in the order a click cycles them.
+	const LABEL = { lat: ["Lat", "inica"], cyr: ["Ћир", "илица"], orig: ["Orig", "inalno"] };
+	const MODES = Object.keys(LABEL);
+	if (!LABEL[mode]) mode = "lat";
+
 	const title = document.title;
 	function set(m) {
 		mode = m;
@@ -75,7 +80,12 @@
 		document.documentElement.lang = m === "cyr" ? "sr-Cyrl" : m === "lat" ? "sr-Latn" : "sr";
 		document.title = convert(title);
 		apply(document.body);
-		for (const b of document.querySelectorAll("[data-pismo]")) b.setAttribute("aria-pressed", String(b.dataset.pismo === m));
+		const b = document.getElementById("pismo");
+		if (!b) return;
+		const [short, rest] = LABEL[m];
+		b.dataset.pismo = m;
+		b.innerHTML = `${short}<span>${rest}</span>`;
+		b.setAttribute("aria-label", "Pismo: " + short + rest);
 	}
 
 	// Our own changes are to text (characterData), which this does not watch, so it cannot loop.
@@ -83,8 +93,7 @@
 		for (const r of records) for (const n of r.addedNodes) apply(n);
 	}).observe(document.body, { childList: true, subtree: true });
 	document.addEventListener("click", (e) => {
-		const b = e.target.closest("[data-pismo]");
-		if (b) set(b.dataset.pismo);
+		if (e.target.closest("#pismo")) set(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
 	});
 	set(mode);
 })();

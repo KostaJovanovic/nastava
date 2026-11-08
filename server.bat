@@ -3,6 +3,7 @@ title nastava server
 cd /d "%~dp0"
 
 rem Serves the built archive (pages\.build\site) on this PC, the way GitHub Pages serves it.
+rem /static/ comes live from pages\static (pages\serve.py): CSS and JS edits need no build, only a reload.
 rem
 rem   server.bat          serve; builds first if there is no build yet
 rem   server.bat build    rebuild from nastava.db (build.py + Pagefind), then serve
@@ -42,7 +43,7 @@ echo   Network: http://%LOCAL_IP%:3000
 echo ============================================
 echo.
 start "" "http://localhost:3000"
-python -m http.server 3000 --directory pages\.build\site
+python pages\serve.py 3000
 pause
 exit /b 0
 

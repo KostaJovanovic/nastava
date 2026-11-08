@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb, post %}
+
+{% block title %}{{ t.title }}{% endblock %}
+{% block crumbs %}
+{%- if t.smer %}{{ crumb('/smer/' ~ t.smer.id ~ '/', t.smer.name) }}{% endif %}
+{%- if t.subj %}{{ crumb('/predmet/' ~ t.subj.id ~ '/', t.subj.name) }}{% endif %}
+{%- endblock %}
+
+{% block main %}
+{#- A topic of several posts, as the board's topic page. Each post also has its own page (/item/), which search finds. -#}
+<div class="mh">
+  <h1 id="title">{{ t.title }}</h1>
+  <p class="mh__sub">{{ t.posts | length }} {{ t.posts | length | pl('objava') }} · poslednja <time datetime="{{ t.last.date or '' }}">{{ t.last.when }}</time></p>
+</div>
+<div class="posts">
+  {%- for r in t.posts %}
+  {{ post(r) }}
+  {%- endfor %}
+</div>
+{%- if t.subj %}
+<p class="acts"><a class="btn" href="/predmet/{{ t.subj.id }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Nazad na {{ t.subj.name }}</a></p>
+{%- endif %}
+{% endblock %}

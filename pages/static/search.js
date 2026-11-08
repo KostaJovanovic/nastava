@@ -6,6 +6,7 @@ const res = document.getElementById("res");
 const heading = document.querySelector(".mh");
 const status = document.querySelector("nav.status");
 const rowTpl = document.getElementById("row-tpl");
+const resTpl = document.getElementById("res-tpl");
 const years = JSON.parse(document.querySelector("script[data-years]").dataset.years);
 const pagefind = await import("/pagefind/pagefind.js");
 await pagefind.options({ excerptLength: 30 });
@@ -37,6 +38,7 @@ function readState() {
 		kind: String(f.get("kind") ?? ""),
 		smer: String(f.get("smer") ?? ""),
 		subjects: f.getAll("subject").map(String),
+		authors: f.getAll("autor").map(String),
 		from: String(f.get("from") ?? ""),
 		to: String(f.get("to") ?? ""),
 	};
@@ -48,6 +50,7 @@ function writeUrl(s, page) {
 	if (s.kind) p.set("kind", s.kind);
 	if (s.smer) p.set("smer", s.smer);
 	for (const x of s.subjects) p.append("subject", x);
+	for (const x of s.authors) p.append("autor", x);
 	if (s.from) p.set("from", s.from);
 	if (s.to) p.set("to", s.to);
 	if (page > 1) p.set("page", page);
@@ -59,42 +62,88 @@ function filtersOf(s) {
 	const filters = { vrsta: { any: s.kind ? [s.kind] : ["obavestenje", "dokument"] } };
 	if (s.smer) filters.smer = { any: [s.smer] };
 	if (s.subjects.length) filters.predmet = { any: s.subjects };
+	if (s.authors.length) filters.autor = { any: s.authors };
 	const from = Number(s.from) || -Infinity;
 	const to = Number(s.to) || Infinity;
 	if (s.from || s.to) filters.godina = { any: years.filter((y) => y >= from && y <= to).map(String) };
 	return filters;
 }
 
-function excerptNodes(html) {
+function excerptNodes(html, text) {
 	// Keep only text and <mark> from the Pagefind excerpt; drop all other markup.
-	const doc = new DOMParser().parseFromString(html, "text/html");
-	return [...doc.body.childNodes].map((n) =>
+	const parts = [...new DOMParser().parseFromString(html, "text/html").body.childNodes];
+	const plain = () => parts.map((n) =>
 		n.nodeName === "MARK" ? build("mark", { textContent: n.textContent }, []) : document.createTextNode(n.textContent),
 	);
+	// The excerpt is a run of words of the folded copy, which has the words of the text as written in the same
+	// order (build.py pagefind_tags "tekst"). Find the run and show those words as written.
+	const words = [];
+	let glued = false; // the next piece continues the last word (no space between)
+	for (const n of parts) {
+		const marked = n.nodeName === "MARK";
+		n.textContent.split(/(\s+)/).forEach((w) => {
+			if (!w) return;
+			if (/^\s/.test(w)) { glued = false; return; }
+			if (glued) { words.at(-1).w += w; words.at(-1).marked ||= marked; }
+			else words.push({ w, marked });
+			glued = true;
+		});
+	}
+	const orig = (text ?? "").split(/\s+/).filter(Boolean);
+	if (!words.length || !orig.length) return plain();
+	const folded = orig.map(fold);
+	const at = folded.findIndex((_, i) => words.every((x, k) => folded[i + k] === x.w));
+	if (at < 0) return plain();
+	return words.flatMap((x, k) => {
+		const w = orig[at + k];
+		return [k ? " " : "", x.marked ? build("mark", { textContent: w }, []) : w];
+	});
 }
+
+// 2026-11-08 -> 08.11.2026., as the board writes dates.
+const dmy = (iso) => (iso ? `${iso.slice(0, 10).split("-").reverse().join(".")}.` : "");
+// "1 rezultat", "21 rezultat"; every other number "rezultata".
+const rezultata = (n) => (n % 10 === 1 && n % 100 !== 11 ? " rezultat" : " rezultata");
 
 function renderRow(data) {
 	const li = rowTpl.content.firstElementChild.cloneNode(true);
-	const isDoc = data.meta.vrsta === "dokument";
-	const k = li.querySelector(".k");
-	k.classList.add(isDoc ? "k--doc" : "k--post");
-	k.title = isDoc ? "Dokument" : "Obaveštenje";
-	k.querySelector("use").setAttribute("href", isDoc ? "#i-file" : "#i-megaphone");
-	k.lastElementChild.textContent = k.title;
-	const d = li.querySelector(".d");
-	d.textContent = d.dateTime = data.meta.datum ?? "";
-	li.querySelector(".s").textContent = data.meta.predmet ?? "";
-	const a = li.querySelector(".t a");
+	if (data.meta.vrsta === "dokument") li.querySelector("use").setAttribute("href", "/static/icons.svg#i-file");
+	const d = li.querySelector(".fr__d");
+	d.dateTime = data.meta.datum ?? "";
+	d.textContent = dmy(data.meta.datum);
+	li.querySelector(".s1").textContent = data.meta.predmet ?? data.meta.smer ?? "";
+	const author = li.querySelector(".s2");
+	author.textContent = data.meta.autor ?? "";
+	// A teacher's full name follows the script switch; a bare username stays as it is.
+	if (!author.textContent.includes(" ")) author.dataset.notx = "";
+	const a = li.querySelector(".fr__a");
 	a.href = data.url;
 	a.textContent = data.meta.title;
-	li.querySelector(".x").append(...excerptNodes(data.excerpt));
+	li.querySelector(".fr__x").append(...excerptNodes(data.excerpt, data.meta.tekst));
 	return li;
 }
 
+// The active filters as chips; a chip's × clears that choice.
 function renderHeading(s, total) {
-	const h1 = build("h1", { id: "res-h", role: "status" }, [build("b", { textContent: String(total) }, []), " rezultata"]);
+	const h1 = build("h1", { id: "res-h", role: "status" }, [build("b", { textContent: String(total) }, []), rezultata(total)]);
 	if (s.q) h1.append(" za ", build("span", { className: "q", textContent: `„${s.q}“` }, []));
+	const chips = build("p", { className: "chips" }, []);
+	const active = '.filters input[form="sf"]:checked, .filters input[type="number"][form="sf"], #sf input[type="hidden"]';
+	for (const input of document.querySelectorAll(active)) {
+		if (!input.value) continue;
+		const label = input.type === "number" ? `${input.name === "from" ? "od" : "do"} ${input.value}`
+			: input.dataset.name ?? input.value;
+		const chip = build("button", { type: "button", className: "chip", title: "Ukloni filter" }, [label, icon("x")]);
+		chip.addEventListener("click", () => {
+			if (input.type === "number") input.value = "";
+			else if (input.type === "hidden") input.remove();
+			else document.querySelector(`.filters input[name="${input.name}"][value=""]`).checked = true;
+			run();
+		});
+		chips.append(chip);
+	}
 	heading.replaceChildren(h1);
+	if (chips.children.length) heading.append(chips);
 }
 
 function renderEmpty(s) {
@@ -128,19 +177,19 @@ function icon(name) {
 	svg.setAttribute("class", "i");
 	svg.setAttribute("aria-hidden", "true");
 	const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-	use.setAttribute("href", `#i-${name}`);
+	use.setAttribute("href", `/static/icons.svg#i-${name}`);
 	svg.append(use);
 	return svg;
 }
 
-const GROUP = { kind: "vrsta", smer: "smer", subject: "predmet" };
+// The filter groups with counts in the side panel. A teacher or a subject has none: it comes only from a link.
+const GROUP = { kind: "vrsta", smer: "smer" };
 
 async function groupCounts(s, query, search) {
 	// Each group counts without its own filter, so picking one value does not drop the others to 0.
 	const counts = {};
 	for (const [field, group] of Object.entries(GROUP)) {
-		const active = field === "subject" ? s.subjects.length : s[field];
-		if (!active) {
+		if (!s[field]) {
 			counts[group] = search.filters[group] ?? {};
 			continue;
 		}
@@ -156,20 +205,19 @@ async function groupCounts(s, query, search) {
 
 function updateCounts(counts) {
 	const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
-	for (const input of document.querySelectorAll('.filters input[name="subject"], .filters input[name="kind"], .filters input[name="smer"]')) {
+	for (const input of document.querySelectorAll('.filters input[form="sf"][type="radio"]')) {
 		const n = input.closest("label").querySelector(".n");
-		if (!n) continue;
 		const group = counts[GROUP[input.name]];
+		if (!n || !group) continue;
 		n.textContent = input.value ? (group[input.value] ?? 0) : sum(group);
-		// A subject with nothing for this search is hidden, unless it is checked (so it can be unchecked).
-		if (input.name === "subject") input.closest("label").classList.toggle("is-empty", !group[input.value] && !input.checked);
 	}
 }
 
 let results = [];
 let state = null;
 
-async function showPage(page) {
+// id: the run that asked; a newer run's page wins. Returns false when it was too late to draw.
+async function showPage(page, id = runs) {
 	const pages = Math.max(1, Math.ceil(results.length / PAGE));
 	page = Math.min(Math.max(1, page), pages);
 	writeUrl(state, page);
@@ -177,22 +225,31 @@ async function showPage(page) {
 		renderEmpty(state);
 	} else {
 		const batch = await Promise.all(results.slice((page - 1) * PAGE, page * PAGE).map((r) => r.data()));
-		const th = build("div", { className: "th", ariaHidden: "true" }, []);
-		th.innerHTML = "<span></span><span>Datum</span><span>Predmet</span><span>Naslov</span>";
-		res.replaceChildren(th, build("ol", { className: "rows" }, batch.map(renderRow)));
+		if (id !== runs) return false;
+		// A teacher from a link (/?autor=username): the chip shows their name, which every result has.
+		const author = form.querySelectorAll('input[name="autor"]');
+		if (author.length === 1 && batch[0].meta.autor) author[0].dataset.name = batch[0].meta.autor;
+		const table = resTpl.content.firstElementChild.cloneNode(true);
+		table.querySelector("ol").append(...batch.map(renderRow));
+		res.replaceChildren(table);
 	}
 	renderPager(page, pages, (n) => {
 		showPage(n);
 		heading.scrollIntoView({ block: "start" });
 	});
+	return true;
 }
+
+// The board index stays hidden from the start until the first results (search.html, style.css .searching).
+const shown = () => document.documentElement.classList.remove("searching");
 
 function showHome() {
 	writeUrl(readState(), 1);
 	heading.innerHTML = home.heading;
 	res.innerHTML = home.res;
 	status.querySelector(".pg")?.remove();
-	updateCounts({ vrsta: TOTALS.vrsta ?? {}, smer: TOTALS.smer ?? {}, predmet: TOTALS.predmet ?? {} });
+	updateCounts({ vrsta: TOTALS.vrsta ?? {}, smer: TOTALS.smer ?? {} });
+	shown();
 }
 
 // wait: the debounce in ms. Only typing needs one; a click searches at once.
@@ -205,7 +262,7 @@ async function run(page = 1, wait = 0) {
 	for (const input of document.querySelectorAll('.filters input[name="kind"], .filters input[name="smer"]')) {
 		input.closest("label").classList.toggle("is-on", input.checked);
 	}
-	if (!s.q && !s.kind && !s.smer && !s.subjects.length && !s.from && !s.to) return showHome();
+	if (!s.q && !s.kind && !s.smer && !s.subjects.length && !s.authors.length && !s.from && !s.to) return showHome();
 	const query = s.q ? fold(s.q) : null;
 	const search = await pagefind.debouncedSearch(query, { filters: filtersOf(s), sort: s.q ? undefined : { datum: "desc" } }, wait);
 	if (search === null || id !== runs) return;
@@ -213,24 +270,27 @@ async function run(page = 1, wait = 0) {
 	if (id !== runs) return;
 	state = s;
 	results = search.results;
-	renderHeading(s, results.length);
 	updateCounts(counts);
-	await showPage(page);
+	// The heading with the rows, in one frame: a new count never stands over the old rows.
+	if (await showPage(page, id)) {
+		renderHeading(s, results.length);
+		shown();
+	}
 }
 
 function restoreFromUrl() {
 	const p = new URLSearchParams(location.search);
 	form.elements.q.value = p.get("q") ?? "";
-	const subjects = new Set(p.getAll("subject"));
 	for (const input of document.querySelectorAll('input[form="sf"]')) {
 		if (input.name === "kind" || input.name === "smer") input.checked = input.value === (p.get(input.name) ?? "");
-		else if (input.name === "subject") input.checked = subjects.has(input.value);
 		else if (input.name === "from" || input.name === "to") input.value = p.get(input.name) ?? "";
 	}
-	// Checked subjects first, as in the server version of the page.
-	const list = document.querySelector("[data-subject-list]");
-	list.prepend(...[...list.querySelectorAll("label")].filter((l) => l.querySelector("input").checked));
-	if (subjects.size || p.get("kind") || p.get("smer") || p.get("from") || p.get("to")) document.querySelector("details.filters").dataset.active = "1";
+	// A teacher or a subject has no choice in the panel: it comes from a link (a teacher's page) and stays in the
+	// form as a hidden field, shown as a chip until it is removed.
+	for (const name of ["autor", "subject"]) {
+		for (const value of p.getAll(name)) form.append(build("input", { type: "hidden", name, value }, []));
+	}
+	// The filters stay as site.js left them (closed on a phone): the chips above the results show the active ones.
 	return p.size > 0;
 }
 
@@ -239,7 +299,4 @@ form.addEventListener("submit", (e) => {
 	run();
 });
 form.elements.q.addEventListener("input", () => run(1, 200));
-for (const input of document.querySelectorAll('input[form="sf"][type="number"]')) {
-	input.addEventListener("change", () => run());
-}
 if (restoreFromUrl()) run(Number(new URLSearchParams(location.search).get("page")) || 1);

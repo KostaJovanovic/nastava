@@ -1,31 +1,117 @@
-{#- Lists for the smer and subject pages, in the markup of the search results. -#}
+{#- The board's tables, as on nastava.mas.bg.ac.rs: forums (smerovi, predmeti), topics and posts.
+    A row: icon, title with a line under it, then .fr__more (the count columns; one line on a phone). -#}
 
-{%- macro item_rows(items) -%}
-<div class="th" aria-hidden="true"><span></span><span>Datum</span><span>Autor</span><span>Naslov</span></div>
-<ol class="rows">
-  {%- for r in items %}
-  <li class="row">
-    {%- if r.kind == 'document' %}<span class="k k--doc" title="Dokument"><svg class="i" aria-hidden="true"><use href="#i-file"></use></svg><span class="vh">Dokument</span></span>
-    {%- else %}<span class="k k--post" title="Obaveštenje"><svg class="i" aria-hidden="true"><use href="#i-megaphone"></use></svg><span class="vh">Obaveštenje</span></span>{% endif %}
-    <time class="d" datetime="{{ r.date or '' }}">{{ r.date or '' }}</time>
-    {%- set _t = teacher_of.get((r.author or '') | lower) %}
-    {%- if _t %}<span class="s" title="{{ r.author }}">{{ _t.full_name }}</span>{% else %}<span class="s" data-notx>{{ r.author or '' }}</span>{% endif %}
-    <div class="tx"><h2 class="t"><a href="/item/{{ r.id }}/">{{ r.title }}</a></h2></div>
-  </li>
-  {%- endfor %}
-</ol>
+{%- macro crumb(href, name) -%}
+<svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><a href="{{ href }}">{{ name }}</a>
 {%- endmacro -%}
 
-{%- macro subject_rows(subjects) -%}
-<div class="th" aria-hidden="true"><span></span><span>Poslednje</span><span>Obaveštenja</span><span>Predmet</span></div>
-<ol class="rows">
-  {%- for s in subjects %}
-  <li class="row">
-    <span class="k" aria-hidden="true"><svg class="i"><use href="#i-list"></use></svg></span>
-    <time class="d" datetime="{{ s.last or '' }}">{{ s.last or '' }}</time>
-    <span class="s">{{ s.count }}</span>
-    <div class="tx"><h2 class="t"><a href="/predmet/{{ s.id }}/">{{ s.name }}</a></h2></div>
-  </li>
-  {%- endfor %}
-</ol>
+{#- The author: a teacher links to their page by full name; another author is a username, which stays in Latin. -#}
+{%- macro who(r) -%}
+{%- if r.teacher %}<a href="/nastavnik/{{ r.teacher.id }}/">{{ r.teacher.full_name }}</a>
+{%- else %}<span data-notx>{{ r.author or '' }}</span>{% endif -%}
+{%- endmacro -%}
+
+{#- A post inside its topic page when the topic has more than one post, else its own page. -#}
+{%- macro post_href(r) -%}
+{%- if r.thread and r.thread.posts | length > 1 %}{{ r.thread.href }}#p{{ r.num }}{% else %}/item/{{ r.id }}/{% endif -%}
+{%- endmacro -%}
+
+{#- title: the title of the last post (the forum lists); a topic list has the topic's title in the row already.
+    same: the last post is the topic's only one; a phone shows nothing (the row has its date). -#}
+{%- macro last(r, title=true, same=false) -%}
+<div class="fr__last{% if same %} fr__last--same{% endif %}">
+  {%- if r %}{% if title %}<a class="lt" href="{{ post_href(r) }}">{{ r.title }}</a>{% endif %}<span>od {{ who(r) }}</span><time datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
+  {%- else %}<span>nema objava</span>{% endif -%}
+</div>
+{%- endmacro -%}
+
+{#- Smerovi (home) or the subjects of a smer: href is '/smer/' or '/predmet/'. -#}
+{%- macro forum_rows(title, places, href) -%}
+<section class="fb fb--forums">
+  <div class="fb__h"><h2>{{ title }}</h2><span>Teme</span><span>Objave</span><span>Poslednja objava</span></div>
+  <ol class="fb__rows">
+    {%- for s in places %}
+    <li class="fr">
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'folder' if href == '/smer/' else 'book' }}"></use></svg></span>
+      <div class="fr__t">
+        <a class="fr__a" href="{{ href }}{{ s.id }}/">{{ s.name }}</a>
+        {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="/nastavnik/{{ t.id }}/">{{ t.full_name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
+        {%- elif s.subjects is number %}<p class="fr__sub">{{ s.subjects }} {{ s.subjects | pl('predmet') }}</p>{% endif %}
+      </div>
+      <div class="fr__more"><span class="fr__n" data-l="{{ s.topics | pl('tema') }}">{{ s.topics }}</span><span class="fr__n" data-l="{{ s.count | pl('objava') }}">{{ s.count }}</span>{{ last(s.last) }}</div>
+    </li>
+    {%- endfor %}
+  </ol>
+</section>
+{%- endmacro -%}
+
+{#- Topics, newest last post first. place: show the subject of each (the home page). filter: data for the list filter (site.js). -#}
+{%- macro topic_rows(title, topics, place=false, filter=false) -%}
+<section class="fb fb--topics">
+  {%- if caller is defined %}{{ caller() }}{% endif %}
+  <div class="fb__h"><h2>{{ title }}</h2><span>Odgovori</span><span>Poslednja objava</span></div>
+  <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
+    {%- for t in topics %}
+    {%- set many = t.posts | length > 1 %}
+    <li class="fr"{% if filter %} data-find="{{ t.find }}" data-a="{{ t.authors }}"{% endif %}>
+      <span class="fr__i{% if many %} fr__i--many{% endif %}" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'msgs' if many else 'msg' }}"></use></svg></span>
+      <div class="fr__t">
+        <a class="fr__a" href="{{ t.href }}">{{ t.title }}</a>
+        <p class="fr__sub">od {{ who(t.first) }} » <time datetime="{{ t.first.date or '' }}">{{ t.first.when }}</time>
+          {%- if place and t.subj %} · <a href="/predmet/{{ t.subj.id }}/">{{ t.subj.name }}</a>{% elif place and t.smer %} · <a href="/smer/{{ t.smer.id }}/">{{ t.smer.name }}</a>{% endif %}</p>
+      </div>
+      {%- set n = t.posts | length - 1 %}
+      <div class="fr__more"><span class="fr__n" data-l="{{ n | pl('odgovor') }}">{{ n }}</span>{{ last(t.last, title=false, same=not many) }}</div>
+    </li>
+    {%- endfor %}
+  </ol>
+  {%- if filter %}<p class="empty" data-none hidden>Nema tema za ovaj filter.</p>{% endif %}
+</section>
+{%- endmacro -%}
+
+{#- Single posts, newest first (a teacher's page). -#}
+{%- macro post_rows(title, items) -%}
+<section class="fb fb--posts">
+  <div class="fb__h"><h2>{{ title }}</h2><span>Predmet</span><span>Datum</span></div>
+  <ol class="fb__rows">
+    {%- for r in items %}
+    <li class="fr">
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'file' if r.kind == 'document' else 'msg' }}"></use></svg></span>
+      <div class="fr__t"><a class="fr__a" href="{{ post_href(r) }}">{{ r.title }}</a></div>
+      <div class="fr__more">
+        <span class="fr__s">{% if r.subj %}<a href="/predmet/{{ r.subj.id }}/">{{ r.subj.name }}</a>{% elif r.smer %}<a href="/smer/{{ r.smer.id }}/">{{ r.smer.name }}</a>{% endif %}</span>
+        <time class="fr__d" datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
+      </div>
+    </li>
+    {%- endfor %}
+  </ol>
+</section>
+{%- endmacro -%}
+
+{#- One post, as the board shows it: the text, and the author beside it. h: the heading tag (h1 on a post's own page). -#}
+{%- macro post(r, h='h2', link=true) -%}
+<article class="post" id="p{{ r.num }}">
+  <div class="post__body">
+    <{{ h }} class="post__title"{% if h == 'h1' %} id="title"{% endif %}>{% if link %}<a href="/item/{{ r.id }}/">{{ r.title }}</a>{% else %}{{ r.title }}{% endif %}</{{ h }}>
+    <p class="post__meta">od {{ who(r) }} » <time datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
+      {%- if r.source_url %} · <a href="{{ r.source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
+    {% if r.html %}<div class="prose prose--html">{{ r.html | safe }}</div>
+    {% else %}<div class="prose">{{ (r.body or '') | trim }}</div>{% endif %}
+  </div>
+  <aside class="post__who" aria-label="Autor">
+    {#- Initials tell the authors of a topic apart: given name and surname, or the username's first letters. -#}
+    {%- set w = (r.teacher.name if r.teacher else '').split() %}
+    <span class="av" aria-hidden="true"{% if not w %} data-notx{% endif %}>{% if w %}{{ w[0][0] }}{{ w[-1][0] }}{% else %}{{ (r.author or '?')[:2] | upper }}{% endif %}</span>
+    <div>
+      {%- if r.teacher %}
+      <a class="post__name" href="/nastavnik/{{ r.teacher.id }}/">{{ r.teacher.full_name }}</a>
+      <span class="post__user" data-notx>{{ r.author }}</span>
+      {%- if r.teacher.title %}<span>{{ r.teacher.title }}</span>{% endif %}
+      {%- if r.teacher.katedra %}<span class="post__k">{{ r.teacher.katedra }}</span>{% endif %}
+      {%- else %}
+      <span class="post__name" data-notx>{{ r.author or '' }}</span>
+      {%- endif %}
+    </div>
+  </aside>
+</article>
 {%- endmacro -%}

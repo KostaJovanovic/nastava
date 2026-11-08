@@ -34,6 +34,20 @@ CYR = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш",
 assert len(CYR) == 30
 
 env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
+# The noun after a number: 1, 21 tema; 2, 3, 4, 22 teme; 5–20, 11–14 tema.
+FORMS = {"tema": ("tema", "teme", "tema"), "objava": ("objava", "objave", "objava"),
+         "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
+         "nastavnik": ("nastavnik", "nastavnika", "nastavnika")}
+
+
+def plural(n, word):
+    one, few, many = FORMS[word]
+    return one if n % 10 == 1 and n % 100 != 11 else few if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14 else many
+
+
+env.filters["pl"] = plural
+# An ISO date (2026-11-08...) as the board writes it: 08.11.2026.
+env.filters["dmy"] = lambda iso: ".".join(reversed((iso or "")[:10].split("-"))) + "." if iso else ""
 
 
 def fold(s):
@@ -107,6 +121,7 @@ def load_items(db, place):
         smer, subj = place.get(p["forum"], (None, None))
         items.append(dict(id=f"p{p['id']}", kind="post", title=p["title"], smer=smer, subj=subj,
                           subject=subj and subj["name"], date=iso, year=year,
+                          topic=p["topic"], num=p["id"], when=p["date"], posted=p["posted"] or "",
                           author=p["author"], body=p["content"], html=clean_html(p["html"]),
                           source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}"))
     for d in docs.values():
@@ -114,7 +129,7 @@ def load_items(db, place):
         iso, year = parse_date(p.get("date"), d["uploaded_at"])
         smer, subj = place.get(p.get("forum"), (None, None))
         items.append(dict(id=f"d{d['id']}", kind="document", title=d["title"] or d["filename"], smer=smer, subj=subj,
-                          subject=subj and subj["name"],
+                          subject=subj and subj["name"], topic=None, when=p.get("date"), posted=p.get("posted") or "",
                           date=iso, year=year, author=p.get("author"), body=(d["text"] or "")[:PAGE_TEXT], html=None,
                           source_url=f"{BASE}viewtopic.php?p={d['post']}#p{d['post']}" if d["post"] else None,
                           doc=dict(filename=d["filename"], size=round((d["size"] or 0) / 1024), uploaded_at=d["uploaded_at"]),
@@ -129,10 +144,14 @@ def pagefind_tags(it):
         tags += [("filter", "smer", it["smer"]["name"]), ("meta", "smer", it["smer"]["name"])]
     if it["subject"]:
         tags += [("filter", "predmet", it["subject"]), ("meta", "predmet", it["subject"])]
+    if it["author"]:
+        tags += [("filter", "autor", it["author"].lower()), ("meta", "autor", it["who"])]
     if it["year"]:
         tags.append(("filter", "godina", str(it["year"])))
     if it["date"]:
         tags += [("sort", "datum", it["date"]), ("meta", "datum", it["date"])]
+    # The text as written, word for word the indexed folded copy: search.js shows the excerpt in it.
+    tags.append(("meta", "tekst", f"{it['title']}\n{it['body'] or ''}"))
     return "".join(f'<meta data-pagefind-{t}="{k}[content]" content="{escape(v)}">' for t, k, v in tags)
 
 
@@ -157,25 +176,53 @@ def write(path, html):
     path.write_text(html, encoding="utf-8")
 
 
-def render_places(site, items, smerovi, subjects):
-    """One page per smer (its subjects and its own notices) and one per subject (all its notices). Empty ones get none."""
-    in_subject, in_smer = defaultdict(list), defaultdict(list)
+def load_topics(db, items):
+    """The board's topics, newest last post first. A topic of one post links to that post's page, a longer one to /tema/."""
+    titles = dict(db.execute("SELECT id, title FROM topics"))
+    posts = defaultdict(list)
     for it in items:
-        if it["subj"]:
-            in_subject[it["subj"]["id"]].append(it)
-        elif it["smer"]:
-            in_smer[it["smer"]["id"]].append(it)
+        if it["kind"] == "post":
+            posts[it["topic"]].append(it)
+    topics = []
+    for tid, rows in posts.items():
+        rows.sort(key=lambda r: r["num"])
+        t = dict(id=tid, title=titles.get(tid) or rows[0]["title"], posts=rows, first=rows[0],
+                 last=max(rows, key=lambda r: r["posted"]), subj=rows[0]["subj"], smer=rows[0]["smer"],
+                 href=f"/tema/{tid}/" if len(rows) > 1 else f"/item/{rows[0]['id']}/",
+                 authors="|".join(sorted({(r["author"] or "").lower() for r in rows})),
+                 find=fold(" ".join([titles.get(tid) or ""] + [f"{r['title']} {r['who'] or ''}" for r in rows])))
+        for r in rows:
+            r["thread"] = t
+        topics.append(t)
+    return sorted(topics, key=lambda t: t["last"]["posted"], reverse=True)
+
+
+def render_places(site, topics, smerovi, subjects):
+    """One page per smer (its subjects and its own topics) and one per subject (its topics), as the board's forum pages.
+    Empty subjects get none."""
+    in_subject, in_smer = defaultdict(list), defaultdict(list)
+    for t in topics:
+        if t["subj"]:
+            in_subject[t["subj"]["id"]].append(t)
+        elif t["smer"]:
+            in_smer[t["smer"]["id"]].append(t)
     for s in subjects.values():
-        rows = newest(in_subject[s["id"]])
-        s["count"], s["last"] = len(rows), rows[0]["date"] if rows else None
+        rows = in_subject[s["id"]]
+        s["topics"], s["count"], s["last"] = len(rows), sum(len(t["posts"]) for t in rows), rows[0]["last"] if rows else None
         if rows:
-            write(site / "predmet" / str(s["id"]) / "index.html", env.get_template("predmet.html").render(subj=s, items=rows))
+            authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
+            write(site / "predmet" / str(s["id"]) / "index.html",
+                  env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors))
     for m in smerovi.values():
-        subs = sorted((s for s in subjects.values() if s["smer"] is m and s["count"]), key=lambda s: s["name"])
-        rows = newest(in_smer[m["id"]])
-        m["count"] = len(rows) + sum(s["count"] for s in subs)
-        m["last"] = max([r["date"] or "" for r in rows] + [s["last"] or "" for s in subs], default="")
-        write(site / "smer" / str(m["id"]) / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, items=rows))
+        subs = sorted((s for s in subjects.values() if s["smer"] is m and s["count"]), key=lambda s: fold(s["name"]))
+        rows = in_smer[m["id"]]
+        m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
+        m["count"] = sum(len(t["posts"]) for t in rows) + sum(s["count"] for s in subs)
+        m["last"] = max([t["last"] for t in rows[:1]] + [s["last"] for s in subs], key=lambda r: r["posted"], default=None)
+        write(site / "smer" / str(m["id"]) / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, topics=rows))
+    for t in topics:
+        if len(t["posts"]) > 1:
+            write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t))
 
 
 def render_study_pages(site, db):
@@ -188,7 +235,11 @@ def render_study_pages(site, db):
         write_bytes(site / "studije" / "files" / r["path"], r["data"])
     for r in db.execute("SELECT * FROM study_pages p WHERE last_seen = (SELECT max(last_seen) FROM study_pages WHERE slug = p.slug)"):
         source = f"{STUDY_SITE}studije/{r['slug']}"
-        html = clean_html(r["html"], source, lambda value: files.get(media_path(value)))
+        html = clean_html(r["html"], source, lambda value: files.get(media_path(value))) or ""
+        # The page's first heading is usually its title, which the page already has as h1.
+        m = re.search(r"<h([12])[^>]*>(.*?)</h\1>", html, re.S)
+        if m and fold(re.sub(r"<[^>]+>", "", m[2]).strip()) == fold(r["title"]):
+            html = html[:m.start()] + html[m.end():]
         write(site / "studije" / r["slug"] / "index.html",
               env.get_template("studije.html").render(page=dict(r), html=html, source_url=source))
 
@@ -201,7 +252,7 @@ def load_teachers(db, subjects):
     taught = defaultdict(list)
     for r in db.execute("SELECT * FROM teacher_subjects ORDER BY name"):
         taught[r["teacher"]].append(dict(code=r["code"], name=r["name"], subj=by_code.get(r["code"])))
-    teachers = [dict(t, subjects=taught[t["id"]], katedra_short=re.sub(r"^Катедра за\s+", "", t["katedra"] or ""))
+    teachers = [dict(t, subjects=taught[t["id"]])
                 for t in map(dict, db.execute("SELECT * FROM teachers WHERE gone = 0"))]
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
@@ -242,22 +293,25 @@ def write_bytes(path, data):
     path.write_bytes(data)
 
 
+def short_smer(name):
+    """'основне академске студије - МИ' -> 'ОАС - МИ': the faculty's own abbreviations, so a smer fits one line."""
+    return re.sub(r"^мастер академске студије", "МАС", re.sub(r"^основне академске студије", "ОАС", name, flags=re.I), flags=re.I)
+
+
 def side_panel(items, smerovi):
     """The counts of the side panel (sidebar.html), the same on every page."""
-    subjects = Counter(r["subject"] for r in items if r["subject"])
     per_smer = Counter(r["smer"]["id"] for r in items if r["smer"])
     years = Counter(r["year"] for r in items if r["year"])
     return dict(total=len(items), kinds=Counter(KIND[r["kind"]] for r in items),
-                smerovi=[dict(m, count=per_smer[m["id"]]) for m in smerovi.values() if per_smer[m["id"]]],
-                subjects=sorted(subjects), subject_counts=subjects, year_hist=sorted(years.items()),
-                study_pages=STUDY_PAGES)
+                smerovi=[dict(m, count=per_smer[m["id"]], short=short_smer(m["name"])) for m in smerovi.values() if per_smer[m["id"]]],
+                year_hist=sorted(years.items()), study_pages=STUDY_PAGES)
 
 
-def render_home(items, side):
-    recent = newest(r for r in items if r["date"])[:RECENT]
+def render_home(topics, smerovi, side, n_teachers):
     return env.get_template("search.html").render(
-        q="", p={}, results=[], recent=recent, total=len(items), smerovi=side["smerovi"], full_side=True,
-        years_json=json.dumps([y for y, _ in side["year_hist"]]), pages=0, page=1)
+        smerovi=[m for m in smerovi.values() if m["count"]], recent=topics[:RECENT],
+        stats=dict(posts=side["total"], topics=len(topics), teachers=n_teachers),
+        years_json=json.dumps([y for y, _ in side["year_hist"]]))
 
 
 def main(db_path, out):
@@ -268,26 +322,33 @@ def main(db_path, out):
     db.row_factory = sqlite3.Row
     place, smerovi, subjects = load_places(db)
     items = load_items(db, place)
-    env.globals["side"] = side = side_panel(items, smerovi)
-    write(site / "predmeti.html", env.get_template("predmeti.html").render())
     teachers = load_teachers(db, subjects)
     # A board author is a teacher when the username is the teacher's e-mail before @.
-    env.globals["teacher_of"] = {t["username"]: t for t in teachers if t["username"]}
+    teacher_of = {t["username"]: t for t in teachers if t["username"]}
     for it in items:
-        write(site / "item" / it["id"] / "index.html", render_item(it))
+        it["teacher"] = teacher_of.get((it["author"] or "").lower())
+        it["who"] = it["teacher"]["full_name"] if it["teacher"] else it["author"]
+    topics = load_topics(db, items)
+    env.globals["side"] = side = side_panel(items, smerovi)
     for t in teachers:
         for s in t["subjects"]:
             if s["subj"] and t not in s["subj"].setdefault("teachers", []):
                 s["subj"]["teachers"].append(t)
-    render_places(site, items, smerovi, subjects)
+    render_places(site, topics, smerovi, subjects)
+    for it in items:
+        write(site / "item" / it["id"] / "index.html", render_item(it))
     render_teachers(site, teachers, items)
     render_study_pages(site, db)
-    (site / "index.html").write_text(render_home(items, side), encoding="utf-8")
+    (site / "index.html").write_text(render_home(topics, smerovi, side, len(teachers)), encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(status_code=404), encoding="utf-8")
-    print(f"{len(items)} items, {sum(1 for s in subjects.values() if s['count'])} subjects, {len(smerovi)} smerovi, {len(teachers)} teachers")
+    print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['count'])} subjects, "
+          f"{len(smerovi)} smerovi, {len(teachers)} teachers")
 
 
 if __name__ == "__main__":
     assert fold("Ђачки распоред, Čas") == "djacki raspored, cas"
     assert subject_name("﻿Цевни  водови (1044) ") == "Цевни водови"
+    assert [plural(n, "tema") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "tema teme tema tema tema tema teme tema tema".split()
+    assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
+    assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
     main(*sys.argv[1:3])

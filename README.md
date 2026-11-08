@@ -39,7 +39,10 @@ pipeline and site, with new scrapers for phpBB.
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
   a forum author is linked to a teacher when the username is the e-mail before @.
-- `pages/build.py`: render `nastava.db` as the static site.
+- `pages/build.py`: render `nastava.db` as the static site, in the board's layout: the index of smerovi, a page per
+  smer and subject (its topics, filtered by text or author in the page), a page per topic of several posts (`/tema/`),
+  and a page per post (`/item/`, what search finds). The header stays at the top; the side panel (page links,
+  filters by smer and year) fits the screen beside it. A teacher's page links a search of their posts (`/?autor=`).
 - `ci/state.sh`: get and save `nastava.db` for the Action.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
