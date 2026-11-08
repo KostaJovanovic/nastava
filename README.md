@@ -55,7 +55,7 @@ pipeline and site, with new scrapers for phpBB.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
 - `save.bat`: git (commit, push, pull), and `deploy [sync]`: commit, push, then `ci/deploy.sh`. `server.bat`: build
-  and serve the site on this PC, port 6278, with a QR for phones.
+  and serve the site on this PC, port 15497, with a QR for phones.
 
 ## First run (local, about 6 hours)
 

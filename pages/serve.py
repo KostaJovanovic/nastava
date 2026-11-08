@@ -66,7 +66,7 @@ def lan_ip():
 
 if __name__ == "__main__":
     assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title>$& M</html>") == "<title>T</title><b>$& M</b>"
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 6278
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 15497  # server.bat's PORT, drawn at random
     lan = f"http://{lan_ip()}:{port}"
     if os.name == "nt":  # ANSI colours for the QR in the classic console; Windows Terminal has them already
         kernel32 = ctypes.windll.kernel32

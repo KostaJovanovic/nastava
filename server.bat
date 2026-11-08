@@ -10,9 +10,10 @@ rem   server.bat build    rebuild from nastava.db (build.py, with Pagefind), the
 rem
 rem The attachments link to nastava.mas.bg.ac.rs, as on the live site.
 
-rem 6278 is "nast" on a phone keypad, off the well-worn ports (3000, 5173, 8000, 8080), so this never fights
-rem another project's dev server for one (the scheme mbrd's server.bat uses, 6273).
-set "PORT=6278"
+rem 15497 was drawn at random from 10000-49151, so no other repo's dev server picks it by habit or by a shared
+rem scheme: below Windows' outgoing-connection range (49152+), and outside the ranges Windows reserved on this PC
+rem (netsh int ipv4 show excludedportrange protocol=tcp) when it was drawn. pages\serve.py defaults to it too.
+set "PORT=15497"
 
 rem Admin is needed once, to add the firewall rule that lets phones on the LAN connect; reading it needs none.
 netsh advfirewall firewall show rule name="Nastava Port %PORT%" >nul 2>&1
