@@ -26,21 +26,30 @@
     </dl>
   </div>
   {%- if t.courses %}
+  {#- Two lists: the subjects with topics on the forum, then, under a line, the ones without. -#}
+  {%- set on_forum = t.courses | selectattr('subj') | list %}
+  {%- set off_forum = t.courses | rejectattr('subj') | list %}
   <div class="tp__subj">
     <h2>Predmeti</h2>
+    {%- if on_forum %}
     <ul>
-      {%- for c in t.courses %}
-      {%- if c.subj %}
+      {%- for c in on_forum %}
       <li><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a><span class="tp__smer">{{ c.subj.smer.short }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
-      {%- else %}
+      {%- endfor %}
+    </ul>
+    {%- endif %}
+    {%- if off_forum %}
+    {%- if on_forum %}<h3 class="tp__offh">Bez tema na forumu</h3>{% endif %}
+    <ul>
+      {%- for c in off_forum %}
       {%- if c.url.startswith('/') %}
       <li class="tp__off"><a href="{{ c.url }}" title="Nema ga na forumu; opis predmeta">{{ c.name }}</a><span></span><span></span></li>
       {%- else %}
       <li class="tp__off"><a href="{{ c.url }}" rel="noopener" target="_blank" title="Nema ga na forumu; stranica predmeta na mas.bg.ac.rs">{{ c.name }}</a><span></span><span></span></li>
       {%- endif %}
-      {%- endif %}
       {%- endfor %}
     </ul>
+    {%- endif %}
   </div>
   {%- endif %}
 </section>
