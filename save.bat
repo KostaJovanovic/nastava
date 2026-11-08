@@ -2,23 +2,24 @@
 setlocal disabledelayedexpansion
 cd /d "%~dp0"
 
-rem Git helper for nastava (nastava.valjdakosta.com), copied from argo's save.bat (git part only, no deploy:
-rem bash ci/deploy.sh builds and publishes the site).
+rem Git helper for nastava (nastava.valjdakosta.com), adapted from mbrd's save.bat. mbrd's version stamps, bundle
+rem and generated pages have no counterpart here (the build is git-ignored); its `release` is `deploy` here.
 rem
-rem   save.bat                          menu
+rem   save.bat                          menu (numbered as mbrd's: 1 commit, 2 save, 3 deploy, 4 pull, 5 push)
 rem   save.bat save                     add + commit, then ask before pushing
 rem   save.bat commit                   add + commit, no push
+rem   save.bat deploy [sync]            add + commit + push, then bash ci/deploy.sh [sync]: build and publish
 rem   save.bat push                     push the current branch to its upstream
 rem   save.bat pull                     git pull (current branch, from its upstream)
 rem   save.bat quick "message"          add + commit + push, no menu, no prompts
 rem   save.bat quick-commit "message"   add + commit, no push, no menu, no prompts
 rem
-rem quick / quick-commit never prompt, pause, fetch, merge or force-push. If the
-rem push fails they print the error and exit 1. An empty message becomes "update".
+rem quick / quick-commit never prompt, pause, pull or force-push: every question gets the answer that loses
+rem nothing. A push that did not happen is exit 1, with the commit kept locally. An empty message becomes "update".
 rem Exit code: 0 on success, 1 on any failure.
 
 rem Read the arguments before delayed expansion is on: with it on, every "!" in
-rem the commit message would be lost.
+rem the commit message would be lost. Read back only as !MSG!, never re-parsed.
 set "ACTION=%~1"
 set "MSG=%~2"
 setlocal enabledelayedexpansion
@@ -27,6 +28,8 @@ set "PROJECT=nastava"
 set "DEFMSG=update"
 set "COMMIT_ONLY=0"
 set "QUICK=0"
+set "DEPLOY=0"
+set "DEPLOY_ARGS="
 set "SAVE_ERROR=0"
 call :resolvebranch
 
@@ -34,6 +37,11 @@ if /i "%ACTION%"=="quick"        (set "QUICK=1" & goto checkrepo)
 if /i "%ACTION%"=="quick-commit" (set "QUICK=1" & set "COMMIT_ONLY=1" & goto checkrepo)
 if /i "%ACTION%"=="save"         goto checkrepo
 if /i "%ACTION%"=="commit"       (set "COMMIT_ONLY=1" & goto checkrepo)
+if /i "%ACTION%"=="deploy" (
+  set "DEPLOY=1"
+  if /i "!MSG!"=="sync" set "DEPLOY_ARGS=sync"
+  goto checkrepo
+)
 if /i "%ACTION%"=="push"         goto pushonly
 if /i "%ACTION%"=="pull"         goto pull
 if not "%ACTION%"=="" goto usage
@@ -42,26 +50,30 @@ if not "%ACTION%"=="" goto usage
 echo.
 echo === %PROJECT% ===
 echo.
-echo   1  save      add + commit, then ask before pushing
-echo   2  commit    add + commit, no push
-echo   3  push      push the current branch to its upstream
-echo   4  pull      git pull
-echo   5  quit
+echo   1  commit       add + commit, no push
+echo   2  save         add + commit, then ask before pushing
+echo   3  deploy       add + commit + push, then build and publish the site
+echo   4  pull         git pull
+echo   5  push         push the current branch to its upstream
+echo   6  deploy-sync  the same as 3, scraping first (ci/deploy.sh sync)
+echo   7  quit
 echo.
 set "CHOICE="
-set /p CHOICE=select [1-5]:
-if "%CHOICE%"=="1" goto checkrepo
-if "%CHOICE%"=="2" (set "COMMIT_ONLY=1" & goto checkrepo)
-if "%CHOICE%"=="3" goto pushonly
+set /p CHOICE=select [1-7]:
+if "%CHOICE%"=="1" (set "COMMIT_ONLY=1" & goto checkrepo)
+if "%CHOICE%"=="2" goto checkrepo
+if "%CHOICE%"=="3" (set "DEPLOY=1" & goto checkrepo)
 if "%CHOICE%"=="4" goto pull
-if "%CHOICE%"=="5" exit /b 0
+if "%CHOICE%"=="5" goto pushonly
+if "%CHOICE%"=="6" (set "DEPLOY=1" & set "DEPLOY_ARGS=sync" & goto checkrepo)
+if "%CHOICE%"=="7" exit /b 0
 echo [err]  invalid choice
 goto menu
 
 
 :usage
 echo [err]  unknown action "%ACTION%"
-echo        use: save.bat [save^|commit^|push^|pull^|quick "message"^|quick-commit "message"]
+echo        use: save.bat [save^|commit^|deploy [sync]^|push^|pull^|quick "message"^|quick-commit "message"]
 exit /b 1
 
 
@@ -136,7 +148,9 @@ if "%COMMIT_ONLY%"=="1" (
 )
 
 :askpush
+rem quick and deploy were the answer to this question.
 if "%QUICK%"=="1" goto push
+if "%DEPLOY%"=="1" goto push
 echo.
 set "DOPUSH="
 set /p DOPUSH=push now? (y/n):
@@ -152,8 +166,7 @@ echo.
 echo === git: push ===
 
 rem Push the checked-out branch to its configured upstream (which may have a
-rem different name, e.g. master tracking origin/main). Never fetches, merges or
-rem forces; a rejected push is reported and left for the user.
+rem different name, e.g. master tracking origin/main).
 :push
 echo.
 if "%BRANCH%"=="" (
@@ -163,27 +176,90 @@ if "%BRANCH%"=="" (
 )
 set "UPSTREAM="
 for /f "delims=" %%u in ('git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2^>nul') do set "UPSTREAM=%%u"
-if defined UPSTREAM goto pushupstream
+if defined UPSTREAM (
+  echo [git]  push %BRANCH% to !UPSTREAM!
+  set "PUSHARGS=-c push.default=upstream push"
+  goto dopush
+)
 if "%REMOTE%"=="" (
   echo [err]  no remote configured - nothing pushed
   set "SAVE_ERROR=1"
   goto end
 )
 echo [git]  %BRANCH% has no upstream yet - pushing to %REMOTE%/%BRANCH% and tracking it
-git push -u %REMOTE% %BRANCH%
-goto pushresult
-:pushupstream
-echo [git]  push %BRANCH% to %UPSTREAM%
-git -c push.default=upstream push
-:pushresult
-if not errorlevel 1 (
-  echo [git]  pushed
+set "PUSHARGS=push -u %REMOTE% %BRANCH%"
+:dopush
+git %PUSHARGS%
+if not errorlevel 1 goto pushed
+
+rem A push can fail for reasons a pull or a force push cannot fix: a 403, a bad
+rem credential, no network. Only a rejected push (the remote moved) is worth
+rem offering them for. ls-remote hits the same endpoint: if it fails too, the
+rem push never got as far as comparing histories.
+git ls-remote %REMOTE% >nul 2>nul
+if errorlevel 1 (
+  echo.
+  echo [err]  push failed - cannot reach or authenticate to %REMOTE%. A pull or force push will not fix it.
+  echo        Check access to the remote, then push again. Any commit is saved locally.
+  goto notpushed
+)
+echo.
+echo [warn] push rejected - the remote has commits you don't
+rem Both remedies rewrite something, the working tree or the remote; quick mode answers no to each.
+if "%QUICK%"=="1" (
+  echo [err]  quick mode does not pull or force push - the commit is saved locally.
+  echo        Run "save.bat pull", resolve, then push again.
+  goto notpushed
+)
+echo.
+set "FETCH="
+set /p FETCH=pull + merge the remote first? (y/n):
+if /i "%FETCH%"=="y" (
+  set "SAVE_ERROR=1"
+  echo [git]  after the pull: resolve any conflicts, then push again
+  goto pull
+)
+echo.
+echo [warn] a force push discards whatever is on the remote that you do not have.
+set "FORCE="
+set /p FORCE=force push instead? (y/n):
+if /i not "%FORCE%"=="y" goto notpushed
+rem --force-with-lease, not --force: it refuses when the remote moved since the last fetch.
+git %PUSHARGS% --force-with-lease
+if not errorlevel 1 goto pushed
+echo [err]  force push refused - the remote moved since the last fetch, or the push failed. Nothing overwritten.
+goto notpushed
+
+:pushed
+echo [git]  pushed
+if "%DEPLOY%"=="1" goto deploy
+goto end
+
+:notpushed
+if "%DEPLOY%"=="1" echo [warn] nothing was pushed, so nothing was deployed
+set "SAVE_ERROR=1"
+goto end
+
+
+rem `deploy`: once the push is in, build and publish the site from this PC (ci/deploy.sh; with `sync`, scrape
+rem first). Run with Git's own bash: cmd's PATH has none, and C:\Windows\System32\bash.exe would be WSL.
+:deploy
+set "BASH="
+for /f "delims=" %%g in ('where git 2^>nul') do if not defined BASH set "BASH=%%~dpg..\bin\bash.exe"
+if not exist "%BASH%" (
+  echo [err]  Git's bash.exe not found next to git.exe - run "bash ci/deploy.sh %DEPLOY_ARGS%" by hand
+  set "SAVE_ERROR=1"
   goto end
 )
 echo.
-echo [err]  push failed - see git's message above. Any commit is saved locally.
-echo        If the remote has commits you don't, run "save.bat pull", then push again.
-set "SAVE_ERROR=1"
+echo === deploy: ci/deploy.sh %DEPLOY_ARGS% ===
+echo.
+"%BASH%" ci/deploy.sh %DEPLOY_ARGS%
+if errorlevel 1 (
+  echo.
+  echo [err]  ci/deploy.sh failed or reported a failed step - see above
+  set "SAVE_ERROR=1"
+)
 goto end
 
 

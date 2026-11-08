@@ -54,7 +54,8 @@ pipeline and site, with new scrapers for phpBB.
 - `ci/deploy.sh`: scrape (with `sync`), build and publish from this PC. `ci/state.sh`: get and save `nastava.db`.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
-- `save.bat`: git (commit, push, pull). `server.bat`: build and serve the site on this PC.
+- `save.bat`: git (commit, push, pull), and `deploy [sync]`: commit, push, then `ci/deploy.sh`. `server.bat`: build
+  and serve the site on this PC, port 6278, with a QR for phones.
 
 ## First run (local, about 6 hours)
 

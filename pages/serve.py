@@ -4,12 +4,17 @@ An edit to the CSS, JS or icons shows on the next reload, with no build. The pag
 database) still come from the last build in pages/.build/site. Most are fragments: join() puts them into
 shell.html, as the Worker (pages/src/index.js join) does on the live site.
 """
+import ctypes
+import os
 import posixpath
+import socket
 import sys
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+
+from qr import qr_terminal
 
 HERE = Path(__file__).resolve().parent
 SITE = HERE / ".build" / "site"
@@ -48,8 +53,24 @@ class Handler(SimpleHTTPRequestHandler):
         super().end_headers()
 
 
+def lan_ip():
+    """The address a phone on the same Wi-Fi would use: the source of the default route (connect() sends nothing).
+    ipconfig's first or last IPv4 line can be a link-local or VirtualBox adapter instead."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        try:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+        except OSError:
+            return "127.0.0.1"
+
+
 if __name__ == "__main__":
     assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title>$& M</html>") == "<title>T</title><b>$& M</b>"
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 3000
-    print(f"http://localhost:{port}  (static: {HERE / 'static'})")
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 6278
+    lan = f"http://{lan_ip()}:{port}"
+    if os.name == "nt":  # ANSI colours for the QR in the classic console; Windows Terminal has them already
+        kernel32 = ctypes.windll.kernel32
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    print(qr_terminal(lan))
+    print(f"\n  Local:   http://localhost:{port}\n  Network: {lan}  (scan the QR, same Wi-Fi)\n  static:  {HERE / 'static'}\n")
     ThreadingHTTPServer(("", port), partial(Handler, directory=str(SITE))).serve_forever()
