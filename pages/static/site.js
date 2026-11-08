@@ -74,13 +74,13 @@
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     var t = e.target;
     if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
-    var links = [].slice.call(d.querySelectorAll('.fr:not([hidden]) .fr__a'));
+    var links = [].slice.call(d.querySelectorAll('.fr:not([hidden]) .fr__a, .pc:not([hidden]) .pc__a'));
     var i = links.indexOf(d.activeElement);
     if (e.key === '/') { e.preventDefault(); var q = d.getElementById('q'); q.focus(); q.select(); }
     else if ((e.key === 'j' || e.key === 'k') && links.length) {
       e.preventDefault();
       var n = e.key === 'j' ? Math.min(i + 1, links.length - 1) : Math.max(i - 1, 0);
-      links[n].focus(); links[n].closest('.fr').scrollIntoView({ block: 'nearest' });
+      links[n].focus(); links[n].closest('.fr, .pc').scrollIntoView({ block: 'nearest' });
     }
   });
 })();

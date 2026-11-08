@@ -51,6 +51,8 @@ def plural(n, word):
 env.filters["pl"] = plural
 # An ISO date (2026-11-08...) as the board writes it: 08.11.2026.
 env.filters["dmy"] = lambda iso: ".".join(reversed((iso or "")[:10].split("-"))) + "." if iso else ""
+# 'Катедра за математику' -> 'математику': in a list headed Katedra the prefix only repeats.
+env.filters["katedra"] = lambda k: re.sub(r"^(Катедра|Katedra) (за|za) ", "", k or "")
 
 
 def fold(s):
@@ -308,9 +310,11 @@ def load_teachers(db, subjects):
     teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers ORDER BY rowid"))]
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
     for t in teachers:
-        # The profile's photo, for the card at the top of the teacher's page.
+        # The profile's photo: the faculty's 130 px copy for the list, the original (about 600x700) for the page.
+        # shortcut: photos load from www.mas.bg.ac.rs, so they go when the faculty removes one; host copies if that happens.
         m = re.search(r'<img[^>]+src="([^"]*_media/fakultet/nastavnici/[^"]+)"', t["html"] or "")
-        t["photo"] = m and urljoin(STUDY_SITE, unescape(m[1]))
+        t["thumb"] = m and urljoin(STUDY_SITE, unescape(m[1]))
+        t["photo"] = m and t["thumb"].split("?")[0]
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
@@ -333,20 +337,24 @@ def render_teachers(site, teachers, items):
     for t in teachers:
         t["posts"] = newest(posts[t["username"]]) if t["username"] else []
         # The profile's subjects: one row per archive subject (it can have several codes), archived first.
+        mine = Counter(p["subj"]["id"] for p in t["posts"] if p["subj"])
         courses = {}
         for s in t["subjects"]:
             archived = s["subj"] if s["subj"] and s["subj"].get("count") else None
             row = courses.setdefault(archived["id"] if archived else s["code"],
-                                     dict(name=s["name"], subj=archived, codes=[], url=f"{STUDY_SITE}studije/predmeti/{s['code']}"))
+                                     dict(name=s["name"], subj=archived, codes=[], mine=archived and mine[archived["id"]],
+                                          url=f"{STUDY_SITE}studije/predmeti/{s['code']}"))
             row["codes"].append(s["code"])
-        t["courses"] = sorted(courses.values(), key=lambda c: (not c["subj"], azbuka(c["name"])))
+        # Where they post most first; subjects without their posts after, by name.
+        t["courses"] = sorted(courses.values(), key=lambda c: (-(c["mine"] or 0), not c["subj"], azbuka(c["name"])))
         t["find"] = fold(" ".join([t["full_name"], t["title"] or "", t["katedra"] or "", t["email"] or "", t["research"] or "",
                                    t["office"] or ""] + [s["name"] for s in t["subjects"]]))
     for t in teachers:
         source = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
         local = lambda v: pages.get(v.split("?")[0]) or subj_pages.get(v.split("?")[0])
-        # The profile repeats the name as its first heading; the page has it as h1.
-        html = clean_html(re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S), source, local)
+        # The profile repeats the name as its first heading and the photo; the page has both above it.
+        html = re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S)
+        html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), source, local)
         write(site / t["href"].strip("/") / "index.html",
               env.get_template("nastavnik.html").render(t=t, html=html, source_url=source))
     listed = [t for t in teachers if not t["gone"]]
@@ -434,6 +442,7 @@ if __name__ == "__main__":
     assert subject_name("﻿Цевни  водови (1044) ") == "Цевни водови"
     assert [plural(n, "tema") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "tema teme tema tema tema tema teme tema tema".split()
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
+    assert env.filters["katedra"]("Катедра за мехнику флуида") == "мехнику флуида" and env.filters["katedra"](None) == ""
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')

@@ -1,55 +1,76 @@
 {% extends "base.html" %}
-{% from "rows.html" import crumb, post_rows %}
+{% from "rows.html" import crumb, post_href %}
 
 {% block title %}{{ t.full_name }}{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
 
-{#- A forum's member profile: the card (photo, contact), the subjects, the posts here; the faculty's full profile last,
-    folded, as it is long (education, bibliography). -#}
+{#- The person on the left (portrait, how to reach them), stays in view on a wide screen; their subjects and posts on
+    the right; the faculty's full profile last, folded, as it is long (education, bibliography). -#}
 {% block main %}
-<div class="split">
-  <section class="panel prof">
-    {%- if t.photo %}<img class="prof__img" src="{{ t.photo }}" alt="" width="96" loading="lazy">{% endif %}
-    <div class="prof__main">
+<div class="tp">
+  <section class="tp__id" aria-labelledby="title">
+    {%- if t.photo %}
+    <img class="tp__img" src="{{ t.photo }}" alt="" fetchpriority="high">
+    {%- else %}
+    {%- set w = t.name.split() %}
+    <span class="tp__img tp__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>
+    {%- endif %}
+    <div class="tp__who">
       <h1 id="title">{{ t.full_name }}</h1>
-      <p class="mh__sub">{{ t.title }}{% if t.katedra %} · <a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a>{% endif %}</p>
-      <dl class="prof__dl">
-        {%- if t.office %}<dt>Kabinet</dt><dd>{{ t.office }}</dd>{% endif %}
-        {%- if t.email %}<dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd>{% endif %}
-        {%- if t.phone %}<dt>Telefon</dt><dd>{{ t.phone }}</dd>{% endif %}
-        {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}
-        {%- if t.research %}<dt>Oblast</dt><dd>{{ t.research }}</dd>{% endif %}
-        {%- if t.username %}<dt>Na forumu</dt><dd><span data-notx>{{ t.username }}</span>{% if t.posts %} · <a href="#objave">{{ t.posts | length }} {{ t.posts | length | pl('objava') }}</a>{% endif %}</dd>{% endif %}
-      </dl>
+      <p>{{ t.title }}</p>
+      {%- if t.katedra %}<p><a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a></p>{% endif %}
     </div>
+    <dl class="tp__dl">
+      {%- if t.hours %}<div><dt>Konsultacije</dt><dd>{{ t.hours }}</dd></div>{% endif %}
+      {%- if t.office %}<div><dt>Kabinet</dt><dd>{{ t.office }}</dd></div>{% endif %}
+      {%- if t.email %}<div><dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd></div>{% endif %}
+      {%- if t.phone %}<div><dt>Telefon</dt><dd>{{ t.phone }}</dd></div>{% endif %}
+      {%- if t.research %}<div><dt>Oblast</dt><dd>{{ t.research }}</dd></div>{% endif %}
+    </dl>
+    {%- if t.posts %}<a class="btn tp__go" href="/?autor={{ t.username | urlencode }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-enter"></use></svg>Pretraži objave</a>{% endif %}
   </section>
-  {%- if t.courses %}
-  <section class="fb fb--side">
-    <div class="fb__h"><h2>Predmeti</h2><span>Objave</span></div>
-    <ol class="fb__rows">
-      {%- for c in t.courses %}
-      <li class="fr">
-        <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-book"></use></svg></span>
-        {%- if c.subj %}
-        <div class="fr__t"><a class="fr__a" href="{{ c.subj.href }}">{{ c.subj.name }}</a><p class="fr__sub">{{ c.subj.smer.name }}</p></div>
-        <div class="fr__more"><span class="fr__n" data-l="{{ c.subj.count | pl('objava') }}">{{ c.subj.count }}</span></div>
-        {%- else %}
-        <div class="fr__t"><a class="fr__a" href="{{ c.url }}" rel="noopener" target="_blank">{{ c.name }}</a><p class="fr__sub">šifra {{ c.codes | join(', ') }} · nema u arhivi</p></div>
-        <div class="fr__more"></div>
-        {%- endif %}
-      </li>
+
+  <div class="tp__main">
+    {%- if t.courses %}
+    <section class="tp__sec">
+      <h2>Predmeti</h2>
+      <ul class="tp__subj">
+        {%- for c in t.courses %}
+        <li>
+          {%- if c.subj %}
+          <a href="{{ c.subj.href }}">{{ c.subj.name }}</a><span class="tp__smer">{{ c.subj.smer.name }}</span>
+          {%- if c.mine %}<span class="tp__n">{{ c.mine }} {{ c.mine | pl('objava') }}</span>{% endif %}
+          {%- else %}
+          <a href="{{ c.url }}" rel="noopener" target="_blank">{{ c.name }}</a><span class="tp__smer">nema ga na forumu, šifra {{ c.codes | join(', ') }}</span>
+          {%- endif %}
+        </li>
+        {%- endfor %}
+      </ul>
+    </section>
+    {%- endif %}
+
+    <section class="tp__sec" id="objave">
+      <h2>Objave na forumu{% if t.posts %} <span>{{ t.posts | length }}</span>{% endif %}</h2>
+      {%- if t.posts %}
+      {%- for year, rows in t.posts | groupby('year', default=0) | reverse %}
+      <h3 class="tp__yr">{{ year or 'bez datuma' }}</h3>
+      <ol class="tp__posts">
+        {%- for r in rows %}
+        <li><time datetime="{{ r.date or '' }}">{{ (r.date | dmy)[:6] }}</time><a href="{{ post_href(r) }}">{{ r.title }}</a>
+          {%- if r.subj %}<span class="tp__smer">{{ r.subj.name }}</span>{% endif %}</li>
+        {%- endfor %}
+      </ol>
       {%- endfor %}
-    </ol>
-  </section>
-  {%- endif %}
+      {%- else %}
+      <p class="tp__none">{% if t.username %}Nema objava na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
+      {%- endif %}
+    </section>
+
+    <details class="tp__bio">
+      <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>Ceo profil sa sajta fakulteta: obrazovanje, radovi</summary>
+      <div class="prose prose--html">{{ html | safe }}</div>
+      <p class="tp__src">Preuzeto {{ t.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">mas.bg.ac.rs <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+    </details>
+  </div>
 </div>
-{% if t.posts %}
-<div id="objave">{{ post_rows(t.posts | length ~ ' ' ~ t.posts | length | pl('objava') ~ ' na forumu', t.posts) }}</div>
-<p class="acts"><a class="btn" href="/?autor={{ t.username | urlencode }}">Pretraži samo objave ovog nastavnika</a></p>
-{% endif %}
-<details class="fb bio">
-  <summary class="fb__h"><h2>Profil sa mas.bg.ac.rs <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg></h2></summary>
-  <div class="bio__body prose prose--html">{{ html | safe }}</div>
-  <p class="panel__foot">provereno {{ t.last_seen | dmy }} · <a href="{{ source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
-</details>
 {% endblock %}

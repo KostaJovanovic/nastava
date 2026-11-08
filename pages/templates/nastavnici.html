@@ -5,38 +5,37 @@
 {% block main %}
 <div class="mh">
   <h1 id="title">Nastavnici</h1>
-  <p class="mh__sub">Spisak sa mas.bg.ac.rs: katedra, kabinet, mejl, konsultacije i predmeti. Broj objava je sa foruma nastave.</p>
+  <p class="mh__sub">Ko predaje šta, gde je kabinet i kada su konsultacije. Broj objava je sa foruma nastave.</p>
 </div>
-<section class="fb fb--teachers">
-  <form class="fbar" data-filter role="search" onsubmit="return false">
-    <label class="vh" for="t-q">Traži nastavnika</label>
-    <input class="field" id="t-q" name="q" type="search" placeholder="Ime, predmet, katedra, kabinet, mejl…" autocomplete="off" data-f="find">
-    <label class="vh" for="t-k">Katedra</label>
-    {#- value: pismo.js changes the option text, not the value the rows are matched against. -#}
-    <select class="field" id="t-k" name="katedra" data-f="k">
-      <option value="">Sve katedre</option>
-      {%- for k in katedre %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
-    </select>
-    <label class="vh" for="t-z">Zvanje</label>
-    <select class="field" id="t-z" name="zvanje" data-f="z">
-      <option value="">Sva zvanja</option>
-      {%- for z in teachers | map(attribute='title') | unique | sort %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
-    </select>
-    <span class="fbar__n">prikazano <b data-shown>{{ teachers | length }}</b></span>
-  </form>
-  <div class="fb__h"><h2>Nastavnik</h2><span>Katedra</span><span>Objave</span></div>
-  <ol class="fb__rows" data-rows>
-    {%- for t in teachers %}
-    <li class="fr" data-find="{{ t.find }}" data-k="{{ t.katedra or '' }}" data-z="{{ t.title or '' }}">
-      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-user"></use></svg></span>
-      <div class="fr__t">
-        <a class="fr__a" href="{{ t.href }}">{{ t.full_name }}</a>
-        <p class="fr__sub">{{ t.title }}{% if t.office %} · kabinet {{ t.office }}{% endif %}{% if t.email %} · <span data-notx>{{ t.email }}</span>{% endif %}</p>
-      </div>
-      <div class="fr__more"><span class="fr__s">{{ t.katedra or '' }}</span><span class="fr__n" data-l="{{ t.posts | length | pl('objava') }}">{{ t.posts | length }}</span></div>
-    </li>
-    {%- endfor %}
-  </ol>
-  <p class="empty" data-none hidden>Nema nastavnika za ovu pretragu.</p>
-</section>
+<form class="people__bar" data-filter role="search" onsubmit="return false">
+  <label class="vh" for="t-q">Traži nastavnika</label>
+  <input class="field" id="t-q" name="q" type="search" placeholder="Ime, predmet, katedra, kabinet, mejl…" autocomplete="off" data-f="find">
+  <label class="vh" for="t-k">Katedra</label>
+  {#- value: the full name, which ?katedra= links and the rows' data-k use; pismo.js changes the text, not the value. -#}
+  <select class="field" id="t-k" name="katedra" data-f="k">
+    <option value="">Sve katedre</option>
+    {%- for k in katedre %}<option value="{{ k }}">{{ k | katedra }}</option>{% endfor %}
+  </select>
+  <label class="vh" for="t-z">Zvanje</label>
+  <select class="field" id="t-z" name="zvanje" data-f="z">
+    <option value="">Sva zvanja</option>
+    {%- for z in teachers | map(attribute='title') | unique | sort %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+  </select>
+  <span class="fbar__n">prikazano <b data-shown>{{ teachers | length }}</b></span>
+</form>
+<ol class="people" data-rows>
+  {%- for t in teachers %}
+  <li class="pc" data-find="{{ t.find }}" data-k="{{ t.katedra or '' }}" data-z="{{ t.title or '' }}">
+    {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
+    {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
+    <div class="pc__t">
+      <a class="pc__a" href="{{ t.href }}">{{ t.full_name }}</a>
+      <p>{{ t.title }}</p>
+      {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra }}</p>{% endif %}
+      <p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length }} {{ t.posts | length | pl('objava') }}{% endif %}</p>
+    </div>
+  </li>
+  {%- endfor %}
+</ol>
+<p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
 {% endblock %}
