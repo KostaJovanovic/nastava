@@ -17,8 +17,8 @@ push)
 	name=state-$(date -u +%Y%m%d-%H%M%S).tar.zst
 	tmp=$(mktemp -d)
 	trap 'rm -rf "$tmp"' EXIT
-	# Fold the WAL into the file: tar takes only nastava.db.
-	python3 -c "import sqlite3; sqlite3.connect('nastava.db').execute('pragma wal_checkpoint(truncate)')"
+	# Fold the WAL into the file: tar takes only nastava.db. Through uv: on Windows python3 is the Store stub.
+	uv run --no-project python -c "import sqlite3; sqlite3.connect('nastava.db').execute('pragma wal_checkpoint(truncate)')"
 	tar -c nastava.db | zstd -q -T0 -10 -o "$tmp/$name"
 	gh release view state -R "$repo" >/dev/null 2>&1 ||
 		gh release create state -R "$repo" --latest=false --title state --notes "Scraper state for the daily sync."

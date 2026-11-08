@@ -2,24 +2,27 @@
 # Build the site on this PC and publish it. The scraping and building happen here; GitHub only hosts the result:
 # the site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
 # Usage: bash ci/deploy.sh [sync]   (from the repo root)
-#   sync   run the scrapers first (posts, schedule pages, teachers, subjects), then build and publish
+#   sync   test the parsers, run the scrapers (posts, schedule pages, teachers, subjects), save the state
+#          (ci/state.sh push), then build and publish
+# As in sync.yml: missing posts or a failed side scraper do not stop the publish, but the script exits 1 at the end.
 # shortcut: everything runs on a PC for now; when the daily run moves to Actions, put the cron back in sync.yml.
 set -euo pipefail
 repo=KostaJovanovic/nastava
 export PYTHONIOENCODING=utf-8
+failed=()
 
 if [[ ${1:-} == sync ]]; then
+	uv run test/parsers_test.py
 	uv run nastava.py sync
-	uv run studije.py sync
-	uv run nastavnici.py sync
-	uv run predmeti.py sync
-	# Missing posts are reported, not fatal: the site is still published, as the daily run did.
-	uv run nastava.py stats || echo "stats: posts missing, publishing anyway" >&2
+	# Right after the scrape, so a post made since then does not count as missing.
+	uv run nastava.py stats || failed+=(stats)
+	uv run studije.py sync || failed+=(studije)
+	uv run nastavnici.py sync || failed+=(nastavnici)
+	uv run predmeti.py sync || failed+=(predmeti)
+	bash ci/state.sh push
 fi
 
 uv run pages/build.py nastava.db pages/.build
-npx -y pagefind@1.6.0 --site pages/.build/site
-uv run pages/build.py --strip pages/.build/site
 
 name=site-$(date -u +%Y%m%d-%H%M%S).tar.gz
 tmp=$(mktemp -d)
@@ -33,3 +36,7 @@ gh release view site -R "$repo" --json assets -q '.assets[].name' | sort | head 
 	xargs -r -I{} gh release delete-asset site {} -R "$repo" -y
 gh workflow run deploy.yml -R "$repo"
 echo "uploaded $name ($(du -h "$tmp/$name" | cut -f1)); deploy started: gh run list -R $repo -w deploy"
+if ((${#failed[@]})); then
+	echo "failed: ${failed[*]} (published anyway)" >&2
+	exit 1
+fi

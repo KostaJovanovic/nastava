@@ -30,7 +30,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "**/*.py"
       - name: Test the parsers
-        run: uv run --with beautifulsoup4 --with requests python test/parsers_test.py
+        run: uv run test/parsers_test.py
       - name: Get the state
         run: ci/state.sh pull
       - name: Scrape the posts
@@ -58,10 +58,7 @@ jobs:
       - name: Save the state
         run: ci/state.sh push
       - name: Build the site
-        run: |
-          uv run pages/build.py nastava.db pages/.build
-          npx -y pagefind@1.6.0 --site pages/.build/site
-          uv run pages/build.py --strip pages/.build/site
+        run: uv run pages/build.py nastava.db pages/.build
       - uses: actions/upload-pages-artifact@v4
         with:
           path: pages/.build/site

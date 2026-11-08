@@ -2,17 +2,17 @@
 # requires-python = ">=3.11"
 # dependencies = ["jinja2==3.1.6", "nh3==0.3.2"]
 # ///
-"""Render nastava.db as a static site for GitHub Pages.
+"""Render nastava.db as a static site for GitHub Pages, with its Pagefind search index.
 
 Usage: uv run pages/build.py <nastava.db> <out dir>
-       uv run pages/build.py --strip <out dir>/site
-Writes <out>/site, most pages as fragments of shell.html (split_page). Pagefind runs after this script and writes <out>/site/pagefind; --strip then removes the hidden
-text Pagefind read from the item pages.
+Writes <out>/site, most pages as fragments of shell.html (split_page), runs Pagefind (needs Node's npx) into
+<out>/site/pagefind, then removes the hidden text Pagefind read from the item pages.
 """
 import json
 import re
 import shutil
 import sqlite3
+import subprocess
 import sys
 import unicodedata
 from collections import Counter, defaultdict
@@ -30,6 +30,7 @@ from studije import PAGES as STUDY_PAGES, SITE as STUDY_SITE, media_path  # noqa
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
 KIND = {"post": "obavestenje", "document": "dokument"}
 RECENT = 20
+PAGEFIND = "pagefind@1.6.0"
 # shortcut: a document page shows and indexes at most this much text; raise it if GitHub Pages' 1 GB allows.
 PAGE_TEXT = 300_000
 CYR = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш",
@@ -197,7 +198,7 @@ def mark_for_pagefind(page, it):
 
 def strip_pagefind(site):
     """After Pagefind has indexed the site, drop the hidden copy it read from each item page (~50 MB in all).
-    Run Pagefind again only on a fresh build: on a stripped site it finds no data-pagefind-body."""
+    A stripped site cannot be indexed again: it has no data-pagefind-body left."""
     marker = '<div class="pf" data-pagefind-body>'
     assert (site / "pagefind" / "pagefind.js").exists(), "run Pagefind before stripping"
     for path in (site / "item").glob("*/index.html"):
@@ -535,9 +536,12 @@ def main(db_path, out):
     render_book(site, book)
     render_study_pages(site, db)
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers)), encoding="utf-8")
-    (site / "404.html").write_text(env.get_template("error.html").render(status_code=404), encoding="utf-8")
+    (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")
     print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['count'])} subjects, "
-          f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects")
+          f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects", flush=True)
+    npx = shutil.which("npx") or sys.exit("npx not found: Pagefind needs Node.js")
+    subprocess.run([npx, "-y", PAGEFIND, "--site", str(site)], check=True)
+    strip_pagefind(site)
 
 
 if __name__ == "__main__":
@@ -559,7 +563,6 @@ if __name__ == "__main__":
     assert env.filters["slug"]("Катедра за математику") == "katedra-za-matematiku" and env.filters["slug"](None) == ""
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
-    if sys.argv[1] == "--strip":
-        strip_pagefind(Path(sys.argv[2]))
-    else:
-        main(*sys.argv[1:3])
+    if len(sys.argv) != 3:
+        sys.exit(__doc__)
+    main(*sys.argv[1:3])
