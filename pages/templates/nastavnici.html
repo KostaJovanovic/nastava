@@ -14,7 +14,7 @@
   {#- value: the full name, which ?katedra= links and the rows' data-k use; pismo.js changes the text, not the value. -#}
   <select class="field" id="t-k" name="katedra" data-f="k">
     <option value="">Sve katedre</option>
-    {%- for k in katedre %}<option value="{{ k }}">{{ k | katedra }}</option>{% endfor %}
+    {%- for k in katedre %}<option value="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
   </select>
   <label class="vh" for="t-z">Zvanje</label>
   <select class="field" id="t-z" name="zvanje" data-f="z">
@@ -29,7 +29,7 @@
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
     {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
     <div class="pc__t">
-      <a class="pc__a" href="{{ t.href }}">{{ t.full_name }}</a>
+      <a class="pc__a" href="{{ t.href }}">{{ t.name }}</a>
       <p>{{ t.title }}</p>
       {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra }}</p>{% endif %}
       <p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length }} {{ t.posts | length | pl('objava') }}{% endif %}</p>

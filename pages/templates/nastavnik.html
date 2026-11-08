@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "rows.html" import crumb, post_href %}
 
-{% block title %}{{ t.full_name }}{% endblock %}
+{% block title %}{{ t.name }}{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
 
 {#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by
@@ -15,7 +15,7 @@
   <span class="tp__img tp__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>
   {%- endif %}
   <div class="tp__who">
-    <h1 id="title">{{ t.full_name }}</h1>
+    <h1 id="title">{{ t.name }}</h1>
     <p>{{ t.title }}{% if t.katedra %}, <a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a>{% endif %}</p>
     <dl class="tp__dl">
       {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}

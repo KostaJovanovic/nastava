@@ -33,6 +33,14 @@
     <button type="button" class="tg" id="pismo" data-pismo="lat" aria-label="Pismo: Latinica" title="Pismo: latinica, ćirilica ili originalno">Lat<span>inica</span></button>
     <button type="button" class="tg" id="tema" aria-label="Tema" title="Tema: svetla ili tamna"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-sun"></use></svg></button>
   </div>
+  {#- The site's sections. The shell is the same on every page, so site.js marks the current one (aria-current). -#}
+  <nav class="tabs" aria-label="Stranice">
+    <a href="/" data-for="/ /smer/ /predmet/ /tema/ /item/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Forum</a>
+    <a href="/nastavnici/" data-for="/nastavnici/ /nastavnik/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
+    {%- for slug, name in side.study_pages.items() %}
+    <a href="/studije/{{ slug }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>{{ name }}</a>
+    {%- endfor %}
+  </nav>
 </header>
 <div class="frame">
 {% include "sidebar.html" %}

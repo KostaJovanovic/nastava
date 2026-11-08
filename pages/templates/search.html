@@ -14,23 +14,6 @@
 </div>
 <div id="res">
   {{ forum_rows('Studije', smerovi, 'folder') }}
-  <section class="fb fb--forums">
-    <div class="fb__h"><h2>Fakultet</h2><span></span><span></span><span>Sa sajta mas.bg.ac.rs</span></div>
-    <ol class="fb__rows">
-      <li class="fr">
-        <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-users"></use></svg></span>
-        <div class="fr__t"><a class="fr__a" href="/nastavnici/">Nastavnici</a><p class="fr__sub">{{ stats.teachers }} {{ stats.teachers | pl('nastavnik') }}: katedre, kabineti, mejlovi, konsultacije i predmeti</p></div>
-        <div class="fr__more"></div>
-      </li>
-      {%- for slug, name in side.study_pages.items() %}
-      <li class="fr">
-        <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-calendar"></use></svg></span>
-        <div class="fr__t"><a class="fr__a" href="/studije/{{ slug }}/">{{ name }}</a><p class="fr__sub">poslednja verzija stranice, sa svim fajlovima</p></div>
-        <div class="fr__more"></div>
-      </li>
-      {%- endfor %}
-    </ol>
-  </section>
   {{ topic_rows('Najnovije teme', recent, place=true) }}
   <p class="stats">Ukupno objava <b>{{ stats.posts }}</b> · tema <b>{{ stats.topics }}</b> · nastavnika <b>{{ stats.teachers }}</b></p>
 </div>
