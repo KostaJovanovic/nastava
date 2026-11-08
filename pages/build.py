@@ -317,10 +317,13 @@ def load_teachers(db, subjects):
         t["photo"] = m and t["thumb"].split("?")[0]
         # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
         t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
+        # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
+        t["rank"] = RANKS.index(t["title"]) if t["title"] in RANKS else 9
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
 
+RANKS = ["професор емеритус", "редовни професор", "ванредни професор", "доцент", "асистент са докторатом", "асистент"]
 AZBUKA = {c: i for i, c in enumerate("абвгдђежзијклљмнњопрстћуфхцчџш")}
 
 
