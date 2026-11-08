@@ -26,7 +26,7 @@
     </dl>
   </div>
   {%- if t.courses %}
-  {#- Two lists: the subjects with topics on the forum, then, under a line, the ones without. -#}
+  {#- Two lists: the subjects with topics on the forum, then, under a line (no heading), the ones without. -#}
   {%- set on_forum = t.courses | selectattr('subj') | list %}
   {%- set off_forum = t.courses | rejectattr('subj') | list %}
   <div class="tp__subj">
@@ -39,8 +39,7 @@
     </ul>
     {%- endif %}
     {%- if off_forum %}
-    {%- if on_forum %}<h3 class="tp__offh">Bez tema na forumu</h3>{% endif %}
-    <ul>
+    <ul{% if on_forum %} class="tp__offl"{% endif %}>
       {%- for c in off_forum %}
       {%- if c.url.startswith('/') %}
       <li class="tp__off"><a href="{{ c.url }}" title="Nema ga na forumu; opis predmeta">{{ c.name }}</a><span></span><span></span></li>
