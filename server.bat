@@ -27,6 +27,7 @@ if not exist "nastava.db" (
 )
 uv run pages/build.py nastava.db pages/.build || goto fail
 call npx -y pagefind@1.6.0 --site pages/.build/site || goto fail
+uv run pages/build.py --strip pages/.build/site || goto fail
 
 :serve
 rem Kill anything already listening on port 3000 so we always start fresh

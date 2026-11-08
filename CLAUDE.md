@@ -18,6 +18,7 @@ Every script is a uv script with inline dependencies (`# /// script` header), so
     uv run documents.py sync        # attachments into files/ + text extraction (not run by CI)
     uv run pages/build.py nastava.db pages/.build      # render the site to pages/.build/site
     npx -y pagefind@1.6.0 --site pages/.build/site     # search index; must run after build.py
+    uv run pages/build.py --strip pages/.build/site    # then drop the hidden text Pagefind read (~50 MB)
     server.bat [build]              # (re)build and serve on http://localhost:3000 (asks for admin: firewall rule)
     python pages/serve.py [port]    # serve the last build; /static/ live from pages/static (no build for CSS/JS)
     bash ci/state.sh pull|push      # get/save nastava.db as an asset of the `state` GitHub release

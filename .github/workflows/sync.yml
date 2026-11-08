@@ -57,6 +57,7 @@ jobs:
         run: |
           uv run pages/build.py nastava.db pages/.build
           npx -y pagefind@1.6.0 --site pages/.build/site
+          uv run pages/build.py --strip pages/.build/site
       - uses: actions/upload-pages-artifact@v4
         with:
           path: pages/.build/site

@@ -5,7 +5,9 @@
 """Render nastava.db as a static site for GitHub Pages.
 
 Usage: uv run pages/build.py <nastava.db> <out dir>
-Writes <out>/site. Pagefind runs after this script and writes <out>/site/pagefind.
+       uv run pages/build.py --strip <out dir>/site
+Writes <out>/site. Pagefind runs after this script and writes <out>/site/pagefind; --strip then removes the hidden
+text Pagefind read from the item pages.
 """
 import json
 import re
@@ -160,6 +162,18 @@ def mark_for_pagefind(page, it):
     assert page.count("</article>") == 1, it["id"]
     folded = escape(fold(f"{it['title']}\n{it['body'] or ''}"))
     return page.replace("</article>", f'<div class="pf" data-pagefind-body>{pagefind_tags(it)}{folded}</div></article>', 1)
+
+
+def strip_pagefind(site):
+    """After Pagefind has indexed the site, drop the hidden copy it read from each item page (~50 MB in all).
+    Run Pagefind again only on a fresh build: on a stripped site it finds no data-pagefind-body."""
+    marker = '<div class="pf" data-pagefind-body>'
+    assert (site / "pagefind" / "pagefind.js").exists(), "run Pagefind before stripping"
+    for path in (site / "item").glob("*/index.html"):
+        html = path.read_text(encoding="utf-8")
+        if (start := html.find(marker)) >= 0:
+            # The copy is escaped text, so its own </div> is the first one after the marker.
+            path.write_text(html[:start] + html[html.index("</div>", start) + 6:], encoding="utf-8")
 
 
 def render_item(it):
@@ -351,4 +365,7 @@ if __name__ == "__main__":
     assert [plural(n, "tema") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "tema teme tema tema tema tema teme tema tema".split()
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
-    main(*sys.argv[1:3])
+    if sys.argv[1] == "--strip":
+        strip_pagefind(Path(sys.argv[2]))
+    else:
+        main(*sys.argv[1:3])
