@@ -4,73 +4,66 @@
 {% block title %}{{ t.full_name }}{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
 
-{#- The person on the left (portrait, how to reach them), stays in view on a wide screen; their subjects and posts on
-    the right; the faculty's full profile last, folded, as it is long (education, bibliography). -#}
+{#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by
+    year; the faculty's full profile last, folded, as it is long (education, bibliography). -#}
 {% block main %}
-<div class="tp">
-  <section class="tp__id" aria-labelledby="title">
-    {%- if t.photo %}
-    <img class="tp__img" src="{{ t.photo }}" alt="" fetchpriority="high">
-    {%- else %}
-    {%- set w = t.name.split() %}
-    <span class="tp__img tp__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>
-    {%- endif %}
-    <div class="tp__who">
-      <h1 id="title">{{ t.full_name }}</h1>
-      <p>{{ t.title }}</p>
-      {%- if t.katedra %}<p><a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a></p>{% endif %}
-    </div>
+<section class="tp" aria-labelledby="title">
+  {%- if t.photo %}
+  <img class="tp__img" src="{{ t.photo }}" alt="" fetchpriority="high">
+  {%- else %}
+  {%- set w = t.name.split() %}
+  <span class="tp__img tp__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>
+  {%- endif %}
+  <div class="tp__who">
+    <h1 id="title">{{ t.full_name }}</h1>
+    <p>{{ t.title }}{% if t.katedra %}, <a href="/nastavnici/?katedra={{ t.katedra | urlencode }}">{{ t.katedra }}</a>{% endif %}</p>
     <dl class="tp__dl">
-      {%- if t.hours %}<div><dt>Konsultacije</dt><dd>{{ t.hours }}</dd></div>{% endif %}
-      {%- if t.office %}<div><dt>Kabinet</dt><dd>{{ t.office }}</dd></div>{% endif %}
-      {%- if t.email %}<div><dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd></div>{% endif %}
-      {%- if t.phone %}<div><dt>Telefon</dt><dd>{{ t.phone }}</dd></div>{% endif %}
-      {%- if t.research %}<div><dt>Oblast</dt><dd>{{ t.research }}</dd></div>{% endif %}
+      {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}
+      {%- if t.office %}<dt>Kabinet</dt><dd>{{ t.office }}</dd>{% endif %}
+      {%- if t.email %}<dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd>{% endif %}
+      {%- if t.phone %}<dt>Telefon</dt><dd>{{ t.phone }}</dd>{% endif %}
+      {%- if t.research %}<dt>Oblast</dt><dd class="tp__long" title="{{ t.research }}">{{ t.research }}</dd>{% endif %}
     </dl>
-    {%- if t.posts %}<a class="btn tp__go" href="/?autor={{ t.username | urlencode }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-enter"></use></svg>Pretraži objave</a>{% endif %}
-  </section>
-
-  <div class="tp__main">
-    {%- if t.courses %}
-    <section class="tp__sec">
-      <h2>Predmeti</h2>
-      <ul class="tp__subj">
-        {%- for c in t.courses %}
-        <li>
-          {%- if c.subj %}
-          <a href="{{ c.subj.href }}">{{ c.subj.name }}</a><span class="tp__smer">{{ c.subj.smer.name }}</span>
-          {%- if c.mine %}<span class="tp__n">{{ c.mine }} {{ c.mine | pl('objava') }}</span>{% endif %}
-          {%- else %}
-          <a href="{{ c.url }}" rel="noopener" target="_blank">{{ c.name }}</a><span class="tp__smer">nema ga na forumu, šifra {{ c.codes | join(', ') }}</span>
-          {%- endif %}
-        </li>
-        {%- endfor %}
-      </ul>
-    </section>
-    {%- endif %}
-
-    <section class="tp__sec" id="objave">
-      <h2>Objave na forumu{% if t.posts %} <span>{{ t.posts | length }}</span>{% endif %}</h2>
-      {%- if t.posts %}
-      {%- for year, rows in t.posts | groupby('year', default=0) | reverse %}
-      <h3 class="tp__yr">{{ year or 'bez datuma' }}</h3>
-      <ol class="tp__posts">
-        {%- for r in rows %}
-        <li><time datetime="{{ r.date or '' }}">{{ (r.date | dmy)[:6] }}</time><a href="{{ post_href(r) }}">{{ r.title }}</a>
-          {%- if r.subj %}<span class="tp__smer">{{ r.subj.name }}</span>{% endif %}</li>
-        {%- endfor %}
-      </ol>
-      {%- endfor %}
-      {%- else %}
-      <p class="tp__none">{% if t.username %}Nema objava na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
-      {%- endif %}
-    </section>
-
-    <details class="tp__bio">
-      <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>Ceo profil sa sajta fakulteta: obrazovanje, radovi</summary>
-      <div class="prose prose--html">{{ html | safe }}</div>
-      <p class="tp__src">Preuzeto {{ t.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">mas.bg.ac.rs <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
-    </details>
   </div>
-</div>
+  {%- if t.courses %}
+  <div class="tp__subj">
+    <h2>Predmeti</h2>
+    <ul>
+      {%- for c in t.courses %}
+      {%- if c.subj %}
+      <li><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a><span class="tp__smer">{{ c.subj.smer.short }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
+      {%- else %}
+      <li class="tp__off"><a href="{{ c.url }}" rel="noopener" target="_blank" title="Nema ga na forumu; stranica predmeta na mas.bg.ac.rs">{{ c.name }}</a><span></span><span></span></li>
+      {%- endif %}
+      {%- endfor %}
+    </ul>
+  </div>
+  {%- endif %}
+</section>
+
+<section class="tp__sec" id="objave">
+  <div class="tp__h">
+    <h2>Objave na forumu{% if t.posts %} <span>{{ t.posts | length }}</span>{% endif %}</h2>
+    {%- if t.posts %}<a href="/?autor={{ t.username | urlencode }}">Pretraži u ovim objavama</a>{% endif %}
+  </div>
+  {%- if t.posts %}
+  {%- for year, rows in t.posts | groupby('year', default=0) | reverse %}
+  <h3 class="tp__yr">{{ year or 'bez datuma' }}</h3>
+  <ol class="tp__posts">
+    {%- for r in rows %}
+    <li><time datetime="{{ r.date or '' }}">{{ (r.date | dmy)[:6] }}</time><a href="{{ post_href(r) }}">{{ r.title }}</a>
+      {%- if r.subj %}<span class="tp__smer">{{ r.subj.name }}</span>{% endif %}</li>
+    {%- endfor %}
+  </ol>
+  {%- endfor %}
+  {%- else %}
+  <p class="tp__none">{% if t.username %}Nema objava na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
+  {%- endif %}
+</section>
+
+<details class="tp__bio">
+  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>Ceo profil sa sajta fakulteta: obrazovanje, radovi</summary>
+  <div class="prose prose--html">{{ html | safe }}</div>
+  <p class="tp__src">Preuzeto {{ t.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">mas.bg.ac.rs <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+</details>
 {% endblock %}

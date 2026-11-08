@@ -122,7 +122,7 @@ def load_places(db):
         top = f
         while top["parent"] is not None:
             top = forums[top["parent"]]
-        smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"]})
+        smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"], "short": short_smer(top["name"])})
         if f is top:
             place[f["id"]] = (smer, None)
             continue
@@ -377,7 +377,7 @@ def side_panel(items, smerovi):
     per_smer = Counter(r["smer"]["id"] for r in items if r["smer"])
     years = Counter(r["year"] for r in items if r["year"])
     return dict(total=len(items), kinds=Counter(KIND[r["kind"]] for r in items),
-                smerovi=[dict(m, count=per_smer[m["id"]], short=short_smer(m["name"])) for m in smerovi.values() if per_smer[m["id"]]],
+                smerovi=[dict(m, count=per_smer[m["id"]]) for m in smerovi.values() if per_smer[m["id"]]],
                 year_hist=sorted(years.items()), study_pages=STUDY_PAGES)
 
 
