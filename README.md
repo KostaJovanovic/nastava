@@ -9,14 +9,17 @@ pipeline and site, with new scrapers for phpBB.
 
 ## How it works
 
-- A GitHub Action (`.github/workflows/sync.yml`) runs each day:
-  1. It tests the parsers on saved pages (`test/parsers_test.py`).
-  2. It gets the state (`nastava.db`) from the `state` release.
-  3. It reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
-     with a post in the last 14 days (an edit does not change the counts).
-  4. It checks the counts, then archives the schedules and the teachers. A failure in these does not stop the run.
-  5. It saves the state, builds the static site with Pagefind search and deploys it to GitHub Pages.
-  6. The run ends red (GitHub sends an e-mail) when the count check or a side scraper failed.
+- For now the run is on a PC: `bash ci/deploy.sh sync`
+  1. tests the parsers on saved pages (`test/parsers_test.py`);
+  2. reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
+     with a post in the last 14 days (an edit does not change the counts);
+  3. checks the counts, then archives the schedules, the teachers and the subjects. A failure in these does not stop
+     the run;
+  4. saves the state (`nastava.db`) to the `state` release (`ci/state.sh push`);
+  5. builds the static site with Pagefind search, uploads it to the `site` release and starts the `deploy` workflow,
+     which only publishes it to GitHub Pages;
+  6. exits 1 when the count check or a side scraper failed.
+  `.github/workflows/sync.yml` runs the same chain on GitHub; it has no schedule until the daily run moves there.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
   edge cache for a day at most (Pagefind's hashed files: a year). Most pages are stored as only their title and main
   part; the Worker puts them into `shell.html` (head, header, sidebar), which saves about 190 MB on GitHub Pages.
@@ -48,7 +51,7 @@ pipeline and site, with new scrapers for phpBB.
   smer and subject (its topics, filtered by text or author in the page), a page per topic of several posts (`/tema/`),
   and a page per post (`/item/`, what search finds). The header stays at the top; the side panel (page links,
   filters by smer and year) fits the screen beside it. A teacher's page links a search of their posts (`/?autor=`).
-- `ci/state.sh`: get and save `nastava.db` for the Action.
+- `ci/deploy.sh`: scrape (with `sync`), build and publish from this PC. `ci/state.sh`: get and save `nastava.db`.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
 - `save.bat`: git (commit, push, pull). `server.bat`: build and serve the site on this PC.
@@ -63,7 +66,7 @@ pipeline and site, with new scrapers for phpBB.
     gh repo create KostaJovanovic/nastava --public --source . --push
     bash ci/state.sh push
 
-Then turn on GitHub Pages (source: GitHub Actions), run the `sync` workflow once, and deploy the Worker:
+Then turn on GitHub Pages (source: GitHub Actions), publish the site with `bash ci/deploy.sh`, and deploy the Worker:
 
     cd pages && wrangler deploy
 

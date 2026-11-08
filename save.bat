@@ -3,7 +3,7 @@ setlocal disabledelayedexpansion
 cd /d "%~dp0"
 
 rem Git helper for nastava (nastava.valjdakosta.com), copied from argo's save.bat (git part only, no deploy:
-rem the GitHub Action rebuilds and deploys the site every day).
+rem bash ci/deploy.sh builds and publishes the site).
 rem
 rem   save.bat                          menu
 rem   save.bat save                     add + commit, then ask before pushing

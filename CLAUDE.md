@@ -17,11 +17,10 @@ Every script is a uv script with inline dependencies (`# /// script` header), so
     uv run nastavnici.py sync       # teacher list, profiles, emeritus page
     uv run predmeti.py sync         # subject book, subject pages, where each is in the plans (~815 requests)
     uv run documents.py sync        # attachments into files/ + text extraction (not run by CI)
-    uv run pages/build.py nastava.db pages/.build      # render the site to pages/.build/site
-    npx -y pagefind@1.6.0 --site pages/.build/site     # search index; must run after build.py
-    uv run pages/build.py --strip pages/.build/site    # then drop the hidden text Pagefind read (~50 MB)
-    server.bat [build]              # (re)build and serve on http://localhost:3000 (asks for admin: firewall rule)    python pages/serve.py [port]    # serve the last build; /static/ live from pages/static (no build for CSS/JS)
-    bash ci/deploy.sh [sync]        # (scrape,) build, upload the site, run deploy.yml: publishes from this PC
+    uv run pages/build.py nastava.db pages/.build      # render pages/.build/site, run Pagefind (npx), strip its hidden text
+    server.bat [build]              # (re)build and serve on http://localhost:3000 (admin once: firewall rule)
+    python pages/serve.py [port]    # serve the last build; /static/ live from pages/static (no build for CSS/JS)
+    bash ci/deploy.sh [sync]        # (test, scrape, save state,) build, upload the site, run deploy.yml: publishes from this PC
     bash ci/state.sh pull|push      # get/save nastava.db as an asset of the `state` GitHub release
     cd pages && wrangler deploy     # the Cloudflare Worker
     save.bat quick "message"        # git add + commit + push
@@ -33,20 +32,21 @@ Keep the scraping polite: no more parallelism or less delay than that.
 
 There is no test runner; each test is a plain script.
 
-- `uv run --with beautifulsoup4 --with requests python test/parsers_test.py` — the parsers against saved pages in
-  `test/fixtures/`, no network. This is the CI gate. When the board or www.mas.bg.ac.rs changes markup, save the new
+- `uv run test/parsers_test.py` — the parsers against saved pages in `test/fixtures/`, no network. This is the CI
+  gate (sync.yml) and the first step of `ci/deploy.sh sync`. When the board or www.mas.bg.ac.rs changes markup, save the new
   page over the fixture and fix the parser until it passes.
 - `uv run pages/build.py ...` runs self-check asserts (`fold`, `plural`, `dmy`, ...) in `__main__` before building.
 - Browser tests use Playwright with Edge (`channel='msedge'`) against a running site, e.g.
   `python test/browser_test.py http://localhost:3000 test`. Others: `nastavnici_test.py <base>`,
-  `pismo_test.py <base> <item path> <out dir>`, `counts_test.py <base>`, `speed_test.py <base> <site dir>`,
+  `uv run test/pismo_test.py <base> <item path> <out dir>` (also checks `pismoFold` against `fold`), `counts_test.py <base>`, `speed_test.py <base> <site dir>`,
   `profile_search.py <base>`. They print results and write screenshots (git-ignored `test/*.png`).
 
 ## Architecture
 
-**Data flow:** scrapers → one SQLite file `nastava.db` → `pages/build.py` → static HTML → Pagefind → GitHub Pages →
+**Data flow:** scrapers → one SQLite file `nastava.db` → `pages/build.py` (static HTML, then Pagefind) → GitHub Pages →
 Cloudflare Worker (`pages/src/index.js`) on the custom domains (nastava.valjdakosta.com, nastava.masinci.org). For now
-the chain runs on a PC: `ci/deploy.sh` scrapes and builds there, uploads the site to the `site` release, and
+the chain runs on a PC: `ci/deploy.sh` scrapes and builds there, saves the database to the `state` release, uploads the
+site to the `site` release, and
 `.github/workflows/deploy.yml` only publishes it. `sync.yml` runs the whole chain on GitHub but has no schedule until
 the daily run moves to Actions. There is no server and no backend; the database is never committed (it lives as a zstd
 tarball on the `state` release; the two newest are kept).
@@ -70,8 +70,9 @@ code. `stats` compares the same counts with stored rows.
 **Nothing is deleted.** A post or teacher that disappears from the source stays in the archive (marked gone); a changed
 schedule page or file adds a new version. Keep that invariant in any schema or scraper change.
 
-**CI failure policy:** the count check and the side scrapers (`studije`, `nastavnici`) run with `continue-on-error` so
-the state is still saved and the site deployed; a final step turns the run red if any of them failed.
+**Failure policy:** the count check and the side scrapers (`studije`, `nastavnici`, `predmeti`) do not stop the run,
+so the state is still saved and the site deployed; the run ends red (sync.yml: a final step; `ci/deploy.sh`: exit 1)
+if any of them failed.
 
 **Site build (`pages/build.py` + `pages/templates/` + `pages/static/`):** Jinja2 templates, post HTML sanitized with
 nh3 (`clean_html`). Pages: home (smerovi), `/smer/<smer>/`, `/predmet/<smer>/<subject>/`, `/tema/<id>/` (topics with
