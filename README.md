@@ -18,7 +18,8 @@ pipeline and site, with new scrapers for phpBB.
   5. It saves the state, builds the static site with Pagefind search and deploys it to GitHub Pages.
   6. The run ends red (GitHub sends an e-mail) when the count check or a side scraper failed.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
-  edge cache for a day at most (Pagefind's hashed files: a year).
+  edge cache for a day at most (Pagefind's hashed files: a year). Most pages are stored as only their title and main
+  part; the Worker puts them into `shell.html` (head, header, sidebar), which saves about 190 MB on GitHub Pages.
 - The attachments and images link straight to nastava.mas.bg.ac.rs. The site does not host them. The local
   `files/` folder keeps a copy of each one; dlwms's `release_files.py` and Worker `/files/` route (in `ref/dlwms`)
   can host them later.

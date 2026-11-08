@@ -1,7 +1,8 @@
 """Serve the built site on this PC, with /static/ live from pages/static: python pages/serve.py [port]
 
 An edit to the CSS, JS or icons shows on the next reload, with no build. The pages themselves (templates, the
-database) still come from the last build in pages/.build/site.
+database) still come from the last build in pages/.build/site. Those are fragments: browse through the Worker
+(`wrangler dev`, see server.bat), which joins them with shell.html.
 """
 import posixpath
 import sys

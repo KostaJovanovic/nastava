@@ -6,7 +6,7 @@
 
 Usage: uv run pages/build.py <nastava.db> <out dir>
        uv run pages/build.py --strip <out dir>/site
-Writes <out>/site. Pagefind runs after this script and writes <out>/site/pagefind; --strip then removes the hidden
+Writes <out>/site, most pages as fragments of shell.html (split_page). Pagefind runs after this script and writes <out>/site/pagefind; --strip then removes the hidden
 text Pagefind read from the item pages.
 """
 import json
@@ -185,9 +185,26 @@ def newest(rows):
     return sorted(rows, key=lambda r: r["date"] or "", reverse=True)
 
 
+MAIN = '<main class="main" id="sadrzaj">'
+shell = None  # shell.html, set by main()
+
+
+def split_page(html):
+    """A page -> (shell, fragment). The shell is the page with an empty <title> and <!--main--> for the main part;
+    the fragment is the <title> and the main part, in <html lang="sr"> so that Pagefind reads it.
+    The Worker (pages/src/index.js join) puts them together again."""
+    t0, t1 = html.index("<title>"), html.index("</title>") + len("</title>")
+    m0, m1 = html.index(MAIN) + len(MAIN), html.rindex("</main>")
+    return (html[:t0] + "<title></title>" + html[t1:m0] + "<!--main-->" + html[m1:],
+            f'<html lang="sr">{html[t0:t1]}{html[m0:m1]}</html>')
+
+
 def write(path, html):
+    """Write only the page's fragment: every page but the home and 404 pages shares shell.html."""
+    page_shell, fragment = split_page(html)
+    assert page_shell == shell, f"{path}: the page differs from shell.html outside <title> and <main>"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(html, encoding="utf-8")
+    path.write_text(fragment, encoding="utf-8")
 
 
 def load_topics(db, items):
@@ -344,6 +361,9 @@ def main(db_path, out):
         it["who"] = it["teacher"]["full_name"] if it["teacher"] else it["author"]
     topics = load_topics(db, items)
     env.globals["side"] = side = side_panel(items, smerovi)
+    global shell
+    shell = split_page(env.get_template("base.html").render())[0]
+    (site / "shell.html").write_text(shell, encoding="utf-8")
     for t in teachers:
         for s in t["subjects"]:
             if s["subj"] and t not in s["subj"].setdefault("teachers", []):
@@ -365,6 +385,8 @@ if __name__ == "__main__":
     assert [plural(n, "tema") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "tema teme tema tema tema tema teme tema tema".split()
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
+    _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
+    assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if sys.argv[1] == "--strip":
         strip_pagefind(Path(sys.argv[2]))
     else:

@@ -7,3 +7,7 @@ workers_dev = false
 routes = [
   { pattern = "nastava.valjdakosta.com", custom_domain = true }
 ]
+
+# The origin; server.bat overrides it with the local pages/serve.py.
+[vars]
+PAGES = "https://kostajovanovic.github.io/nastava"
