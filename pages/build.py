@@ -315,6 +315,8 @@ def load_teachers(db, subjects):
         m = re.search(r'<img[^>]+src="([^"]*_media/fakultet/nastavnici/[^"]+)"', t["html"] or "")
         t["thumb"] = m and urljoin(STUDY_SITE, unescape(m[1]))
         t["photo"] = m and t["thumb"].split("?")[0]
+        # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
+        t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
