@@ -1,8 +1,16 @@
-"""Script switch and side panel checks in Edge: python pismo_test.py <base url> <item path> <out dir>."""
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["playwright", "jinja2==3.1.6", "nh3==0.3.2"]
+# ///
+"""Script switch and side panel checks in Edge: uv run test/pismo_test.py <base url> <item path> <out dir>."""
 import re
 import sys
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'pages'))
+from build import fold  # noqa: E402
 
 base, item, out = sys.argv[1].rstrip('/'), sys.argv[2], sys.argv[3]
 sys.stdout.reconfigure(encoding='utf-8')
@@ -31,7 +39,11 @@ with sync_playwright() as p:
 
 	page.goto(f'{base}/{item}/')
 	page.wait_for_load_state('networkidle')
-	original = page.evaluate("() => fetch(location.href).then(r => r.text())")
+	# The browser folds the query (pismoFold) as build.py folds the index; when they differ, a search misses.
+	words = ['Ђачки распоред, Čas', 'ЏЕМПЕР Љиљана Њива', 'ŠĐŽČĆ šđžčć', 'Ђорђе Đorđe', 'naïve Ñandú', 'Йод ӂ ё']
+	assert page.evaluate('w => w.map(pismoFold)', words) == [fold(w) for w in words]
+	print('pismoFold = build.py fold')
+	original =page.evaluate("() => fetch(location.href).then(r => r.text())")
 	lat = main_text(page)
 	print('default latin, cyrillic letters left in main:', len(CYR.findall(lat)), '| button:', page.get_attribute('#pismo', 'data-pismo'))
 	assert not CYR.findall(lat), lat[:300]

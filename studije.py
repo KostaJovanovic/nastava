@@ -91,8 +91,5 @@ def main():
 
 
 if __name__ == '__main__':
-	assert media_path('/_media/studije/i_godina.pdf?cache=1') == 'studije/i_godina.pdf'
-	assert media_path('/lib/exe/fetch.php?media=studije:itm1.pdf') == 'studije/itm1.pdf'
-	assert media_path('https://example.com/_media/x.pdf') is None
-	assert not safe(media_path('/lib/exe/fetch.php?media=:x.pdf')) and not safe('a/../../x.pdf') and not safe('x.svg')
+	# media_path and safe are checked in test/parsers_test.py.
 	main()

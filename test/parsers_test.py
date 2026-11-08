@@ -1,5 +1,8 @@
-"""The scrapers' parsers on saved pages (test/fixtures), no network:
-uv run --with beautifulsoup4 --with requests python test/parsers_test.py
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["requests", "beautifulsoup4"]
+# ///
+"""The scrapers' parsers on saved pages (test/fixtures), no network: uv run test/parsers_test.py
 A change on the board or on www.mas.bg.ac.rs: save the new page over the fixture and fix the parser until this passes."""
 import sqlite3
 import sys
@@ -12,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 import nastava  # noqa: E402
 import nastavnici  # noqa: E402
 import predmeti  # noqa: E402
+import studije  # noqa: E402
 
 FIX = ROOT / 'test' / 'fixtures'
 read = lambda name: (FIX / name).read_text(encoding='utf-8')
@@ -89,4 +93,11 @@ assert (1, 1, None, None, '1554') in rows and len([r for r in rows if r[2] == '1
 subject = predmeti.parse_subject(read('predmet.html'))
 assert {k: subject[k] for k in ('name', 'ects', 'katedra', 'holder')} == dict(name='Математика 1', ects=6, katedra='Катедра за математику', holder='494')
 assert '<p>' in subject['html'], 'the page text keeps its paragraphs'
+
+# A schedule file's link and its path under the built site: no way out of it, no type that runs script there.
+assert studije.media_path('/_media/studije/i_godina.pdf?cache=1') == 'studije/i_godina.pdf'
+assert studije.media_path('/lib/exe/fetch.php?media=studije:itm1.pdf') == 'studije/itm1.pdf'
+assert studije.media_path('https://example.com/_media/x.pdf') is None
+assert not studije.safe(studije.media_path('/lib/exe/fetch.php?media=:x.pdf'))
+assert not studije.safe('a/../../x.pdf') and not studije.safe('x.svg') and studije.safe('studije/i_godina.pdf')
 print('parsers ok')
