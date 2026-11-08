@@ -1,8 +1,8 @@
 """Serve the built site on this PC, with /static/ live from pages/static: python pages/serve.py [port]
 
 An edit to the CSS, JS or icons shows on the next reload, with no build. The pages themselves (templates, the
-database) still come from the last build in pages/.build/site. Those are fragments: browse through the Worker
-(`wrangler dev`, see server.bat), which joins them with shell.html.
+database) still come from the last build in pages/.build/site. Most are fragments: join() puts them into
+shell.html, as the Worker (pages/src/index.js join) does on the live site.
 """
 import posixpath
 import sys
@@ -13,6 +13,13 @@ from urllib.parse import unquote, urlsplit
 
 HERE = Path(__file__).resolve().parent
 SITE = HERE / ".build" / "site"
+FRAGMENT = '<html lang="sr"><title>'
+
+
+def join(shell, fragment):
+    end = fragment.index("</title>") + len("</title>")
+    title, main = fragment[fragment.index("<title>"):end], fragment[end:fragment.rindex("</html>")]
+    return shell.replace("<title></title>", title, 1).replace("<!--main-->", main, 1)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -22,12 +29,27 @@ class Handler(SimpleHTTPRequestHandler):
         self.directory = str(HERE if clean.startswith("/static/") else SITE)
         return super().translate_path(path)
 
+    def do_GET(self):
+        file = Path(self.translate_path(self.path))
+        if file.is_dir() and urlsplit(self.path).path.endswith("/"):
+            file = file / "index.html"
+        page = file.read_text(encoding="utf-8") if file.suffix == ".html" and file.is_file() else ""
+        if not page.startswith(FRAGMENT):
+            return super().do_GET()
+        body = join((SITE / "shell.html").read_text(encoding="utf-8"), page).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
 
 if __name__ == "__main__":
+    assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title>$& M</html>") == "<title>T</title><b>$& M</b>"
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 3000
     print(f"http://localhost:{port}  (static: {HERE / 'static'})")
     ThreadingHTTPServer(("", port), partial(Handler, directory=str(SITE))).serve_forever()

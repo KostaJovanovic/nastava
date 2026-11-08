@@ -19,9 +19,7 @@ Every script is a uv script with inline dependencies (`# /// script` header), so
     uv run pages/build.py nastava.db pages/.build      # render the site to pages/.build/site
     npx -y pagefind@1.6.0 --site pages/.build/site     # search index; must run after build.py
     uv run pages/build.py --strip pages/.build/site    # then drop the hidden text Pagefind read (~50 MB)
-    server.bat [build]              # (re)build and serve on http://localhost:3000 (asks for admin: firewall rule)
-                                    # = serve.py on 3001 + the Worker (wrangler dev) on 3000, which joins the pages
-    python pages/serve.py [port]    # serve the last build; /static/ live from pages/static (no build for CSS/JS)
+    server.bat [build]              # (re)build and serve on http://localhost:3000 (asks for admin: firewall rule)    python pages/serve.py [port]    # serve the last build; /static/ live from pages/static (no build for CSS/JS)
     bash ci/state.sh pull|push      # get/save nastava.db as an asset of the `state` GitHub release
     cd pages && wrangler deploy     # the Cloudflare Worker
     save.bat quick "message"        # git add + commit + push
@@ -51,8 +49,8 @@ on the `state` release; the two newest are kept).
 
 **Pages are stored as fragments.** `build.py write()` stores each page (all but home and 404) as `<html lang="sr">` +
 its `<title>` + the inside of `<main>`; the rest, the same on every page, is `site/shell.html`. The Worker `join()`s
-them per request, so the raw GitHub Pages URL shows bare fragments and local testing goes through `wrangler dev`
-(server.bat). A template that changes anything outside `<title>`/`<main>` per page fails `write()`'s assert.
+them per request (the raw GitHub Pages URL shows bare fragments); `pages/serve.py join()` does the same locally. Keep
+the two in step. A template that changes anything outside `<title>`/`<main>` per page fails `write()`'s assert.
 
 **Scrapers share one database.** `nastava.py` owns the schema for `forums`, `topics`, `posts`, `documents` and the
 `connect()`/`get()`/`session()` helpers; `documents.py` imports `nastava`. `studije.py` (`study_pages`, `study_files`)

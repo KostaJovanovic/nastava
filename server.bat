@@ -30,8 +30,8 @@ call npx -y pagefind@1.6.0 --site pages/.build/site || goto fail
 uv run pages/build.py --strip pages/.build/site || goto fail
 
 :serve
-rem Kill anything already listening on ports 3000/3001 so we always start fresh
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr "LISTENING" ^| findstr ":3000 :3001 "') do taskkill /F /PID %%p >nul 2>&1
+rem Kill anything already listening on port 3000 so we always start fresh
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr "LISTENING" ^| findstr ":3000 "') do taskkill /F /PID %%p >nul 2>&1
 netsh advfirewall firewall delete rule name="Nastava Port 3000" >nul 2>&1
 netsh advfirewall firewall add rule name="Nastava Port 3000" dir=in action=allow protocol=tcp localport=3000 >nul
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
@@ -43,13 +43,8 @@ echo   Local:   http://localhost:3000
 echo   Network: http://%LOCAL_IP%:3000
 echo ============================================
 echo.
-rem The build holds page fragments: the Worker on 3000 joins them with shell.html, as on the live site.
-start "nastava files" /min python pages\serve.py 3001
 start "" "http://localhost:3000"
-cd pages
-rem 127.0.0.1, not localhost: workerd tries IPv6 first and waits 2 s for each request.
-call npx -y wrangler@4.158.0 dev --ip 0.0.0.0 --port 3000 --var PAGES:http://127.0.0.1:3001
-cd ..
+python pages\serve.py 3000
 pause
 exit /b 0
 

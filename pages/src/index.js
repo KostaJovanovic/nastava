@@ -1,8 +1,8 @@
 // Serve the site from GitHub Pages through the edge cache. The attachments link straight to the faculty's site.
-// The site is public: there is no auth. env.PAGES is the origin: GitHub Pages (wrangler.toml), or the local
-// pages/serve.py under `wrangler dev` (server.bat).
+// The site is public: there is no auth.
+const PAGES = "https://kostajovanovic.github.io/nastava";
 // Most pages are stored as a fragment, <html lang="sr"> with their <title> and main part; join() puts it into
-// shell.html (build.py split_page). A whole page starts with <!doctype html>.
+// shell.html (build.py split_page). A whole page starts with <!doctype html>. pages/serve.py joins the same way.
 const FRAGMENT = '<html lang="sr"><title>';
 // Pagefind file names have a content hash, except these entry files.
 const ENTRY = /^\/pagefind\/pagefind[^/]*\.(js|json|css)$/;
@@ -16,7 +16,7 @@ function cacheControl(path) {
 	return "public, max-age=300";
 }
 
-async function page(url, PAGES) {
+async function page(url) {
 	const response = await fetch(PAGES + url.pathname + url.search, { redirect: "manual" });
 	// GitHub Pages adds the trailing slash with a redirect to the project path.
 	const location = response.headers.get("Location");
@@ -47,18 +47,16 @@ export default {
 		}
 		const url = new URL(request.url);
 		const key = new Request(url.toString());
-		// No cache locally: a rebuild must show on the next reload.
-		const local = !env.PAGES.startsWith("https://");
-		const cached = !local && (await caches.default.match(key));
+		const cached = await caches.default.match(key);
 		if (cached) {
 			// The zone's Browser Cache TTL replaces Cache-Control on a cached response, so set it again.
 			const response = new Response(cached.body, cached);
 			response.headers.set("Cache-Control", cacheControl(url.pathname));
 			return response;
 		}
-		const origin = await page(url, env.PAGES);
+		const origin = await page(url);
 		// Cache only a 200: a 404 for a new Pagefind file must not stay in the cache.
-		if (origin.status !== 200 || local) return origin;
+		if (origin.status !== 200) return origin;
 		const response = new Response(origin.body, origin);
 		response.headers.delete("Expires");
 		response.headers.set("Cache-Control", cacheControl(url.pathname));
