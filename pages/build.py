@@ -384,7 +384,8 @@ def service(url):
         if re.search(rx, host):
             return name
     if host.endswith(".mas.bg.ac.rs") and host.split(".")[0] not in ("nastava", "www", "vesti"):
-        return host
+        # A department's Moodle (mat, motori: /moodle; it0 and cs are only one): needs a login, as the others.
+        return "Moodle" if u.path.lower().startswith("/moodle") or host.split(".")[0] in ("it0", "cs") else host
     return None
 
 
@@ -1195,8 +1196,9 @@ if __name__ == "__main__":
     assert fold(short_smer(PROGRAMS[0].replace(" — ", " - "))) == fold("ОАС - МИ")
     assert [service(u) for u in ("https://teams.microsoft.com/l/x", "https://docs.google.com/document/d/1", "https://docs.google.com/forms/d/1",
                                  "https://us02web.zoom.us/j/1", "http://ie.mas.bg.ac.rs/x", "https://nastava.mas.bg.ac.rs/x",
-                                 "https://abc.sharepoint.com/x", "https://youtu.be/x")] == [
-        "Teams", "Google Drive", None, None, "ie.mas.bg.ac.rs", None, "OneDrive", "YouTube"]
+                                 "https://abc.sharepoint.com/x", "https://youtu.be/x", "https://mat.mas.bg.ac.rs/moodle/login/",
+                                 "http://it0.mas.bg.ac.rs/")] == [
+        "Teams", "Google Drive", None, None, "ie.mas.bg.ac.rs", None, "OneDrive", "YouTube", "Moodle", "Moodle"]
     _a = lambda v: re.search(r'href="([^"]*)"', clean_html(f'<a href="{v}">x</a>'))[1].replace("&amp;", "&")
     assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
