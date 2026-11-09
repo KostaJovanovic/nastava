@@ -130,17 +130,13 @@ def parse_profile(html):
 	text = head.get_text('\n') if head else ''
 	kat = head and head.select_one('a[href^="/organizacija/katedre/"]')
 	sec = sections(main)
-	hours = sec.get('Термини за пријем студената')
-	# An empty 'Кабинет :' with the room in the hours: 'Уторак у 14, кабинет 331', '(кабинет 228).',
-	# 'кабинет 257/3 или Завод за машине алатке (22)'; a note in parentheses after it is not the room.
-	room = re.search(r'кабинет\s+([^,;()\n]+(?:\(\d+\))?)', hours or '', re.I)
 	subjects = {}
 	for a in main.select('a[href^="/studije/predmeti/"]'):
 		code = a['href'].rsplit('/', 1)[-1]
 		subjects.setdefault(code, ' '.join(a.get_text().split()))
 	return dict(name=main.select_one('h2').get_text(strip=True),
 		katedra=kat and ' '.join(kat.get_text().split()), katedra_id=kat and int(kat['href'].rsplit('/', 1)[-1]),
-		office=field(text, 'Кабинет') or (room and room[1].strip(' .')), hours=hours,
+		office=field(text, 'Кабинет'), hours=sec.get('Термини за пријем студената'),
 		research=sec.get('Истраживачка област'), html=str(main)), subjects
 
 
