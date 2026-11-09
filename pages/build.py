@@ -953,6 +953,10 @@ def render_teachers(site, teachers, items, book):
         t["courses"] = sorted(courses.values(), key=lambda c: (-(c["mine"] or 0), not c["subj"], azbuka(c["name"])))
         t["find"] = fold(" ".join([t["full_name"], t["title"] or "", t["katedra"] or "", t["email"] or "", t["research"] or "",
                                    t["office"] or ""] + [s["name"] for s in t["subjects"]]))
+        # How far the grey corner reaches (style.css --p): the longer since they were last at the faculty, the more of
+        # the card, up to 85% for the 1860s; by the square root, so the recent decades still differ. No year: none.
+        ago = date.today().year - int(t["last_seen"][:4]) if t["gone"] and t["last_seen"][:4] != "0000" else 0
+        t["age"] = round(85 * min(1, max(0, ago) / 165) ** 0.5)
     for t in teachers:
         source = base = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
         name = "mas.bg.ac.rs"
