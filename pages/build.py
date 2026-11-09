@@ -954,6 +954,8 @@ def render_teachers(site, teachers, items, book):
     subj_pages = {f"/studije/predmeti/{c}": h for c, h in book_href.items()}
     subj_pages |= {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
                    for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("live")}
+    # A page the plans list under several names (Завршни предмет's areas, load_book): one row per name.
+    areas = {s["id"] for s in book for p in s["places"] if p["variants"]}
     for t in teachers:
         t["posts"] = newest(posts[t["username"]]) if t["username"] else []
         # The profile's subjects: one row per archive subject (it can have several codes), archived first.
@@ -961,9 +963,10 @@ def render_teachers(site, teachers, items, book):
         courses = {}
         for s in t["subjects"]:
             archived = s["subj"] if s["subj"] and s["subj"].get("live") else None
+            area = s["code"] in areas
             # One row per name too: a subject the profile lists under two codes ('Трибологија' twice).
-            row = courses.setdefault(archived["id"] if archived else fold(s["name"]),
-                                     dict(name=s["name"], subj=archived, codes=[], mine=archived and mine[archived["id"]],
+            row = courses.setdefault(archived["id"] if archived and not area else fold(s["name"]),
+                                     dict(name=s["name"], subj=archived, area=area, codes=[], mine=archived and mine[archived["id"]],
                                           url=book_href.get(s["code"]) or f"{STUDY_SITE}studije/predmeti/{s['code']}"))
             row["codes"].append(s["code"])
         # Where they post most first; subjects without their posts after, by name.
@@ -1036,18 +1039,34 @@ def load_book(db, subjects, teachers):
         ids = [s["holder"]] + re.findall(r"/fakultet/nastavnici/(\d+)", m[1] if m else "")
         s["teachers"] = [teacher[i] for i in dict.fromkeys(ids) if i in teacher]
         s["holder_t"] = teacher.get(s["holder"])
+    # A teacher by the subjects their profile lists, for an area of Завршни предмет ('Завршни предмет - Трибологија').
+    by_area = {(c["code"], fold(c["name"])): t for t in teachers if not t["gone"] for c in t["subjects"]}
     # i: the order the plans were read in (predmeti.py: programs, then the modules as the master's page lists them).
     for i, r in enumerate(db.execute("SELECT * FROM subject_places ORDER BY rowid")):
-        places = by_id[r["subject"]]["places"] if r["subject"] in by_id else None
-        # A place stored more than once (predmeti.py before it listed a slot's subject once: Завршни предмет 102 times).
+        if r["subject"] not in by_id:
+            continue
+        s = by_id[r["subject"]]
         key = lambda p: (p["program"], p["module"], p["semester"], p["slot"])
-        if places is not None and not any(key(p) == key(r) for p in places):
-            places.append(dict(r, i=i, label=slot_label(r["slot_name"], r["slot"]) if r["slot"] else None))
+        place = next((p for p in s["places"] if key(p) == key(r)), None)
+        if place is None:
+            place = dict(r, i=i, label=slot_label(r["slot_name"], r["slot"]) if r["slot"] else None, names=[])
+            s["places"].append(place)
+        # The slot's list can link one page under several names, each a choice (Завршни предмет: 102 areas).
+        # get: a database from before predmeti.py kept the names.
+        if (name := dict(r).get("name")) and name not in place["names"]:
+            place["names"].append(name)
     for s in book:
         s["find"] = fold(" ".join([s["name"], s["id"], s["katedra"] or "", s["program"]]
                                   + [t["name"] for t in s["teachers"]] + [p["module"] or "" for p in s["places"]]))
         if s["forum"]:
             s["forum"].setdefault("info", s)
+        # One row per name in the subject list; its own id, so site.js does not take the areas for one subject.
+        for p in s["places"]:
+            names, p["variants"] = p.pop("names"), []
+            for n in names if len(names) > 1 else []:
+                t = by_area.get((s["id"], fold(n)))
+                p["variants"].append(dict(s, name=n, id=f"{s['id']}-{slug(n)}", holder_t=t,
+                                          find=fold(f"{n} {t['name'] if t else ''}") + " " + s["find"]))
     return book
 
 
@@ -1063,7 +1082,7 @@ def plan_groups(book):
             plan = plans.setdefault((p["program"], p["module"]), {})
             sem = plan.setdefault(p["semester"], dict(sem=p["semester"], req=[], slots={}))
             if p["slot"]:
-                sem["slots"].setdefault((p["pos"], p["slot"]), dict(label=p["label"], rows=[]))["rows"].append(s)
+                sem["slots"].setdefault((p["pos"], p["slot"]), dict(label=p["label"], rows=[]))["rows"].extend(p["variants"] or [s])
             else:
                 sem["req"].append((p["pos"], s))
         if not s["places"]:

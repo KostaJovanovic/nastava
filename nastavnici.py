@@ -26,7 +26,7 @@ SCHEMA = '''
 create table if not exists teachers (id text primary key, name text, full_name text, title text, katedra text, katedra_id integer,
 	office text, email text, username text, phone text, hours text, research text, emeritus integer, html text,
 	first_seen text, last_seen text, gone integer default 0, photo text);
-create table if not exists teacher_subjects (teacher text, code text, name text, primary key (teacher, code));
+create table if not exists teacher_subjects (teacher text, code text, name text, primary key (teacher, code, name));
 create table if not exists photos (url text primary key, data blob, type text, fetched text);
 '''
 
@@ -130,10 +130,11 @@ def parse_profile(html):
 	text = head.get_text('\n') if head else ''
 	kat = head and head.select_one('a[href^="/organizacija/katedre/"]')
 	sec = sections(main)
-	subjects = {}
+	# [(code, name)]: one page can be several subjects, Завршни предмет's areas ('Завршни предмет - Трибологија', 0361).
+	subjects = []
 	for a in main.select('a[href^="/studije/predmeti/"]'):
-		code = a['href'].rsplit('/', 1)[-1]
-		subjects.setdefault(code, ' '.join(a.get_text().split()))
+		if (s := (a['href'].rsplit('/', 1)[-1], ' '.join(a.get_text().split()))) not in subjects:
+			subjects.append(s)
 	return dict(name=main.select_one('h2').get_text(strip=True),
 		katedra=kat and ' '.join(kat.get_text().split()), katedra_id=kat and int(kat['href'].rsplit('/', 1)[-1]),
 		office=field(text, 'Кабинет'), hours=sec.get('Термини за пријем студената'),
@@ -198,7 +199,7 @@ def sync(db):
 		profile, subjects = parse_profile(html)
 		save(db, dict(row, **{k: v for k, v in profile.items() if v or k not in row}, emeritus=0), now)
 		db.execute('delete from teacher_subjects where teacher = ?', (row['id'],))
-		db.executemany('insert into teacher_subjects values (?,?,?)', [(row['id'], c, n) for c, n in subjects.items()])
+		db.executemany('insert into teacher_subjects values (?,?,?)', [(row['id'], c, n) for c, n in subjects])
 		if i % 25 == 0:
 			db.commit()
 			print(f'{i}/{len(listed)}', flush=True)
@@ -343,7 +344,7 @@ def history(db):
 		if not keys & taken and not live.intersection(ids)}
 	print(f'{len(seen)} ids in the archived lists, {len(people)} people, {len(left)} not listed today', flush=True)
 	for n, (i, (first, last, row)) in enumerate(left.items(), 1):
-		subjects = {}
+		subjects = []
 		if i in profiles:
 			try:
 				profile, subjects = parse_profile(page(*profiles[i]))
@@ -352,7 +353,7 @@ def history(db):
 					row = dict(row, **{k: v for k, v in profile.items() if v or k not in row})
 				else:
 					print(f'{i} {row["full_name"]}: the profile is {profile["name"]}, not used', flush=True)
-					subjects = {}
+					subjects = []
 			except RuntimeError as e:
 				print(f'{i} {row["full_name"]}: {e}', flush=True)
 		if row.get('katedra'):
@@ -361,7 +362,7 @@ def history(db):
 			wb_time(last))
 		db.execute('update teachers set first_seen = ?, gone = 1 where id = ?', (wb_time(first), i))
 		db.execute('delete from teacher_subjects where teacher = ?', (i,))
-		db.executemany('insert into teacher_subjects values (?,?,?)', [(i, c, s) for c, s in subjects.items()])
+		db.executemany('insert into teacher_subjects values (?,?,?)', [(i, c, s) for c, s in subjects])
 		db.commit()
 		print(f'{n}/{len(left)} {row["full_name"]} {first[:4]}-{last[:4]}', flush=True)
 
@@ -457,6 +458,10 @@ def main():
 	# photo: added after the table (history); null but for a departed teacher whose photo the faculty lost.
 	if 'photo' not in {c[1] for c in db.execute('pragma table_info(teachers)')}:
 		db.execute('alter table teachers add column photo text')
+	# The key had no name (one area of Завршни предмет per teacher); the rows are kept, the departed ones' are slow to read.
+	if 'primary key (teacher, code))' in db.execute("select sql from sqlite_master where name = 'teacher_subjects'").fetchone()[0]:
+		db.executescript('alter table teacher_subjects rename to old_subjects;' + SCHEMA
+			+ 'insert into teacher_subjects select * from old_subjects; drop table old_subjects;')
 	commands[cmd](db)
 
 

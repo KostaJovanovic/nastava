@@ -29,7 +29,7 @@ SCHEMA = '''
 create table if not exists subjects (id text primary key, name text, program text, kind text, ects integer, exam text,
 	katedra text, holder text, html text, first_seen text, last_seen text, gone integer default 0);
 create table if not exists subject_places (program text, module text, semester integer, pos integer, slot text,
-	slot_name text, subject text);
+	slot_name text, subject text, name text);
 '''
 
 
@@ -84,20 +84,21 @@ def parse_plan(html, index=0):
 
 
 def parse_electives(html):
-	"""{'section54': [subject ids]}: an elective list, one heading ('5.4') per slot. A subject linked again in the same
-	slot (Завршни предмет 6.5 is linked once per teacher, 102 times) is listed once."""
+	"""{'section54': [(subject id, name)]}: an elective list, one heading ('5.4') per slot, with each link's text.
+	One page can be several choices: Завршни предмет 6.5 links 102 areas ('Завршни предмет - Трибологија') to 0361."""
 	out, key = {}, None
 	for el in soup(html).select_one('div.page').find_all(['h2', 'h3', 'h4', 'a']):
 		if el.name != 'a':
 			m = re.fullmatch(r'(\d+)\.(\d+)', el.get_text(strip=True))
 			key = m and f'section{m.group(1)}{m.group(2)}'
-		elif key and (sid := subject_id(el.get('href'))) and sid not in out.setdefault(key, []):
-			out[key].append(sid)
+		elif key and (sid := subject_id(el.get('href'))):
+			if (link := (sid, ' '.join(el.get_text().split()))) not in out.setdefault(key, []):
+				out[key].append(link)
 	return out
 
 
 def places(cells, electives):
-	"""The rows of subject_places for one plan (without program and module). electives(href) -> subject ids."""
+	"""The rows of subject_places for one plan (without program and module). electives(href) -> [(subject id, name)]."""
 	rows = []
 	for sem, pos, td in cells:
 		name = ' '.join(td.get_text().split())
@@ -107,9 +108,9 @@ def places(cells, electives):
 			links = td.find_parent('div', class_='page').select(f'a[href$="#section{m.group(1)}{m.group(2)}"]')[:1]
 		for a in links:
 			if sid := subject_id(a['href']):
-				rows.append((sem, pos, None, None, sid))
+				rows.append((sem, pos, None, None, sid, None))
 			elif m := re.search(r'#section(\d)(\d+)$', a['href']):
-				rows += [(sem, pos, f'{m.group(1)}.{m.group(2)}', name, s) for s in electives(a['href'])]
+				rows += [(sem, pos, f'{m.group(1)}.{m.group(2)}', name, s, n) for s, n in electives(a['href'])]
 	return rows
 
 
@@ -169,8 +170,10 @@ def sync(db):
 		# An elective's link: '#section54' on the same page (a module) or 'oas-izborni#section54' on another.
 		electives = lambda href: parse_electives(page(href.split('#')[0] or path)).get(href.split('#')[1], [])
 		rows += [(program, module, *r) for r in places(parse_plan(page(path), i), electives)]
-	db.execute('delete from subject_places')
-	db.executemany('insert into subject_places values (?,?,?,?,?,?,?)', rows)
+	# Made again on every sync, so a new column needs no migration.
+	db.execute('drop table subject_places')
+	db.executescript(SCHEMA)
+	db.executemany('insert into subject_places values (?,?,?,?,?,?,?,?)', rows)
 	for i, (sid, (name, program)) in enumerate(book.items(), 1):
 		html = page(f'studije/predmeti/{sid}')
 		row = dict(id=sid, name=name, program=program)

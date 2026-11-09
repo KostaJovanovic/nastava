@@ -69,7 +69,7 @@ assert listed[0] == dict(id='1', full_name='др Драган С. Алексен
                          phone='локал 390; директан 3370-346', email='daleksendric@mas.bg.ac.rs')
 profile, subjects = nastavnici.parse_profile(read('nastavnik.html'))
 assert (profile['name'], profile['katedra_id'], profile['office'], profile['research']) == ('Душан Љ. Ђукић', 12, '440', 'нумеричка анализа')
-assert len(subjects) == 8 and subjects['1623'] == 'Математика 1'
+assert len(subjects) == 8 and ('1623', 'Математика 1') in subjects
 emeriti = nastavnici.parse_emeritus(read('emeritus.html'))
 assert len(emeriti) == 6 and emeriti[0]['id'] == 'emeritus-madzic' and emeriti[0]['name'] == 'Мирољуб Аџић'
 # The name of a listed teacher whose profile is missing: the same as the profile's.
@@ -82,17 +82,18 @@ assert len(book) == 784 and book['1623'] == ('Математика 1', 'Осно
 electives = predmeti.parse_electives(read('oas-izborni.html'))
 assert len(electives['section54']) == 19
 rows = predmeti.places(predmeti.parse_plan(read('oas.html'), 0), lambda href: electives.get(href.split('#')[1], []))
-assert (1, 1, None, None, '1623') in rows and (1, 3, None, None, '0203') in rows and (1, 3, None, None, '1415') in rows
+assert (1, 1, None, None, '1623', None) in rows and (1, 3, None, None, '0203', None) in rows and (1, 3, None, None, '1415', None) in rows
 assert len([r for r in rows if r[2] == '5.4']) == 19
-# The final subject's cell has no link; its list is linked elsewhere on the page. The list links the one final
-# subject once per teacher: it is one place.
-assert [r[4] for r in rows if r[2] == '6.5'] == ['0361']
+# The final subject's cell has no link; its list is linked elsewhere on the page. The list links one page, 0361,
+# under 102 names, one per area: 102 choices.
+final = [r for r in rows if r[2] == '6.5']
+assert {r[4] for r in final} == {'0361'} and len(final) == 102 and final[0][5] == 'Завршни предмет - CAD/CAM системи', final[0]
 assert [s for s, p, td in predmeti.parse_plan(read('oas.html'), 1)].count(1) == 6
 modules = predmeti.parse_modules(read('mas.html'))
 assert len(modules) == 21 and modules[0] == ('Аутоматско управљање', 'studije/mas/modul-18')
 modul = read('modul.html')
 rows = predmeti.places(predmeti.parse_plan(modul), lambda href: predmeti.parse_electives(modul).get(href.split('#')[1], []))
-assert (1, 1, None, None, '1554') in rows and len([r for r in rows if r[2] == '1.5']) == 4
+assert (1, 1, None, None, '1554', None) in rows and len([r for r in rows if r[2] == '1.5']) == 4
 subject = predmeti.parse_subject(read('predmet.html'))
 assert {k: subject[k] for k in ('name', 'ects', 'katedra', 'holder')} == dict(name='Математика 1', ects=6, katedra='Катедра за математику', holder='494')
 assert '<p>' in subject['html'], 'the page text keeps its paragraphs'
