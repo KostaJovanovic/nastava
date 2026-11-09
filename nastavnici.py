@@ -130,13 +130,17 @@ def parse_profile(html):
 	text = head.get_text('\n') if head else ''
 	kat = head and head.select_one('a[href^="/organizacija/katedre/"]')
 	sec = sections(main)
+	hours = sec.get('Термини за пријем студената')
+	# An empty 'Кабинет :' with the room in the hours: 'Уторак у 14, кабинет 331', '(кабинет 228).',
+	# 'кабинет 257/3 или Завод за машине алатке (22)'; a note in parentheses after it is not the room.
+	room = re.search(r'кабинет\s+([^,;()\n]+(?:\(\d+\))?)', hours or '', re.I)
 	subjects = {}
 	for a in main.select('a[href^="/studije/predmeti/"]'):
 		code = a['href'].rsplit('/', 1)[-1]
 		subjects.setdefault(code, ' '.join(a.get_text().split()))
 	return dict(name=main.select_one('h2').get_text(strip=True),
 		katedra=kat and ' '.join(kat.get_text().split()), katedra_id=kat and int(kat['href'].rsplit('/', 1)[-1]),
-		office=field(text, 'Кабинет'), hours=sec.get('Термини за пријем студената'),
+		office=field(text, 'Кабинет') or (room and room[1].strip(' .')), hours=hours,
 		research=sec.get('Истраживачка област'), html=str(main)), subjects
 
 
@@ -153,6 +157,16 @@ def parse_emeritus(html):
 		rows.append(dict(id=f'emeritus-{email.split("@")[0]}', full_name=full, title=title, email=email,
 			name=plain_name(full), emeritus=1, html=f'<div class="page">{box}</div>'))
 	return rows
+
+
+def parse_katedra(html):
+	"""The untitled names on a department page's staff list: its emeriti ('Мирољуб М. Аџић'), as name_key."""
+	from bs4 import BeautifulSoup
+	h = BeautifulSoup(html, 'html.parser').select_one('div.page h2[id^="наставници"]')
+	if h is None:
+		raise RuntimeError('katedra: no staff list, the site changed')
+	lines = [split_title(l) for l in h.find_next('p').get_text('\n').split('\n') if l.strip()]
+	return {name_key(plain_name(full)) for full, title in lines if not title}
 
 
 def save(db, row, now):
@@ -195,6 +209,19 @@ def sync(db):
 	emeriti = parse_emeritus(page(EMERITUS))
 	for row in emeriti:
 		save(db, row, now)
+	# The emeritus page names no department; the department pages list their emeriti, untitled. A name on two of them
+	# is left without one. save keeps a found one (an emeritus row has no katedra).
+	missing = {name_key(r['name']): r['id'] for r in emeriti}
+	missing = {k: i for k, i in missing.items() if not db.execute('select katedra from teachers where id = ?', (i,)).fetchone()[0]}
+	found = {}
+	katedre = dict(db.execute('select katedra_id, katedra from teachers where katedra_id is not null and not gone'))
+	for k, name in katedre.items() if missing else ():
+		html = page(f'organizacija/katedre/{k}')
+		for key in (parse_katedra(html) if html else set()) & missing.keys():
+			found.setdefault(key, []).append((name, k))
+	for key, places in found.items():
+		if len(places) == 1:
+			db.execute('update teachers set katedra = ?, katedra_id = ? where id = ?', (*places[0], missing[key]))
 	gone = db.execute('update teachers set gone = 1 where last_seen != ?', (now,)).rowcount
 	db.commit()
 	n = db.execute('select count(*) from teacher_subjects').fetchone()[0]
