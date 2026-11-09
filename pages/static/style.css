@@ -247,9 +247,14 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .ft__links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 .ft a { color: var(--head-fg); text-decoration: none; }
 .ft a:hover { color: var(--head-fg); text-decoration: underline; text-underline-offset: 3px; }
-.ft__links a { font-weight: 600; }
+.ft .ft__site, .ft__by a { font-weight: 600; }
 .ft__note { font-size: 13px; }
-.ft__by a { font-weight: 600; }
+.ft__side { display: grid; gap: 8px; }
+@media (min-width: 760px) { .ft__side { justify-items: end; } }
+/* The credit's wave (site.js): each letter rises in turn, as on valjdakosta.com's header. */
+.wave { display: inline-block; animation: wave 2s ease-in-out infinite; }
+@keyframes wave { 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .wave { animation: none; } }
 @media (min-width: 900px) {
   .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px; padding: 16px 20px 28px; }}
 

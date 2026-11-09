@@ -67,16 +67,20 @@
 <footer class="ft">
   <div class="ft__in">
     <nav class="ft__links" aria-label="Linkovi">
-      <a href="https://nastava.mas.bg.ac.rs/nastava/" data-ft-origin>nastava.mas.bg.ac.rs</a>
-      <a href="https://masinci.org/">masinci.org</a>
-      <a href="https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU" data-domain="kosta-onedrive.com">Veliki drajv</a>
+      <a class="ft__site" href="https://masinci.org/">masinci.org</a>
+      <a class="ft__site" href="https://nastava.mas.bg.ac.rs/nastava/" data-ft-origin>nastava.mas.bg.ac.rs</a>
       <a href="/feed.xml"><span data-notx>RSS</span> objava</a>
       <a href="/vesti/feed.xml"><span data-notx>RSS</span> vesti</a>
       <a href="https://github.com/KostaJovanovic/nastava/issues">Prijavi grešku</a>
     </nav>
-    <p class="ft__note">Nezvanična arhiva, nije povezana sa Mašinskim fakultetom.{% if built %} Ažurirano <time datetime="{{ built }}">{{ built | dmy }}</time>{% endif %}</p>
+    {#- The time: site.js writes "u hh:mm, dd.mm.yyyy." in the reader's time; without it, the date. -#}
+    <p class="ft__note">{% if built %}Provereno <time datetime="{{ built }}">{{ built | dmy }}</time> · {% endif %}Ovaj sajt je lični projekat. Nisam u komunikaciji sa fakultetom.</p>
   </div>
-  <p class="ft__by">Sa ❤️ napravio <a href="https://valjdakosta.com/" data-notx>valjdakosta</a> ⛅</p>
+  <div class="ft__side">
+    <a class="ft__site" href="https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU" data-domain="kosta-onedrive.com">Veliki drajv</a>
+    {#- A wave through its letters (site.js), as the header of valjdakosta.com. -#}
+    <p class="ft__by" data-wave>Sa ❤️ napravio <a href="https://valjdakosta.com/" data-notx>valjdakosta</a> ⛅</p>
+  </div>
 </footer>
 <script src="/static/pismo.js"></script>
 <script src="/static/site.js"></script>

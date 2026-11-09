@@ -639,11 +639,31 @@
   /* The footer's first link: the part of the faculty's sites this page copies (base.html data-origin). */
   var orig = d.querySelector('[data-origin]'), ftOrig = d.querySelector('[data-ft-origin]');
   if (orig && ftOrig) { ftOrig.href = orig.href; ftOrig.textContent = orig.hostname.replace(/^www\./, ''); }
-  // "Ažurirano": the build's time (UTC) in the reader's own.
+  // "Provereno": the build's time (UTC) in the reader's own.
   var built = d.querySelector('.ft time'), bt = built && new Date(built.dateTime);
   if (bt && !isNaN(bt)) {
     var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
-    built.textContent = p2(bt.getDate()) + '.' + p2(bt.getMonth() + 1) + '.' + bt.getFullYear() + '. u ' + p2(bt.getHours()) + ':' + p2(bt.getMinutes());
+    built.textContent = 'u ' + p2(bt.getHours()) + ':' + p2(bt.getMinutes()) + ', ' + p2(bt.getDate()) + '.' + p2(bt.getMonth() + 1) + '.' + bt.getFullYear() + '.';
+  }
+  /* The credit's wave (as valjdakosta.com's header): each letter a span, its delay one step behind the one before;
+     the words stay whole (nowrap), an emoji with its variation selector one letter. */
+  var wave = d.querySelector('[data-wave]');
+  if (wave) {
+    var waveText = [], walker = d.createTreeWalker(wave, NodeFilter.SHOW_TEXT), tn;
+    while ((tn = walker.nextNode())) waveText.push(tn);
+    var waveN = waveText.reduce(function (n, t) { return n + (t.data.match(/\S️?/g) || []).length; }, 0), waveI = 0;
+    waveText.forEach(function (t) {
+      var frag = d.createDocumentFragment();
+      t.data.split(/(\s+)/).forEach(function (word) {
+        if (!word || /^\s+$/.test(word)) { frag.appendChild(d.createTextNode(word)); return; }
+        var w = frag.appendChild(el('span'));
+        w.style.whiteSpace = 'nowrap';
+        word.match(/.️?/g).forEach(function (ch) {
+          w.appendChild(el('span', 'wave', ch)).style.animationDelay = -((waveN - 1 - waveI++) * 0.15) + 's';
+        });
+      });
+      t.parentNode.replaceChild(frag, t);
+    });
   }
 
   var leave = null;
