@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Build the site on this PC and publish it. The scraping and building happen here; GitHub only hosts the result:
 # the site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
-# Usage: bash ci/deploy.sh [sync]   (from the repo root)
+# Usage: bash ci/deploy.sh [sync|forum]   (from the repo root)
 #   sync   test the parsers, run the scrapers (posts, schedule pages, teachers, subjects), save the state
 #          (ci/state.sh push), then build and publish
+#   forum  the same, but only the board (the one daily changing source; the other scrapers ~8 min of unchanged pages)
 # As in sync.yml: missing posts or a failed side scraper do not stop the publish, but the script exits 1 at the end.
 # shortcut: everything runs on a PC for now; when the daily run moves to Actions, put the cron back in sync.yml.
 set -euo pipefail
@@ -11,14 +12,16 @@ repo=KostaJovanovic/nastava
 export PYTHONIOENCODING=utf-8
 failed=()
 
-if [[ ${1:-} == sync ]]; then
+if [[ ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run test/parsers_test.py
 	uv run nastava.py sync
 	# Right after the scrape, so a post made since then does not count as missing.
 	uv run nastava.py stats || failed+=(stats)
-	uv run studije.py sync || failed+=(studije)
-	uv run nastavnici.py sync || failed+=(nastavnici)
-	uv run predmeti.py sync || failed+=(predmeti)
+	if [[ $1 == sync ]]; then
+		uv run studije.py sync || failed+=(studije)
+		uv run nastavnici.py sync || failed+=(nastavnici)
+		uv run predmeti.py sync || failed+=(predmeti)
+	fi
 	bash ci/state.sh push
 fi
 

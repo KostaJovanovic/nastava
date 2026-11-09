@@ -23,7 +23,7 @@ Every script is a uv script with inline dependencies (`# /// script` header), so
     bash ci/deploy.sh [sync]        # (test, scrape, save state,) build, upload the site, run deploy.yml: publishes from this PC
     bash ci/state.sh pull|push      # get/save nastava.db as an asset of the `state` GitHub release
     cd pages && wrangler deploy     # the Cloudflare Worker
-    save.bat quick "message"        # git add + commit + push (save.bat deploy [sync]: + ci/deploy.sh; save.bat update: ci/deploy.sh sync, no git)
+    save.bat quick "message"        # git add + commit + push (save.bat deploy [sync]: + ci/deploy.sh; save.bat update [all]: ci/deploy.sh forum|sync, no git)
 
 Env vars read by `nastava.py`: `DB` (path to the database, default `./nastava.db`), `DELAY` (0.5 s), `WORKERS` (2).
 Keep the scraping polite: no more parallelism or less delay than that.
