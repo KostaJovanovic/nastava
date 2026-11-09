@@ -899,7 +899,8 @@ def load_history(teachers):
         years = re.findall(r"\d{4}", h["years"] or "")
         new.append(dict(id=f"ist-{slug(h['name'] + ' ' + (h['life'] or ''))}", name=h["name"], full_name=h["name"],
                         title=h["title"] or "", katedra=h["katedra"], katedra_id=None, office=None, email=None, username=None,
-                        phone=None, hours=None, research=None, emeritus=0, html=None, first_seen=None,
+                        phone=None, hours=None, research=((h.get("card") or {}).get("fields") or {}).get("research"),
+                        emeritus=0, html=None, first_seen=None,
                         last_seen=max(years) if years else "0000", gone=1, photo=None, subjects=[], history=h,
                         suffix=h["life"] and slug(h["life"])))
     return new

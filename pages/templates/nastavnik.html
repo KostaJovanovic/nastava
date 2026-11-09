@@ -135,6 +135,21 @@
 </section>
 {%- endif %}
 
+{%- if h and h.card %}
+{#- Their card on the faculty's old site (2005-2014), from the Wayback Machine: as it was then, so office, phone and
+    e-mail are those of that time. -#}
+{%- set labels = {'title': 'Zvanje', 'katedra': 'Katedra', 'role': 'Funkcija', 'research': 'Istraživačka oblast',
+                  'teaching': 'Nastavna oblast, predmeti', 'education': 'Obrazovanje', 'publications': 'Publikacije, priznanja, nagrade',
+                  'memberships': 'Članstva', 'office': 'Kabinet', 'phone': 'Telefon', 'email': 'Mejl', 'web': 'Lična veb stranica'} %}
+<details class="tp__bio"{% if past %} open{% endif %}>
+  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>Profil sa starog sajta fakulteta ({{ h.card.date[:4] }})</summary>
+  <dl class="tp__dl tp__card">
+    {%- for k, label in labels.items() if h.card.fields[k] %}<dt>{{ label }}</dt><dd>{{ h.card.fields[k] }}</dd>{% endfor %}
+  </dl>
+  <p class="tp__src">Stanje od {{ h.card.date[6:8] }}.{{ h.card.date[4:6] }}.{{ h.card.date[:4] }}. (kabinet, telefon i mejl su iz tog vremena), sa <a href="{{ h.card.url }}" rel="noopener" target="_blank">web.archive.org <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+</details>
+{%- endif %}
+
 {%- if html %}
 <details class="tp__bio">
   <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{% if source_name == 'masinac.org' %}Profil sa studentskog portala masinac.org{% elif t.source %}Odakle su ovi podaci{% else %}Ceo profil sa sajta fakulteta: obrazovanje, radovi{% endif %}</summary>

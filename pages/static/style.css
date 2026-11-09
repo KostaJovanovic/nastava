@@ -1039,6 +1039,9 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .tp__bio summary .i { transition: transform .15s; }
 .tp__bio[open] summary .i { transform: rotate(90deg); }
 .tp__bio .prose { padding: 4px 18px 0; }
+/* The old site's card: its fields as the band's, with room for the long ones (education, publications). */
+.tp__card { padding: 4px 18px 0; gap: 6px 18px; }
+.tp__card dd { white-space: pre-line; }
 .tp__src { margin: 14px 0 0; padding: 10px 18px 12px; border-top: 1px solid var(--line-2); color: var(--dim); font-size: 12.5px; }
 .tp__src a { color: var(--link); }
 
