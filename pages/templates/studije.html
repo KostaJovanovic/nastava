@@ -4,7 +4,7 @@
 {#- One version of a schedule page: the newest at /studije/<slug>/, each older one under its first date (build.py). -#}
 {%- set _old = page is not sameas current %}
 {% block title %}{{ page.title }}{% if _old %} ({{ page.first_seen | dmy }}){% endif %}{% endblock %}
-{% block crumbs %}{% if _old %}{{ crumb(current.href, current.title) }}{% endif %}{% endblock %}
+{% block crumbs %}{{ crumb('/raspored/', 'Kalendar i rasporedi') }}{% if _old %}{{ crumb(current.href, current.title) }}{% endif %}{% endblock %}
 
 {% block main %}
 <div class="mh">

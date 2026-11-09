@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{#- The calendar and the schedules on one page (build.py render_study_pages): the calendar's file as a banner, the
+    lecture schedule by program (build.py parse_lectures; site.js makes the programs tabs, without it they are one
+    under the other), then the exam schedule as the faculty's page has it. The sources link the archived pages,
+    which keep every version. -#}
+{% block title %}Kalendar i rasporedi{% endblock %}
+
+{%- macro pdf() %}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-file"></use></svg>{% endmacro %}
+
+{% block main %}
+<div class="mh">
+  <h1 id="title">Kalendar i rasporedi</h1>
+  <p class="mh__sub">sa mas.bg.ac.rs{% if checked %}, provereno {{ checked | dmy }}{% endif %} · ranije verzije:
+    {%- for href, title in sources %} <a href="{{ href }}">{{ title | lower }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
+</div>
+
+{%- if calendar %}
+<a class="rs-cal" href="{{ calendar[1] }}">
+  <svg class="i rs-cal__i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>
+  <span class="rs-cal__t"><small>Kalendar nastave i ispita</small><b>{{ calendar[0] }}</b></span>
+  <span class="rs-cal__go">{{ pdf() }}Otvori PDF</span>
+</a>
+{%- endif %}
+
+<section class="panel rs" aria-labelledby="rs-h" data-rs>
+  <div class="rs__head">
+    <h2 id="rs-h">Raspored predavanja</h2>
+    {%- if lectures %}<p>{{ lectures.semester }}{% if lectures.semester and lectures.title %} · {% endif %}{{ lectures.title }}</p>{% endif %}
+  </div>
+  {%- if lectures %}
+  {#- Without site.js the tabs are links to the programs below. -#}
+  <nav class="mp__tabs rs__tabs" aria-label="Studijski program">
+    {%- for p in lectures.programs %}
+    <a class="mp__tab" href="#{{ p.key }}" data-rs-tab>{% if p.name %}<small>{{ p.level }}</small><span>{{ p.name }}</span>{% else %}<span>{{ p.level }}</span>{% endif %}</a>
+    {%- endfor %}
+  </nav>
+  {%- for p in lectures.programs %}
+  <section class="rs-prog" id="{{ p.key }}" data-prog aria-label="{{ p.level }}{% if p.name %} — {{ p.name }}{% endif %}">
+    <h3 class="rs-prog__h">{{ p.level }}{% if p.name %} <span>{{ p.name }}</span>{% endif %}</h3>
+    {%- if p.cards %}
+    <h4 class="rs-lbl">Obavezni predmeti</h4>
+    <ul class="rs-cards">
+      {%- for badge, name, href in p.cards %}
+      <li><a class="rs-card" href="{{ href }}"><span class="rs-card__b{% if badge | length > 1 %} rs-card__b--code{% endif %}">{{ badge }}</span><span class="rs-card__n">{{ name }}</span>{{ pdf() }}</a></li>
+      {%- endfor %}
+    </ul>
+    {%- endif %}
+    {%- for label, links, word in [('Izborni predmeti', p.electives, 'blok'), ('Računarske sale', p.rooms, 'sala')] if links %}
+    <h4 class="rs-lbl">{{ label }}</h4>
+    <ul class="rs-chips">
+      {%- for text, href in links %}<li><a href="{{ href }}" title="{{ word }} {{ text }}">{{ pdf() }}{{ text }}</a></li>{% endfor %}
+    </ul>
+    {%- endfor %}
+    {%- for n in p.notes %}<p class="rs-note">{{ n }}</p>{% endfor %}
+  </section>
+  {%- endfor %}
+  {%- elif lectures_html %}
+  <div class="prose prose--html">{{ lectures_html | safe }}</div>
+  {%- endif %}
+</section>
+
+{%- if exams_html %}
+<section class="panel rs" aria-labelledby="ri-h">
+  <div class="rs__head"><h2 id="ri-h">Raspored ispita</h2></div>
+  <div class="prose prose--html">{{ exams_html | safe }}</div>
+</section>
+{%- endif %}
+{% endblock %}

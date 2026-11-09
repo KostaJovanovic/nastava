@@ -303,9 +303,69 @@ def render_places(site, topics, smerovi, subjects):
             write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t))
 
 
+def strip_tags(html):
+    return " ".join(unescape(re.sub(r"<[^>]+>", " ", html or "")).split())
+
+
+LINK = re.compile(r'<a [^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.S)
+ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4}
+
+
+def first_link(html):
+    """(text, href) of a page's first link, or None: the calendar's file on its page."""
+    m = LINK.search(html or "")
+    return m and (strip_tags(m[2]), unescape(m[1]))
+
+
+def schedule_card(line, text):
+    """A schedule link as a card, (badge, name): 'I god. raspored …' and '… - 1. godina' are years ('1', '1. godina');
+    'BMI - Biomedicinsko inženjerstvo' is a module ('BMI', 'Biomedicinsko inženjerstvo')."""
+    m = re.match(r"(IV|I{1,3})\s*god", line)
+    n = ROMAN[m[1]] if m else (int(y[1]) if (y := re.search(r"(\d)\.\s*godina", text)) else None)
+    if n:
+        return str(n), f"{n}. godina"
+    code, _, name = text.partition(" - ")
+    return (code, name) if name and len(code) <= 4 else ("", text)
+
+
+def parse_lectures(html):
+    """The lecture schedule page (raspored-predavanja) as data for /raspored/: its title (h2), its semester (h3), and
+    per program (an h4) its schedules as cards, its elective blocks, its computer rooms and its notes. A line is the
+    text between <br>s: 'Izborni predmeti: 5.4, 5.5', 'Računarske sale: 324, …', a line with no link is a note,
+    any other link a schedule. None when the page has no program: /raspored/ then shows the page as it is."""
+    heads = re.findall(r"<h([23])[^>]*>(.*?)</h\1>", html or "", re.S)
+    out = dict(title=next((strip_tags(h) for n, h in heads if n == "2"), ""),
+               semester=next((strip_tags(h) for n, h in heads if n == "3"), ""), programs=[])
+    for part in re.split(r"(?=<h4)", html or "")[1:]:
+        head = re.match(r"<h4[^>]*>(.*?)</h4>", part, re.S)
+        if not head:
+            continue
+        # 'OSNOVNE AKADEMSKE STUDIJE - MAŠINSKO INŽENjERSTVO' -> 'Osnovne akademske studije', 'Mašinsko inženjerstvo'
+        level, _, name = strip_tags(head[1]).lower().partition(" - ")
+        p = dict(key=slug(strip_tags(head[1])), level=level.capitalize(), name=name.capitalize(),
+                 cards=[], electives=[], rooms=[], notes=[])
+        for line in re.split(r"<br\s*/?>|</?p\b[^>]*>|</?div\b[^>]*>", part[head.end():]):
+            text = strip_tags(line)
+            links = [(strip_tags(t), unescape(h)) for h, t in LINK.findall(line)]
+            if not links:
+                # 'Obavezni predmeti, (po modulima):' only heads the links under it.
+                if text and not text.endswith(":"):
+                    p["notes"].append(text)
+            elif fold(text).startswith("izborni"):
+                p["electives"] += links
+            elif "sal" in fold(text.split(":")[0]):
+                p["rooms"] += links
+            else:
+                p["cards"] += [(*schedule_card(text, t), h) for t, h in links]
+        out["programs"].append(p)
+    return out if out["programs"] else None
+
+
 def render_study_pages(site, db):
     """The schedule pages of www.mas.bg.ac.rs (studije.py), with their files served from this site. The newest version
-    of a page is at /studije/<slug>/; each older one has a page of its own, linking the files as they were then."""
+    of a page is at /studije/<slug>/; each older one has a page of its own, linking the files as they were then.
+    /raspored/ puts the newest of all three on one page: the calendar and OAS MI's years first, then the lecture
+    and the exam schedules."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'study_pages'").fetchone():
         return
     # Every version of every file: the one seen last keeps the plain URL, an older one is under its hash.
@@ -324,7 +384,7 @@ def render_study_pages(site, db):
         then = [url for first, url in seen if first <= when]
         return then[-1] if then else seen[0][1] if seen else None
 
-    pages = defaultdict(list)
+    pages, now = defaultdict(list), {}
     for r in db.execute("SELECT * FROM study_pages ORDER BY slug, last_seen DESC"):
         pages[r["slug"]].append(dict(r))
     for name, versions in pages.items():
@@ -341,6 +401,14 @@ def render_study_pages(site, db):
                 html = html[:m.start()] + html[m.end():]
             write(site / v["href"].strip("/") / "index.html", env.get_template("studije.html").render(
                 page=v, current=versions[0], versions=versions, html=html, source_url=source))
+            if v is versions[0]:
+                now[name] = dict(page=v, html=html)
+    get = lambda slug: now.get(slug, {}).get("html")
+    write(site / "raspored" / "index.html", env.get_template("raspored.html").render(
+        calendar=first_link(get("kalendar-nastave")), lectures=parse_lectures(get("raspored-predavanja")),
+        lectures_html=get("raspored-predavanja"), exams_html=get("raspored-ispita"),
+        sources=[(now[slug]["page"]["href"], title) for slug, title in STUDY_PAGES.items() if slug in now],
+        checked=max((n["page"]["last_seen"] for n in now.values()), default=None)))
 
 
 def load_teachers(db, subjects):
@@ -571,7 +639,7 @@ def side_panel(items):
     """The counts of the side panel (sidebar.html), the same on every page."""
     years = Counter(r["year"] for r in items if r["year"])
     return dict(total=len(items), kinds=Counter(KIND[r["kind"]] for r in items),
-                year_hist=sorted(years.items()), study_pages=STUDY_PAGES)
+                year_hist=sorted(years.items()))
 
 
 def render_home(topics, smerovi, side, n_teachers):
@@ -668,6 +736,20 @@ if __name__ == "__main__":
         dict(n="Stari predmeti", s=[], c=[_g("", [1])])]), dict(n="Катедре", s=[], c=[_g("", [3])])], _p["tree"]
     assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [["Н", "/n/"]]
     assert _p["subjects"][0] == ["/1/", "Б"] and _p["subjects"][4:] == [["/b9/", "Д", 0]], _p["subjects"]
+    assert first_link('<h1>K</h1><a href="/f/k.pdf?a=1&amp;b=2">Календар  2026</a>') == ("Календар 2026", "/f/k.pdf?a=1&b=2")
+    _pr = ('<h2>Raspored 2026</h2><h3>Jesenji semestar</h3><h4>OSNOVNE AKADEMSKE STUDIJE - <b>MAŠINSKO</b> INŽENjERSTVO</h4>'
+           '<p>I god. <a href="/f/1.pdf">raspored</a> za obavezne<br/>II god. <a href="/f/2.pdf"> raspored</a></p>'
+           '<p>Izborni predmeti: <a href="/f/54.pdf">5.4</a>, <a href="/f/55.pdf">5.5</a><br/>Računarska sala: <a href="/f/3.pdf">324</a></p>'
+           '<h4>MASTER AKADEMSKE STUDIJE - INDUSTRIJA 4.0</h4><p>Obavezni (po modulima):<br/><a href="/f/b.pdf">BMI - Biomedicina</a><br/>'
+           '<a href="/f/i.pdf">OAS - Informacione - 3. godina</a></p><h4>DOKTORSKE</h4><p>Biće objavljen!</p>')
+    _l = parse_lectures(_pr)
+    assert (_l["title"], _l["semester"], [p["key"] for p in _l["programs"]]) == (
+        "Raspored 2026", "Jesenji semestar", ["osnovne-akademske-studije-masinsko-inzenjerstvo", "master-akademske-studije-industrija-4-0", "doktorske"])
+    assert _l["programs"][0] == dict(key=_l["programs"][0]["key"], level="Osnovne akademske studije", name="Mašinsko inženjerstvo",
+        cards=[("1", "1. godina", "/f/1.pdf"), ("2", "2. godina", "/f/2.pdf")], electives=[("5.4", "/f/54.pdf"), ("5.5", "/f/55.pdf")],
+        rooms=[("324", "/f/3.pdf")], notes=[]), _l["programs"][0]
+    assert _l["programs"][1]["cards"] == [("BMI", "Biomedicina", "/f/b.pdf"), ("3", "3. godina", "/f/i.pdf")]
+    assert _l["programs"][2]["notes"] == ["Biće objavljen!"] and parse_lectures("<p>x</p>") is None
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if len(sys.argv) != 3:

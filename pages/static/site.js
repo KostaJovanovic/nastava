@@ -11,16 +11,35 @@
   var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
 
   /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
-     (a teacher's page is under Nastavnici). The phone's "Raspored" menu closes on a tap elsewhere. */
-  var here = location.pathname.replace(/^\/nastavnik\//, '/nastavnici/');
+     (a teacher's page is under Nastavnici, an archived schedule page under Raspored). */
+  var here = location.pathname.replace(/^\/nastavnik\//, '/nastavnici/').replace(/^\/studije\//, '/raspored/');
   [].forEach.call(d.querySelectorAll('.snav a'), function (a) {
-    if (a.pathname === '/' ? here !== '/' : here.indexOf(a.pathname) !== 0) return;
-    a.setAttribute('aria-current', 'page');
-    var m = a.closest('.snav__more');
-    if (m) m.classList.add('is-here');
+    if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');
   });
-  var more = d.querySelector('.snav__more');
-  if (more) d.addEventListener('click', function (e) { if (!more.contains(e.target)) more.open = false; });
+
+  /* The lecture schedule (/raspored/): a program at a time, picked by its tab; the choice is kept for the next visit
+     and in the URL (#program). Without this, the tabs are links to the programs one under the other. */
+  var rs = d.querySelector('[data-rs]'), progs = rs ? [].slice.call(rs.querySelectorAll('[data-prog]')) : [];
+  if (progs.length) {
+    var tabs = [].slice.call(rs.querySelectorAll('[data-rs-tab]'));
+    var pick = function (key, keep) {
+      if (!progs.some(function (p) { return p.id === key; })) key = progs[0].id;
+      progs.forEach(function (p) { p.hidden = p.id !== key; });
+      tabs.forEach(function (t) { t.setAttribute('aria-current', t.hash === '#' + key); });
+      if (!keep) return;
+      try { localStorage.setItem('raspored', key); } catch (e) {}
+      history.replaceState(null, '', '#' + key);
+    };
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function (e) { e.preventDefault(); pick(t.hash.slice(1), true); });
+    });
+    var saved = null;
+    try { saved = localStorage.getItem('raspored'); } catch (e) {}
+    rs.classList.add('rs--tabs');
+    pick(decodeURIComponent(location.hash.slice(1)) || saved, false);
+    // A link to another program on the same page changes only the #.
+    window.addEventListener('hashchange', function () { pick(decodeURIComponent(location.hash.slice(1)), true); });
+  }
 
   /* Filters: open on wide screens, closed on phones (the search shows the active ones as chips). */
   var f = d.querySelector('details.filters');

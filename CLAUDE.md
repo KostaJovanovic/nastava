@@ -77,8 +77,9 @@ if any of them failed.
 **Site build (`pages/build.py` + `pages/templates/` + `pages/static/`):** Jinja2 templates, post HTML sanitized with
 nh3 (`clean_html`). Pages: home (smerovi), `/smer/<smer>/`, `/predmet/<smer>/<subject>/`, `/tema/<id>/` (topics with
 several posts), `/item/<id>/` (one post; this is what Pagefind indexes), `/nastavnici/` and `/nastavnik/<name>/`,
-schedule pages (the newest at `/studije/<slug>/`, each older version at `/studije/<slug>/<date>-<sha>/` with the files
-as they were then). Each subject page has a `novo.json` beside it (its newest topic rows), which `site.js` merges into
+`/raspored/` (the calendar, the lecture schedule read into programs by `parse_lectures()` and shown as tabs, the exam
+schedule), and the archived schedule pages behind it (the newest at `/studije/<slug>/`, each older version at
+`/studije/<slug>/<date>-<sha>/` with the files as they were then). Each subject page has a `novo.json` beside it (its newest topic rows), which `site.js` merges into
 "Moji predmeti" on the home page for the subjects a browser follows (a star, kept in localStorage). The side panel lists them and opens a picker dialog
 (`/izbor.json`, `picker()`: program tabs, module and year chips, then the year's required subjects and each elective
 block as cards, plus a teacher/subject search; every subject of the current plans, one without board topics linked to
@@ -90,8 +91,8 @@ name when they posted in a subject of that name.
 
 **Cyrillic/Latin search:** the board mixes both scripts. `fold()` in `build.py` turns text into Latin, no diacritics,
 lower case for the Pagefind index; the browser folds the query the same way (`pismoFold` in `pages/static/pismo.js`,
-used by `search.js` and `site.js`). The two must stay in sync. `pismo.js` also switches the whole page between Latin,
-Cyrillic and the original text.
+used by `search.js` and `site.js`). The two must stay in sync. `pismo.js` also switches the whole page between Latin
+and Cyrillic.
 
 **Header search in context:** the header bar is in the shell, so a page names its context with `data-scope` (and
 `data-ph`, `data-enter`, `data-people`); `site.js` adds a chip to the bar. On a list page (`[data-filter]`: teachers,
@@ -100,7 +101,7 @@ teachers from `/izbor.json`. The chip's × (or Backspace in an empty bar) goes b
 `pismoAttr()` in `pismo.js` sets the placeholder so the script switch keeps it.
 
 **Frontend:** plain JS, no bundler. Light theme unless the visitor picks dark; the script switch is Latin/Cyrillic only.
-On phones the page links are a bottom tab bar (`.snav`; the schedule pages in its "Raspored" menu). Teachers are
+On phones the page links are a bottom tab bar (`.snav`). Teachers are
 named without title or middle initial (`shown`) everywhere but their own page. `search.js` keeps all search state in the URL (`/?q=`, `smer`, year, `autor`, ...)
 and queries Pagefind client-side. `site.js` is optional enhancement: every page must work without it.
 
