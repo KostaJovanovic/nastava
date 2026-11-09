@@ -2,7 +2,7 @@
 
 A public archive of nastava.mas.bg.ac.rs, the notice board of Mašinski fakultet in Belgrade: every post (2014–today),
 with the schedules and the teachers of www.mas.bg.ac.rs. The attachments link to the faculty's site.
-The site is static. It is at https://nastava.valjdakosta.com. The UI is in Serbian.
+The site is static. It is at https://nastava.masinci.org (also https://nastava.valjdakosta.com). The UI is in Serbian.
 
 Built on Omar Žunić's [dlwms](https://github.com/omznc/dlwms) (the same archive for FIT Mostar): the same
 pipeline and site, with new scrapers for phpBB.

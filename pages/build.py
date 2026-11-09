@@ -37,7 +37,7 @@ RECENT = 20
 MINE = 10
 # The Atom feeds (write_feeds): the posts in a subject's and in the whole board's, and the domain of their links.
 FEED, FEED_ALL = 20, 50
-SITE_URL = "https://nastava.valjdakosta.com"
+SITE_URL = "https://nastava.masinci.org"
 PAGEFIND = "pagefind@1.6.0"
 # shortcut: a document page shows and indexes at most this much text; raise it if GitHub Pages' 1 GB allows.
 PAGE_TEXT = 300_000
