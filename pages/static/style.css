@@ -883,6 +883,8 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
   .post__body { padding: 10px 18px 16px; }
 }
 .note { padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: var(--r); background: var(--card); font-size: 14px; }
+.note--plain { border-left-width: 1px; border-left-color: var(--line); }
+.note code { overflow-wrap: anywhere; }
 
 .prose { max-width: 78ch; color: var(--text); font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; hyphens: auto; }
 .prose--html { white-space: normal; }

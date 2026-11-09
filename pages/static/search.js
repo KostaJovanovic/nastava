@@ -9,11 +9,15 @@ const rowTpl = document.getElementById("row-tpl");
 const resTpl = document.getElementById("res-tpl");
 const years = JSON.parse(document.querySelector("script[data-years]").dataset.years);
 // No index (a build Pagefind did not run on, or no network): the board index shows, with a note, not "Tražim…".
-const pagefind = await import("/pagefind/pagefind.js").catch(() => null);
+let loadError;
+const pagefind = await import("/pagefind/pagefind.js").catch((e) => ((loadError = e), null));
 if (!pagefind) {
 	document.documentElement.classList.remove("searching");
-	heading.append(build("p", { className: "note", textContent: "Pretraga trenutno nije dostupna." }, []));
-	throw new Error("pagefind.js did not load");
+	// The browser's own words in <code>, so pismo.js leaves them as they are.
+	const why = navigator.onLine ? "indeks pretrage (/pagefind/pagefind.js) nije učitan" : "nema internet veze";
+	heading.append(build("p", { className: "note note--plain" }, [`Pretraga nije dostupna: ${why}. Greška: `,
+		build("code", { textContent: String(loadError?.message || loadError) }, [])]));
+	throw loadError;
 }
 await pagefind.options({ excerptLength: 30 });
 // The newest items from the build, shown again when the search and the filters are cleared.
