@@ -1,14 +1,24 @@
 name: sync
 
-# For now the scraping and building run on a PC (ci/deploy.sh) and deploy.yml only publishes. To move the daily run
-# here, put the schedule back: schedule: [cron: "17 3 * * *"].
+# The automatic update: the same chain as on the PC (ci/deploy.sh): get the state, scrape, save the state, build,
+# publish through deploy.yml, then the web push. Every 2 hours by day only the board (ci/deploy.sh forum); once a week
+# also the schedule pages, the teachers and the subjects (ci/deploy.sh sync). A failure makes the run red (an e-mail).
+# GitHub may start a scheduled run late, and turns the schedule off after 60 days without a commit.
 on:
+  schedule:
+    - cron: "17 5-21/2 * * *"  # 05:17–21:17 UTC: 06–22 in Belgrade in winter, 07–23 in summer (the board's hours)
+    - cron: "47 2 * * 1"       # Monday night: everything
   workflow_dispatch:
+    inputs:
+      what:
+        description: "forum: only the board; sync: also the schedules, the teachers and the subjects"
+        type: choice
+        options: [forum, sync]
+        default: forum
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: write  # the state and site releases
+  actions: write   # ci/deploy.sh starts deploy.yml
 
 concurrency:
   group: sync
@@ -17,56 +27,20 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    timeout-minutes: 180
     env:
       GH_TOKEN: ${{ github.token }}
+      WHAT: ${{ github.event.schedule == '47 2 * * 1' && 'sync' || inputs.what || 'forum' }}
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "**/*.py"
-      - name: Test the parsers
-        run: uv run test/parsers_test.py
-      - name: Get the state
-        run: ci/state.sh pull
-      - name: Scrape the posts
-        run: uv run nastava.py sync
-      # Right after the scrape, so a post made since then does not count as missing.
-      # It fails the run at the end (last step), not here, so the state is still saved and deployed.
-      - name: Check the counts
-        id: counts
-        run: uv run nastava.py stats
-        continue-on-error: true
-      # A broken page on www.mas.bg.ac.rs must not stop the posts from being saved and deployed.
-      - name: Scrape the schedule pages and their files
-        id: studije
-        run: uv run studije.py sync
-        continue-on-error: true
-      - name: Scrape the teachers
-        id: nastavnici
-        run: uv run nastavnici.py sync
-        continue-on-error: true
-      - name: Scrape the subjects and the plans
-        id: predmeti
-        run: uv run predmeti.py sync
-        continue-on-error: true
-      # The attachments are not downloaded (documents.py): the site links them on the faculty's site.
-      - name: Save the state
-        run: ci/state.sh push
-      - name: Build the site
-        run: uv run pages/build.py nastava.db pages/.build
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: pages/.build/site
-      - id: deploy
-        uses: actions/deploy-pages@v4
-      # A red run (and GitHub's e-mail) when the archive misses posts or a side scraper failed.
-      - name: Report failures
-        if: steps.counts.outcome == 'failure' || steps.studije.outcome == 'failure' || steps.nastavnici.outcome == 'failure' || steps.predmeti.outcome == 'failure'
-        run: |
-          echo "counts: ${{ steps.counts.outcome }}, studije: ${{ steps.studije.outcome }}, nastavnici: ${{ steps.nastavnici.outcome }}, predmeti: ${{ steps.predmeti.outcome }}"
-          exit 1
+      # push-secret.json (ci/push.py keys) as the repository secret PUSH_SECRET; without it there is no web push.
+      - name: Get the web push keys
+        env:
+          PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
+        run: if [[ -n $PUSH_SECRET ]]; then printf '%s' "$PUSH_SECRET" > push-secret.json; fi
+      - name: Scrape, build, publish, notify
+        run: bash ci/deploy.sh "$WHAT"

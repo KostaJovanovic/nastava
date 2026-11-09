@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Build the site on this PC and publish it. The scraping and building happen here; GitHub only hosts the result:
-# the site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
+# Build the site and publish it, on this PC or in the scheduled run (sync.yml): the site goes up as an asset of the
+# "site" release, and the deploy workflow puts it on GitHub Pages as it is.
 # Usage: bash ci/deploy.sh [sync|forum]   (from the repo root)
-#   sync   test the parsers, run the scrapers (posts, schedule pages, teachers, subjects), save the state
-#          (ci/state.sh push), then build and publish
+#   sync   test the parsers, get the state (ci/state.sh pull), run the scrapers (posts, schedule pages, teachers,
+#          subjects), save the state (ci/state.sh push), build, publish, then the web push of the new posts
 #   forum  the same, but only the board (the one daily changing source; the other scrapers ~8 min of unchanged pages)
-# As in sync.yml: missing posts or a failed side scraper do not stop the publish, but the script exits 1 at the end.
-# shortcut: everything runs on a PC for now; when the daily run moves to Actions, put the cron back in sync.yml.
+#   (none) build and publish this copy's nastava.db
+# Missing posts or a failed side scraper do not stop the publish, but the script exits 1 at the end.
 set -euo pipefail
 repo=KostaJovanovic/nastava
 export PYTHONIOENCODING=utf-8
@@ -14,6 +14,9 @@ failed=()
 
 if [[ ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run test/parsers_test.py
+	# The saved state, not this PC's copy: the scheduled run on Actions (sync.yml) may be newer, and an older copy
+	# would scrape and notify its posts again.
+	bash ci/state.sh pull
 	# The newest post before the scrape: the posts after it get a web push once published (ci/push.py).
 	before=$(uv run -q ci/push.py last) || before=
 	uv run nastava.py sync
@@ -41,7 +44,8 @@ gh release view site -R "$repo" --json assets -q '.assets[].name' | sort | head 
 	xargs -r -I{} gh release delete-asset site {} -R "$repo" -y
 gh workflow run deploy.yml -R "$repo"
 echo "uploaded $name ($(du -h "$tmp/$name" | cut -f1)); deploy started: gh run list -R $repo -w deploy"
-# It waits until the new posts are on the site. Without the keys (another PC, Actions) there is no push.
+# It waits until the new posts are on the site. Without the keys (push-secret.json; on Actions the secret PUSH_SECRET)
+# there is no push.
 if [[ -n ${before:-} && -f push-secret.json ]]; then
 	uv run -q ci/push.py send "$before" || failed+=(push)
 fi

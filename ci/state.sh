@@ -10,6 +10,8 @@ pull)
 	# The asset names have a UTC time stamp, so the last name in sort order is the newest.
 	name=$(gh release view state -R "$repo" --json assets -q '.assets[].name' | sort | tail -n 1)
 	[[ -n $name ]] || { echo "no state asset" >&2; exit 1; }
+	# A WAL left from the old file would be applied to the new one.
+	rm -f nastava.db-wal nastava.db-shm
 	gh release download state -R "$repo" -p "$name" -O - | uv run --no-project --python 3.14 python -c "
 import sys, tarfile; tarfile.open(fileobj=sys.stdin.buffer, mode='r|zst').extractall(filter='data')"
 	echo "pulled $name"

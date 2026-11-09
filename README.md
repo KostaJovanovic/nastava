@@ -9,8 +9,10 @@ pipeline and site, with new scrapers for phpBB.
 
 ## How it works
 
-- For now the run is on a PC: `bash ci/deploy.sh sync`
-  1. tests the parsers on saved pages (`test/parsers_test.py`);
+- `.github/workflows/sync.yml` updates the site on GitHub: `bash ci/deploy.sh forum` every 2 hours by day (06–22 in
+  Belgrade), `bash ci/deploy.sh sync` on Monday night. By hand: `gh workflow run sync.yml` (`-f what=sync` for all),
+  or the same `ci/deploy.sh` on a PC. A run:
+  1. tests the parsers on saved pages (`test/parsers_test.py`) and gets the state (`ci/state.sh pull`);
   2. reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
      with a post in the last 14 days (an edit does not change the counts);
   3. checks the counts, then archives the schedules, the teachers and the subjects. A failure in these does not stop
@@ -18,8 +20,8 @@ pipeline and site, with new scrapers for phpBB.
   4. saves the state (`nastava.db`) to the `state` release (`ci/state.sh push`);
   5. builds the static site with Pagefind search, uploads it to the `site` release and starts the `deploy` workflow,
      which only publishes it to GitHub Pages;
-  6. exits 1 when the count check or a side scraper failed.
-  `.github/workflows/sync.yml` runs the same chain on GitHub; it has no schedule until the daily run moves there.
+  6. sends the web push of the new posts once they are on the site (`ci/push.py`);
+  7. exits 1 (a red run) when the count check, a side scraper or the push failed.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
   edge cache for a day at most (Pagefind's hashed files: a year). Most pages are stored as only their title and main
   part; the Worker puts them into `shell.html` (head, header, sidebar), which saves about 190 MB on GitHub Pages.
@@ -57,8 +59,9 @@ pipeline and site, with new scrapers for phpBB.
   iPhone only from the home screen). The Worker keeps each subscription with its subjects in KV: that is the only
   data the site keeps about a visitor, and it goes with the switch off. After a deploy with a scrape, `ci/deploy.sh`
   runs `ci/push.py send`: once the new posts are on the site, each browser gets one notification for those in its
-  subjects. The keys are in `push-secret.json` (git-ignored, on this PC only; a lost file means new keys and every
-  subscriber turning the switch on again).
+  subjects. The keys are in `push-secret.json` (git-ignored) and, for sync.yml, in the repository secret `PUSH_SECRET`
+  (`gh secret set PUSH_SECRET < push-secret.json`). Lost keys mean new ones and every subscriber turning the switch
+  on again.
 - `ci/deploy.sh`: scrape (with `sync`), build and publish from this PC. `ci/state.sh`: get and save `nastava.db`.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.

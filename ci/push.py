@@ -9,7 +9,7 @@ Usage: push.py keys | last | send <post id>
          pair drops every subscription. Prints where the public half and the Worker key go.
   last   print the newest post id in nastava.db (deploy.sh: before the scrape)
   send   once the newest is on the site, notify the posts after that id (pages/.build/push.json, from build.py)
-shortcut: the secret is a file on this PC; when the daily run moves to Actions, make it a repository secret.
+The scheduled run (sync.yml) writes push-secret.json from the repository secret PUSH_SECRET.
 """
 import base64
 import json
