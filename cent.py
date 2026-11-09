@@ -35,6 +35,7 @@ create table if not exists cent_pages (id integer, sha text, parent integer, men
 	primary key (id, sha));
 create table if not exists cent_notices (nid integer primary key autoincrement, key text unique, page integer,
 	title text, date text, html text, files text, first_seen text, last_seen text, gone integer not null default 0);
+create table if not exists cent_notice_old (nid integer, html text, files text, last_seen text);
 """
 # A file link's icon (an image in the link) gives way to the file's name; these hosts are videos.
 FILE = re.compile(r"\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|dwg|txt|m|py|csv|odt|ods|step|stp|igs|nc|jpe?g|png|gif|webp)$", re.I)
@@ -163,11 +164,15 @@ def store_page(db, p, code, html, seen):
 
 
 def store_notices(db, page_id, notices, seen):
-    """A notice is its page, title and date; a changed text updates it. One no longer on its page is marked gone."""
+    """A notice is its page, title and date; a changed text updates it, the text before goes to cent_notice_old (with
+    when it was last seen). One no longer on its page is marked gone. Nothing is deleted."""
     keys = []
     for n in notices:
         key = hashlib.sha1(f"{page_id}|{n['title']}|{n['date']}".encode()).hexdigest()
         keys.append(key)
+        old = db.execute("select nid, html, files, last_seen from cent_notices where key = ?", (key,)).fetchone()
+        if old and (old[1], old[2]) != (n["html"], json.dumps(n["files"])):
+            db.execute("insert into cent_notice_old values (?, ?, ?, ?)", old)
         db.execute("insert into cent_notices (key, page, title, date, html, files, first_seen, last_seen) "
                    "values (?, ?, ?, ?, ?, ?, ?, ?) on conflict (key) do update set html = excluded.html, "
                    "files = excluded.files, last_seen = excluded.last_seen, gone = 0",

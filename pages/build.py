@@ -288,8 +288,9 @@ def load_cent(db, smerovi, subjects):
 
     roots = {}
     for p in pages.values():
-        if p["code"] and not p["gone"] and top(p) is p:
-            if p["code"] not in roots or kids[p["id"]] > kids[roots[p["code"]]["id"]]:
+        # A section gone from cent stays (its pages are marked gone); of two with one code, one still there wins.
+        if p["code"] and top(p) is p:
+            if p["code"] not in roots or (not p["gone"], kids[p["id"]]) > (not roots[p["code"]]["gone"], kids[roots[p["code"]]["id"]]):
                 roots[p["code"]] = p
     book = {r["id"]: r for r in db.execute("SELECT id, name, program FROM subjects")} if db.execute(
         "SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone() else {}
@@ -339,7 +340,8 @@ def load_cent(db, smerovi, subjects):
                               date=day, year=int(day[:4]), topic=f"c{n['nid']}", num=n["nid"],
                               when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.", posted=posted, author="cent",
                               body=strip_tags(html), html=html, files=[], gone=n["gone"], source_url=p["link"]))
-        shown = []
+        shown, emptied = [], False
+        main = f"{s['href']}cent/{p['slug']}/"
         for i, v in enumerate(versions[p["id"]]):
             html = clean_html(v["html"], p["link"]) or ""
             # The page's first heading is its name ("Резултати испита"): the title, not repeated under it.
@@ -347,14 +349,16 @@ def load_cent(db, smerovi, subjects):
             title = strip_tags(m[1]) if m else v["title"]
             html = html[:m.start()] + html[m.end():] if m else html
             if not strip_tags(html) and "<a " not in html:
+                emptied = emptied or not shown
                 continue
-            href = f"{s['href']}cent/{p['slug']}/" if i == 0 else f"{s['href']}cent/{p['slug']}/{v['first_seen'][:10]}-{v['sha'][:6]}/"
+            # The newest version with content is the page's: a page cent emptied keeps its last content.
+            href = main if not shown else f"{main}{v['first_seen'][:10]}-{v['sha'][:6]}/"
             shown.append(dict(title=title, href=href, html=html, first_seen=v["first_seen"], last_seen=v["last_seen"]))
             new = i == len(versions[p["id"]]) - 1
             pushed.append(dict(k="s", id=v["rid"], s=s["href"], n=s["name"], t=f"{title}: {'nova stranica' if new else 'izmenjeno'}",
-                               u=f"{s['href']}cent/{p['slug']}/"))
-        if shown and shown[0]["href"] == f"{s['href']}cent/{p['slug']}/":
-            s.setdefault("cent", []).append(dict(title=shown[0]["title"], link=p["link"], gone=p["gone"], versions=shown))
+                               u=main))
+        if shown:
+            s.setdefault("cent", []).append(dict(title=shown[0]["title"], link=p["link"], gone=p["gone"] or emptied, versions=shown))
     return items, pushed
 
 
