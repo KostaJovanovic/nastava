@@ -255,6 +255,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 /* 3.2s a wave, 0.15s a letter (site.js): one hump about 21 letters long. */
 .wave { display: inline-block; animation: wave 3.2s ease-in-out infinite; }
 @keyframes wave { 50% { transform: translateY(-3px); } }
+/* A link's underline skips its inline-block letters: each letter has its own, so it waves with them. */
+.ft__by a, .ft__by a .wave { text-decoration: underline; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .wave { animation: none; } }
 @media (min-width: 900px) {
   .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px; padding: 16px 20px 28px; }}
