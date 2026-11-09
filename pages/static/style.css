@@ -315,7 +315,9 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   border-radius: 8px; background: var(--card); color: var(--fg); font-size: 13.5px; font-weight: 800;
 }
 .rs-cal__go .i { width: 15px; height: 15px; }
-.rs-cal:hover .rs-cal__go { color: var(--accent-t); }
+/* Hover: the text keeps the header's colour (a:hover's red clashes with the blue), the button fills like Traži. */
+.rs-cal:hover { color: var(--head-fg); }
+.rs-cal:hover .rs-cal__go { background: var(--go); color: #fff; }
 @media (max-width: 520px) { .rs-cal { flex-wrap: wrap; } .rs-cal__go { width: 100%; justify-content: center; } }
 
 /* The lecture schedule: a tab per program (site.js; without it, links to the programs one under the other). */
