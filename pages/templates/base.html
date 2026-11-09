@@ -74,7 +74,8 @@
       <a href="https://github.com/KostaJovanovic/nastava/issues">Prijavi grešku</a>
     </nav>
     {#- The time: site.js writes "u hh:mm, dd.mm.yyyy." in the reader's time; without it, the date. -#}
-    <p class="ft__note">{% if built %}Provereno <time datetime="{{ built }}">{{ built | dmy }}</time> · {% endif %}Ovaj sajt je lični projekat. Nisam u komunikaciji sa fakultetom.</p>
+    {#- Spans: a phone puts each on its own line, without the dot (style.css). -#}
+    <p class="ft__note">{% if built %}<span>Provereno <time datetime="{{ built }}">{{ built | dmy }}</time></span><span class="ft__dot"> · </span>{% endif %}<span>Ovaj sajt je lični projekat.</span> <span>Nisam u komunikaciji sa fakultetom.</span></p>
   </div>
   <div class="ft__side">
     <a class="ft__site" href="https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU" data-domain="kosta-onedrive.com">Veliki drajv</a>

@@ -263,8 +263,10 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   .ft__by a { padding: 0; }
   .ft__by { order: -1; grid-column: 1 / -1; margin-bottom: 8px; padding-bottom: 14px; text-align: center;
     border-bottom: 1px solid color-mix(in srgb, var(--head-fg) 20%, transparent); }
-  .ft__note { order: 1; grid-column: 1 / -1; margin-top: 8px; padding-top: 12px;
+  .ft__note { order: 1; grid-column: 1 / -1; margin-top: 8px; padding-top: 12px; text-align: center;
     border-top: 1px solid color-mix(in srgb, var(--head-fg) 20%, transparent); }
+  .ft__note > span { display: block; }
+  .ft__note > .ft__dot { display: none; }
 }
 /* The credit's wave (site.js): each letter rises in turn, as on valjdakosta.com's header. */
 /* 3.2s a wave, 0.15s a letter (site.js): one hump about 21 letters long. */
