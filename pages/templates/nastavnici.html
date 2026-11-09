@@ -2,6 +2,20 @@
 
 {% block title %}Nastavnici{% endblock %}
 
+{%- macro card(t) %}
+  <li class="pc" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
+    {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
+    {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
+    <div class="pc__t">
+      <a class="pc__a" href="{{ t.href }}">{{ t.shown }}</a>
+      <p>{{ t.title }}</p>
+      {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra }}</p>{% endif %}
+      {%- if t.gone %}<p class="pc__m">na spisku do {{ t.last_seen | dmy }}{% if t.posts %}, {{ t.posts | length }} {{ t.posts | length | pl('objava') }}{% endif %}</p>
+      {%- else %}<p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length }} {{ t.posts | length | pl('objava') }}{% endif %}</p>{% endif %}
+    </div>
+  </li>
+{%- endmacro %}
+
 {% block main %}
 <div class="mh">
   <h1 id="title">Nastavnici</h1>
@@ -41,19 +55,16 @@
 </form>
 <div class="groups" data-groups>
 <ol class="people" data-rows>
-  {%- for t in teachers %}
-  <li class="pc" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
-    {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
-    {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
-    <div class="pc__t">
-      <a class="pc__a" href="{{ t.href }}">{{ t.shown }}</a>
-      <p>{{ t.title }}</p>
-      {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra }}</p>{% endif %}
-      <p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length }} {{ t.posts | length | pl('objava') }}{% endif %}</p>
-    </div>
-  </li>
-  {%- endfor %}
+  {%- for t in teachers %}{{ card(t) }}{% endfor %}
 </ol>
 </div>
 <p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
+{#- Teachers gone from the faculty's list keep their pages; outside [data-rows], so the filter and grouping skip them.
+    shortcut: the header search does not filter this section, add it to site.js once the section grows long. -#}
+{%- if left %}
+<details class="sg">
+  <summary class="sg__h">Više nisu na spisku fakulteta <span>· {{ left | length }}</span></summary>
+  <ol class="people">{% for t in left %}{{ card(t) }}{% endfor %}</ol>
+</details>
+{%- endif %}
 {% endblock %}
