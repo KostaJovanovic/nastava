@@ -1086,6 +1086,8 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
    is the one on top, rolling out. */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 :root[data-vt="light"]::view-transition-old(root) { z-index: 1; }
+/* Going dark, the dark page is hidden until its circle starts moving, so it never shows whole for a frame. */
+:root[data-vt="dark"]::view-transition-new(root) { clip-path: circle(0 at 0 0); }
 
 /* ---- Preferences ---------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

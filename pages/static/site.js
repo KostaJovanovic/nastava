@@ -731,21 +731,25 @@
     showTheme();
   };
   if (tb) {
-    /* The switch as a big circle the size of the screen: dark rolls in from the left to cover it, light shows again as
-       the dark rolls out to the right (a view transition; style.css puts the dark page on top). Where the browser has
-       no view transitions, or motion is reduced, the theme changes at once. */
+    /* The switch as a big circle the size of the screen, on a valley's path: dark comes down from the upper left to
+       cover it; light shows again as the dark goes on up to the upper right (a view transition; style.css puts the
+       dark page on top). Where the browser has no view transitions, or motion is reduced, the theme changes at once. */
     tb.addEventListener('click', function () {
-      var t = theme() === 'dark' ? 'light' : 'dark';
+      var t = theme() === 'dark' ? 'light' : 'dark', dark = t === 'dark';
       if (!d.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return setTheme(t);
-      var w = innerWidth, r = Math.hypot(w, innerHeight) / 2;
-      var at = function (x) { return 'circle(' + r + 'px at ' + x + 'px 50%)'; };
+      var w = innerWidth, h = innerHeight, r = Math.hypot(w, h) / 2, frames = [];
+      // s: 0 → 1 along the way. Its height is a parabola, level at the centre: it comes down into it and goes up out.
+      for (var i = 0, s; i <= 24; i++) {
+        s = i / 24;
+        frames.push({ clipPath: 'circle(' + r + 'px at ' + (dark ? -r + s * (w / 2 + r) : w / 2 + s * (w / 2 + r)) + 'px '
+          + (h / 2 - r * (dark ? (1 - s) * (1 - s) : s * s)) + 'px)' });
+      }
       root.dataset.vt = t;
       var vt = d.startViewTransition(function () { setTheme(t); });
       vt.ready.then(function () {
-        root.animate({ clipPath: t === 'dark' ? [at(-r), at(w / 2)] : [at(w / 2), at(w + r)] }, {
-          duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)',
-          pseudoElement: t === 'dark' ? '::view-transition-new(root)' : '::view-transition-old(root)'
-        });
+        // fill both: no frame without the clip at either end (that was a flash of the whole dark page).
+        root.animate(frames, { duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'both',
+          pseudoElement: dark ? '::view-transition-new(root)' : '::view-transition-old(root)' });
       });
       vt.finished.then(function () { delete root.dataset.vt; });
     });
