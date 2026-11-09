@@ -364,7 +364,8 @@ async function run(page = 1, wait = 0) {
 
 function restoreFromUrl() {
 	const p = new URLSearchParams(location.search);
-	form.elements.q.value = p.get("q") ?? "";
+	// Text typed before this module loaded stays, and is searched.
+	if (p.has("q")) form.elements.q.value = p.get("q");
 	newest = p.get("red") === "novije";
 	for (const input of document.querySelectorAll('input[form="sf"]')) {
 		if (input.type === "radio") input.checked = input.value === (p.get(input.name) ?? "");
@@ -374,14 +375,16 @@ function restoreFromUrl() {
 	for (const name of ["autor", "subject", "smer", "from", "to"]) {
 		for (const value of p.getAll(name)) form.append(build("input", { type: "hidden", name, value }, []));
 	}
-	return p.size > 0;
+	return p.size > 0 || form.elements.q.value.trim() !== "";
 }
 
+// The header search's scope (site.js): in the teachers or the subjects, the bar does not search the posts.
+const posts = () => !["nastavnici", "predmeti"].includes(form.dataset.u);
 form.addEventListener("submit", (e) => {
 	e.preventDefault();
-	run();
+	if (posts()) run();
 });
-form.elements.q.addEventListener("input", () => run(1, 200));
+form.elements.q.addEventListener("input", () => { if (posts()) run(1, 200); });
 // A subject followed or no longer followed: a search on view covers the new list.
 document.addEventListener("moji", () => { if (state) run(); });
-if (restoreFromUrl()) run(Number(new URLSearchParams(location.search).get("page")) || 1);
+if (restoreFromUrl() && posts()) run(Number(new URLSearchParams(location.search).get("page")) || 1);

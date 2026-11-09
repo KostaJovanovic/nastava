@@ -477,13 +477,34 @@ def drop_empty_tables(html):
     return re.sub(r"(?:<h([1-6])[^>]*>(?:(?!</?h[1-6]).)*</h\1>(\s*(?:<div[^>]*>\s*)*))?<table\b.*?</table>", table, html, flags=re.S)
 
 
+def schedule_entries(calendar, lectures, exams_html):
+    """/raspored/ as the header search's entries (izbor.json raspored, site.js): [name, where, href] for the calendar,
+    each lecture schedule, elective block and room, and each row of the exam tables (its first cells, the page's link)."""
+    out = [["Kalendar nastave i ispita", calendar[0], calendar[1]]] if calendar else []
+    for p in (lectures or {}).get("programs", []):
+        where = " — ".join(filter(None, [p["level"], p["name"]]))
+        out += [[name, f"Raspored predavanja · {where}", href] for _, name, href in p["cards"]]
+        out += [[f"Izborni blok {t}", f"Raspored predavanja · {where}", h] for t, h in p["electives"]]
+        out += [[f"Sala {t}", f"Raspored predavanja · {where}", h] for t, h in p["rooms"]]
+    for table in re.findall(r"<table\b.*?</table>", exams_html or "", re.S):
+        heads = [strip_tags(h).split("(")[0].strip() for h in re.findall(r"<th\b[^>]*>(.*?)</th>", table, re.S)]
+        for row in re.findall(r"<tr\b[^>]*>(.*?)</tr>", table, re.S):
+            cells = [strip_tags(c) for c in re.findall(r"<td\b[^>]*>(.*?)</td>", row, re.S)]
+            if not cells or not cells[0]:
+                continue
+            dates = [f"{h} {c}" for h, c in zip(heads[1:3], cells[1:3]) if c]
+            link = LINK.search(row)
+            out.append([cells[0], " · ".join(["Raspored ispita"] + dates), unescape(link[1]) if link else "/raspored/#ri-h"])
+    return out
+
+
 def render_study_pages(site, db):
     """The schedule pages of www.mas.bg.ac.rs (studije.py), with their files served from this site. The newest version
     of a page is at /studije/<slug>/; each older one has a page of its own, linking the files as they were then.
     /raspored/ puts the newest of all three on one page: the calendar and OAS MI's years first, then the lecture
-    and the exam schedules."""
+    and the exam schedules. Returns /raspored/ as search entries (schedule_entries)."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'study_pages'").fetchone():
-        return
+        return []
     # Every version of every file: the one seen last keeps the plain URL, an older one is under its hash.
     newest, versions_of = {}, defaultdict(list)
     for r in db.execute("SELECT path, sha, data, first_seen FROM study_files ORDER BY path, last_seen DESC"):
@@ -520,11 +541,13 @@ def render_study_pages(site, db):
             if v is versions[0]:
                 now[name] = dict(page=v, html=html)
     get = lambda slug: now.get(slug, {}).get("html")
+    calendar, lectures = first_link(get("kalendar-nastave")), parse_lectures(get("raspored-predavanja"))
     write(site / "raspored" / "index.html", env.get_template("raspored.html").render(
-        calendar=first_link(get("kalendar-nastave")), lectures=parse_lectures(get("raspored-predavanja")),
+        calendar=calendar, lectures=lectures,
         lectures_html=get("raspored-predavanja"), exams_html=get("raspored-ispita"),
         sources=[(now[slug]["page"]["href"], title) for slug, title in STUDY_PAGES.items() if slug in now],
         checked=max((n["page"]["last_seen"] for n in now.values()), default=None)))
+    return schedule_entries(calendar, lectures, get("raspored-ispita"))
 
 
 def photo_path(url, kind):
@@ -931,9 +954,9 @@ def main(db_path, out):
         write(site / "item" / it["id"] / "index.html", render_item(it))
     render_teachers(site, teachers, items, book)
     render_book(site, book)
-    (site / "izbor.json").write_text(json.dumps(picker(subjects, book, teachers), ensure_ascii=False, separators=(",", ":")),
-                                     encoding="utf-8")
-    render_study_pages(site, db)
+    raspored = render_study_pages(site, db)
+    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers), raspored=raspored),
+                                                ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers)), encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")

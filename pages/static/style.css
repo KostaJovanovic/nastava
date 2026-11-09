@@ -169,7 +169,14 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   font: 400 16px var(--sans); outline: none;
 }
 .cmd input::placeholder { color: var(--dim); opacity: 1; }
-.cmd kbd { display: none; border-color: light-dark(var(--line), var(--slate)); }
+/* What the bar searches (site.js): a quiet pill after the text. */
+.cmd select {
+  flex: none; max-width: 40%; height: 28px; padding: 0 8px;
+  border: 0; border-radius: 14px; background: light-dark(#e1ebf2, #2f4d63); color: var(--fg);
+  font: 400 12.5px var(--sans); text-overflow: ellipsis; cursor: pointer;
+}
+.cmd select:hover { background: light-dark(#cadceb, #3a5a72); }
+.cmd select:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 1px; }
 .cmd__go {
   height: 32px; padding: 0 14px;
   border: 0; border-radius: 7px; background: var(--go); color: #fff;
@@ -178,26 +185,19 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .cmd__go:hover { background: var(--go-2); }
 /* A very narrow screen: no button, Enter (the keyboard's search key, enterkeyhint) searches. */
 @media (max-width: 420px) { .cmd__go { display: none; } .cmd { padding-right: 10px; } }
-/* The search's context on a list page (site.js): a chip after the text, in place of the / hint, whose × leaves it
-   for the whole archive; on a teacher's page, the matching teachers under the bar. */
+/* The matches under the bar (site.js): by type, the subjects by studije; scrolls on its own when long. */
 .cmd { position: relative; }
-.cmd.is-scoped kbd { display: none; }
-.cmd__scope {
-  display: inline-flex; align-items: center; gap: 4px; flex: none; max-width: 45%;
-  height: 26px; padding: 0 6px 0 10px;
-  border: 0; border-radius: 13px; background: light-dark(#e1ebf2, #2f4d63); color: var(--fg);
-  font: 400 12.5px var(--sans); cursor: pointer;
-}
-.cmd__scope span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cmd__scope .i { width: 14px; height: 14px; flex: none; }
-.cmd__scope:hover { background: light-dark(#cadceb, #3a5a72); }
-.cmd__scope:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 1px; }
 .cmd__list {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
-  margin: 0; padding: 4px; list-style: none;
+  max-height: min(70vh, 560px); overflow-y: auto; overscroll-behavior: contain; padding: 4px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
 }
+.cmd__g + .cmd__g, .cmd__all { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; }
+.cmd__h { margin: 4px 10px 2px; color: var(--dim); font: 600 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+.cmd__s { margin: 6px 10px 2px; color: var(--dim); font-size: 12px; }
 .cmd__list a { display: block; padding: 7px 10px; border-radius: 6px; color: var(--fg); font-size: 14px; text-decoration: none; }
+.cmd__list a small { display: block; color: var(--dim); font-size: 12px; }
+.cmd__list .cmd__more, .cmd__list .cmd__all { color: var(--accent-t); font-size: 13px; }
 .cmd__list a:hover, .cmd__list a:focus-visible { background: var(--hover); color: var(--accent-t); outline: none; }
 
 /* The script button (pismo.js: lat ↔ ćir) and the theme button (site.js: light ↔ dark). */
@@ -218,7 +218,6 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   /* Equal side columns, so the search is in the middle of the header. */
   .hd { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); grid-template-areas: "brand cmd pismo"; gap: 24px; padding: 10px 24px; }
   .cmd input { font-size: 14px; }
-  .cmd kbd { display: inline-block; }
   .tg span { display: inline; }
   .brand__name span { display: block; }
 }

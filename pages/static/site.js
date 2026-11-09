@@ -4,10 +4,145 @@
   var d = document;
   var fold = window.pismoFold;
   var sf = d.getElementById('sf'), q = d.getElementById('q');
-  // The page's context for the header search (see below); null on a page without one, or once it is left.
-  var scope = q && sf && d.querySelector('[data-scope]'), leaveScope = null;
-  // The side panel's picker and the header search on a teacher's page (build.py picker).
+  // The page's context for the header search (see below); null on a page without one.
+  var scope = q && sf && d.querySelector('[data-scope]');
+  // The side panel's picker and the header search's lists (build.py picker).
   var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
+  var el = function (tag, cls, text) {
+    var e = d.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+
+  /* The header search's scope: the select after the text (base.html #qk), what the bar searches. sve: the matching
+     subjects (by studije), teachers and schedule entries listed under the bar, Enter searches the posts; postovi: the
+     posts (search.js); nastavnici, predmeti: the matching ones under the bar, Enter opens their list page.
+     A page with [data-scope] (its label; data-ph, the placeholder) starts in it: a list page's own list
+     ([data-filter], below) is filtered by the bar; a label that is no option (a subject's topics, a smer's subjects)
+     is an option of its own. data-enter: where Enter goes in it, with q= appended. The home page starts in the scope
+     last picked on it. sf.data-u: the scope, for search.js. */
+  var qk = d.getElementById('qk'), u = 'sve', pageU = null, list = null, data = null, findOn = null, setScope = null;
+  var ENTER = { nastavnici: '/nastavnici/?', predmeti: '/predmeti/?' };
+  if (qk) {
+    var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
+    var PH = { sve: 'Pretraži sve…', postovi: 'Pretraži postove…', nastavnici: 'Ime nastavnika…', predmeti: 'Naziv predmeta…' };
+    var onHome = location.pathname === '/', saved = null;
+    if (scope) {
+      var mine0 = [].filter.call(qk.options, function (o) { return fold(o.text) === fold(scope.dataset.scope); })[0];
+      if (!mine0) qk.add(mine0 = new Option(scope.dataset.scope, 'ovde'), 0);
+      pageU = mine0.value;
+      PH[pageU] = scope.dataset.ph;
+    }
+    try { saved = localStorage.getItem('trazi'); } catch (e) {}
+    // A search in the URL is of the posts, which a teachers' or subjects' scope would hide.
+    if (onHome && PH[saved] && !(location.search && ENTER[saved])) u = saved;
+    else if (pageU) u = pageU;
+    var studije = [], folded = [];
+    setScope = function (v) {
+      u = qk.value = sf.dataset.u = v;
+      attr(q, 'placeholder', PH[v]);
+      if (findOn) findOn(v === pageU);
+    };
+    var show = function () {
+      if (!list) return;
+      var v = q.value.trim(), w = fold(v).split(/\s+/).filter(Boolean);
+      var has = function (s) { return w.every(function (x) { return s.indexOf(x) > -1; }); };
+      list.textContent = '';
+      // The page's own list filtered by the bar (q.dataset.f, below) or the posts: nothing under the bar.
+      if (w.length && !q.dataset.f && u !== 'postovi' && u !== 'ovde') {
+        // rows: [subgroup, name, hint, href]. In sve, the first 5 of a type with a list page, and a link to the rest.
+        var section = function (key, title, rows) {
+          var cap = u === 'sve' && ENTER[key] ? 5 : 200, sub = null;
+          if (!rows.length || (u !== 'sve' && u !== key)) return;
+          var g = list.appendChild(el('div', 'cmd__g'));
+          g.setAttribute('role', 'group');
+          g.setAttribute('aria-label', title);
+          if (u === 'sve') g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
+          rows.slice(0, cap).forEach(function (r) {
+            if (r[0] && r[0] !== sub) g.appendChild(el('p', 'cmd__s', sub = r[0])).setAttribute('aria-hidden', 'true');
+            var a = g.appendChild(el('a', null, r[1]));
+            a.href = r[3];
+            if (r[2]) a.appendChild(el('small', null, r[2]));
+          });
+          if (rows.length > cap) {
+            var m = g.appendChild(el('a', 'cmd__more', 'Još ' + (rows.length - cap) + ' →'));
+            m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
+            m.dataset.u = key;
+          }
+        };
+        var subj = [];
+        studije.forEach(function (s) {
+          s[1].forEach(function (i) { if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0]]); });
+        });
+        section('predmeti', 'Predmeti', subj);
+        section('nastavnici', 'Nastavnici', data.people.filter(function (t) { return has(fold(t[0])); })
+          .map(function (t) { return ['', t[0], '', t[1]]; }));
+        section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
+          .map(function (r) { return ['', r[0], r[1], r[2]]; }));
+        if (u === 'sve') {
+          var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima'));
+          a.href = '/?q=' + encodeURIComponent(v);
+        }
+      }
+      list.hidden = !list.children.length;
+    };
+    qk.addEventListener('change', function () {
+      setScope(qk.value);
+      if (onHome) try { localStorage.setItem('trazi', u); } catch (e) {}
+      // The page's list, the list under the bar and search.js redraw for the text in the new scope.
+      q.dispatchEvent(new Event('input'));
+      q.focus();
+    });
+    sf.addEventListener('submit', function (e) {
+      var v = q.value.trim(), hits = list && !list.hidden ? list.querySelectorAll('a:not(.cmd__more)') : [];
+      if (list) list.hidden = true;
+      if (u === 'sve' || u === 'postovi') return;
+      e.preventDefault();
+      if (hits.length === 1) location.href = hits[0].href;
+      else if (v && u === pageU && scope.dataset.enter) location.href = scope.dataset.enter + 'q=' + encodeURIComponent(fold(v));
+      else if (v && !q.dataset.f && ENTER[u]) location.href = ENTER[u] + 'q=' + encodeURIComponent(v);
+    });
+    if (izbor) izbor.then(function (j) {
+      data = j;
+      folded = j.subjects.map(function (s) { return fold(s[1]); });
+      // Each program's subjects once, by name (folded: Edge's 'sr' collation put Avionika before Adaptivne).
+      studije = j.tree.map(function (n) {
+        var o = {};
+        (function walk(x) { x.s.forEach(function (i) { o[i] = 1; }); x.c.forEach(walk); })(n);
+        return [n.n, Object.keys(o).sort(function (a, b) { return folded[a].localeCompare(folded[b]); })];
+      });
+      list = el('div', 'cmd__list');
+      list.id = 'q-list';
+      list.hidden = true;
+      sf.appendChild(list);
+      q.setAttribute('aria-controls', 'q-list');
+      q.addEventListener('input', show);
+      q.addEventListener('focus', show);
+      // A "još N" link narrows the bar to its type.
+      list.addEventListener('click', function (e) {
+        var m = e.target.closest('.cmd__more');
+        if (!m) return;
+        e.preventDefault();
+        qk.value = m.dataset.u;
+        qk.dispatchEvent(new Event('change'));
+      });
+      // Arrow keys move between the bar and the list's links; Escape or a click elsewhere closes the list.
+      sf.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { list.hidden = true; return; }
+        if (list.hidden || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') || e.target === qk) return;
+        var links = [].slice.call(list.querySelectorAll('a')), i = links.indexOf(d.activeElement);
+        e.preventDefault();
+        i = e.key === 'ArrowDown' ? Math.min(i + 1, links.length - 1) : i - 1;
+        (i < 0 ? q : links[i]).focus();
+      });
+      d.addEventListener('click', function (e) { if (!sf.contains(e.target)) list.hidden = true; });
+      // Typed before the lists loaded.
+      if (d.activeElement === q) show();
+    }).catch(function () {});
+    setScope(u);
+    qk.hidden = false;
+  }
 
   /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
      (a teacher's page is under Nastavnici, an archived schedule page under Raspored). */
@@ -70,11 +205,11 @@
     d.dispatchEvent(new Event('moji'));
   });
 
-  /* Apply filters right away when a choice changes. On a page other than search, this opens the search
-     of the whole archive: the header's text was for the page's list, so it goes. */
+  /* Apply filters right away when a choice changes: a search of the posts. The header's text in another scope was
+     for that, so it goes. */
   d.addEventListener('change', function (e) {
     if (!e.target.matches('.filters input[form=sf]') || !sf) return;
-    if (scope) { leaveScope(); q.value = ''; }
+    if (setScope && u !== 'sve' && u !== 'postovi') { q.value = ''; setScope('postovi'); }
     sf.requestSubmit ? sf.requestSubmit() : sf.submit();
   });
 
@@ -181,12 +316,11 @@
       if (none) none.hidden = shown + gone > 0;
       history.replaceState(null, '', p.size ? '?' + p : location.pathname);
     };
-    // The header search left for the whole archive: the list shows all again.
-    var dropFind = function () {
+    // The header search's scope: the page's own (its text filters the list) or another (the list shows all).
+    if (bar === scope) findOn = function (on) {
       var i = ctl.indexOf(q);
-      if (i < 0) return;
-      ctl.splice(i, 1);
-      delete q.dataset.f;
+      if (on === (i > -1)) return;
+      if (on) { q.dataset.f = 'find'; ctl.unshift(q); } else { ctl.splice(i, 1); delete q.dataset.f; }
       runRows();
     };
     var p = new URLSearchParams(location.search);
@@ -205,80 +339,6 @@
     if (p.size) arrange();
     if (p.size || (window.mojiNow && window.mojiNow.only)) runRows();
     d.addEventListener('moji', runRows);
-  }
-
-  /* The header search in the page's context: [data-scope] names it and has the bar's placeholder (data-ph). On a
-     list page ([data-filter], above) the bar filters the list; data-people lists matching teachers under the bar;
-     data-enter is where Enter goes, with q= appended. A chip after the text names the context: its ×, or Backspace
-     in an empty bar, leaves it for the search of the whole archive. */
-  if (scope) {
-    var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
-    var ph = attr(q, 'placeholder'), chip = d.createElement('button'), list = null;
-    chip.type = 'button';
-    chip.className = 'cmd__scope';
-    chip.title = 'Pretraži celu arhivu';
-    chip.setAttribute('aria-label', scope.dataset.scope + ': ukloni, pretraži celu arhivu');
-    chip.innerHTML = '<span></span><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg>';
-    chip.firstChild.textContent = scope.dataset.scope;
-    q.after(chip);
-    sf.classList.add('is-scoped');
-    attr(q, 'placeholder', scope.dataset.ph);
-    leaveScope = function () {
-      scope = null;
-      chip.remove();
-      sf.classList.remove('is-scoped');
-      if (list) list.hidden = true;
-      attr(q, 'placeholder', ph);
-      if (dropFind) dropFind();
-    };
-    chip.addEventListener('click', function () { leaveScope(); q.focus(); });
-    q.addEventListener('keydown', function (e) {
-      if (e.key === 'Backspace' && !q.value && scope) leaveScope();
-    });
-    sf.addEventListener('submit', function (e) {
-      if (!scope) return;
-      e.preventDefault();
-      var a = list && !list.hidden && list.querySelector('a'), v = q.value.trim();
-      if (a) location.href = a.href;
-      else if (scope.dataset.enter && v) location.href = scope.dataset.enter + 'q=' + encodeURIComponent(fold(v));
-    });
-    if ('people' in scope.dataset && izbor) izbor.then(function (data) {
-      list = d.createElement('ul');
-      list.className = 'cmd__list';
-      list.id = 'q-list';
-      list.hidden = true;
-      sf.appendChild(list);
-      q.setAttribute('aria-controls', 'q-list');
-      var show = function () {
-        var w = fold(q.value.trim()).split(/\s+/).filter(Boolean);
-        list.textContent = '';
-        if (scope && w.length) data.people.filter(function (t) {
-          var n = fold(t[0]);
-          return w.every(function (x) { return n.indexOf(x) > -1; });
-        }).slice(0, 8).forEach(function (t) {
-          var li = d.createElement('li'), a = d.createElement('a');
-          a.href = t[1];
-          a.textContent = t[0];
-          li.appendChild(a);
-          list.appendChild(li);
-        });
-        list.hidden = !list.children.length;
-      };
-      q.addEventListener('input', show);
-      q.addEventListener('focus', show);
-      // Arrow keys move between the bar and the names; Escape or a click elsewhere closes the list.
-      sf.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') { list.hidden = true; return; }
-        if (list.hidden || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
-        var links = [].slice.call(list.querySelectorAll('a')), i = links.indexOf(d.activeElement);
-        e.preventDefault();
-        i = e.key === 'ArrowDown' ? Math.min(i + 1, links.length - 1) : i - 1;
-        (i < 0 ? q : links[i]).focus();
-      });
-      d.addEventListener('click', function (e) { if (!sf.contains(e.target)) list.hidden = true; });
-      // Typed before the list loaded.
-      if (d.activeElement === q) show();
-    }).catch(function () {});
   }
 
   /* My subjects: the subjects this browser follows, [{href, name}] in localStorage. A subject's page has the star;
@@ -317,12 +377,6 @@
   if (iz && mp && mp.showModal && izbor) izbor.then(function (data) {
     var subj = data.subjects, path = [], badges = [];
     var nav = mp.querySelector('[data-mp-nav]'), body = mp.querySelector('[data-mp-body]'), mq = mp.querySelector('[data-mp-q]');
-    var el = function (tag, cls, text) {
-      var e = d.createElement(tag);
-      if (cls) e.className = cls;
-      if (text != null) e.textContent = text;
-      return e;
-    };
     var followed = function () { var o = {}; mine().forEach(function (s) { o[s.href] = 1; }); return o; };
     // The followed subjects under a node, each once (a subject can be in several of its groups).
     var count = function (node, o) {

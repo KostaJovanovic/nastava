@@ -17,17 +17,18 @@ with sync_playwright() as p:
 	for q in ['djukic', 'Ђукић', 'matematika 1', 'termotehnik', '440']:
 		page.fill('#q', q)  # the header search filters the list on this page
 		print(f'{q!r}:', shown(), page.locator('[data-rows] > li:visible .pc__a').all_inner_texts()[:3])
-	assert page.inner_text('.cmd__scope') == 'Nastavnici' and 'q=440' in page.url
+	assert page.input_value('#qk') == 'nastavnici' and 'q=440' in page.url
 	page.fill('#q', '')
 	# A filter's value is the name's Latin slug: the URL has no Cyrillic.
 	page.select_option('#t-k', 'katedra-za-matematiku')
-	print('katedra matematika:', shown(), '| url:', page.url.split('/', 3)[-1])
+	in_katedra = shown()
+	print('katedra matematika:', in_katedra, '| url:', page.url.split('/', 3)[-1])
 	assert page.url.endswith('?katedra=katedra-za-matematiku'), page.url
 	page.select_option('#t-z', 'docent')
 	print('+ docent:', shown())
 	page.goto(base + '/nastavnici/?katedra=katedra-za-matematiku')
 	print('from url:', shown())
-	assert shown() == 8
+	assert shown() == in_katedra
 	# Grouped by katedra, each group folds; its heading counts its rows.
 	page.goto(base + '/nastavnici/')
 	page.select_option('#t-g', 'k')
@@ -45,13 +46,15 @@ with sync_playwright() as p:
 	page.click('#pismo')
 	print('cyrillic h1:', page.inner_text('h1'), '| button:', page.get_attribute('#pismo', 'data-pismo'))
 	page.click('#pismo')
-	# On a teacher's page the header search lists teachers; Enter opens the first.
+	# On a teacher's page the header search lists teachers; arrow down and Enter opens the first.
+	assert page.input_value('#qk') == 'nastavnici'
 	page.fill('#q', 'mladenov')
 	names = page.locator('.cmd__list a').all_inner_texts()
 	print('teachers for "mladenov":', names)
 	assert names
-	page.press('#q', 'Enter')
-	page.wait_for_url('**/nastavnik/**')
+	page.press('#q', 'ArrowDown')
+	page.keyboard.press('Enter')
+	page.wait_for_url(lambda url: '/nastavnik/' in url and 'dusan-lj-djukic' not in url)
 	assert page.inner_text('h1') == names[0], page.inner_text('h1')
 	page.goto(base + '/nastavnik/dusan-lj-djukic/')
 	page.goto(base + page.locator('.tp__subj a').first.get_attribute('href'))
@@ -70,12 +73,12 @@ with sync_playwright() as p:
 	page.wait_for_url(re.compile(r'subject=.*q=kolokvijum|q=kolokvijum.*subject='))
 	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('rezultat')")
 	print('Enter ->', page.url.split('?')[1], '|', page.inner_text('#res-h'))
-	# The chip's × leaves the context: the list shows all again and the bar searches the whole archive.
+	# Another scope leaves the page's: the list shows all again and Enter searches all the posts.
 	page.go_back()
-	page.wait_for_selector('.cmd__scope')
+	page.wait_for_selector('#qk:visible')
 	page.fill('#q', 'kolokvijum')
-	page.click('.cmd__scope')
-	assert shown() == before and not page.locator('.cmd__scope').count()
+	page.select_option('#qk', 'sve')
+	assert shown() == before
 	page.press('#q', 'Enter')
 	page.wait_for_url(re.compile(r'/\?q=kolokvijum'))
 	assert 'subject' not in page.url, page.url
@@ -85,5 +88,24 @@ with sync_playwright() as p:
 	page.fill('#q', 'mehanika')
 	print('smer subjects:', all_subjects, '-> "mehanika":', page.locator('[data-rows] > li:visible .fr__a').all_inner_texts())
 	assert 0 < shown() < all_subjects
+	# The home page: Sve lists the subjects by studije, the teachers and the schedule under the bar.
+	page.goto(base + '/')
+	assert page.input_value('#qk') == 'sve'
+	page.fill('#q', 'num')
+	page.wait_for_selector('#q-list a')
+	print('sve "num":', page.locator('.cmd__h').all_inner_texts(), '| studije:', page.locator('.cmd__s').all_inner_texts()[:3])
+	assert page.locator('.cmd__all').count() == 1
+	page.fill('#q', 'ispit')
+	assert page.locator('.cmd__g[aria-label="Raspored"] a').count(), 'no exam entries'
+	# Predmeti: every match, by studije; the choice is kept for the home page only.
+	page.fill('#q', 'num')
+	page.select_option('#qk', 'predmeti')
+	n = page.locator('.cmd__list a').count()
+	print('predmeti "num":', n, 'in', page.locator('.cmd__s').all_inner_texts())
+	assert n > 5 and not page.locator('.cmd__h').count() and not page.locator('.cmd__all').count()
+	page.goto(base + '/nastavnik/dusan-lj-djukic/')
+	assert page.input_value('#qk') == 'nastavnici'
+	page.goto(base + '/')
+	assert page.input_value('#qk') == 'predmeti'
 	assert not errors
 	print('page errors:', errors or 'none')

@@ -27,7 +27,13 @@
     <label class="vh" for="q">Pretraži arhivu</label>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
     <input id="q" name="q" type="search" placeholder="Pretraži sve postove…" autocomplete="off" enterkeyhint="search">
-    <kbd aria-hidden="true">/</kbd>
+    {#- What the bar searches (site.js); without the script, the posts. -#}
+    <select id="qk" aria-label="Šta pretražuješ" hidden>
+      <option value="sve">Sve</option>
+      <option value="postovi">Postovi</option>
+      <option value="nastavnici">Nastavnici</option>
+      <option value="predmeti">Predmeti</option>
+    </select>
     <button class="cmd__go" type="submit">Traži</button>
   </form>
   {#- Script (pismo.js) and theme (site.js) buttons; each click moves to the next choice. data-notx: pismo.js leaves their labels alone. -#}
