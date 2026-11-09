@@ -251,6 +251,16 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .ft__note { font-size: 13px; }
 .ft__side { display: grid; gap: 8px; }
 @media (min-width: 760px) { .ft__side { justify-items: end; } }
+/* Phone: the links in two even columns, tall enough to tap; the note under a thin line; the drive and the credit
+   on one row. */
+@media (max-width: 759px) {
+  .ft { display: grid; gap: 12px; padding: 16px 16px 18px; }
+  .ft__in { gap: 12px; }
+  .ft__links { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .ft__links a { padding: 7px 0; }
+  .ft__note { padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--head-fg) 20%, transparent); }
+  .ft__side { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+}
 /* The credit's wave (site.js): each letter rises in turn, as on valjdakosta.com's header. */
 /* 3.2s a wave, 0.15s a letter (site.js): one hump about 21 letters long. */
 .wave { display: inline-block; animation: wave 3.2s ease-in-out infinite; }
