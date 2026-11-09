@@ -238,12 +238,18 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 /* The footer (base.html): under the frame, which fills the screen, so at its bottom however short the page. Blue as
    the header, its line on top. */
 .ft {
-  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; padding: 14px 16px;
-  background: var(--head); color: var(--head-dim); border-top: 3px solid var(--head-line); font-size: 13px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 14px 32px; padding: 18px 16px 20px;
+  background: var(--head); color: var(--head-dim); border-top: 3px solid var(--head-line); font: 400 14px/1.5 var(--sans);
 }
-@media (min-width: 900px) { .ft { padding: 16px 24px; } }
-.ft a { color: var(--head-fg); }
-.ft a:hover { color: var(--head-fg); text-decoration-thickness: 2px; }
+@media (min-width: 900px) { .ft { padding: 22px 24px 24px; } }
+.ft__in { display: grid; gap: 8px; }
+/* The links as a row with room between them, not underlined (their place says they are links). */
+.ft__links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.ft a { color: var(--head-fg); text-decoration: none; }
+.ft a:hover { color: var(--head-fg); text-decoration: underline; text-underline-offset: 3px; }
+.ft__links a { font-weight: 600; }
+.ft__note { font-size: 13px; }
+.ft__by a { font-weight: 600; }
 @media (min-width: 900px) {
   .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px; padding: 16px 20px 28px; }}
 

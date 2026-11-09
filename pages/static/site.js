@@ -639,6 +639,12 @@
   /* The footer's first link: the part of the faculty's sites this page copies (base.html data-origin). */
   var orig = d.querySelector('[data-origin]'), ftOrig = d.querySelector('[data-ft-origin]');
   if (orig && ftOrig) { ftOrig.href = orig.href; ftOrig.textContent = orig.hostname.replace(/^www\./, ''); }
+  // "Ažurirano": the build's time (UTC) in the reader's own.
+  var built = d.querySelector('.ft time'), bt = built && new Date(built.dateTime);
+  if (bt && !isNaN(bt)) {
+    var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+    built.textContent = p2(bt.getDate()) + '.' + p2(bt.getMonth() + 1) + '.' + bt.getFullYear() + '. u ' + p2(bt.getHours()) + ':' + p2(bt.getMinutes());
+  }
 
   var leave = null;
   d.addEventListener('click', function (e) {

@@ -17,7 +17,7 @@ import subprocess
 import sys
 import unicodedata
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, datetime, timezone
 from html import unescape
 from pathlib import Path
 from urllib.parse import quote, urljoin
@@ -973,6 +973,8 @@ def main(db_path, out):
         it["who"] = it["teacher"]["shown"] if it["teacher"] else it["author"]
     topics = load_topics(db, items)
     env.globals["side"] = side = side_panel(items)
+    # The footer's "Ažurirano" (base.html): the build follows the sync (ci/deploy.sh). UTC; site.js shows local time.
+    env.globals["built"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     global shell
     shell = split_page(env.get_template("base.html").render())[0]
     (site / "shell.html").write_text(shell, encoding="utf-8")
