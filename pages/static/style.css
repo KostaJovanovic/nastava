@@ -29,28 +29,30 @@
   --head: light-dark(#0076b1, #011321);
   --head-2: light-dark(#0076b1, #0f2a3d);
   --head-fg: light-dark(#ffffff, #f0ebe7);
-  --head-dim: light-dark(#e1ebf2, #8ea4b5);
+  --head-dim: light-dark(#f2f7fa, #8ea4b5);
   --paper: light-dark(#f5f7fa, #010c15);
   --card: light-dark(#ffffff, #061826);
-  --alt: light-dark(#ecf3f7, #081d2c);
-  --hover: light-dark(#f6f4d0, #0b2435);
-  --line: light-dark(#cadceb, #17303f);
-  --line-2: light-dark(#e1ebf2, #10283a);
+  --alt: light-dark(#ecf3f7, #0a2233);
+  --hover: light-dark(#f6f4d0, #0f2c42);
+  --line: light-dark(#cadceb, #21394b);
+  --line-2: light-dark(#e1ebf2, #17303f);
   --fg: light-dark(#28313f, #f0ebe7);
   --link: light-dark(#105289, #f0ebe7);
   --text: light-dark(#333333, #dcd6d1);
   --dim: light-dark(#536482, #8ea4b5);
-  /* Dark has one red, #8e0926, for fills and borders. Too dark to read as text or see as a focus ring on ink
-     blue, so --accent-t (accent text, focus rings) is the text colour there. */
-  --accent: light-dark(#bc2a4d, #8e0926);
+  /* Dark: bordeaux #8e0926 for the large fills (--red, the header); the lighter #c22a4a for lines, marks and
+     hovers, which must show on ink blue (3:1 on --card, its text 4.7:1). Neither is readable as small text, so
+     --accent-t (accent text, focus rings) is the text colour there. */
+  --accent: light-dark(#bc2a4d, #c22a4a);
   --accent-t: light-dark(#bc2a4d, #f0ebe7);
   --accent-fg: light-dark(#ffffff, #f0ebe7);
   --red: light-dark(#bc2a4d, #8e0926);
-  --red-2: light-dark(#9e1f3e, #8e0926);
+  --red-2: light-dark(#9e1f3e, #c22a4a);
+  --mark: light-dark(color-mix(in srgb, #bc2a4d 16%, transparent), color-mix(in srgb, #c22a4a 35%, transparent));
   /* The header's line, search button and logo wave: no red on the light theme's blue, which it clashes with. */
   --head-line: light-dark(#00608f, #8e0926);
   --go: light-dark(#105289, #8e0926);
-  --go-2: light-dark(#0d4473, #8e0926);
+  --go-2: light-dark(#0d4473, #c22a4a);
   --wave: light-dark(#ffffff, #8e0926);
   --field: light-dark(#ffffff, #031421);
   --icon-bg: light-dark(#e1ebf2, #0d2638);
@@ -78,7 +80,7 @@ h1, h2, h3, p { margin: 0; }
 ::selection { background: var(--accent); color: var(--accent-fg); }
 
 mark {
-  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--fg);
+  background: var(--mark); color: var(--fg);
   padding: 0 2px; border-radius: 2px;
   box-shadow: inset 0 -2px 0 var(--accent);
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
@@ -153,10 +155,11 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   grid-area: cmd;
   display: flex; align-items: center; gap: 8px;
   height: 42px; padding: 0 4px 0 12px;
-  border: 1px solid rgba(90, 122, 147, .45); border-radius: var(--r);
-  background: rgba(240, 235, 231, .07);
+  /* Light: a darker well with a white edge on the blue header; dark: a lighter one with a slate edge. */
+  border: 1px solid light-dark(rgba(255, 255, 255, .6), rgba(90, 122, 147, .45)); border-radius: var(--r);
+  background: light-dark(rgba(0, 0, 0, .14), rgba(240, 235, 231, .07));
 }
-.cmd:focus-within { border-color: var(--head-fg); background: rgba(240, 235, 231, .11); }
+.cmd:focus-within { border-color: var(--head-fg); background: light-dark(rgba(0, 0, 0, .2), rgba(240, 235, 231, .11)); }
 .cmd > svg { width: 16px; height: 16px; color: var(--head-dim); }
 .cmd input {
   flex: 1; min-width: 0; height: 100%;
@@ -164,7 +167,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   font: 400 16px var(--sans); outline: none;
 }
 .cmd input::placeholder { color: var(--head-dim); opacity: 1; }
-.cmd kbd { display: none; border-color: rgba(90, 122, 147, .5); color: var(--head-dim); }
+.cmd kbd { display: none; border-color: light-dark(rgba(255, 255, 255, .6), rgba(90, 122, 147, .5)); color: var(--head-dim); }
 .cmd__go {
   height: 32px; padding: 0 14px;
   border: 0; border-radius: 7px; background: var(--go); color: #fff;
@@ -180,12 +183,12 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .cmd__scope {
   display: inline-flex; align-items: center; gap: 4px; flex: none; max-width: 45%;
   height: 26px; padding: 0 6px 0 10px;
-  border: 0; border-radius: 13px; background: rgba(240, 235, 231, .16); color: var(--head-fg);
+  border: 0; border-radius: 13px; background: light-dark(rgba(0, 0, 0, .18), rgba(240, 235, 231, .16)); color: var(--head-fg);
   font: 400 12.5px var(--sans); cursor: pointer;
 }
 .cmd__scope span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmd__scope .i { width: 14px; height: 14px; flex: none; }
-.cmd__scope:hover { background: rgba(240, 235, 231, .26); }
+.cmd__scope:hover { background: light-dark(rgba(0, 0, 0, .28), rgba(240, 235, 231, .26)); }
 .cmd__scope:focus-visible { outline: 2px solid var(--head-fg); outline-offset: 1px; }
 .cmd__list {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
@@ -200,11 +203,11 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .tg {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 34px; min-height: 32px; padding: 0 10px;
-  border: 1px solid rgba(90, 122, 147, .45); border-radius: 8px;
+  border: 1px solid light-dark(rgba(255, 255, 255, .6), rgba(90, 122, 147, .45)); border-radius: 8px;
   background: transparent; color: var(--head-fg);
   font: 400 12px var(--mono); cursor: pointer;
 }
-.tg:hover { background: rgba(240, 235, 231, .11); }
+.tg:hover { background: light-dark(rgba(0, 0, 0, .14), rgba(240, 235, 231, .11)); }
 .tg .i { width: 16px; height: 16px; }
 #tema { padding: 0 8px; }
 .tg span { display: none; }
@@ -477,8 +480,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .hcard__n > span { white-space: nowrap; }
 .hcard__n b { color: var(--fg); font-variant-numeric: tabular-nums; }
 .hcard:hover .hist i { opacity: .8; background: var(--accent); }
-.hcard:hover .sec { color: var(--accent); }
-.hcard:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r); }
+.hcard:hover .sec { color: var(--accent-t); }
+.hcard:focus-visible { outline: 2px solid var(--accent-t); outline-offset: -2px; border-radius: var(--r); }
 
 /* ---- Statistika ---------------------------------------------------------- */
 .kpi { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
@@ -504,7 +507,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .ch__n { color: var(--fg); font-weight: 800; }
 .ch:not(.ch--n) .ch__n { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 a.ch__c:hover i, a.ch__c:focus-visible i { background: var(--accent); opacity: 1; }
-a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent); }
+a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .ch--hours b { font-size: 9.5px; }
 @media (max-width: 600px) { .ch--hours li:nth-child(even) b { visibility: hidden; } }
 /* A phone: the years as rows (year, bar, count), each a whole row to tap. */
@@ -531,7 +534,7 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent); }
 }
 .rk__l { display: grid; flex: 1; min-width: 0; }
 .rk__l a { color: var(--link); text-decoration: none; overflow-wrap: anywhere; }
-.rk__l a:hover { color: var(--accent); text-decoration: underline; }
+.rk__l a:hover { color: var(--accent-t); text-decoration: underline; }
 .rk__l small { color: var(--dim); font-size: 11.5px; }
 .rk li > b { flex: none; color: var(--fg); font-variant-numeric: tabular-nums; }
 /* A phone: the first five rows, the rest after a tap on the toggle (a checkbox, no script). */
@@ -540,17 +543,17 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent); }
   .st:not(:has(.rk__more input:checked)) .rk li:nth-child(n+6) { display: none; }
   .rk__more { display: flex; justify-content: center; align-items: center; min-height: 40px; margin-top: 6px; border: 1px solid var(--line); border-radius: 8px; color: var(--link); font-size: 13.5px; cursor: pointer; }
   .rk__more:has(input:checked) { display: none; }
-  .rk__more:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rk__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
   .rk__more input { position: absolute; opacity: 0; pointer-events: none; }
 }
 
 .field {
   width: 100%; height: 36px; padding: 0 10px;
-  border: 1px solid var(--line); border-radius: 8px;
+  border: 1px solid var(--slate); border-radius: 8px; /* slate: an input's edge needs 3:1, --line is ~1.4:1 */
   background: var(--field); color: var(--fg);
   font: 400 16px var(--sans);
 }
-.field:focus { border-color: var(--accent); outline: none; }
+.field:focus { border-color: var(--accent-t); outline: none; }
 .field::placeholder { color: var(--dim); opacity: 1; }
 @media (min-width: 900px) { .field { font-size: 14px; } }
 
@@ -636,7 +639,7 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent); }
 .moji__s .chip button { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; }
 .moji__s .chip button:hover { background: var(--accent); color: var(--accent-fg); }
 /* A post or topic the board no longer has (the archive keeps it). */
-.gone { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--red); border-radius: 4px; color: var(--accent-t); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
+.gone { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent-t); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
 .post__meta .gone { margin-left: 0; }
 /* The versions of a schedule page. */
 .versions { padding: 10px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); font-size: 14px; }

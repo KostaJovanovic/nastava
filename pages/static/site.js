@@ -523,6 +523,7 @@
     tb.addEventListener('click', function () {
       var t = theme() === 'dark' ? 'light' : 'dark';
       root.dataset.tema = t;
+      d.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#011321' : '#0076b1';
       try { localStorage.setItem('tema', t); } catch (e) {}
       showTheme();
     });
