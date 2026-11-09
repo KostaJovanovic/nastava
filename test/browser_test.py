@@ -58,13 +58,20 @@ with sync_playwright() as p:
 	# The subject picker: open it, follow the first subject of the first program's year; a search then covers only
 	# that subject, until "all subjects" is picked.
 	page.click('[data-moji-open]')
+	# Nothing is picked at first; a picked program or year hides the rest of its row.
+	assert page.locator('.mp__card').count() == 0 and page.locator('.mp__tab[aria-pressed="true"]').count() == 0
+	page.locator('.mp__tabs .mp__tab').first.click()
+	assert page.locator('.mp__tabs .mp__tab').count() == 1
+	page.locator('.mp__chips .mp__tab').first.click()
+	assert page.locator('.mp__chips').last.locator('.mp__tab').count() == 1
 	card = page.locator('.mp__card').first
 	name = card.inner_text()
 	card.click()
-	assert card.get_attribute('aria-pressed') == 'true' and page.inner_text('.mp__tab[aria-pressed="true"] .mp__badge') == '1'
+	assert card.get_attribute('aria-pressed') == 'true' and page.inner_text('.mp__tabs .mp__tab .mp__badge') == '1'
 	assert page.evaluate("JSON.parse(localStorage.moji).length") == 1
-	# A year chip switches the cards; the search box finds a teacher, whose card follows their subjects.
-	page.locator('.mp__chips .mp__tab').nth(1).click()
+	# Pressing the picked year again brings the other years back; the search box finds a teacher, whose card follows their subjects.
+	page.locator('.mp__chips .mp__tab').last.click()
+	page.locator('.mp__chips').last.locator('.mp__tab').nth(1).click()
 	print('picker, 2nd year:', page.locator('.mp__group h3').all_inner_texts())
 	page.fill('[data-mp-q]', 'mladenovic')
 	print('picker search:', page.locator('.mp__card .mp__name').all_inner_texts()[:4])

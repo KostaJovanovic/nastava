@@ -356,25 +356,26 @@
       body.appendChild(sec);
     };
     // One row of choices: the programs as tabs (the level small, above the program), the rest as chips.
+    // Nothing is picked at first; once one is, the row shows only it, and pressing it again brings the others back.
     var row = function (level, depth) {
-      var r = el('div', depth ? 'mp__chips' : 'mp__tabs');
-      if (!(path[depth] < level.length)) path[depth] = 0;
+      var r = el('div', depth ? 'mp__chips' : 'mp__tabs'), on = path[depth] < level.length;
       level.forEach(function (n, i) {
+        if (on && i !== path[depth]) return;
         var b = el('button', 'mp__tab'), parts = depth ? [n.n] : n.n.split(' — ');
         b.type = 'button';
-        b.setAttribute('aria-pressed', i === path[depth]);
+        b.setAttribute('aria-pressed', on);
         if (parts[1]) b.appendChild(el('small', null, parts[0]));
         b.appendChild(el('span', null, parts[1] || parts[0]));
         badges.push([b.appendChild(el('i', 'mp__badge')), n]);
         b.addEventListener('click', function () {
-          path[depth] = i;
-          path.length = depth + 1;
+          path.length = depth;
+          if (!on) path[depth] = i;
           render();
         });
         r.appendChild(b);
       });
       nav.appendChild(r);
-      return level[path[depth]];
+      return on ? level[path[depth]] : null;
     };
     var render = function () {
       var w = fold(mq.value.trim()).split(/\s+/).filter(Boolean);
@@ -399,6 +400,7 @@
         var level = data.tree, depth = 0, node = null;
         while (level.length && level[0].c.length) {
           node = row(level, depth++);
+          if (!node) return sync();
           level = node.c;
         }
         level.forEach(function (g) {
