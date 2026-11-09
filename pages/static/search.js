@@ -36,9 +36,14 @@ function build(tag, props, children) {
 // The order of a search with a query: by relevance, or newest first (?red=novije). Without a query: always newest.
 let newest = false;
 
+// The subjects this browser follows (site.js, the side panel's picker and a subject's star): their URLs.
+function followed() {
+	try { return (JSON.parse(localStorage.getItem("moji")) || []).map((s) => s.href); } catch (e) { return []; }
+}
+
 function readState() {
 	const f = new FormData(form);
-	return {
+	const s = {
 		newest,
 		q: String(f.get("q") ?? "").trim(),
 		kind: String(f.get("kind") ?? ""),
@@ -47,7 +52,11 @@ function readState() {
 		authors: f.getAll("autor").map(String),
 		from: String(f.get("from") ?? ""),
 		to: String(f.get("to") ?? ""),
+		all: f.get("sve") === "1",
 	};
+	// A search covers the followed subjects unless asked for all (?sve=1), or a link names a smer, subject or author.
+	s.mine = s.all || s.smer || s.subjects.length || s.authors.length ? [] : followed();
+	return s;
 }
 
 function writeUrl(s, page) {
@@ -61,6 +70,7 @@ function writeUrl(s, page) {
 	for (const x of s.authors) p.append("autor", x);
 	if (s.from) p.set("from", s.from);
 	if (s.to) p.set("to", s.to);
+	if (s.all) p.set("sve", "1");
 	if (page > 1) p.set("page", page);
 	history.replaceState(null, "", p.size ? `?${p}` : location.pathname);
 }
@@ -71,6 +81,7 @@ function filtersOf(s) {
 	if (s.smer) filters.smer = { any: [s.smer] };
 	if (s.subjects.length) filters.predmet = { any: s.subjects };
 	if (s.authors.length) filters.autor = { any: s.authors };
+	if (s.mine.length) filters.pid = { any: s.mine };
 	const from = Number(s.from) || -Infinity;
 	const to = Number(s.to) || Infinity;
 	if (s.from || s.to) filters.godina = { any: years.filter((y) => y >= from && y <= to).map(String) };
@@ -150,20 +161,26 @@ function renderHeading(s, total) {
 		heading.append(order);
 	}
 	const chips = build("p", { className: "chips" }, []);
+	const chip = (label, clear) => {
+		const b = build("button", { type: "button", className: "chip", title: "Ukloni filter" }, [label, icon("x")]);
+		b.addEventListener("click", () => {
+			clear();
+			run();
+		});
+		chips.append(b);
+	};
 	const active = '.filters input[form="sf"]:checked, .filters input[type="number"][form="sf"], #sf input[type="hidden"]';
 	for (const input of document.querySelectorAll(active)) {
-		if (!input.value) continue;
+		if (!input.value || input.name === "sve") continue;
 		const label = input.type === "number" ? `${input.name === "from" ? "od" : "do"} ${input.value}`
 			: input.dataset.name ?? input.value;
-		const chip = build("button", { type: "button", className: "chip", title: "Ukloni filter" }, [label, icon("x")]);
-		chip.addEventListener("click", () => {
+		chip(label, () => {
 			if (input.type === "number") input.value = "";
 			else if (input.type === "hidden") input.remove();
 			else document.querySelector(`.filters input[name="${input.name}"][value=""]`).checked = true;
-			run();
 		});
-		chips.append(chip);
 	}
+	if (s.mine.length) chip(`Moji predmeti (${s.mine.length})`, () => { form.elements.sve.value = "1"; });
 	if (chips.children.length) heading.append(chips);
 }
 
@@ -203,8 +220,8 @@ function icon(name) {
 	return svg;
 }
 
-// The filter groups with counts in the side panel. A teacher or a subject has none: it comes only from a link.
-const GROUP = { kind: "vrsta", smer: "smer" };
+// The filter groups with counts in the side panel. A teacher, a subject or a smer has none: it comes only from a link.
+const GROUP = { kind: "vrsta" };
 
 async function groupCounts(s, query, search) {
 	// Each group counts without its own filter, so picking one value does not drop the others to 0.
@@ -249,7 +266,7 @@ async function showPage(page, id = runs) {
 		if (id !== runs) return false;
 		// A teacher or a subject from a link (/?autor=username, /?subject=slug): the chip shows the name, which every
 		// result has.
-		for (const [name, meta] of [["autor", "autor"], ["subject", "predmet"]]) {
+		for (const [name, meta] of [["autor", "autor"], ["subject", "predmet"], ["smer", "smer"]]) {
 			const input = form.querySelectorAll(`input[name="${name}"]`);
 			if (input.length === 1 && batch[0].meta[meta]) input[0].dataset.name = batch[0].meta[meta];
 		}
@@ -272,7 +289,8 @@ function showHome() {
 	heading.innerHTML = home.heading;
 	res.innerHTML = home.res;
 	status.querySelector(".pg")?.remove();
-	updateCounts({ vrsta: TOTALS.vrsta ?? {}, smer: TOTALS.smer ?? {} });
+	updateCounts({ vrsta: TOTALS.vrsta ?? {} });
+	state = null;
 	shown();
 	// site.js fills "Moji predmeti" again.
 	document.dispatchEvent(new Event("pocetna"));
@@ -285,7 +303,7 @@ async function run(page = 1, wait = 0) {
 	// A slow search that ends after a newer run must not draw over it.
 	const id = ++runs;
 	const s = readState();
-	for (const input of document.querySelectorAll('.filters input[name="kind"], .filters input[name="smer"]')) {
+	for (const input of document.querySelectorAll('.filters input[type="radio"]')) {
 		input.closest("label").classList.toggle("is-on", input.checked);
 	}
 	if (!s.q && !s.kind && !s.smer && !s.subjects.length && !s.authors.length && !s.from && !s.to) return showHome();
@@ -313,12 +331,12 @@ function restoreFromUrl() {
 	// keyboard would cover the results).
 	if (!p.get("q") && p.has("subject") && matchMedia("(min-width: 900px)").matches) form.elements.q.focus();
 	for (const input of document.querySelectorAll('input[form="sf"]')) {
-		if (input.name === "kind" || input.name === "smer") input.checked = input.value === (p.get(input.name) ?? "");
+		if (input.type === "radio") input.checked = input.value === (p.get(input.name) ?? "");
 		else if (input.name === "from" || input.name === "to") input.value = p.get(input.name) ?? "";
 	}
-	// A teacher or a subject has no choice in the panel: it comes from a link (a teacher's page) and stays in the
-	// form as a hidden field, shown as a chip until it is removed.
-	for (const name of ["autor", "subject"]) {
+	// A teacher, a subject or a smer has no choice in the panel: it comes from a link (a teacher's page) and stays in
+	// the form as a hidden field, shown as a chip until it is removed.
+	for (const name of ["autor", "subject", "smer"]) {
 		for (const value of p.getAll(name)) form.append(build("input", { type: "hidden", name, value }, []));
 	}
 	// The filters stay as site.js left them (closed on a phone): the chips above the results show the active ones.
@@ -330,4 +348,6 @@ form.addEventListener("submit", (e) => {
 	run();
 });
 form.elements.q.addEventListener("input", () => run(1, 200));
+// A subject followed or no longer followed: a search on view covers the new list.
+document.addEventListener("moji", () => { if (state) run(); });
 if (restoreFromUrl()) run(Number(new URLSearchParams(location.search).get("page")) || 1);

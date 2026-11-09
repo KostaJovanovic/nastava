@@ -130,7 +130,9 @@ def load_places(db):
         top = f
         while top["parent"] is not None:
             top = forums[top["parent"]]
-        smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"], "short": short_smer(top["name"])})
+        # label: the name as shown ('Основне академске студије - МИ'); short: its abbreviation, for URLs and matching.
+        smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"], "short": short_smer(top["name"]),
+                                              "label": top["name"][:1].upper() + top["name"][1:]})
         if f is top:
             place[f["id"]] = (smer, None)
             continue
@@ -180,6 +182,8 @@ def pagefind_tags(it):
         tags += [("filter", "smer", it["smer"]["key"]), ("meta", "smer", it["smer"]["name"])]
     if it["subject"]:
         tags += [("filter", "predmet", slug(it["subject"])), ("meta", "predmet", it["subject"])]
+        # The subject itself (a name is in several smerovi): the followed subjects' search (search.js).
+        tags.append(("filter", "pid", it["subj"]["href"]))
     if it["author"]:
         tags += [("filter", "autor", it["author"].lower()), ("meta", "autor", it["who"])]
     if it["year"]:
@@ -498,22 +502,54 @@ def render_book(site, book):
         programs=[p for p in PROGRAMS if any(s["program"] == p for s in listed)]))
 
 
+def picker(subjects, book, teachers):
+    """The side panel's subject picker (site.js): the subjects with topics, as [href, name]; a tree of them by the
+    plans, level > program > (module >) year of study, then the subjects in no plan ('Ostalo') and the board's other
+    forums (katedre, moduli); and each teacher with the subjects they teach. Tree and teachers point into the list.
+    After render_places (the counts) and render_teachers (the courses)."""
+    live = [s for s in subjects.values() if s.get("count")]
+    at = {s["id"]: i for i, s in enumerate(live)}
+    tree, placed = {}, set()
+
+    def add(path, s):
+        node = tree
+        for name in path:
+            node = node.setdefault(name, {})
+        node.setdefault("", []).append(at[s["id"]])
+        placed.add(s["id"])
+
+    order = {p: i for i, p in enumerate(PROGRAMS)}
+    places = [(p, s["forum"]) for s in book if s["forum"] and s["forum"]["id"] in at for p in s["places"]]
+    for p, f in sorted(places, key=lambda x: (order.get(x[0]["program"], len(order)), x[0]["i"])):
+        level, _, program = p["program"].partition(" — ")
+        add([level, program] + [p["module"]] * bool(p["module"]) + [f"{(p['semester'] + 1) // 2}. godina"], f)
+    for s in live:
+        if s["id"] not in placed:
+            level, _, program = s["smer"]["label"].partition(" - ")
+            add([level, program, "Ostalo"] if program else [level], s)
+
+    def nodes(tree):
+        return [dict(n=k, c=nodes(v), s=sorted(set(v.get("", [])), key=lambda i: azbuka(live[i]["name"])))
+                for k, v in tree.items() if k]
+    return dict(subjects=[[s["href"], s["name"]] for s in live], tree=nodes(tree),
+                teachers=[[t["shown"], sorted({at[c["subj"]["id"]] for c in t["courses"] if c["subj"]})]
+                          for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])])
+
+
 def write_bytes(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
 
 
 def short_smer(name):
-    """'основне академске студије - МИ' -> 'ОАС - МИ': the faculty's own abbreviations, so a smer fits one line."""
+    """'основне академске студије - МИ' -> 'ОАС - МИ': the faculty's own abbreviations, for the smer's URL."""
     return re.sub(r"^мастер академске студије", "МАС", re.sub(r"^основне академске студије", "ОАС", name, flags=re.I), flags=re.I)
 
 
-def side_panel(items, smerovi):
+def side_panel(items):
     """The counts of the side panel (sidebar.html), the same on every page."""
-    per_smer = Counter(r["smer"]["id"] for r in items if r["smer"])
     years = Counter(r["year"] for r in items if r["year"])
     return dict(total=len(items), kinds=Counter(KIND[r["kind"]] for r in items),
-                smerovi=[dict(m, count=per_smer[m["id"]]) for m in smerovi.values() if per_smer[m["id"]]],
                 year_hist=sorted(years.items()), study_pages=STUDY_PAGES)
 
 
@@ -540,7 +576,7 @@ def main(db_path, out):
         it["teacher"] = teacher_of.get((it["author"] or "").lower())
         it["who"] = it["teacher"]["full_name"] if it["teacher"] else it["author"]
     topics = load_topics(db, items)
-    env.globals["side"] = side = side_panel(items, smerovi)
+    env.globals["side"] = side = side_panel(items)
     global shell
     shell = split_page(env.get_template("base.html").render())[0]
     (site / "shell.html").write_text(shell, encoding="utf-8")
@@ -564,6 +600,8 @@ def main(db_path, out):
         write(site / "item" / it["id"] / "index.html", render_item(it))
     render_teachers(site, teachers, items, book)
     render_book(site, book)
+    (site / "izbor.json").write_text(json.dumps(picker(subjects, book, teachers), ensure_ascii=False, separators=(",", ":")),
+                                     encoding="utf-8")
     render_study_pages(site, db)
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers)), encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")
@@ -591,6 +629,13 @@ if __name__ == "__main__":
     assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
     assert env.filters["slug"]("Катедра за математику") == "katedra-za-matematiku" and env.filters["slug"](None) == ""
+    _m, _k = dict(label="Основне академске студије - МИ"), dict(label="Катедре")
+    _a, _b, _c = (dict(id=i, name=n, href=f"/{i}/", count=1, smer=m) for i, n, m in ((1, "Б", _m), (2, "А", _m), (3, "В", _k)))
+    _p = picker({1: _a, 2: _b, 3: _c}, [dict(forum=_a, places=[dict(program=PROGRAMS[0], module=None, semester=3, i=0)])],
+                [dict(shown="Н", gone=0, courses=[dict(subj=_b), dict(subj=None)]), dict(shown="Г", gone=1, courses=[dict(subj=_a)])])
+    assert _p["tree"] == [dict(n="Основне академске студије", s=[], c=[dict(n="МИ", s=[], c=[
+        dict(n="2. godina", c=[], s=[0]), dict(n="Ostalo", c=[], s=[1])])]), dict(n="Катедре", c=[], s=[2])]
+    assert _p["teachers"] == [["Н", [1]]] and _p["subjects"][0] == ["/1/", "Б"]
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if len(sys.argv) != 3:

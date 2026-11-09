@@ -34,7 +34,7 @@
     {%- if on_forum %}
     <ul>
       {%- for c in on_forum %}
-      <li><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a><span class="tp__smer">{{ c.subj.smer.short }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
+      <li><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a><span class="tp__smer">{{ c.subj.smer.label }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
       {%- endfor %}
     </ul>
     {%- endif %}

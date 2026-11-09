@@ -119,7 +119,11 @@
      the home page shows their newest topics, merged from each subject's novo.json (build.py, rows as the home page's).
      shortcut: a followed subject whose URL changes (a rename) shows no rows until it is followed again. */
   var mine = function () { try { return JSON.parse(localStorage.getItem('moji')) || []; } catch (e) { return []; } };
-  var keepMine = function (list) { try { localStorage.setItem('moji', JSON.stringify(list)); } catch (e) {} };
+  // 'moji': the list changed (the star, the side panel's picker, a chip); each view of it redraws, search.js too.
+  var keepMine = function (list) {
+    try { localStorage.setItem('moji', JSON.stringify(list)); } catch (e) {}
+    d.dispatchEvent(new Event('moji'));
+  };
   var star = d.querySelector('[data-star]');
   if (star) {
     var showStar = function () {
@@ -131,11 +135,98 @@
     star.addEventListener('click', function () {
       var list = mine(), rest = list.filter(function (s) { return s.href !== star.dataset.star; });
       keepMine(rest.length < list.length ? rest : list.concat([{ href: star.dataset.star, name: star.dataset.name }]));
-      showStar();
     });
     star.hidden = false;
     showStar();
+    d.addEventListener('moji', showStar);
   }
+
+  /* The subject picker in the side panel (sidebar.html; /izbor.json from build.py picker): the plans as a tree whose
+     groups render when first opened, or, while the box has text, the teachers and subjects that match it. Ticking a
+     subject follows it; ticking a teacher follows all their subjects (checked: all followed, mixed: some). */
+  var iz = d.querySelector('[data-izbor]');
+  if (iz && window.fetch) fetch('/izbor.json').then(function (r) { return r.json(); }).then(function (data) {
+    var subj = data.subjects, tree = iz.querySelector('[data-tree]'), q = iz.querySelector('[data-izbor-q]');
+    var hits = d.createElement('div');
+    hits.className = 'izbor';
+    hits.hidden = true;
+    tree.parentNode.appendChild(hits);
+    var opt = function (ids, name, hint) {
+      var l = d.createElement('label'), c = d.createElement('input'), s = d.createElement('span');
+      l.className = 'opt';
+      c.type = 'checkbox';
+      c.dataset.ids = ids.join(',');
+      s.className = 'opt__name';
+      s.textContent = name;
+      if (hint) { var h = d.createElement('small'); h.textContent = hint; s.appendChild(h); }
+      l.appendChild(c);
+      l.insertAdjacentHTML('beforeend', '<i class="cb" aria-hidden="true"></i>');
+      l.appendChild(s);
+      return l;
+    };
+    var sync = function () {
+      var list = mine(), on = {};
+      list.forEach(function (s) { on[s.href] = 1; });
+      [].forEach.call(iz.querySelectorAll('input[data-ids]'), function (c) {
+        var ids = c.dataset.ids.split(','), k = ids.filter(function (i) { return on[subj[i][0]]; }).length;
+        c.checked = k === ids.length;
+        c.indeterminate = k > 0 && k < ids.length;
+      });
+      iz.querySelector('[data-moji-n]').textContent = list.length || '';
+      iz.querySelector('[data-scope]').hidden = !list.length;
+    };
+    iz.addEventListener('change', function (e) {
+      if (!e.target.dataset.ids) return;
+      var ids = e.target.dataset.ids.split(','), hrefs = ids.map(function (i) { return subj[i][0]; });
+      var list = mine().filter(function (s) { return hrefs.indexOf(s.href) < 0; });
+      keepMine(e.target.checked ? list.concat(ids.map(function (i) { return { href: subj[i][0], name: subj[i][1] }; })) : list);
+    });
+    var group = function (node, parent) {
+      var g = d.createElement('details'), sum = d.createElement('summary');
+      g.className = 'izbor__g';
+      sum.textContent = node.n;
+      g.appendChild(sum);
+      g.addEventListener('toggle', function () {
+        if (!g.open || g.children.length > 1) return;
+        node.c.forEach(function (k) { group(k, g); });
+        node.s.forEach(function (i) { g.appendChild(opt([i], subj[i][1])); });
+        sync();
+      });
+      parent.appendChild(g);
+    };
+    data.tree.forEach(function (n) { group(n, tree); });
+    // A search hit's place, under its name: the first place of the subject in the tree.
+    var where = {};
+    var walk = function (nodes, path) {
+      nodes.forEach(function (n) {
+        var p = path.concat([n.n]);
+        n.s.forEach(function (i) { where[i] = where[i] || p.join(' › '); });
+        walk(n.c, p);
+      });
+    };
+    walk(data.tree, []);
+    q.addEventListener('input', function () {
+      var w = fold(q.value.trim()).split(/\s+/).filter(Boolean);
+      var has = function (s) { s = fold(s); return w.every(function (x) { return s.indexOf(x) > -1; }); };
+      var out = [];
+      tree.hidden = !!w.length;
+      hits.hidden = !w.length;
+      hits.textContent = '';
+      if (!w.length) return;
+      data.teachers.forEach(function (t) {
+        var n = t[1].length;
+        if (has(t[0])) out.push(opt(t[1], t[0], n + (n % 10 === 1 && n % 100 !== 11 ? ' predmet' : ' predmeta')));
+      });
+      subj.forEach(function (s, i) { if (has(s[1])) out.push(opt([i], s[1], where[i])); });
+      // shortcut: the first 50 hits only; a longer word narrows them.
+      out.slice(0, 50).forEach(function (l) { hits.appendChild(l); });
+      if (!out.length) hits.innerHTML = '<p class="izbor__none">Nema takvog predmeta ni nastavnika.</p>';
+      sync();
+    });
+    iz.hidden = false;
+    sync();
+    d.addEventListener('moji', sync);
+  }).catch(function () {});
   var fillMine = function () {
     var sec = d.getElementById('moji'), list = mine();
     if (!sec) return;
@@ -152,7 +243,6 @@
       x.innerHTML = '<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg>';
       x.addEventListener('click', function () {
         keepMine(mine().filter(function (m) { return m.href !== s.href; }));
-        fillMine();
       });
       chip.appendChild(a);
       chip.appendChild(x);
@@ -171,6 +261,7 @@
   fillMine();
   // search.js puts the home page back when the search is cleared, without these rows.
   d.addEventListener('pocetna', fillMine);
+  d.addEventListener('moji', fillMine);
 
   /* A post's link in a topic: the click goes to it as a link does, and copies its full address. */
   d.addEventListener('click', function (e) {

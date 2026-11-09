@@ -24,10 +24,10 @@ with sync_playwright() as p:
 	page.wait_for_function('window.performance && document.readyState === "complete"')
 	print(f'/ load: {time.time() - t:.2f}s')
 	page.wait_for_load_state('networkidle')
-	for label in ('мастер академске студије - МИ', 'катедре', ''):
-		before = page.inner_text('#res-h')
+	# A smer comes from a link now (the side panel picks subjects).
+	for key in ('mas-mi', 'katedre'):
 		t = time.time()
-		page.locator(f'input[name="smer"][value="{label}"]').check()
-		page.wait_for_function('b => document.querySelector("#res-h")?.textContent !== b', arg=before)
+		page.goto(f'{base}/?smer={key}')
+		page.wait_for_function(done)
 		page.wait_for_load_state('networkidle')
-		print(f'click smer {label or "Svi"!r}: {time.time() - t:.2f}s -> {page.inner_text("#res-h")}')
+		print(f'smer {key!r}: {time.time() - t:.2f}s -> {page.inner_text("#res-h")}')

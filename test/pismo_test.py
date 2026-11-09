@@ -65,11 +65,12 @@ with sync_playwright() as p:
 	print('back to latin: identical')
 
 	# A side panel choice on an item page opens the search with that filter.
-	page.locator('input[name="smer"]').nth(1).check()
-	page.wait_for_url(re.compile(r'smer='))
+	page.fill('input[name="from"]', '2024')
+	page.press('input[name="from"]', 'Enter')
+	page.wait_for_url(re.compile(r'from=2024'))
 	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('rezultat')")
 	page.wait_for_load_state('networkidle')
-	print('smer from an item page ->', page.url.split('?')[1][:80], '|', page.inner_text('#res-h'))
+	print('year from an item page ->', page.url.split('?')[1][:80], '|', page.inner_text('#res-h'))
 	page.screenshot(path=f'{out}/pismo-search.png')
 
 	# The choice is remembered on the next page.

@@ -55,5 +55,25 @@ with sync_playwright() as p:
 	page.click('.chip')  # removing the chip clears the filter: the board index again
 	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('Arhiva')")
 	assert 'autor' not in page.url, page.url
+	# The subject picker: open groups down to the first subject and tick it; a search then covers only that subject,
+	# until "all subjects" is picked.
+	tree = page.locator('[data-tree]')
+	tree.locator('summary').first.wait_for()
+	while not tree.locator('label.opt').count():
+		tree.locator('details:not([open]) > summary').first.click()
+	name = tree.locator('label.opt').first.inner_text()
+	tree.locator('label.opt').first.click()
+	assert page.evaluate("JSON.parse(localStorage.moji).length") == 1
+	page.goto(f'{base}/?from=2014')  # the year field's min: an invalid form is not submitted
+	page.wait_for_function(done)
+	page.wait_for_load_state('networkidle')
+	seen = set(page.locator('#res .fr__s .s1').all_inner_texts())
+	print('picker:', name, '->', page.inner_text('#res-h'), '| subjects:', seen)
+	assert seen == {name} and 'Moji predmeti (1)' in page.inner_text('.chips'), (seen, page.inner_text('.chips'))
+	page.locator('label', has_text='Pretraga u svim predmetima').click()
+	page.wait_for_function("location.search.includes('sve=1') && !document.querySelector('.chips')?.textContent.includes('Moji')")
+	page.wait_for_load_state('networkidle')
+	assert len(set(page.locator('#res .fr__s .s1').all_inner_texts())) > 1
+	page.evaluate("localStorage.removeItem('moji')")
 	print('page errors:', errors or 'none')
 	browser.close()

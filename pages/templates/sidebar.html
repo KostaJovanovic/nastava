@@ -18,15 +18,16 @@
     </summary>
     <div class="filters__body">
 
-      {#- The short name (OAS, MAS) keeps each smer on one line; the title and the chip have the full name. -#}
-      <fieldset class="fgroup">
-        <legend class="sec">Smer</legend>
-        <div>
-          <label class="opt is-on"><input type="radio" name="smer" value="" form="sf" checked><i class="rb" aria-hidden="true"></i><span class="opt__name">Svi</span><span class="n">{{ side.total }}</span></label>
-          {%- for m in side.smerovi %}
-          <label class="opt" title="{{ m.name }}"><input type="radio" name="smer" value="{{ m.key }}" data-name="{{ m.name }}" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">{{ m.short }}</span><span class="n">{{ m.count }}</span></label>
-          {%- endfor %}
+      {#- The subject picker: following a subject, as its page's star does. site.js fills it from /izbor.json (build.py
+          picker); without the script it stays hidden. The scope applies to a search once a subject is followed. -#}
+      <fieldset class="fgroup" data-izbor hidden>
+        <legend class="sec">Moji predmeti <span data-moji-n></span></legend>
+        <div data-scope hidden>
+          <label class="opt is-on"><input type="radio" name="sve" value="" form="sf" checked><i class="rb" aria-hidden="true"></i><span class="opt__name">Pretraga u mojim predmetima</span></label>
+          <label class="opt"><input type="radio" name="sve" value="1" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">Pretraga u svim predmetima</span></label>
         </div>
+        <div class="izbor__q"><input class="field" type="search" placeholder="Predmet ili nastavnik" aria-label="Nađi predmet ili nastavnika" data-izbor-q></div>
+        <div class="izbor" data-tree></div>
       </fieldset>
 
       {#- Documents are not archived for now (documents.py is not run); the group shows when there are some. -#}
