@@ -381,17 +381,24 @@ def load_cent(db, smerovi, subjects):
 ELSEWHERE = [("Teams", r"^(teams\.microsoft\.com|teams\.live\.com|teams\.cloud\.microsoft)$"),
              ("Classroom", r"^classroom\.google\.com$"), ("Google Drive", r"^(drive|docs)\.google\.com$"),
              ("Moodle", r"^elearning\.rcub\.bg\.ac\.rs$"),
-             ("OneDrive", r"^(onedrive\.live\.com|1drv\.ms|[a-z0-9-]+\.sharepoint\.com)$"),
+             # The faculty's SharePoint only: another one's is a company's (a software download).
+             ("OneDrive", r"^(onedrive\.live\.com|1drv\.ms|masbgacrs(-my)?\.sharepoint\.com)$"),
              ("Dropbox", r"(^|\.)dropbox\.com$"), ("Box", r"(^|\.)box\.com$"),
              ("YouTube", r"^(www\.|m\.)?(youtube\.com|youtu\.be)$")]
+FILE_HOSTS = {"Google Drive", "OneDrive", "Dropbox", "Box", "YouTube"}
+# A folder, a playlist or a channel on them (a shared OneDrive folder: ':f:').
+FOLDER = r"/folders/|/folder/|/sh/|/scl/fo/|/:f:/|/playlist|/channel/|/@|/c/"
 
 
 def service(url):
     """The service a link is on (ELSEWHERE), or a department's site (its host: 'ie.mas.bg.ac.rs'); None for others.
-    A Google form is a survey or a test, not material."""
+    Not material: a Google form (a survey or a test; 'spreadsheet/viewform' the old ones), a published sheet (exam
+    results), a Teams meeting (one class online)."""
     u = urlsplit(url)
     host = (u.hostname or "").lower()
-    if host == "docs.google.com" and u.path.startswith("/forms"):
+    if host == "docs.google.com" and re.search(r"^/forms|/viewform|/pubhtml", u.path):
+        return None
+    if "/meetup-join/" in u.path:
         return None
     for name, rx in ELSEWHERE:
         if re.search(rx, host):
@@ -405,23 +412,30 @@ def service(url):
 def mark_elsewhere(items):
     """Each subject's material elsewhere, from its posts' links: s["elsewhere"] = {name: dict(name, first, last, who,
     users)}: the first and newest post that links it, who links it (shown names, most posts first) and their usernames
-    (a teacher's page shows their own). A subject's teachers often split it, and only some use a service."""
+    (a teacher's page shows their own). A subject's teachers often split it, and only some use a service.
+    A file host needs a folder or playlist, or two links: one video or file is not the subject's place there."""
     for it in items:
         if it["kind"] != "post" or not it["subj"]:
             continue
         for url in set(re.findall(r'href="(https?://[^"]+)"', it["html"] or "")):
             if name := service(url):
                 e = it["subj"].setdefault("elsewhere", {}).setdefault(
-                    name, dict(name=name, first=it, last=it, by=Counter(), users=set()))
+                    name, dict(name=name, first=it, last=it, by=Counter(), users=set(), urls=set()))
                 e["first"] = min(e["first"], it, key=lambda r: r["posted"])
                 e["last"] = max(e["last"], it, key=lambda r: r["posted"])
                 e["by"][it["who"]] += 1
+                e["urls"].add(url)
                 if it["teacher"]:
                     e["users"].add(it["teacher"]["username"])
-    for it in items:
-        for e in ((it.get("subj") or {}).get("elsewhere") or {}).values():
-            if "by" in e:
-                e["who"] = [w for w, _ in e.pop("by").most_common()]
+    for s in {id(it["subj"]): it["subj"] for it in items if (it.get("subj") or {}).get("elsewhere")}.values():
+        for name, e in list(s["elsewhere"].items()):
+            if "by" not in e:
+                continue
+            e["who"] = [w for w, _ in e.pop("by").most_common()]
+            if name in FILE_HOSTS and len(e["urls"]) < 2 and not any(re.search(FOLDER, u) for u in e["urls"]):
+                del s["elsewhere"][name]
+        if not s["elsewhere"]:
+            del s["elsewhere"]
 
 
 def render_cent(site, subjects):
@@ -1275,7 +1289,7 @@ if __name__ == "__main__":
     assert fold(short_smer(PROGRAMS[0].replace(" — ", " - "))) == fold("ОАС - МИ")
     assert [service(u) for u in ("https://teams.microsoft.com/l/x", "https://docs.google.com/document/d/1", "https://docs.google.com/forms/d/1",
                                  "https://us02web.zoom.us/j/1", "http://ie.mas.bg.ac.rs/x", "https://nastava.mas.bg.ac.rs/x",
-                                 "https://abc.sharepoint.com/x", "https://youtu.be/x", "https://mat.mas.bg.ac.rs/moodle/login/",
+                                 "https://masbgacrs-my.sharepoint.com/x", "https://youtu.be/x", "https://mat.mas.bg.ac.rs/moodle/login/",
                                  "http://it0.mas.bg.ac.rs/")] == [
         "Teams", "Google Drive", None, None, "ie.mas.bg.ac.rs", None, "OneDrive", "YouTube", "Moodle", "Moodle"]
     # A mark names who links it, most posts first; only teachers' usernames (for their own pages).
@@ -1284,6 +1298,15 @@ if __name__ == "__main__":
     mark_elsewhere([_p("Ana", None, "2021"), _p("Petar L", _t, "2023"), _p("Petar L", _t, "2026"), dict(kind="post", subj=None)])
     _e = _s["elsewhere"]["Classroom"]
     assert (_e["who"], _e["users"], _e["first"]["posted"], _e["last"]["posted"]) == (["Petar L", "Ana"], {"pl"}, "2021", "2026")
+    # One video is not a place, two are, as is a playlist; a meeting and a results sheet are not material.
+    def _marks(*urls):
+        s = dict(name="S")
+        mark_elsewhere([dict(kind="post", subj=s, who="A", teacher=None, posted="2025", html=f'<a href="{u}">v</a>') for u in urls])
+        return list(s.get("elsewhere", {}))
+    assert _marks("https://youtu.be/a", "https://drive.google.com/drive/folders/x", "https://teams.microsoft.com/l/meetup-join/19x",
+                  "https://docs.google.com/spreadsheets/d/e/x/pubhtml") == ["Google Drive"]
+    assert _marks("https://youtu.be/a", "https://youtu.be/b") == ["YouTube"] and _marks("https://youtu.be/a") == []
+    assert service("https://solfins.sharepoint.com/x") is None
     _a = lambda v: re.search(r'href="([^"]*)"', clean_html(f'<a href="{v}">x</a>'))[1].replace("&amp;", "&")
     assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
