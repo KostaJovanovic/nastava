@@ -1016,6 +1016,8 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
   color: var(--dim); font-size: 13px;
 }
 .pc:hover { border-color: var(--slate); }
+/* No longer on the faculty's list: a grey corner, top right. */
+.pc--gone::before { content: ""; position: absolute; top: 0; right: 0; width: 28px; height: 28px; border-top-right-radius: inherit; background: linear-gradient(225deg, var(--line) 50%, transparent 50%); pointer-events: none; }
 .pc:has(.pc__a:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .pc__img { display: block; width: 76px; aspect-ratio: 6 / 7; object-fit: cover; object-position: 50% 25%; border-radius: 4px; background: var(--icon-bg); }
 .pc__img--none { display: grid; place-items: center; color: var(--slate); font: 800 20px var(--sans); }

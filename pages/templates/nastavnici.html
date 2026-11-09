@@ -5,7 +5,7 @@
 {% block description %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endblock %}
 
 {%- macro card(t) %}
-  <li class="pc" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
+  <li class="pc{% if t.gone %} pc--gone{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
     {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
     <div class="pc__t">
