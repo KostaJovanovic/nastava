@@ -1208,7 +1208,9 @@ def main(db_path, out):
     (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers), raspored=raspored),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
-    write(site / "o-sajtu" / "index.html", env.get_template("o_sajtu.html").render())
+    about = env.get_template("o_sajtu.html").render()
+    write(site / "o-sajtu" / "index.html", about)
+    write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
     vesti = load_vesti(db)
     render_vesti(site, vesti)
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers), vesti),
