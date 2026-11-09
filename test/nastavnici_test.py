@@ -37,6 +37,7 @@ with sync_playwright() as p:
 	n = int(first.locator('.sg__n').inner_text())
 	assert first.get_attribute('open') is not None and first.locator('.pc:visible').count() == n
 	first.locator('summary').click()
+	first.locator('.pc').first.wait_for(state='hidden')  # the fold eases (style.css ::details-content)
 	assert first.get_attribute('open') is None and first.locator('.pc:visible').count() == 0
 	page.select_option('#t-g', '')
 	page.goto(base + '/nastavnik/dusan-lj-djukic/')

@@ -393,7 +393,9 @@
     star.addEventListener('click', function () {
       var list = mine(), rest = list.filter(function (s) { return s.href !== star.dataset.star; });
       keepMine(rest.length < list.length ? rest : list.concat([{ href: star.dataset.star, name: star.dataset.name }]));
+      star.classList.toggle('star--pop', rest.length === list.length);
     });
+    star.addEventListener('animationend', function () { star.classList.remove('star--pop'); });
     star.hidden = false;
     showStar();
     d.addEventListener('moji', showStar);

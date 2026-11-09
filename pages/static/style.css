@@ -520,7 +520,18 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   /* A picked program or year hides the rest of its row; pressing it again brings them back. */
   :is(.mp__tabs, .mp__chips):has([aria-pressed="true"]) > [aria-pressed="false"] { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .mp[open], .mp__check, .leave[open] { animation: none !important; } }
+/* Closing: the dialogs leave as they came, faster; the top layer keeps them (overlay) until the fade ends. Where a
+   browser cannot (no transition of overlay), they close at once as before. */
+.mp, .leave {
+  transition: opacity 150ms ease-in, transform 150ms ease-in, overlay 150ms ease-in allow-discrete, display 150ms ease-in allow-discrete;
+}
+.mp:not([open]), .leave:not([open]) { opacity: 0; transform: translateY(6px) scale(.98); }
+.mp::backdrop, .leave::backdrop { transition: opacity 150ms ease-in, overlay 150ms allow-discrete, display 150ms allow-discrete; }
+.mp:not([open])::backdrop, .leave:not([open])::backdrop { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .mp[open], .mp__check, .leave[open], .star--pop .i { animation: none !important; }
+  .mp::backdrop, .leave::backdrop { transition: none; }
+}
 
 /* The side panel's statistics card: posts per year, the link to /statistika/. */
 .hcard { display: grid; gap: 8px; padding: 12px 0; color: var(--text); text-decoration: none; }
@@ -615,8 +626,11 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
   border: 1px solid var(--line); border-radius: 8px;
   background: var(--card); color: var(--fg);
   font: 400 14px var(--sans); text-decoration: none; cursor: pointer;
+  transition: transform 160ms ease-out;
 }
 .btn:hover { border-color: var(--accent); color: var(--accent-t); }
+/* Pressed: the press of the picker's cards. */
+.btn:active { transform: scale(.97); }
 .btn .i { width: 15px; height: 15px; }
 .btn--pri { background: var(--red); border-color: var(--red); color: #fff; }
 .btn--pri:hover { background: var(--red-2); color: #fff; }
@@ -681,11 +695,15 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .mh__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .star { flex: none; min-height: 32px; padding: 0 12px; font-size: 13px; }
 .star[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-t); }
+/* Just followed (site.js): the star pops as a picked card's check does. Not on load: a followed subject's page. */
+.star--pop .i { animation: mp-pop .25s ease-out; }
 /* "Moji predmeti" on the home page when the followed subjects have no topics yet. */
 .moji__none { margin: 0; padding: 12px 14px; color: var(--dim); font-size: 13.5px; }
 /* A post or topic the board no longer has (the archive keeps it). */
 .gone { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent-t); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
 .post__meta .gone { margin-left: 0; }
+/* The mark of what comes from a department's site, not the board (build.py load_cent): a row's author, a page. */
+.src { display: inline-block; padding: 0 6px; border-radius: 9px; background: var(--accent); color: var(--accent-fg); font: 700 11px/18px var(--sans); vertical-align: 1px; }
 /* The versions of a schedule page. */
 .versions { padding: 10px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); font-size: 14px; }
 .versions h2 { margin-bottom: 4px; color: var(--fg); font: 800 15px/1.3 var(--sans); }
@@ -997,6 +1015,14 @@ summary.sg__h { display: flex; align-items: center; gap: 10px; padding: 6px 8px;
 summary.sg__h::-webkit-details-marker { display: none; }
 summary.sg__h::before { content: ""; flex: none; width: 7px; height: 7px; margin: 0 3px; border: solid var(--slate); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
 details.sg[open] > summary.sg__h::before { transform: rotate(45deg); }
+/* Folding (a group, a teacher's full profile): the content's height eases instead of jumping. A browser without
+   ::details-content skips these rules and folds at once. The clip margin keeps the cards' focus outline. */
+details.sg, .tp__bio { interpolate-size: allow-keywords; }
+details.sg::details-content, .tp__bio::details-content {
+  height: 0; overflow: clip; overflow-clip-margin: 6px;
+  transition: height 200ms ease-out, content-visibility 200ms ease-out allow-discrete;
+}
+details.sg[open]::details-content, .tp__bio[open]::details-content { height: auto; }
 summary.sg__h:hover { background: var(--hover); }
 summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .sg__n { color: var(--dim); font-size: 13px; font-weight: 400; font-variant-numeric: tabular-nums; }
