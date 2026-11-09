@@ -704,6 +704,10 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .post__meta .gone { margin-left: 0; }
 /* The mark of what comes from a department's site, not the board (build.py load_cent): a row's author, a page. */
 .src { display: inline-block; padding: 0 6px; border-radius: 9px; background: var(--accent); color: var(--accent-fg); font: 700 11px/18px var(--sans); vertical-align: 1px; }
+/* Where a subject's material is besides the board, from its posts' links (build.py mark_elsewhere): Teams, Drive, … */
+.ext { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--dim); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; text-decoration: none; }
+.mh__sub .ext { margin: 0 0 0 4px; }
+a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* The versions of a schedule page. */
 .versions { padding: 10px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); font-size: 14px; }
 .versions h2 { margin-bottom: 4px; color: var(--fg); font: 800 15px/1.3 var(--sans); }

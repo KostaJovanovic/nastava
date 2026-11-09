@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "rows.html" import crumb, topic_rows %}
+{% from "rows.html" import crumb, topic_rows, post_href %}
 
 {% block title %}{{ subj.name }}{% endblock %}
 {% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{% endblock %}
@@ -12,6 +12,10 @@
     <button type="button" class="btn star" data-star="{{ subj.href }}" data-name="{{ subj.name }}" aria-pressed="false" title="Najnovije objave praćenih predmeta su na početnoj strani" hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Prati</span></button>
   </div>
   <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('objava') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}{% if subj.site %} · <a href="{{ subj.site }}" rel="noopener" target="_blank">sajt predmeta <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %} · <a href="{{ subj.href }}feed.xml" title="Novi postovi ovog predmeta u čitaču vesti (RSS)">RSS</a></p>
+  {%- if subj.elsewhere %}
+  {#- Where its posts point for the material (build.py mark_elsewhere): each to the newest post that links it. -#}
+  <p class="mh__sub">Materijal i na:{% for e in subj.elsewhere.values() | sort(attribute='last.posted', reverse=true) %} <a class="ext" href="{{ post_href(e.last) }}" title="Pominje se u postovima od {{ e.first.posted | dmy }} do {{ e.last.posted | dmy }}; link: poslednji post">{{ e.name }} {{ e.first.posted[:4] }}{% if e.last.posted[:4] != e.first.posted[:4] %}–{{ e.last.posted[:4] }}{% endif %}</a>{% endfor %}</p>
+  {%- endif %}
   {%- if subj.teachers %}
   <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
   {%- endif %}

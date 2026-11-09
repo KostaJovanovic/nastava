@@ -20,7 +20,7 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from html import unescape
 from pathlib import Path
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, urljoin, urlsplit
 
 import nh3
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -362,6 +362,43 @@ def load_cent(db, smerovi, subjects):
         if shown:
             s.setdefault("cent", []).append(dict(title=shown[0]["title"], link=p["link"], gone=p["gone"] or emptied, versions=shown))
     return items, pushed
+
+
+# Where a subject's material is besides the board (a post links it): a service's name and its hosts.
+ELSEWHERE = [("Teams", r"^(teams\.microsoft\.com|teams\.live\.com|teams\.cloud\.microsoft)$"),
+             ("Classroom", r"^classroom\.google\.com$"), ("Google Drive", r"^(drive|docs)\.google\.com$"),
+             ("Moodle", r"^elearning\.rcub\.bg\.ac\.rs$"),
+             ("OneDrive", r"^(onedrive\.live\.com|1drv\.ms|[a-z0-9-]+\.sharepoint\.com)$"),
+             ("Dropbox", r"(^|\.)dropbox\.com$"), ("Box", r"(^|\.)box\.com$"),
+             ("YouTube", r"^(www\.|m\.)?(youtube\.com|youtu\.be)$")]
+
+
+def service(url):
+    """The service a link is on (ELSEWHERE), or a department's site (its host: 'ie.mas.bg.ac.rs'); None for others.
+    A Google form is a survey or a test, not material."""
+    u = urlsplit(url)
+    host = (u.hostname or "").lower()
+    if host == "docs.google.com" and u.path.startswith("/forms"):
+        return None
+    for name, rx in ELSEWHERE:
+        if re.search(rx, host):
+            return name
+    if host.endswith(".mas.bg.ac.rs") and host.split(".")[0] not in ("nastava", "www", "vesti"):
+        return host
+    return None
+
+
+def mark_elsewhere(items):
+    """Each subject's material elsewhere, from its posts' links: s["elsewhere"] = {name: dict(name, first, last)}, the
+    first and newest post that links it."""
+    for it in items:
+        if it["kind"] != "post" or not it["subj"]:
+            continue
+        for url in set(re.findall(r'href="(https?://[^"]+)"', it["html"] or "")):
+            if name := service(url):
+                e = it["subj"].setdefault("elsewhere", {}).setdefault(name, dict(name=name, first=it, last=it))
+                e["first"] = min(e["first"], it, key=lambda r: r["posted"])
+                e["last"] = max(e["last"], it, key=lambda r: r["posted"])
 
 
 def render_cent(site, subjects):
@@ -1093,6 +1130,7 @@ def main(db_path, out):
         # The shown name: no title or middle initial (those are on the teacher's own page only).
         it["who"] = it["teacher"]["shown"] if it["teacher"] else it["author"]
     topics = load_topics(db, items)
+    mark_elsewhere(items)
     env.globals["side"] = side = side_panel(items)
     # The footer's "Ažurirano" (base.html): the build follows the sync (ci/deploy.sh). UTC; site.js shows local time.
     env.globals["built"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
@@ -1155,6 +1193,10 @@ if __name__ == "__main__":
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
     assert slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4" and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"
     assert fold(short_smer(PROGRAMS[0].replace(" — ", " - "))) == fold("ОАС - МИ")
+    assert [service(u) for u in ("https://teams.microsoft.com/l/x", "https://docs.google.com/document/d/1", "https://docs.google.com/forms/d/1",
+                                 "https://us02web.zoom.us/j/1", "http://ie.mas.bg.ac.rs/x", "https://nastava.mas.bg.ac.rs/x",
+                                 "https://abc.sharepoint.com/x", "https://youtu.be/x")] == [
+        "Teams", "Google Drive", None, None, "ie.mas.bg.ac.rs", None, "OneDrive", "YouTube"]
     _a = lambda v: re.search(r'href="([^"]*)"', clean_html(f'<a href="{v}">x</a>'))[1].replace("&amp;", "&")
     assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
