@@ -99,3 +99,8 @@ from `push-secret.json`), before `wrangler deploy`.
 
 When the attachments are wanted: `uv run documents.py sync`. Old .doc/.xls/.ppt files need LibreOffice (`soffice`) for their text; without it they stay pending and the next
 `uv run documents.py extract` on a machine with LibreOffice reads them.
+
+## License
+
+The code is under the [GNU GPL v3](LICENSE). It covers the code only: the archived posts, news, schedules, files and
+photos belong to their authors and the faculty.
