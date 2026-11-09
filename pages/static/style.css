@@ -248,6 +248,9 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .ft a { color: var(--head-fg); text-decoration: none; }
 .ft a:hover { color: var(--head-fg); text-decoration: underline; text-underline-offset: 3px; }
 .ft .ft__site, .ft__by a { font-weight: 600; }
+/* The other sites (masinci.org, mas.bg.ac.rs, the drive) are underlined; the drive is not bold. */
+.ft .ft__site { text-decoration: underline; text-underline-offset: 3px; }
+.ft__side .ft__site { font-weight: 400; }
 .ft__note { font-size: 13px; }
 .ft__side { display: grid; gap: 8px; }
 @media (min-width: 760px) { .ft__side { justify-items: end; } }
