@@ -36,7 +36,7 @@
     <li class="fr"{% if filter %} data-find="{{ s.find }}"{% endif %}>
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span>
       <div class="fr__t">
-        <a class="fr__a" href="{{ s.href }}">{{ s.name }}</a>
+        <a class="fr__a" href="{{ s.href }}">{{ s.label or s.name }}</a>
         {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
         {%- elif s.subjects is number %}<p class="fr__sub">{{ s.subjects }} {{ s.subjects | pl('predmet') }}</p>{% endif %}
       </div>

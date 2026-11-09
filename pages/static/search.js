@@ -336,7 +336,7 @@ function restoreFromUrl() {
 	for (const name of ["autor", "subject", "smer"]) {
 		for (const value of p.getAll(name)) form.append(build("input", { type: "hidden", name, value }, []));
 	}
-	// The filters stay as site.js left them (closed on a phone): the chips above the results show the active ones.
+	// The chips above the results show the active filters (on a phone the year is at the bottom of the page).
 	return p.size > 0;
 }
 

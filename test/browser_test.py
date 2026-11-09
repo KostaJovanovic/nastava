@@ -82,5 +82,18 @@ with sync_playwright() as p:
 	page.wait_for_load_state('networkidle')
 	assert len(set(page.locator('#res .fr__s .s1').all_inner_texts())) > 1
 	page.evaluate("localStorage.removeItem('moji')")
+	# A link off the site asks first; a PDF of this site opens in a new tab.
+	page.goto(f'{base}/item/p100/')
+	page.locator('main a[href^="https://nastava.mas.bg.ac.rs"]').first.click()
+	print('leaving:', page.inner_text('.leave .leave__url'))
+	assert page.locator('.leave[open]').count() == 1
+	page.click('[data-leave-stay]')
+	assert page.locator('.leave[open]').count() == 0 and '/item/p100/' in page.url
+	page.goto(f'{base}/raspored/')
+	with page.context.expect_page() as tab:
+		page.locator('.rs-card').first.click()
+	print('pdf in a new tab:', tab.value.url.split('/')[-1], '| this page:', page.url.split('/', 3)[-1])
+	assert tab.value.url.endswith('.pdf') and '/raspored/' in page.url
+	tab.value.close()
 	print('page errors:', errors or 'none')
 	browser.close()

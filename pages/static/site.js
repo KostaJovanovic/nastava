@@ -2,7 +2,6 @@
    Loaded after pismo.js, whose pismoFold it uses. */
 (function () {
   var d = document;
-  var wide = window.matchMedia && matchMedia('(min-width: 900px)').matches;
   var fold = window.pismoFold;
   var sf = d.getElementById('sf'), q = d.getElementById('q');
   // The page's context for the header search (see below); null on a page without one, or once it is left.
@@ -40,10 +39,6 @@
     // A link to another program on the same page changes only the #.
     window.addEventListener('hashchange', function () { pick(decodeURIComponent(location.hash.slice(1)), true); });
   }
-
-  /* Filters: open on wide screens, closed on phones (the search shows the active ones as chips). */
-  var f = d.querySelector('details.filters');
-  if (f && !wide) f.open = false;
 
   /* Apply filters right away when a choice or a year changes. On a page other than search, this opens the search
      of the whole archive: the header's text was for the page's list, so it goes. */
@@ -90,14 +85,17 @@
         made = d.createElement('div');
         made.className = 'groups';
         // The groups by name, the rows without a value last.
+        // A named group folds (open at first); one without a name ('-') is a plain list.
         Object.keys(groups).sort(function (a, b) { return !a - !b || label(g, a).localeCompare(label(g, b), 'sr'); }).forEach(function (v) {
-          var sec = d.createElement('section'), ol = d.createElement('ol');
+          var sec = d.createElement(g === '-' ? 'section' : 'details'), ol = d.createElement('ol');
           sec.className = 'sg';
           if (g !== '-') {
-            var h = d.createElement('h2');
+            var h = d.createElement('summary');
             h.className = 'sg__h';
             h.textContent = label(g, v);
+            h.appendChild(d.createElement('span')).className = 'sg__n';
             sec.appendChild(h);
+            sec.open = true;
           }
           ol.className = home[0][1].className;
           ol.setAttribute('data-rows', '');
@@ -130,9 +128,15 @@
         // Counted once per subject, among the rows on view.
         if (ok && (!made || made.contains(r))) ids[r.dataset.id || i] = 1;
       });
-      // A group, semester or elective slot with no row left is hidden.
+      // A group, semester or elective slot with no row left is hidden; while a filter is set, a folded group with
+      // rows opens, so no result is hidden inside one.
+      var filtering = ctl.some(function (c) { return c.value.trim(); });
       if (box) [].forEach.call(box.querySelectorAll('.sg, .sg__s, .sg__slot'), function (g) {
-        g.classList.toggle('is-empty', !g.querySelector('[data-rows] > li:not([hidden])'));
+        var shownRows = g.querySelectorAll('[data-rows] > li:not([hidden])').length, n = g.querySelector(':scope > summary .sg__n');
+        var empty = !shownRows;
+        if (n) n.textContent = shownRows;
+        g.classList.toggle('is-empty', empty);
+        if (filtering && !empty && g.tagName === 'DETAILS') g.open = true;
       });
       var shown = Object.keys(ids).length, n = bar.querySelector('[data-shown]'), none = d.querySelector('[data-none]');
       if (n) n.textContent = shown;
@@ -441,6 +445,39 @@
   // search.js puts the home page back when the search is cleared, without these rows.
   d.addEventListener('pocetna', fillMine);
   d.addEventListener('moji', fillMine);
+
+  /* Links: a PDF opens in a new tab; a link off this site (the board, the faculty's site) first says so in a dialog,
+     and opens in a new tab. A click with a modifier key (a new tab or window asked for) goes on as the browser does. */
+  var leave = null;
+  d.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    if (!/^https?:$/.test(a.protocol) || a.hasAttribute('data-leave-go')) return;
+    var out = a.host !== location.host;
+    if (!out && !/\.pdf$/i.test(a.pathname)) return;
+    e.preventDefault();
+    if (!out) { window.open(a.href, '_blank', 'noopener'); return; }
+    if (!leave) {
+      leave = d.createElement('dialog');
+      leave.className = 'leave';
+      leave.setAttribute('aria-labelledby', 'leave-h');
+      leave.innerHTML = '<div class="leave__in"><h2 id="leave-h">Napuštate arhivu</h2>'
+        + '<p>Link vodi na <b data-leave-host></b>, sajt van ove arhive. Otvoriće se u novoj kartici.</p>'
+        + '<p class="leave__url" data-leave-url data-notx></p><div class="leave__acts">'
+        + '<button type="button" class="btn" data-leave-stay>Ostani</button>'
+        + '<a class="btn btn--pri" data-leave-go target="_blank" rel="noopener noreferrer">Nastavi</a></div></div>';
+      d.body.appendChild(leave);
+      // The dialog itself is the target only on its backdrop.
+      leave.addEventListener('click', function (e) {
+        if (e.target === leave || e.target.closest('[data-leave-stay], [data-leave-go]')) leave.close();
+      });
+    }
+    leave.querySelector('[data-leave-host]').textContent = a.hostname;
+    leave.querySelector('[data-leave-url]').textContent = a.href;
+    leave.querySelector('[data-leave-go]').href = a.href;
+    leave.showModal();
+    leave.querySelector('[data-leave-go]').focus();
+  });
 
   /* A post's link in a topic: the click goes to it as a link does, and copies its full address. */
   d.addEventListener('click', function (e) {

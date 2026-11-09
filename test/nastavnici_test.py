@@ -28,6 +28,16 @@ with sync_playwright() as p:
 	page.goto(base + '/nastavnici/?katedra=katedra-za-matematiku')
 	print('from url:', shown())
 	assert shown() == 8
+	# Grouped by katedra, each group folds; its heading counts its rows.
+	page.goto(base + '/nastavnici/')
+	page.select_option('#t-g', 'k')
+	first = page.locator('details.sg').first
+	print('groups:', page.locator('details.sg').count(), '| first:', first.locator('summary').inner_text().replace('\n', ' '))
+	n = int(first.locator('.sg__n').inner_text())
+	assert first.get_attribute('open') is not None and first.locator('.pc:visible').count() == n
+	first.locator('summary').click()
+	assert first.get_attribute('open') is None and first.locator('.pc:visible').count() == 0
+	page.select_option('#t-g', '')
 	page.goto(base + '/nastavnik/dusan-lj-djukic/')
 	print('profile h1:', page.inner_text('h1'), '| archived subjects:', page.locator('.tp__subj a[href^="/predmet/"]').count(),
 		'| posts:', page.locator('.tp__posts li').count())

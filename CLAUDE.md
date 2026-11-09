@@ -101,7 +101,9 @@ teachers from `/izbor.json`. The chip's × (or Backspace in an empty bar) goes b
 `pismoAttr()` in `pismo.js` sets the placeholder so the script switch keeps it.
 
 **Frontend:** plain JS, no bundler. Light theme unless the visitor picks dark; the script switch is Latin/Cyrillic only.
-On phones the page links are a bottom tab bar (`.snav`). Teachers are
+On phones the side panel is not one box (`.side { display: contents }`): the page links are a bottom tab bar
+(`.snav`), "Moji predmeti" sits above the page and the year filter below it. A PDF opens in a new tab; a link to
+another site first shows a "Napuštate arhivu" dialog (`site.js`). Teachers are
 named without title or middle initial (`shown`) everywhere but their own page. `search.js` keeps all search state in the URL (`/?q=`, `smer`, year, `autor`, ...)
 and queries Pagefind client-side. `site.js` is optional enhancement: every page must work without it.
 

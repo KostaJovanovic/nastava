@@ -9,12 +9,9 @@
     <a href="/predmeti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Predmeti</a>
     <a href="/raspored/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg><span class="snav__long">Kalendar i rasporedi</span><span class="snav__short">Raspored</span></a>
   </nav>
-  <details class="filters" open>
-    <summary class="filters__sum">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
-      Filteri
-      <svg class="filters__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
-    </summary>
+  {#- Phone: the panel's parts are blocks of the page (style.css .side): the followed subjects above it, the year
+      at its bottom. -#}
+  <div class="filters">
     <div class="filters__body">
 
       {#- The followed subjects (as a subject page's star follows one), and the picker that adds them: a dialog that
@@ -51,7 +48,10 @@
         </div>
       </fieldset>
       {%- endif %}
-
+    </div>
+  </div>
+  <div class="filters filters--years">
+    <div class="filters__body">
       {#- A year applies when it changes (site.js), as the other choices do. -#}
       <fieldset class="fgroup">
         <legend class="sec">Godina</legend>
@@ -67,5 +67,5 @@
         </div>
       </fieldset>
     </div>
-  </details>
+  </div>
 </aside>

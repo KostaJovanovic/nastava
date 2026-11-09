@@ -207,17 +207,29 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 }
 
 /* ---- Side panel --------------------------------------------------------- */
-.side { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
+.side { min-width: 0; }
 @media (min-width: 900px) {
   /* Under the header, the whole panel on the screen. Only on a screen too low for it do the filters scroll: their
      scrollbar starts under the page links and ends above the bottom, clear of the rounded corners. */
   /* top: the frame's top padding (16px), so the panel sticks where it already is and does not move. */
-  .side { position: sticky; top: calc(var(--hd) + 16px); display: flex; flex-direction: column; max-height: calc(100vh - var(--hd) - 32px); overflow: hidden; }
+  .side {
+    position: sticky; top: calc(var(--hd) + 16px); display: flex; flex-direction: column; max-height: calc(100vh - var(--hd) - 32px);
+    overflow: hidden; background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  }
   .snav { flex: none; }
-  .filters { flex: 1 1 auto; min-height: 0; margin-bottom: 8px; overflow-y: auto; overscroll-behavior: contain;
+  .filters { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
     scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--slate) 55%, transparent) transparent; }
+  .filters--years { flex: none; margin-bottom: 8px; }
 }
-/* Phone: the page links are one row that scrolls sideways; wide: a list. */
+/* Phone: the panel is not one box. Its parts are blocks of the page: the page links a tab bar (below), the followed
+   subjects above the page, the year under it. A part with nothing on view (no script yet) is left out. */
+@media (max-width: 899px) {
+  .side { display: contents; }
+  .filters { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
+  .filters--years { order: 2; }
+  .filters:not(:has(.fgroup:not([hidden]))) { display: none; }
+}
+/* Wide: the page links as a list (phone: the tab bar below). */
 .snav { display: flex; gap: 2px; padding: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line-2); }
 .snav a {
   display: flex; align-items: center; gap: 8px; flex: none;
@@ -226,7 +238,13 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 }
 .snav a .i { width: 16px; height: 16px; color: var(--slate); }
 .snav a:hover { background: var(--hover); color: var(--accent); }
-@media (min-width: 900px) { .snav { display: grid; gap: 0; padding: 6px; } .snav a { gap: 10px; min-height: 27px; } .snav__short { display: none; } }
+@media (min-width: 900px) {
+  .snav { display: grid; gap: 2px; padding: 8px; }
+  .snav a { gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 8px; font-size: 15px; }
+  .snav a .i { width: 19px; height: 19px; }
+  .snav a[aria-current="page"] { background: var(--icon-bg); color: var(--fg); font-weight: 800; }
+  .snav__short { display: none; }
+}
 /* Phone: a tab bar fixed at the bottom, with the short labels. The current page's tab is marked (site.js). */
 @media (max-width: 899px) {
   body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
@@ -246,6 +264,16 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   .snav > a[aria-current="page"] { color: var(--accent); font-weight: 800; }
   .snav > a:active { background: var(--hover); }
 }
+
+/* Leaving the archive (site.js): a small dialog before a link to another site. */
+.leave { width: min(440px, 100vw - 32px); max-width: none; padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--text); }
+.leave[open] { animation: mp-in .15s ease-out; }
+.leave::backdrop { background: rgba(1, 19, 33, .5); }
+.leave__in { display: grid; gap: 10px; padding: 20px; }
+.leave h2 { color: var(--fg); font: 800 18px var(--sans); }
+.leave b { color: var(--fg); }
+.leave__url { padding: 8px 10px; border-radius: 8px; background: var(--icon-bg); color: var(--dim); font: 400 12.5px var(--mono); overflow-wrap: anywhere; }
+.leave__acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
 /* ---- Kalendar i rasporedi ---------------------------------------------------- */
 /* The calendar: a banner in the header's colour, unlike the cards under it. */
@@ -312,21 +340,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 }
 .sec span { color: var(--dim); font-weight: 400; font-size: 12px; }
 
-.filters__sum {
-  display: flex; align-items: center; gap: 8px;
-  min-height: 44px; padding: 0 16px;
-  color: var(--fg); font: 400 14px var(--sans);
-  cursor: pointer; list-style: none;
-}
-.filters__sum::-webkit-details-marker { display: none; }
-.filters__sum svg { width: 16px; height: 16px; color: var(--dim); }
-.filters__chev { margin-left: auto; transition: transform .15s; }
-.filters[open] .filters__chev { transform: rotate(180deg); }
-.filters__body { padding: 6px 0 10px; border-top: 1px solid var(--line-2); }
-@media (min-width: 900px) {
-  .filters__sum { display: none; }
-  .filters__body { padding-top: 12px; border-top: 0; }
-}
+.filters__body { padding: 12px 0 10px; }
 
 .fgroup { margin: 0 0 10px; padding: 0; border: 0; min-width: 0; }
 .fgroup:last-child { margin-bottom: 0; }
@@ -431,7 +445,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   .mp__cards { grid-template-columns: 1fr; }
   .mp__foot span { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .mp[open], .mp__check { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .mp[open], .mp__check, .leave[open] { animation: none !important; } }
 
 /* Posts per year, above the year fields (whose placeholders are the first and the last year). */
 .hist { display: flex; align-items: flex-end; gap: 2px; height: 28px; margin: 0 16px 8px; }
@@ -797,6 +811,14 @@ a.post__name:hover { color: var(--accent); text-decoration: underline; }
 .groups .is-empty { display: none; }
 .sg__h { margin: 4px 0 8px; color: var(--fg); font: 800 17px/1.3 var(--sans); }
 .sg__h span { color: var(--dim); font-weight: 400; }
+/* A group site.js made (the teachers by katedra, …) folds: its heading has a chevron and how many rows it shows. */
+summary.sg__h { display: flex; align-items: center; gap: 10px; padding: 6px 8px; margin: 0 -8px 4px; border-radius: 8px; cursor: pointer; list-style: none; }
+summary.sg__h::-webkit-details-marker { display: none; }
+summary.sg__h::before { content: ""; flex: none; width: 7px; height: 7px; margin: 0 3px; border: solid var(--slate); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+details.sg[open] > summary.sg__h::before { transform: rotate(45deg); }
+summary.sg__h:hover { background: var(--hover); }
+summary.sg__h:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sg__n { color: var(--dim); font-size: 13px; font-weight: 400; font-variant-numeric: tabular-nums; }
 .sg__sem { margin: 12px 0 6px; color: var(--fg); font: 800 14px/1.3 var(--sans); }
 .sg__slot { margin: 8px 0 0 14px; }
 .sg__slot h4 { margin: 0 0 4px; color: var(--fg); font: 800 13.5px/1.3 var(--sans); }
