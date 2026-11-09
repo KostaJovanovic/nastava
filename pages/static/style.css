@@ -259,7 +259,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 @media (max-width: 759px) {
   .ft { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; padding: 16px 16px 18px; }
   .ft__in, .ft__side, .ft__links { display: contents; }
-  .ft a { padding: 7px 0; }
+  .ft a { padding: 7px 0; justify-self: center; text-align: center; }
   .ft__by a { padding: 0; }
   .ft__by { order: -1; grid-column: 1 / -1; margin-bottom: 8px; padding-bottom: 14px; text-align: center;
     border-bottom: 1px solid color-mix(in srgb, var(--head-fg) 20%, transparent); }
