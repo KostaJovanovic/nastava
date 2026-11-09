@@ -105,7 +105,24 @@ def desc(text, n=160):
     return text if len(text) <= n else text[:n].rsplit(" ", 1)[0] + "…"
 
 
+LAT = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "a b v g d đ e ž z i j k l lj m n nj o p r s t ć u f h c č dž š".split()))
+
+
+def lat(s):
+    """Serbian Cyrillic to Latin, as pismo.js toLat shows a page by default: for what no script converts (the link
+    previews, base.html). Љ is 'LJ' in a word of capitals, 'Lj' otherwise. Escaped text stays escaped (Markup)."""
+    def letter(m):
+        c, l = m[0], LAT.get(m[0].lower())
+        if l is None or c == c.lower():
+            return l or c
+        after = m.string[m.end():m.end() + 1]
+        return l.upper() if after and after != after.lower() else l[0].upper() + l[1:]
+    out = re.sub(r"[Ѐ-ӿ]", letter, str(s or ""))
+    return Markup(out) if isinstance(s, Markup) else out
+
+
 env.filters["desc"] = desc
+env.filters["lat"] = lat
 # Structured data in a page (schema.org), escaped for a <script> (<, >, &, ' as \u).
 env.filters["ld"] = lambda d: Markup(f'<script type="application/ld+json">{htmlsafe_json_dumps(d, ensure_ascii=False)}</script>')
 env.globals["site_url"] = SITE_URL
@@ -1454,6 +1471,8 @@ if __name__ == "__main__":
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>",
                         f'<html lang="sr"><title>T</title><meta>{HEAD_END}a</main><p></html>'), (_s, _f)
     assert desc(" a\n b ") == "a b" and desc("aaa bbb ccc", 9) == "aaa bbb…"
+    assert lat("Љиљана ЉУБА Ђорђе, Џ. Mašina 2") == "Ljiljana LJUBA Đorđe, Dž. Mašina 2" and lat(None) == ""
+    assert lat(Markup("Ш &amp; A")) == Markup("Š &amp; A")
     _bc = breadcrumbs('<nav class="crumbs"><a href="/"><svg></svg>Početna</a><svg></svg><a href="/smer/x/" title="A &amp; B">A &amp; B</a>'
                       '<svg></svg><span class="crumbs__here" aria-current="page">Мата</span></nav>', f"{SITE_URL}/p/")
     assert [(i["position"], i["name"], i["item"]) for i in json.loads(re.search(r">(.*)</script>", _bc)[1])["itemListElement"]] == [
