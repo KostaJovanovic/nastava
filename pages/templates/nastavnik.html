@@ -113,12 +113,13 @@
 </section>
 {%- endif %}
 
-{%- if h and h.sources %}
-{#- Where the history is from, each source quoted (nastavnici-istorija.jsonl). -#}
+{%- set ps = t.photo_src %}
+{%- if (h and h.sources) or ps %}
+{#- Where the history is from, each source quoted (nastavnici-istorija.jsonl); last, the photo's (nastavnici-foto.jsonl). -#}
 <section class="tp__sec" id="izvori">
-  <div class="tp__h"><h2>Izvori <span>{{ h.sources | length }}</span></h2></div>
+  <div class="tp__h"><h2>Izvori <span>{{ (h.sources | length if h else 0) + (1 if ps else 0) }}</span></h2></div>
   <ol class="srcs">
-    {%- for s in h.sources %}
+    {%- for s in (h.sources if h else []) %}
     <li>
       <a href="{{ s.url }}" rel="noopener" target="_blank">
         {%- if s.kind == 'monografija' %}Monografija „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“{% if s.page %}, str. {{ s.page }}{% endif %}
@@ -131,6 +132,15 @@
       {%- elif s.titles or s.katedra %}<p>{{ s.titles | join(', ') }}{% if s.titles and s.katedra %}, {% endif %}{{ s.katedra or '' }}</p>{% endif %}
     </li>
     {%- endfor %}
+    {%- if ps %}
+    <li>
+      <a href="{{ ps.page }}" rel="noopener" target="_blank">Fotografija: {% if ps.book_page %}Monografija „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“, str. {{ ps.book_page }}
+        {%- elif 'web.archive.org' in ps.page %}Stari sajt fakulteta (Wayback Machine)
+        {%- elif 'wikipedia' in ps.page %}Vikipedija
+        {%- else %}{{ ps.page.split('/')[2] }}{% endif %} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>
+      {%- if ps.caption %}<blockquote>{{ ps.caption }}</blockquote>{% endif %}
+    </li>
+    {%- endif %}
   </ol>
 </section>
 {%- endif %}

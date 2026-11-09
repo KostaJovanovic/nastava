@@ -872,6 +872,9 @@ OTHER_TEACHERS = [dict(
 
 
 HISTORY = Path(__file__).resolve().parent.parent / "nastavnici-istorija.jsonl"
+# Portraits of teachers without one, from the monograph, the old site, In memoriam, Wikipedia, SANU: page id, the
+# image's key in the photos table, the page it is on and its caption there.
+FOTOS = HISTORY.with_name("nastavnici-foto.jsonl")
 
 
 def load_history(teachers):
@@ -922,16 +925,25 @@ def load_teachers(db, subjects):
         t["username"] = FORUM_ACCOUNT.get(t["username"], t["username"])
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
     local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
+    fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
     for t in teachers:
         # The photo from our copy (write_photos); a listed teacher's not copied yet from the faculty, a departed
         # one's none (the faculty took it down).
         thumb, photo = photo_urls(t["html"], t.get("photo"))
         t["thumb"] = local.get(thumb) or (None if t["gone"] else thumb)
         t["photo"] = local.get(photo) or (None if t["gone"] else photo)
+        # One without: a portrait found elsewhere (nastavnici-foto.jsonl), its source shown among the page's sources.
+        f = fotos.pop(t["id"], None)
+        if f and not t["photo"] and f["image"] in local:
+            t["photo"] = t["thumb"] = local[f["image"]]
+            m = re.search(r"Monografija.*#page=(\d+)", f["page"])
+            t["photo_src"] = dict(f, book_page=m and int(m[1]) - 2)
         # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
         t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
         t["rank"] = RANKS.index(t["title"]) if t["title"] in RANKS else 9
+    if fotos:
+        print(f"nastavnici-foto.jsonl: no page for {', '.join(fotos)}", file=sys.stderr)
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
