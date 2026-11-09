@@ -252,7 +252,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .ft__side { display: grid; gap: 8px; }
 @media (min-width: 760px) { .ft__side { justify-items: end; } }
 /* The credit's wave (site.js): each letter rises in turn, as on valjdakosta.com's header. */
-.wave { display: inline-block; animation: wave 2s ease-in-out infinite; }
+/* 5s a wave, 0.15s a letter (site.js): one hump about 33 letters long, the whole line. */
+.wave { display: inline-block; animation: wave 5s ease-in-out infinite; }
 @keyframes wave { 50% { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .wave { animation: none; } }
 @media (min-width: 900px) {
