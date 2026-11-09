@@ -14,4 +14,4 @@ routes = [
 # Last in the file: a TOML table takes every key under it.
 [[kv_namespaces]]
 binding = "PUSH"
-id = "PUT-THE-KV-ID-HERE"
+id = "6fb27ef7a0ec47eaab4cbf6e284be04e"
