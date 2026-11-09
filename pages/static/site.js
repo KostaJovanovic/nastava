@@ -15,18 +15,22 @@
     return e;
   };
 
-  /* The header search's scope: the select after the text (base.html #qk), what the bar searches. sve: the matching
-     subjects (by studije), teachers and schedule entries listed under the bar, Enter searches the posts; postovi: the
-     posts (search.js); nastavnici, predmeti: the matching ones under the bar, Enter opens their list page.
+  /* The header search's scope: the select after the text (base.html #qk, the form's kind), what the bar searches.
+     '' (Sve): the matching subjects (by studije), teachers and schedule entries listed under the bar, Enter searches
+     all the texts; a text's kind (posts, news): Enter searches those (search.js); nastavnici, predmeti: the matching
+     ones under the bar, Enter opens their list page.
      A page with [data-scope] (its label; data-ph, the placeholder) starts in it: a list page's own list
      ([data-filter], below) is filtered by the bar; a label that is no option (a subject's topics, a smer's subjects)
-     is an option of its own. data-enter: where Enter goes in it, with q= appended. The home page starts in the scope
-     last picked on it. sf.data-u: the scope, for search.js. */
-  var qk = d.getElementById('qk'), u = 'sve', pageU = null, list = null, data = null, findOn = null, setScope = null;
+     is an option of its own. data-enter: where Enter goes in it, with q= appended. The home page starts in the URL's
+     kind, else in the scope last picked on it. sf.data-u: the scope, for search.js. */
+  var qk = d.getElementById('qk'), u = '', pageU = null, list = null, data = null, findOn = null, setScope = null;
   var ENTER = { nastavnici: '/nastavnici/?', predmeti: '/predmeti/?' };
   if (qk) {
     var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
-    var PH = { sve: 'Pretraži sve…', postovi: 'Pretraži postove…', nastavnici: 'Ime nastavnika…', predmeti: 'Naziv predmeta…' };
+    var PH = { '': 'Pretraži sve…', obavestenje: 'Pretraži objave…', vest: 'Pretraži vesti…', dokument: 'Pretraži dokumente…',
+      nastavnici: 'Ime nastavnika…', predmeti: 'Naziv predmeta…' };
+    // A scope whose Enter searches the texts (search.js): every one but the lists and a page's own.
+    var texts = function (v) { return !ENTER[v] && v !== 'ovde'; };
     var onHome = location.pathname === '/', saved = null;
     if (scope) {
       var mine0 = [].filter.call(qk.options, function (o) { return fold(o.text) === fold(scope.dataset.scope); })[0];
@@ -35,9 +39,12 @@
       PH[pageU] = scope.dataset.ph;
     }
     try { saved = localStorage.getItem('trazi'); } catch (e) {}
-    // A search in the URL is of the posts, which a teachers' or subjects' scope would hide.
-    if (onHome && PH[saved] && !(location.search && ENTER[saved])) u = saved;
+    var kind = new URLSearchParams(location.search).get('kind') || '';
+    // A search in the URL is of the texts, which a teachers' or subjects' scope would hide.
+    if (onHome && location.search) u = kind in PH && texts(kind) ? kind : '';
+    else if (onHome && saved !== null && saved in PH) u = saved;
     else if (pageU) u = pageU;
+    else if (saved === null) u = 'predmeti'; // A new visitor (nothing picked yet) starts in the subjects.
     var studije = [], folded = [];
     setScope = function (v) {
       u = qk.value = sf.dataset.u = v;
@@ -50,15 +57,15 @@
       var has = function (s) { return w.every(function (x) { return s.indexOf(x) > -1; }); };
       list.textContent = '';
       // The page's own list filtered by the bar (q.dataset.f, below) or the posts: nothing under the bar.
-      if (w.length && !q.dataset.f && u !== 'postovi' && u !== 'ovde') {
-        // rows: [subgroup, name, hint, href]. In sve, the first 5 of a type with a list page, and a link to the rest.
+      if (w.length && !q.dataset.f && (!u || ENTER[u])) {
+        // rows: [subgroup, name, hint, href]. In Sve, the first 5 of a type with a list page, and a link to the rest.
         var section = function (key, title, rows) {
-          var cap = u === 'sve' && ENTER[key] ? 5 : 200, sub = null;
-          if (!rows.length || (u !== 'sve' && u !== key)) return;
+          var cap = !u && ENTER[key] ? 5 : 200, sub = null;
+          if (!rows.length || (u && u !== key)) return;
           var g = list.appendChild(el('div', 'cmd__g'));
           g.setAttribute('role', 'group');
           g.setAttribute('aria-label', title);
-          if (u === 'sve') g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
+          if (!u) g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
           rows.slice(0, cap).forEach(function (r) {
             if (r[0] && r[0] !== sub) g.appendChild(el('p', 'cmd__s', sub = r[0])).setAttribute('aria-hidden', 'true');
             var a = g.appendChild(el('a', null, r[1]));
@@ -80,8 +87,8 @@
           .map(function (t) { return ['', t[0], '', t[1]]; }));
         section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
           .map(function (r) { return ['', r[0], r[1], r[2]]; }));
-        if (u === 'sve') {
-          var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima'));
+        if (!u) {
+          var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima i vestima'));
           a.href = '/?q=' + encodeURIComponent(v);
         }
       }
@@ -97,7 +104,7 @@
     sf.addEventListener('submit', function (e) {
       var v = q.value.trim(), hits = list && !list.hidden ? list.querySelectorAll('a:not(.cmd__more)') : [];
       if (list) list.hidden = true;
-      if (u === 'sve' || u === 'postovi') return;
+      if (texts(u)) return;
       e.preventDefault();
       if (hits.length === 1) location.href = hits[0].href;
       else if (v && u === pageU && scope.dataset.enter) location.href = scope.dataset.enter + 'q=' + encodeURIComponent(fold(v));
@@ -145,8 +152,9 @@
   }
 
   /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
-     (a teacher's page is under Nastavnici, an archived schedule page under Raspored). */
-  var here = location.pathname.replace(/^\/nastavnik\//, '/nastavnici/').replace(/^\/studije\//, '/raspored/');
+     (a teacher's page is under Nastavnici, an archived schedule page under Raspored, a news post under Vesti). */
+  var here = location.pathname.replace(/^\/nastavnik\//, '/nastavnici/').replace(/^\/studije\//, '/raspored/')
+    .replace(/^\/vest\//, '/vesti/');
   [].forEach.call(d.querySelectorAll('.snav a'), function (a) {
     if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');
   });
@@ -205,13 +213,6 @@
     d.dispatchEvent(new Event('moji'));
   });
 
-  /* Apply filters right away when a choice changes: a search of the posts. The header's text in another scope was
-     for that, so it goes. */
-  d.addEventListener('change', function (e) {
-    if (!e.target.matches('.filters input[form=sf]') || !sf) return;
-    if (setScope && u !== 'sve' && u !== 'postovi') { q.value = ''; setScope('postovi'); }
-    sf.requestSubmit ? sf.requestSubmit() : sf.submit();
-  });
 
   /* A table filter in the page (a subject's topics, the teachers, a smer's subjects): every row is in the page.
      data-f="find": all words in the row's folded data-find; data-f="x" on a select: the value is one of row data-x ("a|b").

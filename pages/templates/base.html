@@ -10,7 +10,7 @@
 <link rel="preload" href="/static/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/style.css">
 <script src="/static/head.js"></script>
-<script type="speculationrules">{"prerender": [{"where": {"href_matches": ["/item/*", "/tema/*", "/predmet/*", "/smer/*", "/nastavnik/*", "/predmeti/*", "/raspored/", "/statistika/"]}, "eagerness": "moderate"}]}</script>
+<script type="speculationrules">{"prerender": [{"where": {"href_matches": ["/item/*", "/tema/*", "/predmet/*", "/smer/*", "/nastavnik/*", "/predmeti/*", "/raspored/", "/statistika/", "/vesti/*", "/vest/*"]}, "eagerness": "moderate"}]}</script>
 <link rel="icon" href="/static/favicon.svg">
 {#- Standalone from a phone's home screen: an iPhone has web push only there (site.js). -#}
 <link rel="manifest" href="/static/manifest.webmanifest">
@@ -27,10 +27,13 @@
     <label class="vh" for="q">Pretraži arhivu</label>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
     <input id="q" name="q" type="search" placeholder="Pretraži sve postove…" autocomplete="off" enterkeyhint="search">
-    {#- What the bar searches (site.js); without the script, the posts. -#}
-    <select id="qk" aria-label="Šta pretražuješ" hidden>
-      <option value="sve">Sve</option>
-      <option value="postovi">Postovi</option>
+    {#- What the bar searches (site.js). A text's kind is its ?kind= (search.js, Pagefind's "vrsta"); the teachers and
+        subjects are lists under the bar. Without the script: hidden, everything. -#}
+    <select id="qk" name="kind" aria-label="Šta pretražuješ" hidden>
+      <option value="">Sve</option>
+      <option value="obavestenje">Objave</option>
+      <option value="vest">Vesti</option>
+      {%- if side.kinds.get('dokument') %}<option value="dokument">Dokumenti</option>{% endif %}
       <option value="nastavnici">Nastavnici</option>
       <option value="predmeti">Predmeti</option>
     </select>

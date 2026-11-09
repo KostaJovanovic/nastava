@@ -31,8 +31,10 @@ sys.path.insert(0, str(HERE.parent))
 from studije import PAGES as STUDY_PAGES, SITE as STUDY_SITE, media_path  # noqa: E402
 from nastavnici import photo_urls  # noqa: E402
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
-KIND = {"post": "obavestenje", "document": "dokument"}
+KIND = {"post": "obavestenje", "document": "dokument", "vest": "vest"}
 RECENT = 20
+# vesti.py's site, which keeps the news' images and files (the pages link them); the home page shows the newest few.
+VESTI, VESTI_HOME = "https://vesti.mas.bg.ac.rs/", 5
 # A followed subject's newest topics in its novo.json (the home page's "Moji predmeti", site.js).
 MINE = 10
 # The Atom feeds (write_feeds): the posts in a subject's and in the whole board's, and the domain of their links.
@@ -235,9 +237,31 @@ def load_items(db, place):
     return items
 
 
+def load_vesti(db):
+    """vesti.py's news, the newest version of each, newest first. Each is also an item for pagefind_tags (no smer,
+    subject or author); body: its plain text."""
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'vesti'").fetchone():
+        return []
+    cats = dict(db.execute("SELECT id, name FROM vesti_categories"))
+    out = []
+    for r in db.execute("SELECT * FROM vesti v WHERE modified = (SELECT max(modified) FROM vesti WHERE id = v.id) "
+                        "ORDER BY date DESC"):
+        iso, year = parse_date(r["date"])
+        names = [cats[c] for c in json.loads(r["categories"]) if c in cats]
+        title = unescape(r["title"])
+        out.append(dict(id=f"v{r['id']}", kind="vest", href=f"/vest/{r['id']}/", title=title, date=iso, year=year,
+                        posted=f"{r['date_gmt']}Z", cats=names, cat_keys="|".join(slug(c) for c in names),
+                        find=fold(" ".join([title] + names)), html=clean_html(r["html"], VESTI),
+                        body=strip_tags(r["html"])[:PAGE_TEXT], gone=r["gone"], source_url=r["link"],
+                        smer=None, subj=None, subject=None, author=None, who="Mašinski fakultet"))
+    return out
+
+
 def pagefind_tags(it):
     kind = KIND[it["kind"]]
     tags = [("meta", "title", it["title"] or ""), ("filter", "vrsta", kind), ("meta", "vrsta", kind)]
+    if it["kind"] == "vest":
+        tags.append(("meta", "kategorija", ", ".join(it["cats"])))
     if it["smer"]:
         tags += [("filter", "smer", it["smer"]["key"]), ("meta", "smer", it["smer"]["name"])]
     if it["subject"]:
@@ -266,11 +290,11 @@ def mark_for_pagefind(page, it):
 
 
 def strip_pagefind(site):
-    """After Pagefind has indexed the site, drop the hidden copy it read from each item page (~50 MB in all).
+    """After Pagefind has indexed the site, drop the hidden copy it read from each item and news page (~50 MB in all).
     A stripped site cannot be indexed again: it has no data-pagefind-body left."""
     marker = '<div class="pf" data-pagefind-body>'
     assert (site / "pagefind" / "pagefind.js").exists(), "run Pagefind before stripping"
-    for path in (site / "item").glob("*/index.html"):
+    for path in [*(site / "item").glob("*/index.html"), *(site / "vest").glob("*/index.html")]:
         html = path.read_text(encoding="utf-8")
         if (start := html.find(marker)) >= 0:
             # The copy is escaped text, so its own </div> is the first one after the marker.
@@ -374,13 +398,13 @@ def post_href(it):
 
 
 def atom(title, path, posts):
-    """An Atom feed of the newest posts (newest first) for a feed reader: the whole board or one subject. A reader
-    needs whole URLs, so they are on the main domain."""
+    """An Atom feed of the newest posts (newest first) for a feed reader: the whole board, one subject or the news
+    (an item with its own href). A reader needs whole URLs, so they are on the main domain."""
     def entry(it):
-        href = post_href(it)
-        place = (it["subj"] and it["subj"]["name"]) or (it["smer"] and it["smer"]["label"])
+        href, page = it.get("href") or post_href(it), it.get("href") or f"/item/{it['id']}/"
+        place = (it["subj"] and it["subj"]["name"]) or (it["smer"] and it["smer"]["label"]) or ", ".join(it.get("cats", []))
         return (f"<entry><title>{escape(it['title'] or '')}</title><link href=\"{SITE_URL}{escape(href)}\"/>"
-                f"<id>{SITE_URL}/item/{it['id']}/</id><updated>{it['posted']}</updated>"
+                f"<id>{SITE_URL}{escape(page)}</id><updated>{it['posted']}</updated>"
                 f"<author><name>{escape(it['who'] or '')}</name></author>"
                 + (f"<category term=\"{escape(place)}\"/>" if place else "")
                 + f"<content type=\"html\">{escape(it['html'] or it['body'] or '')}</content></entry>")
@@ -903,9 +927,28 @@ def archive_stats(items, topics, teachers):
                                       lambda k: (env.filters["katedra"](k).capitalize(), f"/nastavnici/?katedra={slug(k)}", None))))
 
 
-def render_home(topics, smerovi, side, n_teachers):
+def render_vesti(site, vesti):
+    """The news: a page each at /vest/<id>/ (what search finds; an id can be a year, so not under /vesti/), a list per
+    year with a category filter (the newest year at /vesti/, each other at /vesti/<year>/), and /vesti/feed.xml."""
+    if not vesti:
+        return
+    years = sorted({v["year"] for v in vesti}, reverse=True)
+    year_href = {y: "/vesti/" if y == years[0] else f"/vesti/{y}/" for y in years}
+    page = env.get_template("vest.html")
+    for v in vesti:
+        v["year_href"] = year_href[v["year"]]
+        write(site / v["href"].strip("/") / "index.html", mark_for_pagefind(page.render(v=v), v))
+    for y in years:
+        rows = [v for v in vesti if v["year"] == y]
+        cats = sorted({c for v in rows for c in v["cats"]}, key=fold)
+        write(site / year_href[y].strip("/") / "index.html", env.get_template("vesti.html").render(
+            vesti=rows, year=y, years=years, year_href=year_href, cats=cats, total=len(vesti)))
+    (site / "vesti" / "feed.xml").write_text(atom("Vesti · Mašinski fakultet", "/vesti/", vesti[:FEED_ALL]), encoding="utf-8")
+
+
+def render_home(topics, smerovi, side, n_teachers, vesti):
     return env.get_template("search.html").render(
-        smerovi=[m for m in smerovi.values() if m["count"]], recent=topics[:RECENT],
+        smerovi=[m for m in smerovi.values() if m["count"]], recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
         stats=dict(posts=side["total"], topics=len(topics), teachers=n_teachers),
         years_json=json.dumps([y for y, _ in side["year_hist"]]))
 
@@ -958,10 +1001,13 @@ def main(db_path, out):
     (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers), raspored=raspored),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
-    (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers)), encoding="utf-8")
+    vesti = load_vesti(db)
+    render_vesti(site, vesti)
+    (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers), vesti),
+                                     encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")
     print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['count'])} subjects, "
-          f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects", flush=True)
+          f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti", flush=True)
     npx = shutil.which("npx") or sys.exit("npx not found: Pagefind needs Node.js")
     subprocess.run([npx, "-y", PAGEFIND, "--site", str(site)], check=True)
     strip_pagefind(site)

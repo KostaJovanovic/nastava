@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb, vest_rows %}
+
+{#- A year of news from vesti.mas.bg.ac.rs (build.py render_vesti): the newest year at /vesti/, each other at
+    /vesti/<year>/, with the years as tabs. -#}
+{%- set _newest = year == years[0] %}
+{% block title %}Vesti{% if not _newest %} {{ year }}{% endif %}{% endblock %}
+{% block crumbs %}{% if not _newest %}{{ crumb('/vesti/', 'Vesti') }}{% endif %}{% endblock %}
+
+{% block main %}
+<div class="mh">
+  <h1 id="title">Vesti {{ year }}</h1>
+  <p class="mh__sub">sa vesti.mas.bg.ac.rs · {{ total | n }} vesti od {{ years[-1] }}. · <a href="/vesti/feed.xml" title="Nove vesti u čitaču vesti (RSS)">RSS</a></p>
+</div>
+<nav class="mp__tabs rs__tabs" aria-label="Godina">
+  {%- for y in years %}<a class="mp__tab" href="{{ year_href[y] }}"{% if y == year %} aria-current="page"{% endif %}><span>{{ y }}</span></a>{% endfor %}
+</nav>
+{% call vest_rows('Vesti ' ~ year, vesti, filter=true) %}
+{#- data-scope: the header search filters this year's list (site.js); Enter searches the text of all the news. -#}
+<form class="fbar" data-filter data-scope="Vesti" data-ph="Naslov ili kategorija; Enter: u tekstu" onsubmit="return false">
+  <label class="vh" for="v-k">Kategorija</label>
+  {#- value: the name's Latin slug (?kategorija=, the rows' data-k); pismo.js changes the option text, not the value. -#}
+  <select class="field" id="v-k" name="kategorija" data-f="k">
+    <option value="">Sve kategorije</option>
+    {%- for c in cats %}<option value="{{ c | slug }}">{{ c }}</option>{% endfor %}
+  </select>
+  <span class="fbar__n">prikazano <b data-shown>{{ vesti | length }}</b></span>
+</form>
+{% endcall %}
+{% endblock %}

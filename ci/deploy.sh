@@ -2,9 +2,10 @@
 # Build the site and publish it, on this PC or in the scheduled run (sync.yml): the site goes up as an asset of the
 # "site" release, and the deploy workflow puts it on GitHub Pages as it is.
 # Usage: bash ci/deploy.sh [sync|forum]   (from the repo root)
-#   sync   test the parsers, get the state (ci/state.sh pull), run the scrapers (posts, schedule pages, teachers,
+#   sync   test the parsers, get the state (ci/state.sh pull), run the scrapers (posts, news, schedule pages, teachers,
 #          subjects), save the state (ci/state.sh push), build, publish, then the web push of the new posts
-#   forum  the same, but only the board (the one daily changing source; the other scrapers ~8 min of unchanged pages)
+#   forum  the same, but only the board and the news (the daily changing sources; the other scrapers ~8 min of
+#          unchanged pages)
 #   (none) build and publish this copy's nastava.db
 # Missing posts or a failed side scraper do not stop the publish, but the script exits 1 at the end.
 set -euo pipefail
@@ -22,6 +23,8 @@ if [[ ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run nastava.py sync
 	# Right after the scrape, so a post made since then does not count as missing.
 	uv run nastava.py stats || failed+=(stats)
+	# The news change daily too, and all of them are ~46 requests.
+	uv run vesti.py sync || failed+=(vesti)
 	if [[ $1 == sync ]]; then
 		uv run studije.py sync || failed+=(studije)
 		uv run nastavnici.py sync || failed+=(nastavnici)

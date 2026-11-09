@@ -177,6 +177,15 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 }
 .cmd select:hover { background: light-dark(#cadceb, #3a5a72); }
 .cmd select:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 1px; }
+/* The open list rounded like Traži: a customizable select (Chromium); elsewhere the system's own list. */
+.cmd select, .cmd select::picker(select) { appearance: base-select; }
+.cmd select::picker(select) {
+  margin-top: 4px; padding: 4px;
+  border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--fg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+}
+.cmd select option { padding: 4px 8px; border-radius: 5px; }
+.cmd select option:hover, .cmd select option:focus-visible { background: var(--alt); outline: none; }
 .cmd__go {
   height: 32px; padding: 0 14px;
   border: 0; border-radius: 7px; background: var(--go); color: #fff;
@@ -276,7 +285,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .snav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
-    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
     padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); overflow: visible;
     background: var(--card); border-top: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -6px 18px rgba(1, 19, 33, .08);
   }
@@ -443,7 +452,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .mp__tab small { color: var(--dim); font-size: 11px; font-weight: 400; }
 .mp__tab:hover { border-color: var(--accent); transform: translateY(-1px); }
 /* aria-current: the same tabs as links (the schedule page's programs). */
-.mp__tab[aria-pressed="true"], .mp__tab[aria-current="true"] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
+.mp__tab[aria-pressed="true"], .mp__tab[aria-current="true"], .mp__tab[aria-current="page"] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
 .mp__tab[aria-pressed="true"] small, .mp__tab[aria-current="true"] small { color: inherit; opacity: .85; }
 .mp__chips .mp__tab { min-height: 30px; padding: 5px 13px; border-radius: 15px; font-size: 13px; line-height: 18px; font-weight: 400; }
 .mp__chips .mp__tab[aria-pressed="true"] { font-weight: 800; }

@@ -1,10 +1,11 @@
-{#- The side panel of every page (base.html): the page links and the search filters, short enough to fit the screen.
-    It is static: search.js sets the choices from the URL on the search page; on other pages a choice submits the
-    search form to the search page. side: the archive's counts (build.py side_panel). -#}
+{#- The side panel of every page (base.html): the page links, the followed subjects and the statistics, short enough
+    to fit the screen. What a search covers is the header's scope (base.html #qk). side: the archive's counts
+    (build.py side_panel). -#}
 <aside class="side" aria-label="Meni i filteri">
   {#- Wide screens: a list. Phone: a tab bar at the bottom of the screen, with the shorter label. -#}
   <nav class="snav" aria-label="Stranice">
     <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Početna</a>
+    <a href="/vesti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-news"></use></svg>Vesti</a>
     <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
     <a href="/predmeti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Predmeti</a>
     <a href="/raspored/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg><span class="snav__long">Kalendar i rasporedi</span><span class="snav__short">Raspored</span></a>
@@ -41,17 +42,6 @@
         <div class="mp__foot"><span>Uz „Samo moji predmeti“ sajt prikazuje samo njih.</span><button type="button" class="btn btn--pri" data-mp-close>Gotovo</button></div>
       </dialog>
 
-      {#- Documents are not archived for now (documents.py is not run); the group shows when there are some. -#}
-      {%- if side.kinds.get('dokument') %}
-      <fieldset class="fgroup">
-        <legend class="sec">Vrsta</legend>
-        <div>
-          <label class="opt is-on"><input type="radio" name="kind" value="" form="sf" checked><i class="rb" aria-hidden="true"></i><span class="opt__name">Sve</span><span class="n">{{ side.total }}</span></label>
-          <label class="opt"><input type="radio" name="kind" value="obavestenje" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">Obaveštenja</span><span class="n">{{ side.kinds.get('obavestenje', 0) }}</span></label>
-          <label class="opt"><input type="radio" name="kind" value="dokument" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">Dokumenti</span><span class="n">{{ side.kinds.get('dokument', 0) }}</span></label>
-        </div>
-      </fieldset>
-      {%- endif %}
     </div>
   </div>
   {#- Posts per year as a card that opens the archive's statistics (stats.html). -#}

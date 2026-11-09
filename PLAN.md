@@ -1,7 +1,7 @@
 # MF Beograd archive: plan
 
-Status (2026-11-08): nastava is built on dlwms and tested (README.md). vesti, the main site and the department
-sites below are not scraped yet. Phase 1 probes and scripts are in `recon/`.
+Status (2026-11-09): nastava is built on dlwms and tested (README.md). vesti is scraped (text only, media linked).
+The main site and the department sites below are not scraped yet. Phase 1 probes and scripts are in `recon/`.
 
 ## Sources
 

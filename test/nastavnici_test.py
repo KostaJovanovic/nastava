@@ -77,7 +77,7 @@ with sync_playwright() as p:
 	page.go_back()
 	page.wait_for_selector('#qk:visible')
 	page.fill('#q', 'kolokvijum')
-	page.select_option('#qk', 'sve')
+	page.select_option('#qk', '')
 	assert shown() == before
 	page.press('#q', 'Enter')
 	page.wait_for_url(re.compile(r'/\?q=kolokvijum'))
@@ -88,9 +88,11 @@ with sync_playwright() as p:
 	page.fill('#q', 'mehanika')
 	print('smer subjects:', all_subjects, '-> "mehanika":', page.locator('[data-rows] > li:visible .fr__a').all_inner_texts())
 	assert 0 < shown() < all_subjects
-	# The home page: Sve lists the subjects by studije, the teachers and the schedule under the bar.
+	# The home page: a new visitor starts in the subjects. Sve lists the subjects by studije, the teachers and the
+	# schedule under the bar.
 	page.goto(base + '/')
-	assert page.input_value('#qk') == 'sve'
+	assert page.input_value('#qk') == 'predmeti'
+	page.select_option('#qk', '')
 	page.fill('#q', 'num')
 	page.wait_for_selector('#q-list a')
 	print('sve "num":', page.locator('.cmd__h').all_inner_texts(), '| studije:', page.locator('.cmd__s').all_inner_texts()[:3])
@@ -107,5 +109,22 @@ with sync_playwright() as p:
 	assert page.input_value('#qk') == 'nastavnici'
 	page.goto(base + '/')
 	assert page.input_value('#qk') == 'predmeti'
+	# Vesti: the year's list filters by category; the scope searches only the news, Sve the news and the posts.
+	page.goto(base + '/vesti/')
+	assert page.input_value('#qk') == 'vest'
+	in_year = shown()
+	page.select_option('#v-k', 'izdvajamo')
+	print('vesti:', in_year, '-> izdvajamo:', shown())
+	assert 0 < shown() < in_year and 'kategorija=izdvajamo' in page.url
+	page.goto(base + '/vest/32035/')
+	assert page.locator('.snav a[aria-current]').inner_text() == 'Vesti'
+	counts = {}
+	for kind in ['vest', 'obavestenje', '']:
+		page.goto(f'{base}/?q=stipendija&kind={kind}')
+		page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('rezultat')")
+		counts[kind] = int(page.inner_text('#res-h b'))
+		assert page.input_value('#qk') == kind
+	print('"stipendija":', counts)
+	assert counts['vest'] + counts['obavestenje'] == counts[''] and counts['vest'] > 0
 	assert not errors
 	print('page errors:', errors or 'none')

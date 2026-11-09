@@ -16,10 +16,6 @@ if (!pagefind) {
 	throw new Error("pagefind.js did not load");
 }
 await pagefind.options({ excerptLength: 30 });
-// A search returns counts only for the filter groups that are loaded, so load all of them first.
-// These are also the counts of the whole archive: a search that would match every item takes about a second.
-// Only the "Vrsta" group shows counts, and only when documents are archived (sidebar.html): else skip that second.
-const TOTALS = document.querySelector('.filters input[name="kind"]') ? await pagefind.filters() : {};
 // The newest items from the build, shown again when the search and the filters are cleared.
 const home = { heading: heading.innerHTML, res: res.innerHTML };
 
@@ -88,7 +84,8 @@ function filtersOf(s) {
 	if (s.smer) filters.smer = { any: [s.smer] };
 	if (s.subjects.length) filters.predmet = { any: s.subjects };
 	if (s.authors.length) filters.autor = { any: s.authors };
-	if (s.mine.length) filters.pid = { any: s.mine };
+	// The news are no subject's: only the scope Vesti finds them while only the followed subjects show.
+	if (s.mine.length && s.kind !== "vest") filters.pid = { any: s.mine };
 	const from = Number(s.from) || -Infinity;
 	const to = Number(s.to) || Infinity;
 	if (s.from || s.to) filters.godina = { any: years.filter((y) => y >= from && y <= to).map(String) };
@@ -147,11 +144,12 @@ const posta = (n) => (n % 10 === 1 && n % 100 !== 11 ? "post" : n % 10 >= 2 && n
 // more: the other results of its objava on this page, merged into this row (showPage).
 function renderRow(data, more = 0) {
 	const li = rowTpl.content.firstElementChild.cloneNode(true);
-	if (data.meta.vrsta === "dokument") li.querySelector("use").setAttribute("href", "/static/icons.svg#i-file");
+	const kind = { dokument: "file", vest: "news" }[data.meta.vrsta];
+	if (kind) li.querySelector("use").setAttribute("href", `/static/icons.svg#i-${kind}`);
 	const d = li.querySelector(".fr__d");
 	d.dateTime = data.meta.datum ?? "";
 	d.textContent = dmy(data.meta.datum);
-	li.querySelector(".s1").textContent = data.meta.predmet ?? data.meta.smer ?? "";
+	li.querySelector(".s1").textContent = data.meta.predmet ?? data.meta.smer ?? data.meta.kategorija ?? "";
 	const author = li.querySelector(".s2");
 	author.textContent = data.meta.autor ?? "";
 	// A teacher's full name follows the script switch; a bare username stays as it is.
@@ -197,15 +195,11 @@ function renderHeading(s, total) {
 		});
 		chips.append(b);
 	};
-	const active = '.filters input[form="sf"]:checked, #sf input[type="hidden"]';
-	for (const input of document.querySelectorAll(active)) {
+	for (const input of document.querySelectorAll('#sf input[type="hidden"]')) {
 		if (!input.value) continue;
 		const label = input.name === "from" ? `od ${input.value}` : input.name === "to" ? `do ${input.value}`
 			: input.dataset.name ?? input.value;
-		chip(label, () => {
-			if (input.type === "hidden") input.remove();
-			else document.querySelector(`.filters input[name="${input.name}"][value=""]`).checked = true;
-		});
+		chip(label, () => input.remove());
 	}
 	// Its ×: the switch off, all subjects on the whole site too (site.js, head.js).
 	if (s.mine.length) chip(`Moji predmeti (${s.mine.length})`, () => {
@@ -249,37 +243,6 @@ function icon(name) {
 	use.setAttribute("href", `/static/icons.svg#i-${name}`);
 	svg.append(use);
 	return svg;
-}
-
-// The filter groups with counts in the side panel. A teacher, a subject or a smer has none: it comes only from a link.
-const GROUP = { kind: "vrsta" };
-
-async function groupCounts(s, query, search) {
-	// Each group counts without its own filter, so picking one value does not drop the others to 0.
-	const counts = {};
-	for (const [field, group] of Object.entries(GROUP)) {
-		if (!s[field]) {
-			counts[group] = search.filters[group] ?? {};
-			continue;
-		}
-		const filters = filtersOf(s);
-		if (group === "vrsta") filters.vrsta = { any: ["obavestenje", "dokument"] }; // a search needs one filter
-		else delete filters[group];
-		// No query and no other filter: the counts are the archive totals.
-		const everything = !query && Object.keys(filters).length === 1 && (group === "vrsta" || !s.kind);
-		counts[group] = everything ? TOTALS[group] ?? {} : (await pagefind.search(query, { filters })).filters[group] ?? {};
-	}
-	return counts;
-}
-
-function updateCounts(counts) {
-	const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
-	for (const input of document.querySelectorAll('.filters input[form="sf"][type="radio"]')) {
-		const n = input.closest("label").querySelector(".n");
-		const group = counts[GROUP[input.name]];
-		if (!n || !group) continue;
-		n.textContent = input.value ? (group[input.value] ?? 0) : sum(group);
-	}
 }
 
 let results = [];
@@ -328,7 +291,6 @@ function showHome() {
 	heading.innerHTML = home.heading;
 	res.innerHTML = home.res;
 	status.querySelector(".pg")?.remove();
-	updateCounts({ vrsta: TOTALS.vrsta ?? {} });
 	state = null;
 	shown();
 	// site.js fills "Moji predmeti" again.
@@ -342,19 +304,13 @@ async function run(page = 1, wait = 0) {
 	// A slow search that ends after a newer run must not draw over it.
 	const id = ++runs;
 	const s = readState();
-	for (const input of document.querySelectorAll('.filters input[type="radio"]')) {
-		input.closest("label").classList.toggle("is-on", input.checked);
-	}
 	if (!s.q && !s.kind && !s.smer && !s.subjects.length && !s.authors.length && !s.from && !s.to) return showHome();
 	const query = s.q ? fold(s.q) : null;
 	const sort = s.q && !s.newest ? undefined : { datum: "desc" };
 	const search = await pagefind.debouncedSearch(query, { filters: filtersOf(s), sort }, wait);
 	if (search === null || id !== runs) return;
-	const counts = await groupCounts(s, query, search);
-	if (id !== runs) return;
 	state = s;
 	results = search.results;
-	updateCounts(counts);
 	// The heading with the rows, in one frame: a new count never stands over the old rows.
 	if (await showPage(page, id)) {
 		renderHeading(s, results.length);
@@ -367,9 +323,7 @@ function restoreFromUrl() {
 	// Text typed before this module loaded stays, and is searched.
 	if (p.has("q")) form.elements.q.value = p.get("q");
 	newest = p.get("red") === "novije";
-	for (const input of document.querySelectorAll('input[form="sf"]')) {
-		if (input.type === "radio") input.checked = input.value === (p.get(input.name) ?? "");
-	}
+	// The kind is the header's scope, which site.js sets from the URL.
 	// A teacher, a subject, a smer or the years have no choice in the panel: they come from a link (a teacher's page,
 	// a year on /statistika/) and stay in the form as a hidden field, shown as a chip until it is removed.
 	for (const name of ["autor", "subject", "smer", "from", "to"]) {

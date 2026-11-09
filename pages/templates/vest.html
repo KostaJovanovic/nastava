@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb %}
+
+{% block title %}{{ v.title }}{% endblock %}
+{% block crumbs %}{{ crumb(v.year_href, 'Vesti ' ~ v.year) }}{% endblock %}
+
+{% block main %}
+{#- One news post from vesti.mas.bg.ac.rs (build.py render_vesti); the page Pagefind indexes (mark_for_pagefind:
+    exactly one </article>). Its images and files are linked on the news site. -#}
+<article class="post" aria-labelledby="title">
+  <div class="post__body">
+    <h1 class="post__title" id="title">{{ v.title }}</h1>
+    <p class="post__meta"><time datetime="{{ v.date or '' }}">{{ v.date | dmy }}</time>
+      {%- for c in v.cats %} · <a href="{{ v.year_href }}?kategorija={{ c | slug }}">{{ c }}</a>{% endfor %}
+      {%- if v.gone %} · <span class="gone">uklonjeno sa sajta vesti</span>
+      {%- else %} · <a href="{{ v.source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
+    <div class="prose prose--html">{{ v.html | safe }}</div>
+  </div>
+</article>
+{% endblock %}

@@ -41,6 +41,10 @@ pipeline and site, with new scrapers for phpBB.
 - `studije.py`: archive the schedule pages of www.mas.bg.ac.rs (kalendar nastave, raspored predavanja, raspored ispita)
   and every file they link, into `nastava.db`. A changed page or file adds a version; the site shows the newest and
   serves the files itself (PDFs open in the browser).
+- `vesti.py`: archive the news of vesti.mas.bg.ac.rs (WordPress REST API, all posts and categories each run) into the
+  `vesti` and `vesti_categories` tables; a changed post adds a version, a deleted one stays, marked gone. Images and
+  files stay on the news site (linked). The site has `/vesti/` (a year per page, filter by category), a page per news
+  post (which search finds; the header's scope "Vesti"), the newest five on the home page, and `/vesti/feed.xml`.
 - `nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
@@ -72,6 +76,7 @@ pipeline and site, with new scrapers for phpBB.
 
     uv run nastava.py sync
     uv run studije.py sync
+    uv run vesti.py sync
     uv run nastavnici.py sync
     uv run predmeti.py sync
     uv run nastava.py stats

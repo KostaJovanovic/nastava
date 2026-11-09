@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "rows.html" import forum_rows, topic_rows %}
+{% from "rows.html" import forum_rows, topic_rows, vest_rows %}
 
 {% block title %}Forum nastave{% endblock %}
 
@@ -21,6 +21,7 @@
     <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu.</p>
   </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
+  {%- if vesti %}{{ vest_rows('Najnovije vesti', vesti, more='/vesti/') }}{% endif %}
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
   <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · objava <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b> · <a href="/statistika/">statistika</a> · <a href="/feed.xml">RSS</a></p>
 </div>

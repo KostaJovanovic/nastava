@@ -88,6 +88,25 @@
 </section>
 {%- endmacro -%}
 
+{#- News of vesti.mas.bg.ac.rs, newest first: the home page's newest (more: the list's link on the heading) and a
+    year's list (filter: the list filter's data, its title and categories). -#}
+{%- macro vest_rows(title, vesti, more=none, filter=false) -%}
+<section class="fb fb--posts">
+  {%- if caller is defined %}{{ caller() }}{% endif %}
+  <div class="fb__h"><h2>{% if more %}<a href="{{ more }}">{{ title }}</a>{% else %}{{ title }}{% endif %}</h2><span>Kategorija</span><span>Datum</span></div>
+  <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
+    {%- for v in vesti %}
+    <li class="fr"{% if filter %} data-find="{{ v.find }}" data-k="{{ v.cat_keys }}"{% endif %}>
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-news"></use></svg></span>
+      <div class="fr__t"><a class="fr__a" href="{{ v.href }}">{{ v.title }}</a>{% if v.gone %}<span class="gone">uklonjeno sa sajta vesti</span>{% endif %}</div>
+      <div class="fr__more"><span class="fr__s">{{ v.cats | join(', ') }}</span><time class="fr__d" datetime="{{ v.date or '' }}">{{ v.date | dmy }}</time></div>
+    </li>
+    {%- endfor %}
+  </ol>
+  {%- if filter %}<p class="empty" data-none hidden>Nema vesti za ovaj filter.</p>{% endif %}
+</section>
+{%- endmacro -%}
+
 {#- Single posts, newest first (a teacher's page). -#}
 {%- macro post_rows(title, items) -%}
 <section class="fb fb--posts">

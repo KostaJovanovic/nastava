@@ -10,8 +10,9 @@ const YEAR = 31536000;
 
 function cacheControl(path) {
 	if (path.startsWith("/pagefind/") && !ENTRY.test(path)) return `public, max-age=${YEAR}, immutable`;
-	// An item rarely changes, but its side panel (counts, links) and an edited post do: a day, at the edge too.
-	if (path.startsWith("/item/")) return "public, max-age=86400";
+	// An item or a news post rarely changes, but its side panel (counts, links) and an edited post do: a day, at the
+	// edge too.
+	if (path.startsWith("/item/") || path.startsWith("/vest/")) return "public, max-age=86400";
 	// The home page, /static/ and the Pagefind entry files change with each deploy.
 	return "public, max-age=300";
 }
