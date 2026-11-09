@@ -56,8 +56,10 @@
       var v = q.value.trim(), w = fold(v).split(/\s+/).filter(Boolean);
       var has = function (s) { return w.every(function (x) { return s.indexOf(x) > -1; }); };
       list.textContent = '';
-      // The page's own list filtered by the bar (q.dataset.f, below) or the posts: nothing under the bar.
-      if (w.length && !q.dataset.f && (!u || ENTER[u])) {
+      asked++;
+      // The page's own list filtered by the bar (q.dataset.f, below): nothing under the bar.
+      if (!w.length || q.dataset.f || u === 'ovde') { list.hidden = true; return; }
+      if (!u || ENTER[u]) {
         // rows: [subgroup, name, hint, href]. In Sve, the first 5 of a type with a list page, and a link to the rest.
         var section = function (key, title, rows) {
           var cap = !u && ENTER[key] ? 5 : 200, sub = null;
@@ -87,12 +89,41 @@
           .map(function (t) { return ['', t[0], '', t[1]]; }));
         section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
           .map(function (r) { return ['', r[0], r[1], r[2]]; }));
-        if (!u) {
-          var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima i vestima'));
-          a.href = '/?q=' + encodeURIComponent(v);
-        }
+      }
+      // The texts (posts, news): off the home page, their best hits as they come; the home page lists them itself.
+      if (texts(u) && !onHome) {
+        var box = list.appendChild(el('div', 'cmd__g'));
+        var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u ' + (TEXTS[u] || 'postovima i vestima')));
+        a.href = '/?q=' + encodeURIComponent(fold(v)) + (u ? '&kind=' + u : '');
+        textHits(box, a, fold(v), asked);
       }
       list.hidden = !list.children.length;
+    };
+    // The texts' first 5 hits in Pagefind (loaded at the first word), as search.js would find them: the followed
+    // subjects only while "Samo moji predmeti" is on, except in the news. my: the show() that asked; a later one wins.
+    var TEXTS = { obavestenje: 'objavama', vest: 'vestima', dokument: 'dokumentima' }, pagefind = null, asked = 0;
+    var textHits = function (box, all, query, my) {
+      pagefind = pagefind || import('/pagefind/pagefind.js');
+      pagefind.then(function (pf) {
+        var f = u ? { vrsta: { any: [u] } } : {}, m = window.mojiNow;
+        if (m && m.only && u !== 'vest') f.pid = { any: mine().map(function (s) { return s.href; }) };
+        return pf.debouncedSearch(query, { filters: f }, 150);
+      }).then(function (r) {
+        if (!r || my !== asked) return null;
+        return Promise.all(r.results.slice(0, 5).map(function (x) { return x.data(); })).then(function (rows) { return [r.results.length, rows]; });
+      }).then(function (got) {
+        if (!got || my !== asked || !got[0]) return;
+        box.setAttribute('role', 'group');
+        box.setAttribute('aria-label', u ? qk.options[qk.selectedIndex].text : 'Objave i vesti');
+        if (!u) box.appendChild(el('p', 'cmd__h', 'Objave i vesti')).setAttribute('aria-hidden', 'true');
+        got[1].forEach(function (x) {
+          var a = box.appendChild(el('a', null, x.meta.title));
+          a.href = x.url;
+          var where = x.meta.predmet || x.meta.smer || x.meta.kategorija, day = (x.meta.datum || '').slice(0, 10).split('-').reverse().join('.');
+          a.appendChild(el('small', null, [where, day && day + '.'].filter(Boolean).join(' · ')));
+        });
+        all.textContent = 'Svi rezultati (' + got[0] + ') →';
+      }).catch(function () {});
     };
     qk.addEventListener('change', function () {
       setScope(qk.value);

@@ -96,7 +96,8 @@ with sync_playwright() as p:
 	page.fill('#q', 'num')
 	page.wait_for_selector('#q-list a')
 	print('sve "num":', page.locator('.cmd__h').all_inner_texts(), '| studije:', page.locator('.cmd__s').all_inner_texts()[:3])
-	assert page.locator('.cmd__all').count() == 1
+	# The home page lists the posts and news itself: none under the bar.
+	assert not page.locator('.cmd__all').count()
 	page.fill('#q', 'ispit')
 	assert page.locator('.cmd__g[aria-label="Raspored"] a').count(), 'no exam entries'
 	# Predmeti: every match, by studije; the choice is kept for the home page only.
@@ -118,6 +119,14 @@ with sync_playwright() as p:
 	assert 0 < shown() < in_year and 'kategorija=izdvajamo' in page.url
 	page.goto(base + '/vest/32035/')
 	assert page.locator('.snav a[aria-current]').inner_text() == 'Vesti'
+	# Off the home page, the posts' and news' best hits show under the bar while typing.
+	for kind in ['', 'vest', 'obavestenje']:
+		page.select_option('#qk', kind)
+		page.fill('#q', 'stipendija')
+		page.wait_for_function("document.querySelector('.cmd__all')?.textContent.startsWith('Svi rezultati')")
+		hits = page.locator('.cmd__g:has(+ .cmd__all) a').count()
+		print(f'under the bar, {kind or "sve"}:', hits, '|', page.inner_text('.cmd__all'))
+		assert 0 < hits <= 5
 	counts = {}
 	for kind in ['vest', 'obavestenje', '']:
 		page.goto(f'{base}/?q=stipendija&kind={kind}')
