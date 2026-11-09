@@ -142,7 +142,7 @@ def walk_pages(path):
 
 def walk_forum(db, forum_id, path):
 	"""Read all pages of one forum; register changed subforums and topics. Return the changed subforum ids."""
-	changed, own = [], None
+	changed, own, listed = [], None, []
 	for soup in walk_pages(path):
 		if own is None:
 			match = re.search(r'(\d+)\s+topics?', text(soup.select_one('div.action-bar.bar-top div.pagination')))
@@ -157,12 +157,17 @@ def walk_forum(db, forum_id, path):
 				if done != shown and (topics or posts):
 					changed.append(id_)
 			else:
+				listed.append(id_)
 				# A global announcement shows in every forum; the topic page sets its real forum.
 				db.execute('insert into topics (id, forum, title, replies, last_post) values (?,?,?,?,?) '
 					'on conflict(id) do update set title=excluded.title, replies=excluded.replies, last_post=excluded.last_post, gone=0',
 					(id_, forum_id, title, posts, last_post))
 	if forum_id is not None:
 		db.execute('update forums set own_topics = ? where id = ?', (own or 0, forum_id))
+		# A topic the list no longer shows was deleted or moved: fetch it again, its page tells which (gone or new forum).
+		if own is not None:
+			db.execute(f'update topics set done_last_post = null where forum = ? and gone = 0 and id not in ({",".join("?" * len(listed))})',
+				(forum_id, *listed))
 	db.commit()
 	return changed
 
@@ -170,8 +175,10 @@ def walk_forum(db, forum_id, path):
 def crawl_tree(db):
 	queue = walk_forum(db, None, 'index.php')
 	# A run stopped mid-walk leaves subforums that its parent's page listed but no one walked.
+	# Also a forum whose stored topics differ from its page (stats): a walk finds the deleted or moved ones.
 	queue += [r[0] for r in db.execute("select id from forums where (topics or posts) and "
-		"done is not (topics || '/' || posts || '/' || last_post)") if r[0] not in queue]
+		"(done is not (topics || '/' || posts || '/' || last_post) or own_topics != "
+		"(select count(*) from topics t where t.forum = forums.id and t.gone = 0))") if r[0] not in queue]
 	walked = 0
 	while queue:
 		forum_id = queue.pop()
