@@ -10,9 +10,8 @@
 {#- The home page is the board index; search.js shows the results in #res when the URL has a search or a filter.
     Until then the board index is hidden, so it never shows under a search (style.css .searching). -#}
 <script>if (/[?&](q|kind|smer|subject|autor|from|to)=./.test(location.search)) document.documentElement.classList.add("searching");</script>
-<div class="mh">
-  <h1 id="res-h">Arhiva foruma nastave</h1>
-</div>
+{#- Empty on the home page (style.css hides it); search.js writes the result count here. -#}
+<div class="mh"></div>
 <div id="res">
   {#- The subjects this browser follows (a star on a subject's page) and their newest topics: site.js fills it from each
       subject's novo.json. Hidden when none is followed, or without site.js. -#}

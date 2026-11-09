@@ -247,28 +247,25 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .ft__links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 .ft a { color: var(--head-fg); text-decoration: none; }
 .ft a:hover { color: var(--head-fg); text-decoration: underline; text-underline-offset: 3px; }
-.ft .ft__site, .ft__by a { font-weight: 600; }
-/* The other sites (masinci.org, mas.bg.ac.rs, the drive) are underlined; the drive is not bold. */
+/* Only the credit's name is bold; the other sites (masinci.org, the drive, mas.bg.ac.rs) are underlined. */
+.ft__by a { font-weight: 600; }
 .ft .ft__site { text-decoration: underline; text-underline-offset: 3px; }
-.ft__side .ft__site { font-weight: 400; }
 .ft__note { font-size: 13px; }
 .ft__side { display: grid; gap: 8px; }
-@media (min-width: 760px) { .ft__side { justify-items: end; } }
-/* Phone: the credit centred on top, a line, the six links (the drive with them) in two even columns tall enough to
-   tap, then the note under a line. The wrappers step aside so all of them are items of one grid. */
+/* Desktop: the credit a little bigger, centred on the height of the links and the note. */
+@media (min-width: 760px) { .ft__side { justify-items: end; align-self: center; } .ft__by { font-size: 16px; } }
+/* Phone: the credit centred on top, a line, the six links in two even columns (three on a wider phone) tall enough
+   to tap, then the note under a line. The wrappers step aside so all of them are items of one grid. */
 @media (max-width: 759px) {
   .ft { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; padding: 16px 16px 18px; }
   .ft__in, .ft__side, .ft__links { display: contents; }
   .ft a { padding: 7px 0; justify-self: center; text-align: center; }
-  /* The drive second, after masinci.org; the other links keep their order. */
-  .ft__side .ft__site { order: 1; }
-  .ft__links a:not(:first-child) { order: 2; }
   /* A wider phone has room for three links a row. */
   @media (min-width: 380px) { .ft { grid-template-columns: repeat(3, 1fr); } }
   .ft__by a { padding: 0; }
   .ft__by { order: -1; grid-column: 1 / -1; margin-bottom: 8px; padding-bottom: 14px; text-align: center;
     border-bottom: 1px solid color-mix(in srgb, var(--head-fg) 20%, transparent); }
-  .ft__note { order: 3; grid-column: 1 / -1; margin-top: 8px; padding-top: 12px; text-align: center;
+  .ft__note { order: 1; grid-column: 1 / -1; margin-top: 8px; padding-top: 12px; text-align: center;
     border-top: 1px solid color-mix(in srgb, var(--head-fg) 20%, transparent); }
   .ft__note > span { display: block; }
   .ft__note > .ft__dot { display: none; }
@@ -683,6 +680,7 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 
 /* ---- Page heading -------------------------------------------------------- */
 .mh { display: grid; gap: 2px; padding: 0 2px; }
+.mh:empty { display: none; }
 .mh h1 { margin-bottom: 2px; color: var(--fg); font: 800 20px/1.2 var(--sans); letter-spacing: -.01em; overflow-wrap: anywhere; }
 .mh h1[role="status"] { font-size: 20px; }
 .mh h1 .q { color: var(--accent-t); }
