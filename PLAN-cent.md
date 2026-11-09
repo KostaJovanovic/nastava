@@ -59,7 +59,8 @@ gets a subject page anyway, in the smer of its program; Индустрија 4.0
   no board forum: 1314 (→ МАС - МИ), 7084 and 7055 (→ ОАС - ИТМ), and 9003, 9006/9048, 9007, 9014, 9021, 9023,
   9030, 9035 (→ the new МАС - Индустрија 4.0).
 - Size: all pages' content 1.9 MB of HTML; 35 subjects have material pages, 129 pages in all. A first run fetches 241
-  pages (1 request a second: ~4.5 minutes); a daily run fetches the changed pages and every notices page (~45).
+  pages (1 request a second: ~4.5 minutes); a daily run fetches the changed pages and every notices page (~40: 36
+  plus the 3 list requests on 2026-11-09).
 
 ## Step 1: `cent.py` (new, repo root)
 
@@ -589,7 +590,7 @@ stay the board's. Search, `/item/` pages and `strip_pagefind` take the notices l
 3. `ci/deploy.sh`: `uv run -q ci/push.py send "$before"` → `uv run -q ci/push.py send $before` (unquoted: three
    numbers), and after the line `uv run vesti.py sync || failed+=(vesti)` add
    ```bash
-   	# The subjects' pages on cent.mas.bg.ac.rs: ~45 requests a day.
+   	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
    	uv run cent.py sync || failed+=(cent)
    ```
    If `PLAN-sync.md` was built first, `ci/deploy.sh` has its form: make the same two edits there. If it was not,
