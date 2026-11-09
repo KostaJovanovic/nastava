@@ -10,16 +10,20 @@ pull)
 	# The asset names have a UTC time stamp, so the last name in sort order is the newest.
 	name=$(gh release view state -R "$repo" --json assets -q '.assets[].name' | sort | tail -n 1)
 	[[ -n $name ]] || { echo "no state asset" >&2; exit 1; }
-	gh release download state -R "$repo" -p "$name" -O - | zstd -dq | tar -x
+	gh release download state -R "$repo" -p "$name" -O - | uv run --no-project --python 3.14 python -c "
+import sys, tarfile; tarfile.open(fileobj=sys.stdin.buffer, mode='r|zst').extractall(filter='data')"
 	echo "pulled $name"
 	;;
 push)
 	name=state-$(date -u +%Y%m%d-%H%M%S).tar.zst
 	tmp=$(mktemp -d)
 	trap 'rm -rf "$tmp"' EXIT
-	# Fold the WAL into the file: tar takes only nastava.db. Through uv: on Windows python3 is the Store stub.
-	uv run --no-project python -c "import sqlite3; sqlite3.connect('nastava.db').execute('pragma wal_checkpoint(truncate)')"
-	tar -c nastava.db | zstd -q -T0 -10 -o "$tmp/$name"
+	# Fold the WAL into the file: the archive takes only nastava.db. Through uv: on Windows python3 is the Store
+	# stub. Python 3.14's tarfile writes zstd itself, so no zstd binary is needed.
+	uv run --no-project --python 3.14 python -c "
+import sqlite3, sys, tarfile
+sqlite3.connect('nastava.db').execute('pragma wal_checkpoint(truncate)')
+with tarfile.open(sys.argv[1], 'w:zst', level=10) as t: t.add('nastava.db')" "$tmp/$name"
 	gh release view state -R "$repo" >/dev/null 2>&1 ||
 		gh release create state -R "$repo" --latest=false --title state --notes "Scraper state for the daily sync."
 	gh release upload state -R "$repo" "$tmp/$name"
