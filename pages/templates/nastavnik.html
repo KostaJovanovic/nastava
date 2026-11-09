@@ -3,15 +3,18 @@
 {% from "rows.html" import crumb, post_href %}
 
 {% block title %}{{ t.shown }}{% endblock %}
-{% block description %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endblock %}
+{#- past (set in each block): known only from the faculty's history (build.py load_history), never on its list here. -#}
+{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.shown }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} ({{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
 {% block og_type %}profile{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}
 
 {#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by
     year; the faculty's full profile last, folded, as it is long (education, bibliography). -#}
 {% block main %}
-{#- data-scope: the header search starts in the teachers (site.js). -#}
-<section class="tp" aria-labelledby="title" data-scope="Nastavnici" data-ph="Ime nastavnika…">
+{%- set h = t.history %}
+{%- set past = h and not t.first_seen %}
+{#- data-scope: the header search starts in the teachers (site.js). tp--gone: the grey corner of the departed. -#}
+<section class="tp{% if t.gone %} tp--gone{% endif %}" aria-labelledby="title" data-scope="Nastavnici" data-ph="Ime nastavnika…">
   {%- if t.photo %}
   <img class="tp__img" src="{{ t.photo }}" alt="" fetchpriority="high">
   {%- else %}
@@ -20,10 +23,12 @@
   {%- endif %}
   <div class="tp__who">
     <h1 id="title">{{ t.shown }}</h1>
-    <p>{{ t.title }}{% if t.katedra %}, <a href="/nastavnici/?katedra={{ t.katedra | slug }}">{{ t.katedra }}</a>{% endif %}</p>
+    <p>{{ t.title }}{% if t.katedra %}{% if t.title %}, {% endif %}<a href="/nastavnici/{% if t.gone %}arhiva/{% endif %}?katedra={{ t.katedra | slug }}">{{ t.katedra }}</a>{% endif %}</p>
     <dl class="tp__dl">
-      {#- Gone: office and hours are no longer theirs. -#}
-      {%- if t.gone %}<dt>Na spisku</dt><dd>do {{ t.last_seen | dmy }}, više nije na spisku fakulteta</dd>
+      {%- if h and h.life %}<dt>Život</dt><dd>{{ h.life }}</dd>{% endif %}
+      {#- Gone: office and hours are no longer theirs. The past: the years their sources name. -#}
+      {%- if past %}{% if h.years %}<dt>U izvorima</dt><dd>{{ h.years }}</dd>{% endif %}
+      {%- elif t.gone %}<dt>Na spisku</dt><dd>do {{ t.last_seen | dmy }}, više nije na spisku fakulteta</dd>
       {%- else %}
       {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}
       {%- if t.office %}<dt>Kabinet</dt><dd>{{ t.office }}</dd>{% endif %}
@@ -31,6 +36,9 @@
       {%- if t.email %}<dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd>{% endif %}
       {%- if t.phone %}<dt>Telefon</dt><dd>{{ t.phone }}</dd>{% endif %}
       {%- if t.research %}<dt>Oblast</dt><dd class="tp__long" title="{{ t.research }}">{{ t.research }}</dd>{% endif %}
+      {#- From an election report (Izvori below): the first year at the faculty, in any role. -#}
+      {%- if h and h.start %}<dt>Na fakultetu od</dt><dd>{{ h.start }}.</dd>{% endif %}
+      {%- if h and h.home %}<dt>Matični fakultet</dt><dd>{{ h.home }}; na Mašinskom fakultetu honorarno</dd>{% endif %}
     </dl>
   </div>
   {%- if t.courses %}
@@ -63,6 +71,7 @@
   {%- endif %}
 </section>
 
+{%- if not past %}
 <section class="tp__sec" id="objave">
   <div class="tp__h">
     <h2>Postovi na forumu{% if t.posts %} <span>{{ t.posts | length | n }}</span>{% endif %}</h2>
@@ -82,12 +91,37 @@
   <p class="tp__none">{% if t.username %}Nema postova na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
   {%- endif %}
 </section>
+{%- endif %}
 
+{%- if h and h.sources %}
+{#- Where the history is from, each source quoted (nastavnici-istorija.jsonl). -#}
+<section class="tp__sec" id="izvori">
+  <div class="tp__h"><h2>Izvori <span>{{ h.sources | length }}</span></h2></div>
+  <ol class="srcs">
+    {%- for s in h.sources %}
+    <li>
+      <a href="{{ s.url }}" rel="noopener" target="_blank">
+        {%- if s.kind == 'monografija' %}Monografija „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“{% if s.page %}, str. {{ s.page }}{% endif %}
+        {%- elif s.kind == 'in-memoriam' %}In memoriam, vesti.mas.bg.ac.rs
+        {%- elif s.kind == 'wikipedia' %}Vikipedija
+        {%- elif s.kind == 'stari-sajt' %}Stari sajt fakulteta, {{ s.years }} (Wayback Machine)
+        {%- elif s.kind == 'referat' %}Referat za izbor u zvanje, mas.bg.ac.rs
+        {%- else %}{{ s.url.split('/')[2] }}{% endif %} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>
+      {%- if s.quote %}<blockquote>{{ s.quote }}</blockquote>
+      {%- elif s.titles or s.katedra %}<p>{{ s.titles | join(', ') }}{% if s.titles and s.katedra %}, {% endif %}{{ s.katedra or '' }}</p>{% endif %}
+    </li>
+    {%- endfor %}
+  </ol>
+</section>
+{%- endif %}
+
+{%- if html %}
 <details class="tp__bio">
   <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{% if source_name == 'masinac.org' %}Profil sa studentskog portala masinac.org{% elif t.source %}Odakle su ovi podaci{% else %}Ceo profil sa sajta fakulteta: obrazovanje, radovi{% endif %}</summary>
   <div class="prose prose--html">{{ html | safe }}</div>
   <p class="tp__src">Preuzeto {{ t.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">{{ source_name }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
 </details>
+{%- endif %}
 {#- A teacher who left: no longer the faculty's (worksFor). -#}
 {%- set _person = {"@type": "Person", "name": t.shown, "jobTitle": t.title, "url": site_url ~ t.href} %}
 {%- if t.photo %}{% set _ = _person.update(image=(site_url ~ t.photo) if t.photo.startswith('/') else t.photo) %}{% endif %}

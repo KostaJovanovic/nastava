@@ -112,13 +112,14 @@ env.globals["site_url"] = SITE_URL
 
 
 def set_hrefs(rows, path):
-    """Give each row href path(row); a name that folds the same as an earlier row's gets the row's id appended.
-    rows: in the order they first appeared, so an existing page keeps its URL when a namesake is added later."""
+    """Give each row href path(row); a name that folds the same as an earlier row's gets the row's suffix (a past
+    teacher's years) or id appended. rows: in the order they first appeared, so an existing page keeps its URL when a
+    namesake is added later."""
     seen = set()
     for r in rows:
         href = path(r)
         if href in seen:
-            href = f"{href[:-1]}-{r['id']}/"
+            href = f"{href[:-1]}-{r.get('suffix') or r['id']}/"
         seen.add(href)
         r["href"] = href
 
@@ -853,6 +854,40 @@ OTHER_TEACHERS = [dict(
          f'(2020): <a href="{_JOKSIMOVIC}">PDF</a>.</p>')]
 
 
+HISTORY = Path(__file__).resolve().parent.parent / "nastavnici-istorija.jsonl"
+
+
+def load_history(teachers):
+    """nastavnici-istorija.jsonl: teachers from the faculty's past (its 2023 monograph, In Memoriam, its old site
+    2005-2014 on the Wayback Machine, Wikipedia, election reports), each source quoted. A line with a teacher id adds
+    its sources to that teacher's page; the others are new pages, among the departed."""
+    if not HISTORY.exists():
+        return []
+    by_id, new = {t["id"]: t for t in teachers}, []
+    for line in HISTORY.read_text(encoding="utf-8").splitlines():
+        h = json.loads(line)
+        for s in h["sources"]:
+            m = re.search(r"Monografija.*#page=(\d+)", s["url"])
+            # The PDF's page 307 is the book's printed page 305.
+            s["page"] = m and int(m[1]) - 2
+        # The written sources first, the old site's pages last; each kind by its years.
+        kinds = ["referat", "in-memoriam", "monografija", "wikipedia", "web", "stari-sajt"]
+        h["sources"].sort(key=lambda s: (kinds.index(s["kind"]) if s["kind"] in kinds else 4, s["page"] or 0,
+                                         re.findall(r"\d{4}", s["years"] or "")))
+        if h["teacher"]:
+            if h["teacher"] in by_id:
+                by_id[h["teacher"]]["history"] = h
+            continue
+        # last_seen: the last year a source names, so the archive orders them after the recently departed.
+        years = re.findall(r"\d{4}", h["years"] or "")
+        new.append(dict(id=f"ist-{slug(h['name'] + ' ' + (h['life'] or ''))}", name=h["name"], full_name=h["name"],
+                        title=h["title"] or "", katedra=h["katedra"], katedra_id=None, office=None, email=None, username=None,
+                        phone=None, hours=None, research=None, emeritus=0, html=None, first_seen=None,
+                        last_seen=max(years) if years else "0000", gone=1, photo=None, subjects=[], history=h,
+                        suffix=h["life"] and slug(h["life"])))
+    return new
+
+
 def load_teachers(db, subjects):
     """The teachers (nastavnici.py), each subject linked to its archive page when the board has its code."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'teachers'").fetchone():
@@ -864,6 +899,7 @@ def load_teachers(db, subjects):
     # A teacher who left the faculty's list (gone) keeps their page and their posts' links; only the list hides them.
     teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers ORDER BY rowid"))]
     teachers += [dict(t, subjects=[]) for t in OTHER_TEACHERS]
+    teachers += load_history(teachers)
     for t in teachers:
         t["username"] = FORUM_ACCOUNT.get(t["username"], t["username"])
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")

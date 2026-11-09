@@ -31,7 +31,7 @@
     <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span></a>
     {%- endif %}
   </div>
-  <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na spisku fakulteta, poslednji otišli prvi. Njihove stranice i postovi ostaju.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave.{% endif %}</p>
+  <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na fakultetu, od 1873. do danas, poslednji otišli prvi. Svaki podatak o starijim nastavnicima ima izvor na njihovoj stranici.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave.{% endif %}</p>
 </div>
 {#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
 <form class="people__bar" data-filter data-scope="{% if archive %}Arhiva{% else %}Nastavnici{% endif %}" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
