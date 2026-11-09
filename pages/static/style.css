@@ -155,19 +155,21 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   grid-area: cmd;
   display: flex; align-items: center; gap: 8px;
   height: 42px; padding: 0 4px 0 12px;
-  /* Light: a darker well with a white edge on the blue header; dark: a lighter one with a slate edge. */
-  border: 1px solid light-dark(rgba(255, 255, 255, .6), rgba(90, 122, 147, .45)); border-radius: var(--r);
-  background: light-dark(rgba(0, 0, 0, .14), rgba(240, 235, 231, .07));
+  /* The page's main control, so it stands out of the header: a white box on the light blue, a lighter ink box with
+     a slate edge (4:1 on the header) on the dark; its text in the page's colours. */
+  border: 1px solid light-dark(#ffffff, var(--slate)); border-radius: var(--r);
+  background: light-dark(#ffffff, #132f45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
 }
-.cmd:focus-within { border-color: var(--head-fg); background: light-dark(rgba(0, 0, 0, .2), rgba(240, 235, 231, .11)); }
-.cmd > svg { width: 16px; height: 16px; color: var(--head-dim); }
+.cmd:focus-within { border-color: light-dark(#ffffff, var(--head-fg)); box-shadow: 0 0 0 3px light-dark(rgba(255, 255, 255, .45), rgba(142, 164, 181, .35)); }
+.cmd > svg { width: 16px; height: 16px; color: var(--dim); }
 .cmd input {
   flex: 1; min-width: 0; height: 100%;
-  border: 0; background: transparent; color: var(--head-fg);
+  border: 0; background: transparent; color: var(--fg);
   font: 400 16px var(--sans); outline: none;
 }
-.cmd input::placeholder { color: var(--head-dim); opacity: 1; }
-.cmd kbd { display: none; border-color: light-dark(rgba(255, 255, 255, .6), rgba(90, 122, 147, .5)); color: var(--head-dim); }
+.cmd input::placeholder { color: var(--dim); opacity: 1; }
+.cmd kbd { display: none; border-color: light-dark(var(--line), var(--slate)); }
 .cmd__go {
   height: 32px; padding: 0 14px;
   border: 0; border-radius: 7px; background: var(--go); color: #fff;
@@ -183,13 +185,13 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .cmd__scope {
   display: inline-flex; align-items: center; gap: 4px; flex: none; max-width: 45%;
   height: 26px; padding: 0 6px 0 10px;
-  border: 0; border-radius: 13px; background: light-dark(rgba(0, 0, 0, .18), rgba(240, 235, 231, .16)); color: var(--head-fg);
+  border: 0; border-radius: 13px; background: light-dark(#e1ebf2, #2f4d63); color: var(--fg);
   font: 400 12.5px var(--sans); cursor: pointer;
 }
 .cmd__scope span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmd__scope .i { width: 14px; height: 14px; flex: none; }
-.cmd__scope:hover { background: light-dark(rgba(0, 0, 0, .28), rgba(240, 235, 231, .26)); }
-.cmd__scope:focus-visible { outline: 2px solid var(--head-fg); outline-offset: 1px; }
+.cmd__scope:hover { background: light-dark(#cadceb, #3a5a72); }
+.cmd__scope:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 1px; }
 .cmd__list {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
   margin: 0; padding: 4px; list-style: none;
