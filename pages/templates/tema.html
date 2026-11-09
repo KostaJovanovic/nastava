@@ -20,9 +20,7 @@
   {%- for r in t.posts %}
   {{ post(r) }}
   {%- endfor %}
-</div>
-{{ forum_post(t.first, t.posts[1:], t.title) | ld }}
-{%- if t.subj %}
+</div>{%- if t.subj %}
 <p class="acts"><a class="btn" href="{{ t.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Nazad na {{ t.subj.name }}</a></p>
 {%- endif %}
 {% endblock %}

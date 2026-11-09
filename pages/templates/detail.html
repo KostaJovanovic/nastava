@@ -40,9 +40,7 @@
   {%- if source_url %}<a class="btn" href="{{ source_url }}" rel="noopener" target="_blank">Post na sajtu nastave <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}
 </p>
 {% else %}
-{{ post(it, 'h1', link=false) }}
-{%- if not _many %}{{ forum_post(it) | ld }}{% endif %}
-<p class="acts">
+{{ post(it, 'h1', link=false) }}<p class="acts">
   {%- if _many %}<a class="btn btn--pri" href="{{ it.thread.href }}#p{{ it.num }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-msgs"></use></svg>Cela objava</a>{% endif %}
   {%- if it.prev %}<a class="btn" href="/item/{{ it.prev.id }}/" rel="prev" title="{{ it.prev.title }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Prethodni post</a>{% endif %}
   {%- if it.next %}<a class="btn" href="/item/{{ it.next.id }}/" rel="next" title="{{ it.next.title }}">Sledeći post<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg></a>{% endif %}

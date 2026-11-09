@@ -105,20 +105,10 @@ def desc(text, n=160):
     return text if len(text) <= n else text[:n].rsplit(" ", 1)[0] + "…"
 
 
-def forum_post(it, replies=(), title=None):
-    """A post as schema.org's forum post, for Google (and a topic's later posts as its comments)."""
-    def one(r, kind):
-        d = {"@type": kind, "text": r["body"] or "", "url": SITE_URL + post_href(r),
-             "author": {"@type": "Person", "name": r["who"] or "?"}}
-        return d | ({"datePublished": r["posted"]} if r["posted"] else {})
-    return {"@context": "https://schema.org", **one(it, "DiscussionForumPosting"), "headline": title or it["title"] or "",
-            **({"comment": [one(r, "Comment") for r in replies]} if replies else {})}
-
-
 env.filters["desc"] = desc
 # Structured data in a page (schema.org), escaped for a <script> (<, >, &, ' as \u).
 env.filters["ld"] = lambda d: Markup(f'<script type="application/ld+json">{htmlsafe_json_dumps(d, ensure_ascii=False)}</script>')
-env.globals.update(forum_post=forum_post, site_url=SITE_URL)
+env.globals["site_url"] = SITE_URL
 
 
 def set_hrefs(rows, path):
@@ -432,7 +422,8 @@ def render_cent(site, subjects):
     for s in subjects.values():
         for p in s.get("cent", []):
             for v in p["versions"]:
-                write(site / v["href"].strip("/") / "index.html", page.render(subj=s, page=p, v=v))
+                # Not indexed: a cent page is often exam results, by student.
+                write(site / v["href"].strip("/") / "index.html", page.render(subj=s, page=p, v=v), index=False)
 
 
 def pagefind_tags(it):
@@ -507,16 +498,21 @@ def split_page(html):
             f'<html lang="sr">{html[t0:t1]}{HEAD_END}{html[m0:m1]}</html>')
 
 
-def write(path, html, canonical=None):
-    """Write only the page's fragment: every page but the home and 404 pages shares shell.html. Its canonical link
-    (one URL on the main domain for search engines, also for its copy on github.io): its own URL, or the page
-    canonical names (a site path) that shows the same."""
+def write(path, html, index=True, canonical=None):
+    """Write only the page's fragment: every page but the home and 404 pages shares shell.html. Its canonical link:
+    its URL on the main domain, for search engines (also for its copy on github.io), or that of the page canonical
+    names (a site path) that shows the same. index=False: search engines leave it out (the posts, which name
+    students; their subjects' pages are indexed), and so does the sitemap."""
     page_shell, fragment = split_page(html)
     assert page_shell == shell, f"{path}: the page differs from shell.html outside its head and <main>"
     url = SITE_URL + (canonical or f"/{path.parent.relative_to(site_dir).as_posix()}/")
-    urls.add(url)
+    head = f'<link rel="canonical" href="{escape(url)}">'
+    if index:
+        urls.add(url)
+    else:
+        head += '<meta name="robots" content="noindex">'
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(fragment.replace(HEAD_END, f'<link rel="canonical" href="{escape(url)}">{HEAD_END}', 1), encoding="utf-8")
+    path.write_text(fragment.replace(HEAD_END, head + HEAD_END, 1), encoding="utf-8")
 
 
 def write_sitemap(site):
@@ -588,7 +584,7 @@ def render_places(site, topics, smerovi, subjects):
         write(site / m["href"].strip("/") / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, topics=rows))
     for t in topics:
         if len(t["posts"]) > 1:
-            write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t))
+            write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t), index=False)
 
 
 def post_href(it):
@@ -1199,9 +1195,7 @@ def main(db_path, out):
     render_cent(site, subjects)
     write_feeds(site, items, subjects, cent_pushed)
     for it in items:
-        # A post of a topic of several posts is also on the topic's page, which search engines get instead.
-        many = it.get("thread") and len(it["thread"]["posts"]) > 1
-        write(site / "item" / it["id"] / "index.html", render_item(it), many and it["thread"]["href"])
+        write(site / "item" / it["id"] / "index.html", render_item(it), index=False)
     render_teachers(site, teachers, items, book)
     render_book(site, book)
     raspored = render_study_pages(site, db)
