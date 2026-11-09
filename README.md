@@ -15,7 +15,8 @@ pipeline and site, with new scrapers for phpBB.
   1. tests the parsers on saved pages (`test/parsers_test.py`) and gets the state (`ci/state.sh pull`);
   2. reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
      with a post in the last 14 days (an edit does not change the counts);
-  3. checks the counts, then archives the schedules, the teachers and the subjects. A failure in these does not stop
+  3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and on Monday the schedules,
+     the teachers and the subjects. A failure in these does not stop
      the run;
   4. saves the state (`nastava.db`) to the `state` release (`ci/state.sh push`);
   5. builds the static site with Pagefind search, uploads it to the `site` release and starts the `deploy` workflow,
@@ -45,6 +46,10 @@ pipeline and site, with new scrapers for phpBB.
   `vesti` and `vesti_categories` tables; a changed post adds a version, a deleted one stays, marked gone. Images and
   files stay on the news site (linked). The site has `/vesti/` (a year per page, filter by category), a page per news
   post (which search finds; the header's scope "Vesti"), the newest five on the home page, and `/vesti/feed.xml`.
+- `cent.py`: archive the subject pages of cent.mas.bg.ac.rs (Катедра за производно машинство): each page as shown
+  (a version per change) and each notice apart, into `cent_pages` and `cent_notices`. The files stay linked on cent.
+  The site puts each subject's notices among its topics with a "cent" mark, and its pages (predavanja, rezultati, …)
+  under `/predmet/…/cent/`; a subject the board has no forum for gets a page too.
 - `nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
@@ -77,6 +82,7 @@ pipeline and site, with new scrapers for phpBB.
     uv run nastava.py sync
     uv run studije.py sync
     uv run vesti.py sync
+    uv run cent.py sync
     uv run nastavnici.py sync
     uv run predmeti.py sync
     uv run nastava.py stats

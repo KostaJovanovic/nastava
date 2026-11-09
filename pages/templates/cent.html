@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb %}
+
+{#- One version of a subject's page on cent.mas.bg.ac.rs (build.py load_cent, render_cent): the newest at
+    <subject>/cent/<slug>/, each older one under its first date. Its links go to cent: the files are not hosted here. -#}
+{%- set _old = v is not sameas page.versions[0] %}
+{% block title %}{{ v.title }} · {{ subj.name }}{% if _old %} ({{ v.first_seen | dmy }}){% endif %}{% endblock %}
+{% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{{ crumb(subj.href, subj.name) }}{% if _old %}{{ crumb(page.versions[0].href, page.title) }}{% endif %}{% endblock %}
+
+{% block main %}
+<div class="mh">
+  <h1 id="title">{{ v.title }}</h1>
+  <p class="mh__sub"><span class="src">cent</span> stranica sa cent.mas.bg.ac.rs, {% if _old %}verzija od {{ v.first_seen | dmy }} do {{ v.last_seen | dmy }}{% else %}provereno {{ v.last_seen | dmy }}{% endif %}
+    {%- if page.gone %} · <span class="gone">uklonjeno sa sajta katedre</span>{% else %} · <a href="{{ page.link }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
+</div>
+{%- if _old %}
+<p class="note">Ovo je ranija verzija stranice. <a href="{{ page.versions[0].href }}">Najnovija verzija</a></p>
+{%- endif %}
+<article class="panel">
+  <div class="prose prose--html">{{ v.html | safe }}</div>
+</article>
+{%- if page.versions | length > 1 %}
+<section class="versions" aria-labelledby="versions-h">
+  <h2 id="versions-h">Sve verzije</h2>
+  <ol>
+    {%- for x in page.versions %}
+    <li>{% if x is sameas v %}<b>{{ x.first_seen | dmy }} – {{ x.last_seen | dmy }}</b>{% else %}<a href="{{ x.href }}">{{ x.first_seen | dmy }} – {{ x.last_seen | dmy }}</a>{% endif %}{% if loop.first %} · najnovija{% endif %}</li>
+    {%- endfor %}
+  </ol>
+</section>
+{%- endif %}
+{% endblock %}

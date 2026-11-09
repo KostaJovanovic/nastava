@@ -4,11 +4,11 @@
 # ///
 """Web push: tell the browsers that follow a subject (site.js subscribes, the Worker keeps them in KV) about its new posts.
 
-Usage: push.py keys | last | send <post id>
+Usage: push.py keys | last | send <post id> [<notice id> <page rowid>]
   keys   make push-secret.json (git-ignored): the VAPID key pair and the key the Worker asks for. Keep a copy: a new
          pair drops every subscription. Prints where the public half and the Worker key go.
-  last   print the newest post id in nastava.db (deploy.sh: before the scrape)
-  send   once the newest is on the site, notify the posts after that id (pages/.build/push.json, from build.py)
+  last   print the newest post id, cent notice id and cent page version in nastava.db (deploy.sh: before the scrape)
+  send   once the newest is on the site, notify what came after those (pages/.build/push.json, from build.py)
 The scheduled run (sync.yml) writes push-secret.json from the repository secret PUSH_SECRET.
 """
 import base64
@@ -65,8 +65,16 @@ def keys():
 
 
 def last():
+    """The newest board post, cent notice and cent page version (rowid) in nastava.db: the "before" of send."""
     db = sqlite3.connect(f"file:{ROOT / 'nastava.db'}?mode=ro", uri=True)
-    print(db.execute("select coalesce(max(id), 0) from posts").fetchone()[0])
+
+    def newest(sql):
+        try:
+            return db.execute(sql).fetchone()[0] or 0
+        except sqlite3.OperationalError:  # cent.py has not run yet
+            return 0
+    print(newest("select max(id) from posts"), newest("select max(nid) from cent_notices"),
+          newest("select max(rowid) from cent_pages"))
 
 
 def subscriptions(key):
@@ -81,16 +89,20 @@ def subscriptions(key):
             return subs
 
 
-def send(before):
-    if before <= 0:
+def send(*before):
+    after = dict(zip("pcs", before))  # board posts, cent notices, cent page versions
+    if after.get("p", 0) <= 0:
         sys.exit("no post id from before the scrape")
     secret = json.loads(SECRET.read_text())
-    new = [p for p in json.loads((ROOT / "pages/.build/push.json").read_text(encoding="utf-8")) if p["id"] > before]
+    # A kind at 0 had nothing before this run (its first import): nothing of it is notified.
+    new = [p for p in json.loads((ROOT / "pages/.build/push.json").read_text(encoding="utf-8"))
+           if after.get(p.get("k", "p"), 0) > 0 and p["id"] > after[p.get("k", "p")]]
     if not new:
         print("push: no new posts")
         return
-    # The deploy workflow publishes a few minutes after deploy.sh starts it: wait for the newest post's page.
-    newest = f"{SITE}/item/p{max(p['id'] for p in new)}/"
+    # The deploy workflow publishes a few minutes after deploy.sh starts it: wait for the newest post's page
+    # (push.json has the newest post or notice first, then the page versions).
+    newest = f"{SITE}{new[0]['u'].split('#')[0]}"
     for _ in range(40):
         if requests.head(newest, timeout=30).status_code == 200:
             break
@@ -137,7 +149,7 @@ if __name__ == "__main__":
             keys()
         case ["last"]:
             last()
-        case ["send", n]:
-            send(int(n))
+        case ["send", *ns] if ns:
+            send(*map(int, ns))
         case _:
             sys.exit(__doc__)

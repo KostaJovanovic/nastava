@@ -25,6 +25,8 @@ if [[ ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run nastava.py stats || failed+=(stats)
 	# The news change daily too, and all of them are ~46 requests.
 	uv run vesti.py sync || failed+=(vesti)
+	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
+	uv run cent.py sync || failed+=(cent)
 	if [[ $1 == sync ]]; then
 		uv run studije.py sync || failed+=(studije)
 		uv run nastavnici.py sync || failed+=(nastavnici)
@@ -50,7 +52,8 @@ echo "uploaded $name ($(du -h "$tmp/$name" | cut -f1)); deploy started: gh run l
 # It waits until the new posts are on the site. Without the keys (push-secret.json; on Actions the secret PUSH_SECRET)
 # there is no push.
 if [[ -n ${before:-} && -f push-secret.json ]]; then
-	uv run -q ci/push.py send "$before" || failed+=(push)
+	# Unquoted: three numbers (post, cent notice, cent page version).
+	uv run -q ci/push.py send $before || failed+=(push)
 fi
 if ((${#failed[@]})); then
 	echo "failed: ${failed[*]} (published anyway)" >&2

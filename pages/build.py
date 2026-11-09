@@ -31,7 +31,7 @@ sys.path.insert(0, str(HERE.parent))
 from studije import PAGES as STUDY_PAGES, SITE as STUDY_SITE, media_path  # noqa: E402
 from nastavnici import photo_urls  # noqa: E402
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
-KIND = {"post": "obavestenje", "document": "dokument", "vest": "vest"}
+KIND = {"post": "obavestenje", "document": "dokument", "vest": "vest", "cent": "obavestenje"}
 RECENT = 20
 # vesti.py's site, which keeps the news' images and files (the pages link them); the home page shows the newest few.
 VESTI, VESTI_HOME = "https://vesti.mas.bg.ac.rs/", 5
@@ -257,6 +257,117 @@ def load_vesti(db):
     return out
 
 
+def board_subject(by_code, by_name, code, name, program):
+    """The board's subject of a subject-book entry: the same code, else the same name in the smer of its program."""
+    return by_code.get(code) or by_name.get((fold(short_smer(program.replace(" — ", " - "))), fold(name)))
+
+
+def load_cent(db, smerovi, subjects):
+    """cent.py's subject pages of cent.mas.bg.ac.rs, under the board's subjects. Returns (the notices as items, the
+    page versions as push.json rows); each subject with pages gets s["cent"]: its pages in the site's order, each with
+    its versions, newest first (render_cent).
+    A page is a subject's when the highest page at or above it with a code in its header has the subject's code (a
+    subpage may copy another subject's header; of two sections with one code, the one with more pages under it). The
+    code is the subject book's, or, unknown there, the section's title is a book subject's name; the book entry leads
+    to the board subject as in load_book. A subject the board does not have is made here, in the smer of its program,
+    and that smer too when the board has none (Индустрија 4.0). Before load_book: the book links these subjects."""
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'cent_pages'").fetchone():
+        return [], []
+    versions = defaultdict(list)
+    for r in db.execute("SELECT rowid AS rid, * FROM cent_pages ORDER BY id, last_seen DESC"):
+        versions[r["id"]].append(dict(r))
+    pages = {i: v[0] for i, v in versions.items()}
+    kids = Counter(p["parent"] for p in pages.values())
+
+    def top(p):
+        found = None
+        while p:
+            found = p if p["code"] else found
+            p = pages.get(p["parent"])
+        return found
+
+    roots = {}
+    for p in pages.values():
+        if p["code"] and not p["gone"] and top(p) is p:
+            if p["code"] not in roots or kids[p["id"]] > kids[roots[p["code"]]["id"]]:
+                roots[p["code"]] = p
+    book = {r["id"]: r for r in db.execute("SELECT id, name, program FROM subjects")} if db.execute(
+        "SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone() else {}
+    book_by_name = {}
+    for r in book.values():
+        book_by_name.setdefault(fold(r["name"]), r["id"])
+    by_code = {c: s for s in subjects.values() for c in s["codes"]}
+    by_name = {(fold(s["smer"]["short"]), fold(s["name"])): s for s in subjects.values()}
+    smer_of = {fold(m["short"]): m for m in smerovi.values()}
+    subj_of = {}
+    for code, r in roots.items():
+        code = code if code in book else book_by_name.get(fold(r["title"]))
+        if not code:
+            print(f"cent: no subject in the book for {r['link']} ({r['title']}, ID {r['code']})", file=sys.stderr)
+            continue
+        name, program = book[code]["name"], book[code]["program"]
+        s = board_subject(by_code, by_name, code, name, program)
+        if not s:
+            smer_name = program.replace(" — ", " - ")
+            smer_name = smer_name[:1].lower() + smer_name[1:]
+            m = smer_of.get(fold(short_smer(smer_name)))
+            if not m:
+                m = dict(id=f"cent:{program}", name=smer_name, short=short_smer(smer_name), label=smer_name[:1].upper() + smer_name[1:])
+                m["href"] = f"/smer/{slug(m['short'])}/"
+                m["key"] = m["href"].strip("/").split("/")[-1]
+                smerovi[m["id"]] = smer_of[fold(m["short"])] = m
+            s = dict(id=f"c{code}", name=name, smer=m, codes=[code])
+            s["href"] = f"{m['href'].replace('/smer/', '/predmet/', 1)}{slug(name)}/"
+            if any(o["href"] == s["href"] for o in subjects.values()):
+                s["href"] = f"{s['href'][:-1]}-{code}/"
+            subjects[(m["id"], name)] = by_code[code] = s
+        subj_of[r["id"]] = s
+    notices = defaultdict(list)
+    for n in db.execute("SELECT * FROM cent_notices ORDER BY nid"):
+        notices[n["page"]].append(dict(n))
+    items, pushed = [], []
+    for p in sorted(pages.values(), key=lambda p: (p["menu_order"], p["id"])):
+        s = subj_of.get((top(p) or {}).get("id"))
+        if not s:
+            continue
+        for n in notices[p["id"]]:
+            day = n["date"] or n["first_seen"][:10]
+            # Its date is the notice's; its time the one it was first seen, when that was the same day.
+            posted = n["first_seen"] if n["first_seen"][:10] == day else f"{day}T10:00:00+00:00"
+            html = clean_html(n["html"], p["link"])
+            items.append(dict(id=f"c{n['nid']}", kind="cent", title=n["title"], smer=s["smer"], subj=s, subject=s["name"],
+                              date=day, year=int(day[:4]), topic=f"c{n['nid']}", num=n["nid"],
+                              when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.", posted=posted, author="cent",
+                              body=strip_tags(html), html=html, files=[], gone=n["gone"], source_url=p["link"]))
+        shown = []
+        for i, v in enumerate(versions[p["id"]]):
+            html = clean_html(v["html"], p["link"]) or ""
+            # The page's first heading is its name ("Резултати испита"): the title, not repeated under it.
+            m = re.search(r"<h2[^>]*>(.*?)</h2>", html, re.S)
+            title = strip_tags(m[1]) if m else v["title"]
+            html = html[:m.start()] + html[m.end():] if m else html
+            if not strip_tags(html) and "<a " not in html:
+                continue
+            href = f"{s['href']}cent/{p['slug']}/" if i == 0 else f"{s['href']}cent/{p['slug']}/{v['first_seen'][:10]}-{v['sha'][:6]}/"
+            shown.append(dict(title=title, href=href, html=html, first_seen=v["first_seen"], last_seen=v["last_seen"]))
+            new = i == len(versions[p["id"]]) - 1
+            pushed.append(dict(k="s", id=v["rid"], s=s["href"], n=s["name"], t=f"{title}: {'nova stranica' if new else 'izmenjeno'}",
+                               u=f"{s['href']}cent/{p['slug']}/"))
+        if shown and shown[0]["href"] == f"{s['href']}cent/{p['slug']}/":
+            s.setdefault("cent", []).append(dict(title=shown[0]["title"], link=p["link"], gone=p["gone"], versions=shown))
+    return items, pushed
+
+
+def render_cent(site, subjects):
+    """Each subject's cent pages (load_cent): the newest version at <subject>/cent/<slug>/, each older one under its
+    first date. Their links go to cent (the files are not hosted here)."""
+    page = env.get_template("cent.html")
+    for s in subjects.values():
+        for p in s.get("cent", []):
+            for v in p["versions"]:
+                write(site / v["href"].strip("/") / "index.html", page.render(subj=s, page=p, v=v))
+
+
 def pagefind_tags(it):
     kind = KIND[it["kind"]]
     tags = [("meta", "title", it["title"] or ""), ("filter", "vrsta", kind), ("meta", "vrsta", kind)]
@@ -337,7 +448,7 @@ def load_topics(db, items):
     titles = dict(db.execute("SELECT id, title FROM topics"))
     posts = defaultdict(list)
     for it in items:
-        if it["kind"] == "post":
+        if it["kind"] in ("post", "cent"):
             posts[it["topic"]].append(it)
     topics = []
     for tid, rows in posts.items():
@@ -368,7 +479,8 @@ def render_places(site, topics, smerovi, subjects):
     for s in subjects.values():
         rows = in_subject[s["id"]]
         s["topics"], s["count"], s["last"] = len(rows), sum(len(t["posts"]) for t in rows), rows[0]["last"] if rows else None
-        if rows:
+        s["live"] = bool(rows or s.get("cent"))
+        if s["live"]:
             authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
             write(site / s["href"].strip("/") / "index.html",
                   env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors))
@@ -377,15 +489,16 @@ def render_places(site, topics, smerovi, subjects):
                 {"name": s["name"], "rows": [[t["last"]["posted"], str(topic_row(t, place=True))] for t in rows[:MINE]]},
                 ensure_ascii=False), encoding="utf-8")
     for m in smerovi.values():
-        subs = sorted((s for s in subjects.values() if s["smer"] is m and s["count"]), key=lambda s: fold(s["name"]))
+        subs = sorted((s for s in subjects.values() if s["smer"] is m and s["live"]), key=lambda s: fold(s["name"]))
         for s in subs:
             s["find"] = fold(" ".join([s["name"]] + [t["full_name"] for t in s.get("teachers", [])]))
         rows = in_smer[m["id"]]
+        m["live"] = bool(rows or subs)
         m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
         # Its subjects, for the home page's row: hidden while only followed subjects show (head.js).
         m["pids"] = " ".join(s["href"] for s in subs)
         m["count"] = sum(len(t["posts"]) for t in rows) + sum(s["count"] for s in subs)
-        m["last"] = max([t["last"] for t in rows[:1]] + [s["last"] for s in subs], key=lambda r: r["posted"], default=None)
+        m["last"] = max([t["last"] for t in rows[:1]] + [s["last"] for s in subs if s["last"]], key=lambda r: r["posted"], default=None)
         write(site / m["href"].strip("/") / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, topics=rows))
     for t in topics:
         if len(t["posts"]) > 1:
@@ -415,23 +528,24 @@ def atom(title, path, posts):
             + "".join(entry(it) for it in posts) + "</feed>\n")
 
 
-def write_feeds(site, items, subjects):
+def write_feeds(site, items, subjects, pushed=()):
     """/feed.xml: the board's newest posts; <subject page>/feed.xml: the subject's. Next to a page that exists."""
-    posts = sorted((it for it in items if it["kind"] == "post"), key=lambda it: it["posted"], reverse=True)
+    posts = sorted((it for it in items if it["kind"] in ("post", "cent")), key=lambda it: it["posted"], reverse=True)
     (site / "feed.xml").write_text(atom("Forum nastave · Mašinski fakultet", "/", posts[:FEED_ALL]), encoding="utf-8")
     of = defaultdict(list)
     for it in posts:
         if it["subj"] and len(of[it["subj"]["id"]]) < FEED:
             of[it["subj"]["id"]].append(it)
     for s in subjects.values():
-        if s["count"]:
+        if s.get("live"):
             (site / s["href"].strip("/") / "feed.xml").write_text(atom(f"{s['name']} · forum nastave", s["href"], of[s["id"]]),
                                                                   encoding="utf-8")
     # The subjects' newest posts, next to the site (not on it), for ci/push.py: it notifies those newer than a post id.
-    # shortcut: the newest 1000 only; a scrape that brings more new posts notifies only these.
+    # k: "p" a board post, "c" a cent notice, "s" a cent page version; ci/push.py keeps one "before" per kind.
+    # shortcut: the newest 1000 posts and notices only; a scrape that brings more new posts notifies only these.
     (site.parent / "push.json").write_text(json.dumps(
-        [dict(id=int(it["id"][1:]), s=it["subj"]["href"], n=it["subj"]["name"], t=it["title"] or "", u=post_href(it))
-         for it in posts if it["subj"]][:1000], ensure_ascii=False), encoding="utf-8")
+        [dict(k=it["id"][0], id=it["num"], s=it["subj"]["href"], n=it["subj"]["name"], t=it["title"] or "", u=post_href(it))
+         for it in posts if it["subj"]][:1000] + list(pushed), ensure_ascii=False), encoding="utf-8")
 
 
 def strip_tags(html):
@@ -630,14 +744,14 @@ def render_teachers(site, teachers, items, book):
     book_href = {s["id"]: s["href"] for s in book}
     subj_pages = {f"/studije/predmeti/{c}": h for c, h in book_href.items()}
     subj_pages |= {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
-                   for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("count")}
+                   for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("live")}
     for t in teachers:
         t["posts"] = newest(posts[t["username"]]) if t["username"] else []
         # The profile's subjects: one row per archive subject (it can have several codes), archived first.
         mine = Counter(p["subj"]["id"] for p in t["posts"] if p["subj"])
         courses = {}
         for s in t["subjects"]:
-            archived = s["subj"] if s["subj"] and s["subj"].get("count") else None
+            archived = s["subj"] if s["subj"] and s["subj"].get("live") else None
             # One row per name too: a subject the profile lists under two codes ('Трибологија' twice).
             row = courses.setdefault(archived["id"] if archived else fold(s["name"]),
                                      dict(name=s["name"], subj=archived, codes=[], mine=archived and mine[archived["id"]],
@@ -698,7 +812,7 @@ def load_book(db, subjects, teachers):
     set_hrefs(book, lambda s: f"/predmeti/{slug(s['name'])}/")
     by_id = {s["id"]: s for s in book}
     for s in book:
-        s["forum"] = by_code.get(s["id"]) or by_name.get((fold(short_smer(s["program"].replace(" — ", " - "))), fold(s["name"])))
+        s["forum"] = board_subject(by_code, by_name, s["id"], s["name"], s["program"])
         # The holder first, then the other teachers of the page's head ('Извођачи').
         m = re.search(r"Извођачи</strong>(.*?)<br", s["html"] or "", re.S)
         ids = [s["holder"]] + re.findall(r"/fakultet/nastavnici/(\d+)", m[1] if m else "")
@@ -750,7 +864,7 @@ def render_book(site, book):
     """A list of all subjects with a filter, grouping and sorting, and one page per subject: the faculty's page."""
     pages = {f"/studije/predmeti/{s['id']}": s["href"] for s in book}
     for s in book:
-        if s["forum"] and not s["forum"]["count"]:
+        if s["forum"] and not s["forum"].get("live"):
             s["forum"] = None
     for s in book:
         source = f"{STUDY_SITE}studije/predmeti/{s['id']}"
@@ -777,7 +891,7 @@ def picker(subjects, book, teachers):
     teachers: each teacher with the board subjects they teach (into the list); people: every listed teacher's
     [name, page], for the header search on a teacher's page.
     After render_places (the counts) and render_teachers (the courses)."""
-    live = [s for s in subjects.values() if s.get("count")]
+    live = [s for s in subjects.values() if s.get("live")]
     entries = [[s["href"], s["name"]] for s in live]
     at = {("f", s["id"]): i for i, s in enumerate(live)}
     tree, placed = {}, set()
@@ -785,7 +899,7 @@ def picker(subjects, book, teachers):
     def index(b):
         """A plan's subject in the list: its board subject when that has topics, else its page in the book."""
         f = b["forum"]
-        key = ("f", f["id"]) if f and f.get("count") else ("b", b["id"])
+        key = ("f", f["id"]) if f and f.get("live") else ("b", b["id"])
         if key not in at:
             at[key] = len(entries)
             entries.append([b["href"], b["name"], 0])
@@ -948,7 +1062,7 @@ def render_vesti(site, vesti):
 
 def render_home(topics, smerovi, side, n_teachers, vesti):
     return env.get_template("search.html").render(
-        smerovi=[m for m in smerovi.values() if m["count"]], recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
+        smerovi=[m for m in smerovi.values() if m.get("live")], recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
         stats=dict(posts=side["total"], topics=len(topics), teachers=n_teachers),
         years_json=json.dumps([y for y, _ in side["year_hist"]]))
 
@@ -960,7 +1074,8 @@ def main(db_path, out):
     db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
     place, smerovi, subjects = load_places(db)
-    items = load_items(db, place)
+    cent_items, cent_pushed = load_cent(db, smerovi, subjects)
+    items = load_items(db, place) + cent_items
     teachers = load_teachers(db, subjects)
     if teachers:
         write_photos(db, site)
@@ -994,7 +1109,8 @@ def main(db_path, out):
                 s["subj"]["teachers"].append(t)
     book = load_book(db, subjects, teachers)
     render_places(site, topics, smerovi, subjects)
-    write_feeds(site, items, subjects)
+    render_cent(site, subjects)
+    write_feeds(site, items, subjects, cent_pushed)
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it))
     render_teachers(site, teachers, items, book)
@@ -1008,7 +1124,7 @@ def main(db_path, out):
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers), vesti),
                                      encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")
-    print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['count'])} subjects, "
+    print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['live'])} subjects, "
           f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti", flush=True)
     npx = shutil.which("npx") or sys.exit("npx not found: Pagefind needs Node.js")
     subprocess.run([npx, "-y", PAGEFIND, "--site", str(site)], check=True)
@@ -1038,7 +1154,7 @@ if __name__ == "__main__":
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
     assert env.filters["slug"]("Катедра за математику") == "katedra-za-matematiku" and env.filters["slug"](None) == ""
     _m, _k = dict(label="Основне академске студије - МИ"), dict(label="Катедре")
-    _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, smer=m) for i, n, m in
+    _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, live=True, smer=m) for i, n, m in
                       ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k)))
     _pl = dict(program=PROGRAMS[0], module=None, semester=3, i=0, slot=None)
     _bk = lambda f, places, **kw: dict(dict(forum=f, places=places, gone=0, id="b", href="/b/", name="Б"), **kw)

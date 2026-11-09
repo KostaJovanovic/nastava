@@ -9,7 +9,7 @@
     data-id tells site.js they are one subject. data-pid: the subject as "Moji predmeti" name it (build.py picker: its
     board page when it has topics, else this list's page), for head.js. -#}
 {% macro srow(s) -%}
-<li class="sr" data-pid="{{ s.forum.href if s.forum and s.forum.count else s.href }}" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
+<li class="sr" data-pid="{{ s.forum.href if s.forum and s.forum.live else s.href }}" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
   <a class="sr__a" href="{{ s.href }}">{{ s.name }}</a>
   <span class="sr__h">{% if s.holder_t %}{{ s.holder_t.shown }}{% endif %}</span>
   <span class="sr__e">{% if s.ects %}{{ s.ects }} ESPB{% endif %}</span>

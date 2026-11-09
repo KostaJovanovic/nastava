@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import nastava  # noqa: E402
+import cent  # noqa: E402
 import nastavnici  # noqa: E402
 import predmeti  # noqa: E402
 import studije  # noqa: E402
@@ -101,4 +102,37 @@ assert studije.media_path('/lib/exe/fetch.php?media=studije:itm1.pdf') == 'studi
 assert studije.media_path('https://example.com/_media/x.pdf') is None
 assert not studije.safe(studije.media_path('/lib/exe/fetch.php?media=:x.pdf'))
 assert not studije.safe('a/../../x.pdf') and not studije.safe('x.svg') and studije.safe('studije/i_godina.pdf')
+
+# cent.mas.bg.ac.rs (cent.py): a subject's notices page (a notice; Divi's script links made <a>), a results page (file
+# icons named by the file), a labs page (video links), and a subject's own page (only the header: no content).
+T = 'https://cent.mas.bg.ac.rs/tehnologija-masinske-obrade/'
+code, html, notices = cent.parse(read('cent-obavestenja.html'), T + 'obavestenja/')
+assert code == '1617' and len(notices) == 1, (code, notices)
+assert (notices[0]['title'], notices[0]['date']) == ('ВАЖНО ОБАВЕШТЕЊЕ – друга лабораторијска вежба!', '2026-11-06')
+assert [f.rsplit('/', 1)[1] for f in notices[0]['files']] == ['Detaljan_raspored_lab2.pdf', 'Spisak_studenata_po_grupama_lab_2.pdf']
+assert 'vesti_predmeta_title' not in notices[0]['html'] and 'Detaljan_raspored_lab2.pdf</a>' in notices[0]['html']
+links = [(a['href'].rsplit('/', 1)[1], a.get_text(' ', strip=True)) for a in BeautifulSoup(html, 'html.parser').find_all('a')]
+assert len(links) == 12 and ('Spisak_studenata_2026-2027_smjena1_v3.pdf', 'Смена 1') in links, links
+assert 'vesti_predmeta_title' in html, 'the page keeps its notices as they were shown'
+code, html, notices = cent.parse(read('cent-rezultati.html'), T + 'rezultati-tmo/')
+assert code == '1617' and notices == [] and html.count('<a ') == 35 and '>fin11.pdf</a>' in html
+assert 'href=""' not in html, 'an icon that links nowhere goes'
+assert 'et_link_options_data' not in html and '<script' not in html
+code, html, notices = cent.parse(read('cent-lab.html'), T + 'laboratorijske-vezbe-tmo/')
+texts = [a.get_text(strip=True) for a in BeautifulSoup(html, 'html.parser').find_all('a')]
+assert len(texts) == 15 and texts.count('video') == 3 and 'lab1.pdf' in texts and '' not in texts, texts
+assert cent.parse(read('cent-predmet.html'), T) == ('1617', '', [])
+# A notice no longer on its page stays, marked gone; a page's content that changes is a new version, and a page back
+# to an older content makes that version the newest again.
+db = sqlite3.connect(':memory:')
+db.executescript(cent.SCHEMA)
+notice = lambda t: dict(title=t, date='2026-11-06', html='x', files=[])
+cent.store_notices(db, 1, [notice('a'), notice('b')], 's1')
+cent.store_notices(db, 1, [notice('b')], 's2')
+cent.store_notices(db, 2, [], 's2')
+assert db.execute('select title, gone, first_seen, last_seen from cent_notices order by nid').fetchall() == [('a', 1, 's1', 's1'), ('b', 0, 's1', 's2')]
+page = dict(id=5, parent=0, menu_order=0, slug='x', title=dict(rendered='X &amp; Y'), link='L', modified='m')
+assert [cent.store_page(db, page, '1617', h, w) for h, w in (('a', 's1'), ('a', 's2'), ('b', 's3'), ('a', 's4'))] == [True, False, True, True]
+assert db.execute('select title, html, first_seen, last_seen from cent_pages order by last_seen desc').fetchall() == [
+    ('X & Y', 'a', 's1', 's4'), ('X & Y', 'b', 's3', 's3')]
 print('parsers ok')

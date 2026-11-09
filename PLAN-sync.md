@@ -192,6 +192,7 @@ def fingerprint(db):
         "select count(*) from study_pages", "select count(*) from study_files",
         "select count(*), sum(gone), total(length(html)) from teachers", "select count(*) from teacher_subjects",
         "select count(*), sum(gone), total(length(html)) from subjects", "select count(*) from subject_places",
+        "select count(*), sum(gone), total(length(html)) from cent_notices", "select count(*), sum(gone) from cent_pages",
     ]
     out = []
     for q in queries:
@@ -336,6 +337,8 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run nastava.py stats || failed+=(stats)
 	# The news change daily too, and all of them are ~46 requests.
 	uv run vesti.py sync || failed+=(vesti)
+	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
+	uv run cent.py sync || failed+=(cent)
 	for p in "${parts[@]:1}"; do
 		uv run "$p.py" sync || failed+=("$p")
 	done
@@ -363,7 +366,8 @@ echo "uploaded $name ($(du -h "$tmp/$name" | cut -f1)); deploy started: gh run l
 # It waits until the new posts are on the site. Without the keys (push-secret.json; on Actions the secret PUSH_SECRET)
 # there is no push.
 if [[ -n ${before:-} && -f push-secret.json ]]; then
-	uv run -q ci/push.py send "$before" || failed+=(push)
+	# Unquoted: three numbers (post, cent notice, cent page version).
+	uv run -q ci/push.py send $before || failed+=(push)
 fi
 finish
 ```

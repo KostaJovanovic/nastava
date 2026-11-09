@@ -1,6 +1,7 @@
 # Plan: cent.mas.bg.ac.rs into the subjects' forums
 
-Status: planned 2026-11-09, agreed with the user, not built. Instructions for the Claude that builds it: follow the steps
+Status: built 2026-11-09 (planned and agreed with the user the same day). The built `cent.py` differs from step 1 in
+`name_icons`: an icon linking nowhere (`href=""`) goes, a link inside one that went is skipped, and images are files. Instructions for the Claude that builds it: follow the steps
 in order and copy the code as it is. `cent.py` and `load_cent` were run against the live site (241 pages) and the real
 `nastava.db`; the parser tests pass on the saved pages. The templates, the `build.py` wiring and the push changes were
 not run: the checks in step 9 test them. If something here turns out wrong, stop and ask the user.
