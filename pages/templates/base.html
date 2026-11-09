@@ -76,7 +76,7 @@
     </nav>
     {#- The time: site.js writes "u hh:mm, dd.mm.yyyy." in the reader's time; without it, the date. -#}
     {#- Spans: a phone puts each on its own line, without the dot (style.css). -#}
-    <p class="ft__note">{% if built %}<span>Provereno <time datetime="{{ built }}">{{ built | dmy }}</time></span><span class="ft__dot"> · </span>{% endif %}<span>Ovaj sajt je lični projekat.</span> <span>Nisam u komunikaciji sa fakultetom.</span></p>
+    <p class="ft__note">{% if built %}<span>Provereno <time datetime="{{ built }}">{{ built | dmy }}</time></span><span class="ft__dot"> · </span>{% endif %}<span><a href="/o-sajtu/">Ovaj sajt je lični projekat.</a></span> <span>Nisam u komunikaciji sa fakultetom.</span></p>
   </div>
   <div class="ft__side">
     {#- A wave through its letters (site.js), as the header of valjdakosta.com. -#}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{#- The address for takedown requests; until it is set, the page sends them to GitHub only. -#}
+{% set email = none %}
+
+{% block title %}O sajtu{% endblock %}
+
+{#- About the site, in the author's voice. No numbers here: those are on /statistika/. -#}
+{% block main %}
+<div class="mh">
+  <h1 id="title">O sajtu</h1>
+  <p class="mh__sub">Arhiva foruma nastave Mašinskog fakulteta u Beogradu i ostalih sajtova fakulteta, na jednom mestu.</p>
+</div>
+<div class="prose prose--html tp__opis about">
+  <h2>Šta je ovo i zašto</h2>
+  <p>Ovo je kopija <a href="https://nastava.mas.bg.ac.rs/nastava/">foruma nastave</a> sa svim objavama od 2014. godine,
+    uz vesti fakulteta, Knjigu predmeta, spisak nastavnika, rasporede i sajtove predmeta Katedre za proizvodno
+    mašinstvo. Napravio sam je jer je na forumu teško naći bilo šta starije od par meseci, a stare objave i prilozi
+    nestaju kad ih neko obriše ili premesti. Ovde sve ostaje, sve se pretražuje (ćirilicom ili latinicom, svejedno),
+    a svaki predmet ima svoju stranu sa svim objavama, nastavnicima i opisom iz Knjige predmeta.</p>
+  <p>Ovo je lični projekat. Nisam u komunikaciji sa fakultetom i fakultet nema nikakve veze sa ovim sajtom. Za sve što
+    je zvanično važi ono što piše na sajtovima fakulteta.</p>
+
+  <h2>Odakle su podaci i koliko često</h2>
+  <ul>
+    <li><b>Forum nastave</b> (nastava.mas.bg.ac.rs): proveravam ga na svaka dva sata, od 6 do 22 časa. Objave sa
+      postom u poslednje dve nedelje preuzimam ponovo, da bi izmene stigle i ovde.</li>
+    <li><b>Vesti</b> (vesti.mas.bg.ac.rs) i <b>sajtovi predmeta</b> sa cent.mas.bg.ac.rs: uz svaku proveru foruma.</li>
+    <li><b>Knjiga predmeta, nastavnici i rasporedi</b> (www.mas.bg.ac.rs): jednom nedeljno, u noći na ponedeljak.</li>
+  </ul>
+  <p>Ništa se ne briše: objava koja nestane sa foruma ostaje ovde, uz napomenu da je uklonjena. Prilozi se ne
+    čuvaju na ovom sajtu, već vode pravo na sajt fakulteta.</p>
+
+  <h2>Rupe u podacima</h2>
+  <ul>
+    <li>Od januara do maja 2025. skoro da nema objava. To nije greška: nastava je stajala zbog studentskih protesta.</li>
+    <li>Objava je ovde onakva kakva je bila kad sam je prvi put preuzeo i kasnije osvežio. Ako je izmenjena pre toga,
+      ta ranija verzija nije sačuvana.</li>
+    <li>Broj preuzimanja priloga je onaj koji je forum pokazivao. Za priloge od aprila do septembra 2026. je naduvan
+      (više na <a href="/statistika/">statistici</a>).</li>
+  </ul>
+
+  <h2>Uklanjanje i greške</h2>
+  <p>Ako želiš da sklonim objavu, prilog ili tvoje ime,
+    {%- if email %} piši mi na <a href="mailto:{{ email }}">{{ email }}</a>. Odgovaram i uklanjam bez pitanja zašto.
+    {%- else %} otvori prijavu na <a href="https://github.com/KostaJovanovic/nastava/issues">GitHub-u</a>. Uklanjam
+    bez pitanja zašto.{% endif %}</p>
+  <p>Grešku na sajtu (pogrešan predmet, pokvaren link, nešto što ne radi) prijavi na
+    <a href="https://github.com/KostaJovanovic/nastava/issues">GitHub-u</a>.</p>
+
+  <h2>Kako je napravljeno</h2>
+  <ul>
+    <li>Sajt je napravljen na osnovu <a href="https://github.com/omznc/dlwms">dlwms</a>, arhive koju je Omar Žunić
+      napravio za FIT Mostar. Ceo kod je otvoren, na <a href="https://github.com/KostaJovanovic/nastava">GitHub-u</a>.</li>
+    <li>Nema kolačića, reklama ni analitike. Tvoj pregledač pamti samo tvoja podešavanja: temu, pismo, Moje predmete,
+      izabrani raspored i poslednju pretragu.
+      Ako uključiš obaveštenja, sajt čuva adresu obaveštenja tvog pregledača i spisak predmeta koje pratiš.</li>
+    <li>Nove objave možeš da pratiš i preko <span data-notx>RSS</span>-a: <a href="/feed.xml">sve objave</a>,
+      <a href="/vesti/feed.xml">vesti</a>, a svaki predmet ima svoj na svojoj strani.</li>
+  </ul>
+  <p>— <a href="https://valjdakosta.com/" data-notx>valjdakosta</a></p>
+</div>
+{% endblock %}

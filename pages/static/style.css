@@ -1086,6 +1086,11 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 @container main (min-width: 860px) { .tp--subj { grid-template-columns: minmax(0, 1fr); } }
 .tp__opis { padding: 4px 4px 0; }
 .tp--subj ~ .tp__src { border-top: 0; padding-inline: 4px; }
+/* O sajtu (o_sajtu.html): plain text sections. */
+.about h2 { margin: 1.6em 0 .4em; color: var(--fg); font: 800 17px/1.3 var(--sans); }
+.about p { margin: 0 0 .8em; }
+.about ul { margin: 0 0 .8em; padding-left: 1.2em; }
+.about li + li { margin-top: .3em; }
 
 /* A document's text, line by line. */
 .code { margin: 0; padding: 8px 0; list-style: none; counter-reset: ln; border: 1px solid var(--line); border-radius: 8px; background: var(--alt); font: 400 12.5px/1.65 var(--mono); }
