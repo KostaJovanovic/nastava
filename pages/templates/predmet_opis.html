@@ -19,7 +19,7 @@
       {%- if s.teachers %}<dt>Nastavnici</dt><dd>{% for t in s.teachers %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if t is sameas s.holder_t %} (nosilac){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
       {%- if s.places %}<dt>U planu</dt><dd>
         {%- for p in s.places %}{% if p.module %}{{ p.module }}, {% elif p.program != s.program %}{{ p.program }}, {% endif %}{{ p.semester }}. semestar{% if p.label %}, {{ p.label | lower }}{% endif %}{% if not loop.last %}; {% endif %}{% endfor %}</dd>{% endif %}
-      {%- if s.forum %}<dt>Forum</dt><dd><a href="{{ s.forum.href }}">{{ s.forum.topics }} {{ s.forum.topics | pl('objava') }}, {{ s.forum.count }} {{ s.forum.count | pl('post') }}</a></dd>{% endif %}
+      {%- if s.forum %}<dt>Forum</dt><dd><a href="{{ s.forum.href }}">{{ s.forum.topics | n }} {{ s.forum.topics | pl('objava') }}, {{ s.forum.count | n }} {{ s.forum.count | pl('post') }}</a></dd>{% endif %}
     </dl>
   </div>
 </section>

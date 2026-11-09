@@ -9,7 +9,7 @@
     <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-folder"></use></svg></span>
     <div>
       <h1 id="title">{{ smer.label }}</h1>
-      <p class="mh__stats"><span><b>{{ smer.subjects }}</b> {{ smer.subjects | pl('predmet') }}</span><span><b>{{ smer.topics }}</b> {{ smer.topics | pl('objava') }}</span><span><b>{{ smer.count }}</b> {{ smer.count | pl('post') }}</span></p>
+      <p class="mh__stats"><span><b>{{ smer.subjects | n }}</b> {{ smer.subjects | pl('predmet') }}</span><span><b>{{ smer.topics | n }}</b> {{ smer.topics | pl('objava') }}</span><span><b>{{ smer.count | n }}</b> {{ smer.count | pl('post') }}</span></p>
     </div>
   </div>
 </div>

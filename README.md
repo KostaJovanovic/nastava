@@ -51,6 +51,7 @@ pipeline and site, with new scrapers for phpBB.
   smer and subject (its topics, filtered by text or author in the page), a page per topic of several posts (`/tema/`),
   and a page per post (`/item/`, what search finds). The header stays at the top; the side panel (page links,
   filters by smer and year) fits the screen beside it. A teacher's page links a search of their posts (`/?autor=`).
+  Atom feeds for a feed reader: `/feed.xml` (the board's newest posts) and `feed.xml` on each subject page.
 - `ci/deploy.sh`: scrape (with `sync`), build and publish from this PC. `ci/state.sh`: get and save `nastava.db`.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.

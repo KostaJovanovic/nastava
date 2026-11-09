@@ -80,15 +80,16 @@ with sync_playwright() as p:
 	print('picker search:', page.locator('.mp__card .mp__name').all_inner_texts()[:4])
 	page.fill('[data-mp-q]', '')
 	page.click('.mp__foot [data-mp-close]')
-	assert page.locator('[data-moji-list] .chip').count() == 1
+	assert page.inner_text('[data-moji-n]') == '1'
 	page.goto(f'{base}/?from=2014')  # the year field's min: an invalid form is not submitted
 	page.wait_for_function(done)
 	page.wait_for_load_state('networkidle')
 	seen = set(page.locator('#res .fr__s .s1').all_inner_texts())
 	print('picker:', name, '->', page.inner_text('#res-h'), '| subjects:', seen)
 	assert seen == {name} and 'Moji predmeti (1)' in page.inner_text('.chips'), (seen, page.inner_text('.chips'))
-	page.locator('label', has_text='Pretraga u svim predmetima').click()
-	page.wait_for_function("location.search.includes('sve=1') && !document.querySelector('.chips')?.textContent.includes('Moji')")
+	# The switch "Samo moji predmeti" off: the search covers every subject again.
+	page.locator('label', has_text='Samo moji predmeti').click()
+	page.wait_for_function("!document.querySelector('.chips')?.textContent.includes('Moji')")
 	page.wait_for_load_state('networkidle')
 	assert len(set(page.locator('#res .fr__s .s1').all_inner_texts())) > 1
 	page.evaluate("localStorage.removeItem('moji')")

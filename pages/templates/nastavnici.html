@@ -10,8 +10,8 @@
       <a class="pc__a" href="{{ t.href }}">{{ t.shown }}</a>
       <p>{{ t.title }}</p>
       {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra }}</p>{% endif %}
-      {%- if t.gone %}<p class="pc__m">na spisku do {{ t.last_seen | dmy }}{% if t.posts %}, {{ t.posts | length }} {{ t.posts | length | pl('post') }}{% endif %}</p>
-      {%- else %}<p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length }} {{ t.posts | length | pl('post') }}{% endif %}</p>{% endif %}
+      {%- if t.gone %}<p class="pc__m">na spisku do {{ t.last_seen | dmy }}{% if t.posts %}, {{ t.posts | length | n }} {{ t.posts | length | pl('post') }}{% endif %}</p>
+      {%- else %}<p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}{% endif %}</p>{% endif %}
     </div>
   </li>
 {%- endmacro %}

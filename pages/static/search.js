@@ -18,7 +18,8 @@ if (!pagefind) {
 await pagefind.options({ excerptLength: 30 });
 // A search returns counts only for the filter groups that are loaded, so load all of them first.
 // These are also the counts of the whole archive: a search that would match every item takes about a second.
-const TOTALS = await pagefind.filters();
+// Only the "Vrsta" group shows counts, and only when documents are archived (sidebar.html): else skip that second.
+const TOTALS = document.querySelector('.filters input[name="kind"]') ? await pagefind.filters() : {};
 // The newest items from the build, shown again when the search and the filters are cleared.
 const home = { heading: heading.innerHTML, res: res.innerHTML };
 
@@ -81,8 +82,9 @@ function writeUrl(s, page) {
 }
 
 function filtersOf(s) {
-	// Pagefind needs a filter for a search without a query, so "vrsta" is always set.
-	const filters = { vrsta: { any: s.kind ? [s.kind] : ["obavestenje", "dokument"] } };
+	// Pagefind needs a filter for a search without a query; run() only searches then when some filter is set.
+	// "vrsta" only when picked: as a filter on every search it doubled the time of one with a query.
+	const filters = s.kind ? { vrsta: { any: [s.kind] } } : {};
 	if (s.smer) filters.smer = { any: [s.smer] };
 	if (s.subjects.length) filters.predmet = { any: s.subjects };
 	if (s.authors.length) filters.autor = { any: s.authors };
@@ -116,7 +118,9 @@ function excerptNodes(html, text) {
 	const orig = (text ?? "").split(/\s+/).filter(Boolean);
 	if (!words.length || !orig.length) return plain();
 	const folded = orig.map(fold);
-	const at = folded.findIndex((_, i) => words.every((x, k) => folded[i + k] === x.w));
+	// An excerpt that reaches the end of the text ends with a "." Pagefind adds.
+	const at = folded.findIndex((_, i) => words.every((x, k) => folded[i + k] === x.w
+		|| (k === words.length - 1 && `${folded[i + k]}.` === x.w)));
 	if (at < 0) return plain();
 	return words.flatMap((x, k) => {
 		const w = orig[at + k];
@@ -129,7 +133,19 @@ const dmy = (iso) => (iso ? `${iso.slice(0, 10).split("-").reverse().join(".")}.
 // "1 rezultat", "21 rezultat"; every other number "rezultata".
 const rezultata = (n) => (n % 10 === 1 && n % 100 !== 11 ? " rezultat" : " rezultata");
 
-function renderRow(data) {
+// A row without a query (a year, an author): the text's first words. Pagefind's excerpt would start with the title,
+// which the row already has (the indexed text is the title, then the text).
+function lead(title, text) {
+	const t = (title ?? "").split(/\s+/).filter(Boolean), w = (text ?? "").split(/\s+/).filter(Boolean);
+	const body = t.every((x, i) => w[i] === x) ? w.slice(t.length) : w;
+	return body.slice(0, 30).join(" ") + (body.length > 30 ? " …" : "");
+}
+
+// "još 1 post", "još 3 posta", "još 5 postova" of the same objava.
+const posta = (n) => (n % 10 === 1 && n % 100 !== 11 ? "post" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "posta" : "postova");
+
+// more: the other results of its objava on this page, merged into this row (showPage).
+function renderRow(data, more = 0) {
 	const li = rowTpl.content.firstElementChild.cloneNode(true);
 	if (data.meta.vrsta === "dokument") li.querySelector("use").setAttribute("href", "/static/icons.svg#i-file");
 	const d = li.querySelector(".fr__d");
@@ -143,7 +159,14 @@ function renderRow(data) {
 	const a = li.querySelector(".fr__a");
 	a.href = data.url;
 	a.textContent = data.meta.title;
-	li.querySelector(".fr__x").append(...excerptNodes(data.excerpt, data.meta.tekst));
+	const x = li.querySelector(".fr__x");
+	if (state.q) x.append(...excerptNodes(data.excerpt, data.meta.tekst));
+	else x.textContent = lead(data.meta.title, data.meta.tekst);
+	if (more) {
+		li.querySelector(".fr__t").append(build("a", {
+			className: "fr__in", href: data.meta.tema, textContent: `+ još ${more} ${posta(more)} iz ove objave`,
+		}, []));
+	}
 	return li;
 }
 
@@ -278,8 +301,16 @@ async function showPage(page, id = runs) {
 			const input = form.querySelectorAll(`input[name="${name}"]`);
 			if (input.length === 1 && batch[0].meta[meta]) input[0].dataset.name = batch[0].meta[meta];
 		}
+		// One row per objava: its best result, with a link to the whole objava for the others on this page.
+		// shortcut: only within a page; an objava can show again on the next one. Merge across pages if that bothers.
+		const rows = [], of = {};
+		for (const data of batch) {
+			const t = data.meta.tema;
+			if (t && of[t]) of[t].more++;
+			else rows.push(of[t || data.url] = { data, more: 0 });
+		}
 		const table = resTpl.content.firstElementChild.cloneNode(true);
-		table.querySelector("ol").append(...batch.map(renderRow));
+		table.querySelector("ol").append(...rows.map((r) => renderRow(r.data, r.more)));
 		res.replaceChildren(table);
 	}
 	renderPager(page, pages, (n) => {

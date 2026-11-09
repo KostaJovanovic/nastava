@@ -39,7 +39,7 @@
     {%- if on_forum %}
     <ul>
       {%- for c in on_forum %}
-      <li><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a><span class="tp__smer">{{ c.subj.smer.label }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
+      <li><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a><span class="tp__smer" title="{{ c.subj.smer.label }}">{{ (c.subj.smer.short[:1] | upper) ~ c.subj.smer.short[1:] }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
       {%- endfor %}
     </ul>
     {%- endif %}
@@ -60,7 +60,7 @@
 
 <section class="tp__sec" id="objave">
   <div class="tp__h">
-    <h2>Postovi na forumu{% if t.posts %} <span>{{ t.posts | length }}</span>{% endif %}</h2>
+    <h2>Postovi na forumu{% if t.posts %} <span>{{ t.posts | length | n }}</span>{% endif %}</h2>
     {%- if t.posts %}<a href="/?autor={{ t.username | urlencode }}">Pretraži u ovim postovima</a>{% endif %}
   </div>
   {%- if t.posts %}

@@ -22,7 +22,7 @@
   </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
-  <p class="stats">Ukupno postova <b>{{ stats.posts }}</b> · objava <b>{{ stats.topics }}</b> · nastavnika <b>{{ stats.teachers }}</b> · <a href="/statistika/">statistika</a></p>
+  <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · objava <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b> · <a href="/statistika/">statistika</a> · <a href="/feed.xml">RSS</a></p>
 </div>
 <nav class="status" aria-label="Stranice">
   <span class="keys"><span><kbd>/</kbd> traži</span><span><kbd>j</kbd><kbd>k</kbd> kretanje</span><span><kbd><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-enter"></use></svg><span class="vh">Enter</span></kbd> otvori</span></span>

@@ -35,6 +35,9 @@ KIND = {"post": "obavestenje", "document": "dokument"}
 RECENT = 20
 # A followed subject's newest topics in its novo.json (the home page's "Moji predmeti", site.js).
 MINE = 10
+# The Atom feeds (write_feeds): the posts in a subject's and in the whole board's, and the domain of their links.
+FEED, FEED_ALL = 20, 50
+SITE_URL = "https://nastava.valjdakosta.com"
 PAGEFIND = "pagefind@1.6.0"
 # shortcut: a document page shows and indexes at most this much text; raise it if GitHub Pages' 1 GB allows.
 PAGE_TEXT = 300_000
@@ -117,6 +120,11 @@ def parse_date(*values):
     return None, None
 
 
+def preuzeto(text):
+    """The board's English download count, in Serbian: in a post's HTML and in its plain text (the search excerpt)."""
+    return re.sub(r"Downloaded (\d+) times?", r"preuzeto \1 puta", text or "")
+
+
 def clean_html(html, base=BASE, local=lambda value: None):
     """Sanitize; a link that local() maps goes to this site, every other relative link to the faculty's page."""
     def attribute(tag, attr, value):
@@ -131,7 +139,7 @@ def clean_html(html, base=BASE, local=lambda value: None):
         return local(value) or urljoin(base, re.sub(r"[?&]+(?=#|$)", "", value))
 
     # The board's attachment box is in English; in Serbian it reads right in both scripts.
-    html = re.sub(r"Downloaded (\d+) times?", r"preuzeto \1 puta", re.sub(r">\s*Attachments\s*<", ">Prilozi<", html or ""))
+    html = preuzeto(re.sub(r">\s*Attachments\s*<", ">Prilozi<", html or ""))
     return nh3.clean(html, tags=nh3.ALLOWED_TAGS | {"tfoot"}, attribute_filter=attribute,
                      url_schemes=nh3.ALLOWED_URL_SCHEMES | {"data"}, link_rel="noopener noreferrer") or None
 
@@ -212,7 +220,7 @@ def load_items(db, place):
         items.append(dict(id=f"p{p['id']}", kind="post", title=p["title"], smer=smer, subj=subj,
                           subject=subj and subj["name"], date=iso, year=year,
                           topic=p["topic"], num=p["id"], when=p["date"], posted=p["posted"] or "",
-                          author=p["author"], body=p["content"], html=attachments(html), files=downloads(html), gone=p["gone"],
+                          author=p["author"], body=preuzeto(p["content"]), html=attachments(html), files=downloads(html), gone=p["gone"],
                           source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}"))
     for d in docs.values():
         p = posts.get(d["post"]) or {}
@@ -242,6 +250,9 @@ def pagefind_tags(it):
         tags.append(("filter", "godina", str(it["year"])))
     if it["date"]:
         tags += [("sort", "datum", it["date"]), ("meta", "datum", it["date"])]
+    # The objava of a post that has replies: search.js shows one row per objava on a page of results.
+    if it.get("thread") and len(it["thread"]["posts"]) > 1:
+        tags.append(("meta", "tema", it["thread"]["href"]))
     # The text as written, word for word the indexed folded copy: search.js shows the excerpt in it.
     tags.append(("meta", "tekst", f"{it['title']}\n{it['body'] or ''}"))
     return "".join(f'<meta data-pagefind-{t}="{k}[content]" content="{escape(v)}">' for t, k, v in tags)
@@ -357,6 +368,38 @@ def render_places(site, topics, smerovi, subjects):
             write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t))
 
 
+def atom(title, path, posts):
+    """An Atom feed of the newest posts (newest first) for a feed reader: the whole board or one subject. A reader
+    needs whole URLs, so they are on the main domain."""
+    def entry(it):
+        href = f"{it['thread']['href']}#p{it['num']}" if len(it["thread"]["posts"]) > 1 else f"/item/{it['id']}/"
+        place = (it["subj"] and it["subj"]["name"]) or (it["smer"] and it["smer"]["label"])
+        return (f"<entry><title>{escape(it['title'] or '')}</title><link href=\"{SITE_URL}{escape(href)}\"/>"
+                f"<id>{SITE_URL}/item/{it['id']}/</id><updated>{it['posted']}</updated>"
+                f"<author><name>{escape(it['who'] or '')}</name></author>"
+                + (f"<category term=\"{escape(place)}\"/>" if place else "")
+                + f"<content type=\"html\">{escape(it['html'] or it['body'] or '')}</content></entry>")
+    return ('<?xml version="1.0" encoding="utf-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="sr">'
+            f"<title>{escape(title)}</title><id>{SITE_URL}{escape(path)}</id>"
+            f"<link rel=\"self\" href=\"{SITE_URL}{escape(path)}feed.xml\"/><link href=\"{SITE_URL}{escape(path)}\"/>"
+            f"<updated>{posts[0]['posted'] if posts else '1970-01-01T00:00:00+00:00'}</updated>"
+            + "".join(entry(it) for it in posts) + "</feed>\n")
+
+
+def write_feeds(site, items, subjects):
+    """/feed.xml: the board's newest posts; <subject page>/feed.xml: the subject's. Next to a page that exists."""
+    posts = sorted((it for it in items if it["kind"] == "post"), key=lambda it: it["posted"], reverse=True)
+    (site / "feed.xml").write_text(atom("Forum nastave · Mašinski fakultet", "/", posts[:FEED_ALL]), encoding="utf-8")
+    of = defaultdict(list)
+    for it in posts:
+        if it["subj"] and len(of[it["subj"]["id"]]) < FEED:
+            of[it["subj"]["id"]].append(it)
+    for s in subjects.values():
+        if s["count"]:
+            (site / s["href"].strip("/") / "feed.xml").write_text(atom(f"{s['name']} · forum nastave", s["href"], of[s["id"]]),
+                                                                  encoding="utf-8")
+
+
 def strip_tags(html):
     return " ".join(unescape(re.sub(r"<[^>]+>", " ", html or "")).split())
 
@@ -415,6 +458,15 @@ def parse_lectures(html):
     return out if out["programs"] else None
 
 
+def drop_empty_tables(html):
+    """Leave out a table whose cells are all empty, with the heading right above it: the exam page keeps its forms
+    with no rows between terms. The <div>s between the heading and the table stay (their </div> is after it)."""
+    def table(m):
+        cells = re.findall(r"<td\b[^>]*>(.*?)</td>", m[0], re.S)
+        return (m[2] or "") if cells and not strip_tags("".join(cells)) else m[0]
+    return re.sub(r"(?:<h([1-6])[^>]*>(?:(?!</?h[1-6]).)*</h\1>(\s*(?:<div[^>]*>\s*)*))?<table\b.*?</table>", table, html, flags=re.S)
+
+
 def render_study_pages(site, db):
     """The schedule pages of www.mas.bg.ac.rs (studije.py), with their files served from this site. The newest version
     of a page is at /studije/<slug>/; each older one has a page of its own, linking the files as they were then.
@@ -448,7 +500,7 @@ def render_study_pages(site, db):
         for v in versions:
             when = None if v is versions[0] else v["last_seen"]
             local = lambda value: (p := media_path(value)) and (file_then(p, when) if when else newest.get(p))
-            html = clean_html(v["html"], source, local) or ""
+            html = drop_empty_tables(clean_html(v["html"], source, local) or "")
             # The page's first heading is usually its title, which the page already has as h1.
             m = re.search(r"<h([12])[^>]*>(.*?)</h\1>", html, re.S)
             if m and fold(re.sub(r"<[^>]+>", "", m[2]).strip()) == fold(v["title"]):
@@ -529,7 +581,8 @@ def render_teachers(site, teachers, items, book):
         courses = {}
         for s in t["subjects"]:
             archived = s["subj"] if s["subj"] and s["subj"].get("count") else None
-            row = courses.setdefault(archived["id"] if archived else s["code"],
+            # One row per name too: a subject the profile lists under two codes ('Трибологија' twice).
+            row = courses.setdefault(archived["id"] if archived else fold(s["name"]),
                                      dict(name=s["name"], subj=archived, codes=[], mine=archived and mine[archived["id"]],
                                           url=book_href.get(s["code"]) or f"{STUDY_SITE}studije/predmeti/{s['code']}"))
             row["codes"].append(s["code"])
@@ -863,6 +916,7 @@ def main(db_path, out):
                 s["subj"]["teachers"].append(t)
     book = load_book(db, subjects, teachers)
     render_places(site, topics, smerovi, subjects)
+    write_feeds(site, items, subjects)
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it))
     render_teachers(site, teachers, items, book)
@@ -953,6 +1007,18 @@ if __name__ == "__main__":
                    'a.docx<span class="att__c"><em>Ocene</em></span><small>1 KiB · preuzeto 2 puta</small></span></a>'), _at
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
+    assert drop_empty_tables('<table><tr><th>Predmet</th></tr><tr><td> &nbsp;</td></tr></table><p>x</p>') == "<p>x</p>"
+    assert drop_empty_tables('<table><tr><td></td><td><b>2.11.</b></td></tr></table>').startswith("<table>")
+    assert drop_empty_tables('<h2>A</h2><div><table><td>1</td></table></div><h2>B</h2>\n<div class="l">'
+                             '<table><th>x</th><td> </td></table></div>') == '<h2>A</h2><div><table><td>1</td></table></div>\n<div class="l"></div>'
+    assert preuzeto("(1 KiB) Downloaded 1 time, Downloaded 22 times") == "(1 KiB) preuzeto 1 puta, preuzeto 22 puta"
+    import xml.etree.ElementTree as ET
+    _it = dict(id="p5", num=5, title="A & <b>", posted="2026-11-08T14:39:57+00:00", who="Ђ", html="<p>x &amp; y</p>", body="",
+               subj=dict(name="Мата 1"), smer=None, thread=dict(href="/tema/3/", posts=[1, 2]))
+    _x = ET.fromstring(atom("T", "/predmet/m/", [_it]))
+    _ns = {"a": "http://www.w3.org/2005/Atom"}
+    assert _x.find("a:entry/a:link", _ns).get("href") == f"{SITE_URL}/tema/3/#p5" and _x.find("a:entry/a:title", _ns).text == "A & <b>"
+    assert _x.find("a:entry/a:content", _ns).text == "<p>x &amp; y</p>" and ET.fromstring(atom("T", "/", [])).find("a:updated", _ns) is not None
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     main(*sys.argv[1:3])

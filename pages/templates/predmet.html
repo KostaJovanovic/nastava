@@ -11,14 +11,14 @@
     <h1 id="title">{{ subj.name }}</h1>
     <button type="button" class="btn star" data-star="{{ subj.href }}" data-name="{{ subj.name }}" aria-pressed="false" title="Najnovije objave praćenih predmeta su na početnoj strani" hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Prati</span></button>
   </div>
-  <p class="mh__sub">{{ subj.topics }} {{ subj.topics | pl('objava') }} · {{ subj.count }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}</p>
+  <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('objava') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %} · <a href="{{ subj.href }}feed.xml" title="Novi postovi ovog predmeta u čitaču vesti (RSS)">RSS</a></p>
   {%- if subj.teachers %}
   <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
   {%- endif %}
 </div>
 {% call topic_rows('Objave', topics, filter=true) %}
 {#- data-scope: the header search filters the topics (site.js); Enter searches the text of this subject's posts. -#}
-<form class="fbar" data-filter data-scope="Objave predmeta" data-ph="Naslov ili autor objave; Enter traži u tekstu postova" data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
+<form class="fbar" data-filter data-scope="Objave predmeta" data-ph="Naslov ili autor; Enter: u tekstu" data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
   <label class="vh" for="f-a">Autor</label>
   {#- value: the username; pismo.js changes the option text, not the value. -#}
   <select class="field" id="f-a" name="autor" data-f="a">
