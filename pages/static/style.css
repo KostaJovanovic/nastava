@@ -135,17 +135,18 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .brand__name b { font: 800 20px/1.1 var(--sans); letter-spacing: .01em; }
 /* The subtitle: wide screens only (a phone has no room for it). */
 .brand__name span { display: none; color: var(--head-dim); font: 400 12px/1.4 var(--sans); white-space: nowrap; }
-/* A phone: the word only after a tap on the logo (site.js), over the start of the search; a second tap goes home. */
+/* A phone: the name only after a tap on the logo (site.js), over the rest of the bar (search, script, theme) as
+   on a wide screen; a second tap goes home. Its left edge: the header's padding, the logo and the gap. */
 @media (max-width: 759px) {
-  .brand { position: relative; }
+  .brand__mark { position: relative; z-index: 3; }
   .brand__mark svg { width: 34px; height: 34px; }
   .brand__name {
-    position: absolute; left: calc(100% + 6px); top: 50%; z-index: 2;
-    padding: 7px 14px; border: 1px solid rgba(90, 122, 147, .45); border-radius: var(--r); background: var(--head);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
-    opacity: 0; visibility: hidden; translate: -6px -50%; transition: opacity .15s, translate .15s, visibility .15s;
+    position: absolute; inset: 0 0 0 52px; z-index: 2;
+    align-content: center; padding-right: 10px; background: var(--head);
+    opacity: 0; visibility: hidden; translate: -8px 0; transition: opacity .15s, translate .15s, visibility .15s;
   }
-  .brand.is-open .brand__name { opacity: 1; visibility: visible; translate: 0 -50%; }
+  .brand__name span { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .brand.is-open .brand__name { opacity: 1; visibility: visible; translate: 0 0; }
 }
 
 .cmd {

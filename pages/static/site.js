@@ -16,8 +16,8 @@
     if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');
   });
 
-  /* The logo on a phone, where the header has no room for the word: the first tap shows "nastava" beside it for a
-     few seconds, a tap while it shows goes home (style.css .brand.is-open). */
+  /* The logo on a phone, where the header has no room for the word: the first tap shows "nastava" over the rest of
+     the bar for a few seconds, a tap while it shows goes home (style.css .brand.is-open). */
   var brand = d.querySelector('.brand'), brandT;
   if (brand && window.matchMedia) {
     brand.addEventListener('click', function (e) {
