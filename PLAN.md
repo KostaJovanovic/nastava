@@ -35,6 +35,40 @@ Workers 20k-file limits, and a public repo gets free Actions minutes.
 | `ci/state.sh`, `ci/placeholders.py`, `sync.yml` | reuse; no login secrets needed |
 | `app.py`, `common.py`, vectors, Docker | drop |
 
+## nastava attachments: size and storage (counted 2026-11-09)
+
+The `documents.size` column stays empty until the download, so these are the sizes phpBB shows next to each link
+("(45.16 KiB) Downloaded 642 times"), summed from `posts.html` (rounded, so within a few MiB).
+
+- **7.3 GiB** for 14,255 of the 14,265 ids in `documents` (10 show no size); 0.5 MiB on average.
+- Largest 66, 61, 61 MiB; none over 100 MiB, so GitHub's 2 GiB per asset is no issue.
+- Growth about 1.2 GiB a year lately.
+
+| School year | Files | MiB |
+|---|---|---|
+| 2013/14 | 117 | 41 |
+| 2014/15 | 640 | 257 |
+| 2015/16 | 663 | 258 |
+| 2016/17 | 717 | 192 |
+| 2017/18 | 742 | 227 |
+| 2018/19 | 758 | 254 |
+| 2019/20 | 1,220 | 817 |
+| 2020/21 | 1,740 | 902 |
+| 2021/22 | 1,463 | 492 |
+| 2022/23 | 1,236 | 431 |
+| 2023/24 | 1,368 | 886 |
+| 2024/25 | 1,311 | 1,362 |
+| 2025/26 | 1,955 | 1,166 |
+| 2026/27 (to Nov) | 329 | 194 |
+
+Where they go:
+
+- Local: `files/` in the repo (`documents.py`, override with `FILES`; gitignored). J: had 371 GB free.
+- Public: GitHub release assets, one release per school year, split at 1000 assets: every year from 2019/20 has
+  more than 1000, so about 21 releases. Served by the Worker's `/files/` route (dlwms `release_files.py`).
+- Not R2: 7.3 GiB fits the 10 GB free tier now but would pass it in 2–3 years.
+- The extracted text goes into `nastava.db`, which grows the `state` release asset on every sync.
+
 ## Phase 2: scrapers
 
 - nastava: walk every subforum listing (with pages) → topic ids; fetch each topic page; attachments by id. Check: per-subforum counts and board totals = stored; attachment ids 1..max.
