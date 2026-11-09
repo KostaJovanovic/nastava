@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- The link preview image, static/og.png (base.html og:image). To redo it, from pages/ (headless Edge's own
+     --screenshot cuts the bottom: its window size includes the browser's frame):
+     uv run --with playwright python -c "from playwright.sync_api import sync_playwright as s; from pathlib import Path
+     with s() as p: b = p.chromium.launch(channel='msedge'); g = b.new_page(viewport={'width': 1200, 'height': 630}); g.goto(Path('og.html').resolve().as_uri()); g.wait_for_timeout(300); g.screenshot(path='static/og.png')" -->
+<html lang="sr">
+<meta charset="utf-8">
+<style>
+@font-face { font-family: Geist; src: url(static/fonts/Geist-Regular.woff2); font-weight: 400; }
+@font-face { font-family: Geist; src: url(static/fonts/Geist-ExtraBold.woff2); font-weight: 800; }
+html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+body { font-family: Geist, sans-serif; color: #fff; background: #0076b1; position: relative; }
+/* The brand's wave, large and faint, across the whole image. */
+.wave { position: absolute; inset: 0; width: 100%; height: 100%; }
+.in { position: absolute; left: 96px; right: 96px; top: 92px; }
+.brand { display: flex; align-items: center; gap: 28px; }
+.mark { width: 112px; height: 112px; }
+h1 { font-weight: 800; font-size: 132px; letter-spacing: -4px; line-height: 1; margin: 0; }
+.sub { font-size: 38px; margin: 26px 0 0; color: #e3eff7; }
+.bar { margin-top: 56px; display: flex; align-items: center; gap: 18px; height: 84px; padding: 0 30px; border-radius: 14px;
+       background: #fff; color: #536482; font-size: 32px; box-shadow: 0 10px 30px rgb(0 0 0 / .18); }
+.bar b { margin-left: auto; font-weight: 800; color: #fff; background: #0076b1; border-radius: 9px; padding: 10px 24px; font-size: 28px; }
+.ft { position: absolute; left: 96px; right: 96px; bottom: 56px; display: flex; justify-content: space-between; font-size: 28px; color: #cfe3f0; }
+.ft b { color: #fff; font-weight: 800; }
+</style>
+<svg class="wave" viewBox="0 0 1200 630" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M-40 560c220-330 420-330 560-110s360 220 720-160" stroke="#fff" stroke-opacity=".09" stroke-width="70" fill="none" stroke-linecap="round"/>
+</svg>
+<div class="in">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#fff"/><path d="M6 24c5-12 10-12 14-4s9 8 14-4" stroke="#0076b1" stroke-width="3.6" stroke-linecap="round" fill="none"/></svg>
+    <h1>nastava</h1>
+  </div>
+  <p class="sub">Arhiva foruma nastave · Mašinski fakultet u Beogradu</p>
+  <div class="bar">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#536482" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+    Objave, rasporedi, predmeti, nastavnici…<b>Traži</b>
+  </div>
+</div>
+<div class="ft"><span>Sve objave od 2014. · ćirilica i latinica</span><b>nastava.masinci.org</b></div>
+</html>

@@ -548,10 +548,24 @@ def write(path, html, index=True, canonical=None):
     head = f'<link rel="canonical" href="{escape(url)}">'
     if index:
         urls.add(url)
+        end = fragment.rindex("</html>")
+        fragment = fragment[:end] + breadcrumbs(fragment, url) + fragment[end:]
     else:
         head += '<meta name="robots" content="noindex">'
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(fragment.replace(HEAD_END, head + HEAD_END, 1), encoding="utf-8")
+
+
+def breadcrumbs(page, url):
+    """The page's crumbs (base.html nav.crumbs) as schema.org data: Google shows the path in place of the URL."""
+    nav = re.search(r'<nav class="crumbs".*?</nav>', page, re.S)
+    here = nav and re.search(r'<span class="crumbs__here"[^>]*>(.*?)</span>', nav[0], re.S)
+    if not here:
+        return ""
+    path = [(urljoin(SITE_URL, unescape(h)), strip_tags(t)) for h, t in LINK.findall(nav[0])] + [(url, strip_tags(here[1]))]
+    # str: a str + Markup would escape the whole page.
+    return str(env.filters["ld"]({"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": i, "name": name, "item": u} for i, (u, name) in enumerate(path, 1)]}))
 
 
 def write_sitemap(site):
@@ -1397,6 +1411,11 @@ if __name__ == "__main__":
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>",
                         f'<html lang="sr"><title>T</title><meta>{HEAD_END}a</main><p></html>'), (_s, _f)
     assert desc(" a\n b ") == "a b" and desc("aaa bbb ccc", 9) == "aaa bbb…"
+    _bc = breadcrumbs('<nav class="crumbs"><a href="/"><svg></svg>Početna</a><svg></svg><a href="/smer/x/" title="A &amp; B">A &amp; B</a>'
+                      '<svg></svg><span class="crumbs__here" aria-current="page">Мата</span></nav>', f"{SITE_URL}/p/")
+    assert [(i["position"], i["name"], i["item"]) for i in json.loads(re.search(r">(.*)</script>", _bc)[1])["itemListElement"]] == [
+        (1, "Početna", f"{SITE_URL}/"), (2, "A & B", f"{SITE_URL}/smer/x/"), (3, "Мата", f"{SITE_URL}/p/")], _bc
+    assert breadcrumbs("<p>no crumbs</p>", SITE_URL) == "" and type(_bc) is str
     assert drop_empty_tables('<table><tr><th>Predmet</th></tr><tr><td> &nbsp;</td></tr></table><p>x</p>') == "<p>x</p>"
     assert drop_empty_tables('<table><tr><td></td><td><b>2.11.</b></td></tr></table>').startswith("<table>")
     assert drop_empty_tables('<h2>A</h2><div><table><td>1</td></table></div><h2>B</h2>\n<div class="l">'
