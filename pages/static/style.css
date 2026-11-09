@@ -463,6 +463,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   .mp { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
   .mp__cards { grid-template-columns: 1fr; }
   .mp__foot span { display: none; }
+  /* A picked program or year hides the rest of its row; pressing it again brings them back. */
+  :is(.mp__tabs, .mp__chips):has([aria-pressed="true"]) > [aria-pressed="false"] { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .mp[open], .mp__check, .leave[open] { animation: none !important; } }
 

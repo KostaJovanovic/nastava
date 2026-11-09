@@ -356,20 +356,20 @@
       body.appendChild(sec);
     };
     // One row of choices: the programs as tabs (the level small, above the program), the rest as chips.
-    // Nothing is picked at first; once one is, the row shows only it, and pressing it again brings the others back.
+    // Nothing is picked at first; a pick filters the cards, and pressing it again undoes it (phones then show only it).
     var row = function (level, depth) {
       var r = el('div', depth ? 'mp__chips' : 'mp__tabs'), on = path[depth] < level.length;
       level.forEach(function (n, i) {
-        if (on && i !== path[depth]) return;
         var b = el('button', 'mp__tab'), parts = depth ? [n.n] : n.n.split(' — ');
         b.type = 'button';
-        b.setAttribute('aria-pressed', on);
+        b.setAttribute('aria-pressed', on && i === path[depth]);
         if (parts[1]) b.appendChild(el('small', null, parts[0]));
         b.appendChild(el('span', null, parts[1] || parts[0]));
         badges.push([b.appendChild(el('i', 'mp__badge')), n]);
         b.addEventListener('click', function () {
+          var was = path[depth];
           path.length = depth;
-          if (!on) path[depth] = i;
+          if (i !== was) path[depth] = i;
           render();
         });
         r.appendChild(b);
@@ -400,10 +400,16 @@
         var level = data.tree, depth = 0, node = null;
         while (level.length && level[0].c.length) {
           node = row(level, depth++);
-          if (!node) return sync();
+          if (!node) break;
           level = node.c;
         }
-        level.forEach(function (g) {
+        // A row left unpicked: every subject under it, each once, by name (folded: Edge's 'sr' collation put Avionika before Adaptivne).
+        if (level.length && level[0].c.length) {
+          var all = {};
+          (function walk(x) { x.s.forEach(function (i) { all[i] = 1; }); x.c.forEach(walk); })({ s: [], c: level });
+          group('Svi predmeti', Object.keys(all).sort(function (a, b) { return fold(subj[a][1]).localeCompare(fold(subj[b][1])); })
+            .map(function (i) { return card([+i], subj[i][1], where[i]); }));
+        } else level.forEach(function (g) {
           var title = g.n || (/godina$/.test(node.n) ? 'Obavezni predmeti' : 'Predmeti');
           group(title, g.s.map(function (i) { return card([i], subj[i][1]); }));
         });
