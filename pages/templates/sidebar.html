@@ -3,7 +3,7 @@
     search form to the search page. side: the archive's counts (build.py side_panel). -#}
 <aside class="side" aria-label="Meni i filteri">
   <nav class="snav" aria-label="Stranice">
-    <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Forum</a>
+    <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Početna</a>
     <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
     <a href="/predmeti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Predmeti</a>
     {%- for slug, name in side.study_pages.items() %}
@@ -18,17 +18,28 @@
     </summary>
     <div class="filters__body">
 
-      {#- The subject picker: following a subject, as its page's star does. site.js fills it from /izbor.json (build.py
-          picker); without the script it stays hidden. The scope applies to a search once a subject is followed. -#}
+      {#- The followed subjects (as a subject page's star follows one), and the picker that adds them: a dialog that
+          site.js fills from /izbor.json (build.py picker). Without the script it stays hidden. The scope applies to a
+          search once a subject is followed. -#}
       <fieldset class="fgroup" data-izbor hidden>
         <legend class="sec">Moji predmeti <span data-moji-n></span></legend>
         <div data-moji-scope hidden>
           <label class="opt is-on"><input type="radio" name="sve" value="" form="sf" checked><i class="rb" aria-hidden="true"></i><span class="opt__name">Pretraga u mojim predmetima</span></label>
           <label class="opt"><input type="radio" name="sve" value="1" form="sf"><i class="rb" aria-hidden="true"></i><span class="opt__name">Pretraga u svim predmetima</span></label>
         </div>
-        <div class="izbor__q"><input class="field" type="search" placeholder="Predmet ili nastavnik" aria-label="Nađi predmet ili nastavnika" data-izbor-q></div>
-        <div class="izbor" data-tree></div>
+        <div class="moji__s moji__side" data-moji-list></div>
+        <div class="moji__open"><button type="button" class="btn" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg>Izaberi predmete</button></div>
       </fieldset>
+      <dialog class="mp" aria-labelledby="mp-h" data-mp>
+        <div class="mp__top">
+          <h2 id="mp-h">Moji predmeti <span class="mp__n" data-mp-n></span></h2>
+          <button type="button" class="mp__x" aria-label="Zatvori" data-mp-close><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg></button>
+        </div>
+        <div class="mp__search"><input class="field" type="search" placeholder="Nađi predmet ili nastavnika…" aria-label="Nađi predmet ili nastavnika" autocomplete="off" data-mp-q></div>
+        <div class="mp__nav" data-mp-nav></div>
+        <div class="mp__body" data-mp-body></div>
+        <div class="mp__foot"><span>Praćeni predmeti su na početnoj strani.</span><button type="button" class="btn btn--pri" data-mp-close>Gotovo</button></div>
+      </dialog>
 
       {#- Documents are not archived for now (documents.py is not run); the group shows when there are some. -#}
       {%- if side.kinds.get('dokument') %}

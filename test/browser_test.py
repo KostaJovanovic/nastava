@@ -55,15 +55,22 @@ with sync_playwright() as p:
 	page.click('.chip')  # removing the chip clears the filter: the board index again
 	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('Arhiva')")
 	assert 'autor' not in page.url, page.url
-	# The subject picker: open groups down to the first subject and tick it; a search then covers only that subject,
-	# until "all subjects" is picked.
-	tree = page.locator('[data-tree]')
-	tree.locator('summary').first.wait_for()
-	while not tree.locator('label.opt').count():
-		tree.locator('details:not([open]) > summary').first.click()
-	name = tree.locator('label.opt').first.inner_text()
-	tree.locator('label.opt').first.click()
+	# The subject picker: open it, follow the first subject of the first program's year; a search then covers only
+	# that subject, until "all subjects" is picked.
+	page.click('[data-moji-open]')
+	card = page.locator('.mp__card').first
+	name = card.inner_text()
+	card.click()
+	assert card.get_attribute('aria-pressed') == 'true' and page.inner_text('.mp__tab[aria-pressed="true"] .mp__badge') == '1'
 	assert page.evaluate("JSON.parse(localStorage.moji).length") == 1
+	# A year chip switches the cards; the search box finds a teacher, whose card follows their subjects.
+	page.locator('.mp__chips .mp__tab').nth(1).click()
+	print('picker, 2nd year:', page.locator('.mp__group h3').all_inner_texts())
+	page.fill('[data-mp-q]', 'mladenovic')
+	print('picker search:', page.locator('.mp__card .mp__name').all_inner_texts()[:4])
+	page.fill('[data-mp-q]', '')
+	page.click('.mp__foot [data-mp-close]')
+	assert page.locator('[data-moji-list] .chip').count() == 1
 	page.goto(f'{base}/?from=2014')  # the year field's min: an invalid form is not submitted
 	page.wait_for_function(done)
 	page.wait_for_load_state('networkidle')

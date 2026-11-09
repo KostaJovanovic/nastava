@@ -79,9 +79,10 @@ nh3 (`clean_html`). Pages: home (smerovi), `/smer/<smer>/`, `/predmet/<smer>/<su
 several posts), `/item/<id>/` (one post; this is what Pagefind indexes), `/nastavnici/` and `/nastavnik/<name>/`,
 schedule pages (the newest at `/studije/<slug>/`, each older version at `/studije/<slug>/<date>-<sha>/` with the files
 as they were then). Each subject page has a `novo.json` beside it (its newest topic rows), which `site.js` merges into
-"Moji predmeti" on the home page for the subjects a browser follows (a star, kept in localStorage). The side panel's picker (`/izbor.json`, `picker()`:
-the plans by level, program, module and year of study, plus teachers) follows subjects the same way, and a search then
-covers only those (Pagefind filter `pid`; `?sve=1` searches all). Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
+"Moji predmeti" on the home page for the subjects a browser follows (a star, kept in localStorage). The side panel lists them and opens a picker dialog
+(`/izbor.json`, `picker()`: program tabs, module and year chips, then the year's required subjects and each elective
+block as cards, plus a teacher/subject search) that follows subjects the same way; a search then covers only those
+(Pagefind filter `pid`; `?sve=1` searches all). Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
 appended); templates link with `.href`, never build these paths themselves. A forum author is linked to a teacher when
 the username equals the teacher's e-mail before `@`; a teacher's profile subject is matched to the board by code, or by
 name when they posted in a subject of that name.

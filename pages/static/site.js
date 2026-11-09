@@ -134,7 +134,7 @@
 
   /* The header search in the page's context: [data-scope] names it and has the bar's placeholder (data-ph). On a
      list page ([data-filter], above) the bar filters the list; data-people lists matching teachers under the bar;
-     data-enter is where Enter goes, with q= appended. A chip before the text names the context: its ×, or Backspace
+     data-enter is where Enter goes, with q= appended. A chip after the text names the context: its ×, or Backspace
      in an empty bar, leaves it for the search of the whole archive. */
   if (scope) {
     var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
@@ -145,11 +145,13 @@
     chip.setAttribute('aria-label', scope.dataset.scope + ': ukloni, pretraži celu arhivu');
     chip.innerHTML = '<span></span><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg>';
     chip.firstChild.textContent = scope.dataset.scope;
-    q.parentNode.insertBefore(chip, q);
+    q.after(chip);
+    sf.classList.add('is-scoped');
     attr(q, 'placeholder', scope.dataset.ph);
     leaveScope = function () {
       scope = null;
       chip.remove();
+      sf.classList.remove('is-scoped');
       if (list) list.hidden = true;
       attr(q, 'placeholder', ph);
       if (dropFind) dropFind();
@@ -230,99 +232,10 @@
     d.addEventListener('moji', showStar);
   }
 
-  /* The subject picker in the side panel (sidebar.html; /izbor.json from build.py picker): the plans as a tree whose
-     groups render when first opened, or, while the box has text, the teachers and subjects that match it. Ticking a
-     subject follows it; ticking a teacher follows all their subjects (checked: all followed, mixed: some). */
-  var iz = d.querySelector('[data-izbor]');
-  if (iz && izbor) izbor.then(function (data) {
-    var subj = data.subjects, tree = iz.querySelector('[data-tree]'), q = iz.querySelector('[data-izbor-q]');
-    var hits = d.createElement('div');
-    hits.className = 'izbor';
-    hits.hidden = true;
-    tree.parentNode.appendChild(hits);
-    var opt = function (ids, name, hint) {
-      var l = d.createElement('label'), c = d.createElement('input'), s = d.createElement('span');
-      l.className = 'opt';
-      c.type = 'checkbox';
-      c.dataset.ids = ids.join(',');
-      s.className = 'opt__name';
-      s.textContent = name;
-      if (hint) { var h = d.createElement('small'); h.textContent = hint; s.appendChild(h); }
-      l.appendChild(c);
-      l.insertAdjacentHTML('beforeend', '<i class="cb" aria-hidden="true"></i>');
-      l.appendChild(s);
-      return l;
-    };
-    var sync = function () {
-      var list = mine(), on = {};
-      list.forEach(function (s) { on[s.href] = 1; });
-      [].forEach.call(iz.querySelectorAll('input[data-ids]'), function (c) {
-        var ids = c.dataset.ids.split(','), k = ids.filter(function (i) { return on[subj[i][0]]; }).length;
-        c.checked = k === ids.length;
-        c.indeterminate = k > 0 && k < ids.length;
-      });
-      iz.querySelector('[data-moji-n]').textContent = list.length || '';
-      iz.querySelector('[data-moji-scope]').hidden = !list.length;
-    };
-    iz.addEventListener('change', function (e) {
-      if (!e.target.dataset.ids) return;
-      var ids = e.target.dataset.ids.split(','), hrefs = ids.map(function (i) { return subj[i][0]; });
-      var list = mine().filter(function (s) { return hrefs.indexOf(s.href) < 0; });
-      keepMine(e.target.checked ? list.concat(ids.map(function (i) { return { href: subj[i][0], name: subj[i][1] }; })) : list);
-    });
-    var group = function (node, parent) {
-      var g = d.createElement('details'), sum = d.createElement('summary');
-      g.className = 'izbor__g';
-      sum.textContent = node.n;
-      g.appendChild(sum);
-      g.addEventListener('toggle', function () {
-        if (!g.open || g.children.length > 1) return;
-        node.c.forEach(function (k) { group(k, g); });
-        node.s.forEach(function (i) { g.appendChild(opt([i], subj[i][1])); });
-        sync();
-      });
-      parent.appendChild(g);
-    };
-    data.tree.forEach(function (n) { group(n, tree); });
-    // A search hit's place, under its name: the first place of the subject in the tree.
-    var where = {};
-    var walk = function (nodes, path) {
-      nodes.forEach(function (n) {
-        var p = path.concat([n.n]);
-        n.s.forEach(function (i) { where[i] = where[i] || p.join(' › '); });
-        walk(n.c, p);
-      });
-    };
-    walk(data.tree, []);
-    q.addEventListener('input', function () {
-      var w = fold(q.value.trim()).split(/\s+/).filter(Boolean);
-      var has = function (s) { s = fold(s); return w.every(function (x) { return s.indexOf(x) > -1; }); };
-      var out = [];
-      tree.hidden = !!w.length;
-      hits.hidden = !w.length;
-      hits.textContent = '';
-      if (!w.length) return;
-      data.teachers.forEach(function (t) {
-        var n = t[1].length;
-        if (has(t[0])) out.push(opt(t[1], t[0], n + (n % 10 === 1 && n % 100 !== 11 ? ' predmet' : ' predmeta')));
-      });
-      subj.forEach(function (s, i) { if (has(s[1])) out.push(opt([i], s[1], where[i])); });
-      // shortcut: the first 50 hits only; a longer word narrows them.
-      out.slice(0, 50).forEach(function (l) { hits.appendChild(l); });
-      if (!out.length) hits.innerHTML = '<p class="izbor__none">Nema takvog predmeta ni nastavnika.</p>';
-      sync();
-    });
-    iz.hidden = false;
-    sync();
-    d.addEventListener('moji', sync);
-  }).catch(function () {});
-  var fillMine = function () {
-    var sec = d.getElementById('moji'), list = mine();
-    if (!sec) return;
-    sec.hidden = !list.length;
-    var names = sec.querySelector('.moji__s');
-    names.textContent = '';
-    list.forEach(function (s) {
+  /* The followed subjects as chips, each a link with its × (the home page's "Moji predmeti", the side panel). */
+  var chipsOf = function (box) {
+    box.textContent = '';
+    mine().forEach(function (s) {
       var chip = d.createElement('span'), a = d.createElement('a'), x = d.createElement('button');
       chip.className = 'chip';
       a.href = s.href;
@@ -335,8 +248,148 @@
       });
       chip.appendChild(a);
       chip.appendChild(x);
-      names.appendChild(chip);
+      box.appendChild(chip);
     });
+  };
+
+  /* "Moji predmeti": the side panel lists the followed subjects, and its button opens a dialog to pick them
+     (sidebar.html; /izbor.json from build.py picker). The dialog has a tab per program, a row of chips per level under
+     it (a master's module, a year), and the year's subjects as cards: the required ones, then each elective block.
+     Each tab and chip counts the followed subjects under it. Text in its box shows the matching teachers and subjects
+     instead. A card follows its subject; a teacher's card follows all their subjects (pressed: all, mixed: some). */
+  var iz = d.querySelector('[data-izbor]'), mp = d.querySelector('[data-mp]');
+  if (iz && mp && mp.showModal && izbor) izbor.then(function (data) {
+    var subj = data.subjects, path = [], badges = [];
+    var nav = mp.querySelector('[data-mp-nav]'), body = mp.querySelector('[data-mp-body]'), mq = mp.querySelector('[data-mp-q]');
+    var el = function (tag, cls, text) {
+      var e = d.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    };
+    var followed = function () { var o = {}; mine().forEach(function (s) { o[s.href] = 1; }); return o; };
+    // The followed subjects under a node, each once (a subject can be in several of its groups).
+    var count = function (node, o) {
+      var seen = {};
+      (function walk(x) {
+        x.s.forEach(function (i) { if (o[subj[i][0]]) seen[i] = 1; });
+        x.c.forEach(walk);
+      })(node);
+      return Object.keys(seen).length;
+    };
+    // A search hit's place, under its name: the subject's first place in the plans.
+    var where = {};
+    (function walk(nodes, names) {
+      nodes.forEach(function (n) {
+        var p = n.n ? names.concat([n.n]) : names;
+        n.s.forEach(function (i) { where[i] = where[i] || p.join(' › '); });
+        walk(n.c, p);
+      });
+    })(data.tree, []);
+    var card = function (ids, name, hint) {
+      var b = el('button', 'mp__card');
+      b.type = 'button';
+      b.dataset.ids = ids.join(',');
+      b.appendChild(el('span', 'mp__check')).setAttribute('aria-hidden', 'true');
+      var t = b.appendChild(el('span', 'mp__name', name));
+      if (hint) t.appendChild(el('small', null, hint));
+      return b;
+    };
+    var group = function (title, list) {
+      var sec = el('section', 'mp__group'), grid = el('div', 'mp__cards');
+      sec.appendChild(el('h3', null, title)).appendChild(el('span', null, ' · ' + list.length));
+      list.forEach(function (c) { grid.appendChild(c); });
+      sec.appendChild(grid);
+      body.appendChild(sec);
+    };
+    // One row of choices: the programs as tabs (the level small, above the program), the rest as chips.
+    var row = function (level, depth) {
+      var r = el('div', depth ? 'mp__chips' : 'mp__tabs');
+      if (!(path[depth] < level.length)) path[depth] = 0;
+      level.forEach(function (n, i) {
+        var b = el('button', 'mp__tab'), parts = depth ? [n.n] : n.n.split(' — ');
+        b.type = 'button';
+        b.setAttribute('aria-pressed', i === path[depth]);
+        if (parts[1]) b.appendChild(el('small', null, parts[0]));
+        b.appendChild(el('span', null, parts[1] || parts[0]));
+        badges.push([b.appendChild(el('i', 'mp__badge')), n]);
+        b.addEventListener('click', function () {
+          path[depth] = i;
+          path.length = depth + 1;
+          render();
+        });
+        r.appendChild(b);
+      });
+      nav.appendChild(r);
+      return level[path[depth]];
+    };
+    var render = function () {
+      var w = fold(mq.value.trim()).split(/\s+/).filter(Boolean);
+      var has = function (s) { s = fold(s); return w.every(function (x) { return s.indexOf(x) > -1; }); };
+      nav.textContent = '';
+      body.textContent = '';
+      badges = [];
+      nav.hidden = !!w.length;
+      if (w.length) {
+        // shortcut: the first 12 teachers and 48 subjects only; a longer word narrows them.
+        var ts = data.teachers.filter(function (t) { return has(t[0]); }).slice(0, 12).map(function (t) {
+          var n = t[1].length;
+          return card(t[1], t[0], n + (n % 10 === 1 && n % 100 !== 11 ? ' predmet' : ' predmeta'));
+        });
+        var ss = [];
+        subj.forEach(function (s, i) { if (ss.length < 48 && has(s[1])) ss.push(card([i], s[1], where[i])); });
+        if (ts.length) group('Nastavnici', ts);
+        if (ss.length) group('Predmeti', ss);
+        if (!ts.length && !ss.length) body.appendChild(el('p', 'mp__none', 'Nema takvog predmeta ni nastavnika.'));
+      } else {
+        // A row per level down to the groups, whose nodes have no children.
+        var level = data.tree, depth = 0, node = null;
+        while (level.length && level[0].c.length) {
+          node = row(level, depth++);
+          level = node.c;
+        }
+        level.forEach(function (g) {
+          var title = g.n || (/godina$/.test(node.n) ? 'Obavezni predmeti' : 'Predmeti');
+          group(title, g.s.map(function (i) { return card([i], subj[i][1]); }));
+        });
+      }
+      sync();
+    };
+    var sync = function () {
+      var o = followed(), n = mine().length;
+      [].forEach.call(mp.querySelectorAll('[data-ids]'), function (b) {
+        var ids = b.dataset.ids.split(','), k = ids.filter(function (i) { return o[subj[i][0]]; }).length;
+        b.setAttribute('aria-pressed', k === ids.length ? 'true' : k ? 'mixed' : 'false');
+      });
+      badges.forEach(function (x) { x[0].textContent = count(x[1], o) || ''; });
+      mp.querySelector('[data-mp-n]').textContent = n || '';
+      iz.querySelector('[data-moji-n]').textContent = n || '';
+      iz.querySelector('[data-moji-scope]').hidden = !n;
+      chipsOf(iz.querySelector('[data-moji-list]'));
+    };
+    mp.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-ids]');
+      // The dialog itself is the target only on its backdrop: its parts cover all of it.
+      if (!b) { if (e.target === mp || e.target.closest('[data-mp-close]')) mp.close(); return; }
+      var ids = b.dataset.ids.split(','), hrefs = ids.map(function (i) { return subj[i][0]; });
+      var list = mine().filter(function (s) { return hrefs.indexOf(s.href) < 0; });
+      keepMine(b.getAttribute('aria-pressed') === 'true' ? list
+        : list.concat(ids.map(function (i) { return { href: subj[i][0], name: subj[i][1] }; })));
+    });
+    mq.addEventListener('input', render);
+    iz.querySelector('[data-moji-open]').addEventListener('click', function () {
+      render();
+      mp.showModal();
+    });
+    iz.hidden = false;
+    sync();
+    d.addEventListener('moji', sync);
+  }).catch(function () {});
+  var fillMine = function () {
+    var sec = d.getElementById('moji'), list = mine();
+    if (!sec) return;
+    sec.hidden = !list.length;
+    chipsOf(sec.querySelector('.moji__s'));
     Promise.all(list.map(function (s) {
       return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
         .catch(function () { return { rows: [] }; });

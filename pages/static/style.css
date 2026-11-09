@@ -154,9 +154,10 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   font: 400 13px var(--sans); cursor: pointer;
 }
 .cmd__go:hover { background: var(--go-2); }
-/* The search's context on a list page (site.js): a chip before the text, whose × leaves it for the whole archive;
-   on a teacher's page, the matching teachers under the bar. */
+/* The search's context on a list page (site.js): a chip after the text, in place of the / hint, whose × leaves it
+   for the whole archive; on a teacher's page, the matching teachers under the bar. */
 .cmd { position: relative; }
+.cmd.is-scoped kbd { display: none; }
 .cmd__scope {
   display: inline-flex; align-items: center; gap: 4px; flex: none; max-width: 45%;
   height: 26px; padding: 0 6px 0 10px;
@@ -275,32 +276,83 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .opt input:checked + .rb { border-color: var(--accent); }
 .opt input:checked + .rb::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
-/* Check marks (the subject picker): mixed for a teacher with some of their subjects followed. */
-.cb { width: 14px; height: 14px; flex: none; display: grid; place-items: center; border: 1.5px solid var(--slate); border-radius: 3px; }
-.opt input:checked + .cb, .opt input:indeterminate + .cb { border-color: var(--accent); background: var(--accent); }
-.opt input:checked + .cb::after { content: ""; width: 3px; height: 7px; margin-top: -2px; border: solid var(--card); border-width: 0 2px 2px 0; transform: rotate(45deg); }
-.opt input:indeterminate + .cb::after { content: ""; width: 7px; height: 2px; background: var(--card); }
+/* "Moji predmeti" in the side panel: the followed subjects and the button that opens the picker. */
+.moji__side { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 8px; border: 0; }
+.moji__side:empty { display: none; }
+.moji__open { padding: 0 16px; }
+.moji__open .btn { width: 100%; min-height: 34px; font-size: 13.5px; }
 
-/* The subject picker: level > program > (module >) year, each a group that opens; a search hit's place under it. */
-.izbor__q { padding: 0 16px 6px; }
-.izbor__q .field { height: 32px; }
-.izbor__g > summary {
-  display: flex; align-items: center; gap: 8px;
-  min-height: 25px; padding: 0 16px;
-  color: var(--text); font-size: 13.5px;
-  cursor: pointer; list-style: none;
+/* The picker dialog (site.js): program tabs, then chips for the module and the year, then the subjects as cards.
+   Its parts cover the whole dialog, so a click on the dialog itself is a click on the backdrop (it closes). */
+.mp {
+  width: min(940px, 100vw - 32px); height: min(760px, 100dvh - 48px); max-width: none; max-height: none;
+  padding: 0; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--paper); color: var(--text);
 }
-.izbor__g > summary::-webkit-details-marker { display: none; }
-.izbor__g > summary::before { content: ""; width: 5px; height: 5px; flex: none; margin: 0 2px; border: solid var(--slate); border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; }
-.izbor__g[open] > summary::before { transform: rotate(45deg); }
-.izbor__g > summary:hover { background: var(--hover); }
-.izbor__g > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.izbor__g > .izbor__g, .izbor__g > .opt { margin-left: 12px; }
-.izbor .opt { align-items: flex-start; padding-block: 3px; }
-.izbor .opt .cb { margin-top: 2px; }
-.izbor .opt__name { white-space: normal; }
-.opt__name small { display: block; color: var(--dim); font-size: 11.5px; font-weight: 400; }
-.izbor__none { margin: 0; padding: 0 16px; color: var(--dim); font-size: 13px; }
+.mp[open] { display: flex; flex-direction: column; animation: mp-in .18s ease-out; }
+.mp::backdrop { background: rgba(1, 19, 33, .5); backdrop-filter: blur(2px); }
+@keyframes mp-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+.mp__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 10px; }
+.mp__top h2 { display: flex; align-items: center; gap: 8px; color: var(--fg); font: 800 19px/1.2 var(--sans); }
+.mp__n { min-width: 24px; padding: 0 7px; border-radius: 999px; background: var(--accent); color: var(--accent-fg); font-size: 13px; line-height: 24px; text-align: center; }
+.mp__n:empty { display: none; }
+.mp__x { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: var(--card); color: var(--fg); cursor: pointer; }
+.mp__x:hover { border-color: var(--accent); color: var(--accent); }
+.mp__x .i { width: 16px; height: 16px; }
+.mp__search { padding: 0 20px 12px; }
+.mp__nav { display: grid; gap: 10px; padding: 0 20px 12px; border-bottom: 1px solid var(--line); }
+.mp__tabs, .mp__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mp__tab {
+  position: relative; display: grid; text-align: left;
+  padding: 7px 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); color: var(--fg); font: 800 14px/1.25 var(--sans); cursor: pointer;
+  transition: border-color .12s, background .12s, transform .12s;
+}
+.mp__tab small { color: var(--dim); font-size: 11px; font-weight: 400; }
+.mp__tab:hover { border-color: var(--accent); transform: translateY(-1px); }
+.mp__tab[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
+.mp__tab[aria-pressed="true"] small { color: inherit; opacity: .85; }
+.mp__chips .mp__tab { padding: 5px 13px; border-radius: 999px; font-size: 13px; font-weight: 400; }
+.mp__chips .mp__tab[aria-pressed="true"] { font-weight: 800; }
+/* How many followed subjects are under a tab or chip. */
+.mp__badge {
+  position: absolute; top: -7px; right: -7px; min-width: 19px; padding: 0 5px;
+  border: 2px solid var(--card); border-radius: 999px; background: var(--accent); color: var(--accent-fg);
+  font: 800 11px/15px var(--sans); font-style: normal; text-align: center;
+}
+.mp__badge:empty { display: none; }
+.mp__tab[aria-pressed="true"] .mp__badge { background: var(--fg); color: var(--card); }
+.mp__body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 20px 20px; }
+.mp__group h3 { margin: 16px 0 8px; color: var(--fg); font: 800 14.5px var(--sans); }
+.mp__group h3 span { color: var(--dim); font-weight: 400; }
+.mp__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.mp__card {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); color: var(--fg); font: 400 14px/1.3 var(--sans); text-align: left; cursor: pointer;
+  transition: border-color .12s, background .12s, transform .12s;
+}
+.mp__card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.mp__card:active { transform: scale(.97); }
+.mp__card:focus-visible, .mp__tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mp__card[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+.mp__card[aria-pressed="mixed"] { border-color: var(--accent); border-style: dashed; }
+.mp__check { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border: 1.5px solid var(--slate); border-radius: 50%; }
+.mp__card[aria-pressed="true"] .mp__check, .mp__card[aria-pressed="mixed"] .mp__check { border-color: var(--accent); background: var(--accent); animation: mp-pop .25s ease-out; }
+.mp__card[aria-pressed="true"] .mp__check::after { content: ""; width: 4px; height: 8px; margin-top: -2px; border: solid var(--accent-fg); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.mp__card[aria-pressed="mixed"] .mp__check::after { content: ""; width: 8px; height: 2px; background: var(--accent-fg); }
+@keyframes mp-pop { 0% { transform: scale(.5); } 60% { transform: scale(1.18); } }
+.mp__name { min-width: 0; overflow-wrap: anywhere; }
+.mp__name small { display: block; margin-top: 2px; color: var(--dim); font-size: 12px; }
+.mp__none { margin: 16px 0; color: var(--dim); }
+.mp__foot span { margin-right: auto; }
+.mp__foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--dim); font-size: 13px; }
+@media (max-width: 600px) {
+  .mp { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+  .mp__cards { grid-template-columns: 1fr; }
+  .mp__foot span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .mp[open], .mp__check { animation: none !important; } }
 
 /* Posts per year, above the year fields (whose placeholders are the first and the last year). */
 .hist { display: flex; align-items: flex-end; gap: 2px; height: 28px; margin: 0 16px 8px; }
