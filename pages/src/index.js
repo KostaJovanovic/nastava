@@ -41,12 +41,50 @@ export function join(shell, fragment) {
 	return shell.replace("<title></title>", () => title).replace("<!--main-->", () => main);
 }
 
+// Web push: a browser's subscription with its followed subjects (site.js), in KV (binding PUSH): the key is the
+// push service's endpoint, the value {k, a, s} its keys and the subjects' hrefs. ci/push.py reads them all with the
+// secret PUSH_KEY and sends; an endpoint the service no longer knows it drops with s = [] as a browser does.
+// Only the browsers' push services: ci/push.py posts to these URLs.
+const PUSH_HOST = /^https:\/\/([a-z0-9-]+\.)*(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)\//;
+const SUBJECT = /^\/predmet\/[a-z0-9-]+\/[a-z0-9-]+\/$/;
+const B64URL = /^[A-Za-z0-9_-]{1,200}$/;
+
+async function push(request, env, url) {
+	const status = (code) => new Response(null, { status: code });
+	if (!env.PUSH) return status(503);
+	if (url.pathname === "/push/subs") {
+		if (!env.PUSH_KEY || request.headers.get("Authorization") !== `Bearer ${env.PUSH_KEY}`) return status(403);
+		// 500 a call (a KV read each, under the 1000 a Worker call may make); ci/push.py asks again with the cursor.
+		const page = await env.PUSH.list({ limit: 500, cursor: url.searchParams.get("cursor") || undefined });
+		const subs = await Promise.all(page.keys.map(async (k) => ({ endpoint: k.name, ...(await env.PUSH.get(k.name, "json")) })));
+		return Response.json({ subs, cursor: page.list_complete ? null : page.cursor });
+	}
+	if (request.method !== "POST") return status(405);
+	let body;
+	try {
+		body = await request.json();
+	} catch (e) {
+		return status(400);
+	}
+	const { endpoint, keys, s } = body || {};
+	if (typeof endpoint !== "string" || endpoint.length > 500 || !PUSH_HOST.test(endpoint) || !Array.isArray(s)) return status(400);
+	if (!s.length) {
+		await env.PUSH.delete(endpoint);
+		return status(204);
+	}
+	if (!B64URL.test(keys?.p256dh) || !B64URL.test(keys?.auth) || s.length > 300 || !s.every((h) => SUBJECT.test(h))) return status(400);
+	await env.PUSH.put(endpoint, JSON.stringify({ k: keys.p256dh, a: keys.auth, s }));
+	return status(204);
+}
+
 export default {
 	async fetch(request, env, ctx) {
+		const url = new URL(request.url);
+		// Before the cache: these are not pages.
+		if (url.pathname === "/push" || url.pathname === "/push/subs") return push(request, env, url);
 		if (request.method !== "GET" && request.method !== "HEAD") {
 			return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
 		}
-		const url = new URL(request.url);
 		const key = new Request(url.toString());
 		const cached = await caches.default.match(key);
 		if (cached) {

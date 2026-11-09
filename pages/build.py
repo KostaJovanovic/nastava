@@ -368,11 +368,16 @@ def render_places(site, topics, smerovi, subjects):
             write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t))
 
 
+def post_href(it):
+    """A post's place: its anchor in a topic of several posts, else its own page."""
+    return f"{it['thread']['href']}#p{it['num']}" if len(it["thread"]["posts"]) > 1 else f"/item/{it['id']}/"
+
+
 def atom(title, path, posts):
     """An Atom feed of the newest posts (newest first) for a feed reader: the whole board or one subject. A reader
     needs whole URLs, so they are on the main domain."""
     def entry(it):
-        href = f"{it['thread']['href']}#p{it['num']}" if len(it["thread"]["posts"]) > 1 else f"/item/{it['id']}/"
+        href = post_href(it)
         place = (it["subj"] and it["subj"]["name"]) or (it["smer"] and it["smer"]["label"])
         return (f"<entry><title>{escape(it['title'] or '')}</title><link href=\"{SITE_URL}{escape(href)}\"/>"
                 f"<id>{SITE_URL}/item/{it['id']}/</id><updated>{it['posted']}</updated>"
@@ -398,6 +403,11 @@ def write_feeds(site, items, subjects):
         if s["count"]:
             (site / s["href"].strip("/") / "feed.xml").write_text(atom(f"{s['name']} · forum nastave", s["href"], of[s["id"]]),
                                                                   encoding="utf-8")
+    # The subjects' newest posts, next to the site (not on it), for ci/push.py: it notifies those newer than a post id.
+    # shortcut: the newest 1000 only; a scrape that brings more new posts notifies only these.
+    (site.parent / "push.json").write_text(json.dumps(
+        [dict(id=int(it["id"][1:]), s=it["subj"]["href"], n=it["subj"]["name"], t=it["title"] or "", u=post_href(it))
+         for it in posts if it["subj"]][:1000], ensure_ascii=False), encoding="utf-8")
 
 
 def strip_tags(html):

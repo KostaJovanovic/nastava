@@ -1,0 +1,9 @@
+{
+ "name": "Arhiva nastave · Mašinski fakultet",
+ "short_name": "Nastava",
+ "start_url": "/",
+ "display": "standalone",
+ "background_color": "#ffffff",
+ "theme_color": "#0076b1",
+ "icons": [{"src": "/static/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]
+}

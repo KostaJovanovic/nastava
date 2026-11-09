@@ -8,6 +8,8 @@ __pycache__/
 test/*.png
 test/dom.html
 .wrangler/
+# The web push keys (ci/push.py keys): keep a copy elsewhere, never commit.
+push-secret.json
 # Phase 1 probes and Omar's dlwms (the base of this repo), local only.
 recon/
 ref/

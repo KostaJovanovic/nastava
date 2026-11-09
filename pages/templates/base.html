@@ -12,6 +12,8 @@
 <script src="/static/head.js"></script>
 <script type="speculationrules">{"prerender": [{"where": {"href_matches": ["/item/*", "/tema/*", "/predmet/*", "/smer/*", "/nastavnik/*", "/predmeti/*", "/raspored/", "/statistika/"]}, "eagerness": "moderate"}]}</script>
 <link rel="icon" href="/static/favicon.svg">
+{#- Standalone from a phone's home screen: an iPhone has web push only there (site.js). -#}
+<link rel="manifest" href="/static/manifest.webmanifest">
 <link rel="alternate" type="application/atom+xml" href="/feed.xml" title="Novi postovi na forumu nastave">
 </head>
 <body>

@@ -14,6 +14,8 @@ failed=()
 
 if [[ ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run test/parsers_test.py
+	# The newest post before the scrape: the posts after it get a web push once published (ci/push.py).
+	before=$(uv run -q ci/push.py last) || before=
 	uv run nastava.py sync
 	# Right after the scrape, so a post made since then does not count as missing.
 	uv run nastava.py stats || failed+=(stats)
@@ -39,6 +41,10 @@ gh release view site -R "$repo" --json assets -q '.assets[].name' | sort | head 
 	xargs -r -I{} gh release delete-asset site {} -R "$repo" -y
 gh workflow run deploy.yml -R "$repo"
 echo "uploaded $name ($(du -h "$tmp/$name" | cut -f1)); deploy started: gh run list -R $repo -w deploy"
+# It waits until the new posts are on the site. Without the keys (another PC, Actions) there is no push.
+if [[ -n ${before:-} && -f push-secret.json ]]; then
+	uv run -q ci/push.py send "$before" || failed+=(push)
+fi
 if ((${#failed[@]})); then
 	echo "failed: ${failed[*]} (published anyway)" >&2
 	exit 1

@@ -52,6 +52,13 @@ pipeline and site, with new scrapers for phpBB.
   and a page per post (`/item/`, what search finds). The header stays at the top; the side panel (page links,
   filters by smer and year) fits the screen beside it. A teacher's page links a search of their posts (`/?autor=`).
   Atom feeds for a feed reader: `/feed.xml` (the board's newest posts) and `feed.xml` on each subject page.
+  The side panel's "Moji predmeti" gives the followed subjects' feeds as one OPML file, and notifications.
+- Notifications (web push): the switch in "Moji predmeti" subscribes the browser (`pages/static/sw.js` shows them; an
+  iPhone only from the home screen). The Worker keeps each subscription with its subjects in KV: that is the only
+  data the site keeps about a visitor, and it goes with the switch off. After a deploy with a scrape, `ci/deploy.sh`
+  runs `ci/push.py send`: once the new posts are on the site, each browser gets one notification for those in its
+  subjects. The keys are in `push-secret.json` (git-ignored, on this PC only; a lost file means new keys and every
+  subscriber turning the switch on again).
 - `ci/deploy.sh`: scrape (with `sync`), build and publish from this PC. `ci/state.sh`: get and save `nastava.db`.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
@@ -71,6 +78,10 @@ pipeline and site, with new scrapers for phpBB.
 Then turn on GitHub Pages (source: GitHub Actions), publish the site with `bash ci/deploy.sh`, and deploy the Worker:
 
     cd pages && wrangler deploy
+
+For notifications, once: `uv run ci/push.py keys` (writes `push-secret.json`; its public key goes in `pages/static/site.js`),
+`wrangler kv namespace create PUSH` (its id into `pages/wrangler.toml`) and `wrangler secret put PUSH_KEY` (the "key"
+from `push-secret.json`), before `wrangler deploy`.
 
 When the attachments are wanted: `uv run documents.py sync`. Old .doc/.xls/.ppt files need LibreOffice (`soffice`) for their text; without it they stay pending and the next
 `uv run documents.py extract` on a machine with LibreOffice reads them.

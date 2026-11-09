@@ -412,6 +412,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .moji__open { padding: 0 16px; }
 .moji__open .btn { width: 100%; min-height: 34px; font-size: 13.5px; }
 .moji__open .btn.is-set { border-color: var(--accent); color: var(--accent-t); }
+/* Under the switches: the notifications' state, the OPML link. */
+.moji__more { margin: -4px 16px 10px; color: var(--dim); font-size: 12.5px; }
 
 /* The picker dialog (site.js): program tabs, then chips for the module and the year, then the subjects as cards.
    Its parts cover the whole dialog, so a click on the dialog itself is a click on the backdrop (it closes). */

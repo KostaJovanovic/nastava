@@ -8,3 +8,10 @@ routes = [
   { pattern = "nastava.valjdakosta.com", custom_domain = true },
   { pattern = "nastava.masinci.org", custom_domain = true }
 ]
+
+# The web push subscriptions (src/index.js). Once: npx wrangler kv namespace create PUSH, and its id here; then
+# npx wrangler secret put PUSH_KEY, with the "key" of push-secret.json (uv run ci/push.py keys).
+# Last in the file: a TOML table takes every key under it.
+[[kv_namespaces]]
+binding = "PUSH"
+id = "PUT-THE-KV-ID-HERE"

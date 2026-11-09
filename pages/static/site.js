@@ -478,6 +478,76 @@
   d.addEventListener('pocetna', fillMine);
   d.addEventListener('moji', fillMine);
 
+  /* Notifications: web push of the followed subjects' new posts. static/sw.js shows them; the Worker (/push) keeps this
+     browser's subscription with the subjects' pages, and ci/push.py sends after each deploy. Only a subject with topics
+     (/predmet/) gets posts. An iPhone has web push only for the site opened from the home screen. */
+  var PUSH_PUBLIC = 'BPumbbNmB0El3blUr_wKj4PWrpCq0b6pSakijI6H3gtrlgxAqz4abQ63IIwe9EEq50gJNhGDay-Mdb28hsUCSqE';
+  var pushBox = d.querySelector('[data-push]'), pushMsg = d.querySelector('[data-push-msg]');
+  var said = function (text) { pushMsg.textContent = text; pushMsg.hidden = !text; };
+  var withPosts = function () {
+    return mine().map(function (s) { return s.href; }).filter(function (h) { return h.indexOf('/predmet/') === 0; });
+  };
+  if (pushBox && window.PushManager && window.Notification && navigator.serviceWorker) {
+    var reg = navigator.serviceWorker.register('/static/sw.js'), pushOn = pushBox.querySelector('input');
+    var current = function () { return reg.then(function (r) { return r.pushManager.getSubscription(); }); };
+    // What the Worker has, kept here so an unchanged list is not written again (KV has a daily write limit).
+    var save = function (sub, s) {
+      var j = sub.toJSON(), body = JSON.stringify({ endpoint: j.endpoint, keys: j.keys, s: s }), was = null;
+      try { was = localStorage.getItem('push'); } catch (e) {}
+      if (body === was) return Promise.resolve();
+      return fetch('/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        try { localStorage.setItem('push', body); } catch (e) {}
+      });
+    };
+    // Also a change made just before leaving a page: the next page sends it.
+    var resave = function () { return current().then(function (sub) { if (sub) return save(sub, withPosts()); }).catch(function () {}); };
+    current().then(function (sub) {
+      pushOn.checked = !!sub && Notification.permission === 'granted';
+      pushBox.hidden = false;
+      resave();
+    }).catch(function () {});
+    var timer;
+    d.addEventListener('moji', function () {
+      // Picking subjects is many clicks: one write a few seconds after the last.
+      clearTimeout(timer);
+      timer = setTimeout(resave, 3000);
+    });
+    pushOn.addEventListener('change', function () {
+      var on = pushOn.checked;
+      said('');
+      (on ? Notification.requestPermission().then(function (p) {
+        if (p !== 'granted') throw new Error('dozvola');
+        var key = Uint8Array.from(atob(PUSH_PUBLIC.replace(/-/g, '+').replace(/_/g, '/')), function (c) { return c.charCodeAt(0); });
+        return reg.then(function (r) { return r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }); });
+      }).then(function (sub) { return save(sub, withPosts()); }).then(function () {
+        said('Stižu kad arhiva preuzme nove objave sa foruma. Sajt čuva samo adresu obaveštenja ovog pregledača i spisak predmeta.');
+      }) : current().then(function (sub) {
+        if (sub) return save(sub, []).then(function () { return sub.unsubscribe(); });
+      })).catch(function (e) {
+        pushOn.checked = !on;
+        said(e.message === 'dozvola' ? 'Pregledač ne dozvoljava obaveštenja ovom sajtu (podešavanja sajta).' : 'Nije uspelo, pokušaj ponovo.');
+        // Subscribed in the browser but not kept by the Worker: undone, so the switch shows the truth next time.
+        if (on) current().then(function (sub) { if (sub) sub.unsubscribe(); }).catch(function () {});
+      });
+    });
+  } else if (pushMsg && navigator.standalone === false) {
+    said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
+  }
+
+  /* The followed subjects' feeds as one OPML file, which a feed reader imports. Made on the click, from the list now. */
+  var opml = d.querySelector('[data-opml]');
+  if (opml) opml.addEventListener('click', function () {
+    var x = function (s) { return s.replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+    var rows = mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
+      var page = location.origin + s.href;
+      return '<outline type="rss" text="' + x(s.name) + '" xmlUrl="' + x(page + 'feed.xml') + '" htmlUrl="' + x(page) + '"/>';
+    });
+    if (opml.href.indexOf('blob:') === 0) URL.revokeObjectURL(opml.href);
+    opml.href = URL.createObjectURL(new Blob(['<?xml version="1.0" encoding="utf-8"?>\n<opml version="2.0"><head><title>Moji predmeti'
+      + ' · arhiva nastave</title></head><body>' + rows.join('') + '</body></opml>\n'], { type: 'text/x-opml' }));
+  });
+
   /* Links: a PDF opens in a new tab; a link off this site (the board, the faculty's site) first says so in a dialog,
      and opens in a new tab. A click with a modifier key (a new tab or window asked for) goes on as the browser does. */
   var leave = null;
