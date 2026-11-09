@@ -58,8 +58,17 @@
   </nav>
   {%- endblock %}
 {% block main %}{% endblock %}
+  {#- The part of the faculty's sites this page copies, for the footer's first link (site.js): set by the template, in
+      <main> since the footer is in the shell all pages share (build.py split_page). Without it, the board. -#}
+  {%- if origin %}<a hidden data-origin href="{{ origin }}"></a>{% endif %}
 </main>
 </div>
+{#- data-domain: what the dialog before the link names (site.js), as masinci.org/link does. -#}
+<footer class="ft">
+  <p><a href="https://nastava.mas.bg.ac.rs/nastava/" data-ft-origin>nastava.mas.bg.ac.rs</a> · <a href="https://masinci.org/">masinci.org</a>
+    · <a href="https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU" data-domain="kosta-onedrive.com">Veliki drajv</a></p>
+  <p>Sa ❤️ napravio <a href="https://valjdakosta.com/" data-notx>valjdakosta</a> ⛅</p>
+</footer>
 <script src="/static/pismo.js"></script>
 <script src="/static/site.js"></script>
 </body>

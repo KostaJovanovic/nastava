@@ -636,6 +636,10 @@
 
   /* Links: a PDF opens in a new tab; a link off this site (the board, the faculty's site) first says so in a dialog,
      and opens in a new tab. A click with a modifier key (a new tab or window asked for) goes on as the browser does. */
+  /* The footer's first link: the part of the faculty's sites this page copies (base.html data-origin). */
+  var orig = d.querySelector('[data-origin]'), ftOrig = d.querySelector('[data-ft-origin]');
+  if (orig && ftOrig) { ftOrig.href = orig.href; ftOrig.textContent = orig.hostname.replace(/^www\./, ''); }
+
   var leave = null;
   d.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href]');
@@ -650,7 +654,7 @@
       leave.className = 'leave';
       leave.setAttribute('aria-labelledby', 'leave-h');
       leave.innerHTML = '<div class="leave__in"><h2 id="leave-h">Napuštate arhivu</h2>'
-        + '<p>Link vodi na <b data-leave-host></b>, sajt van ove arhive. Otvoriće se u novoj kartici.</p>'
+        + '<p data-leave-say></p>'
         + '<p class="leave__url" data-leave-url data-notx></p><div class="leave__acts">'
         + '<button type="button" class="btn" data-leave-stay>Ostani</button>'
         + '<a class="btn btn--pri" data-leave-go target="_blank" rel="noopener noreferrer">Nastavi</a></div></div>';
@@ -660,7 +664,13 @@
         if (e.target === leave || e.target.closest('[data-leave-stay], [data-leave-go]')) leave.close();
       });
     }
-    leave.querySelector('[data-leave-host]').textContent = a.hostname;
+    // A link with data-domain (the footer's drive) says only that name, in masinci.org's words and buttons.
+    var named = a.getAttribute('data-domain'), say = leave.querySelector('[data-leave-say]');
+    say.innerHTML = named ? 'Ovaj link vodi na <b></b>' : 'Link vodi na <b></b>, sajt van ove arhive. Otvoriće se u novoj kartici.';
+    say.querySelector('b').textContent = named || a.hostname;
+    leave.querySelector('h2').hidden = leave.querySelector('[data-leave-url]').hidden = !!named;
+    leave.querySelector('[data-leave-stay]').textContent = named ? 'Nazad' : 'Ostani';
+    leave.querySelector('[data-leave-go]').textContent = named ? 'Potvrdi' : 'Nastavi';
     leave.querySelector('[data-leave-url]').textContent = a.href;
     leave.querySelector('[data-leave-go]').href = a.href;
     leave.showModal();

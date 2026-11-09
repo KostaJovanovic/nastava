@@ -235,9 +235,16 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 /* ---- Frame: side panel + the central column ---------------------------- */
 .frame { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 1560px; margin: 0 auto; padding: 12px; }
 .main { container: main / inline-size; flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-@media (min-width: 900px) {
-  .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px; padding: 16px 20px 28px; }
+/* The footer (base.html): under the frame, which fills the screen, so at its bottom however short the page. */
+.ft {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px;
+  width: 100%; max-width: 1560px; margin: 0 auto; padding: 0 16px 16px; color: var(--dim); font-size: 13px;
 }
+@media (min-width: 900px) { .ft { padding: 0 24px 20px; } }
+.ft a { color: inherit; }
+.ft a:hover { color: var(--accent-t); }
+@media (min-width: 900px) {
+  .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px; padding: 16px 20px 28px; }}
 
 /* ---- Side panel --------------------------------------------------------- */
 .side { min-width: 0; }
