@@ -169,14 +169,13 @@ function renderHeading(s, total) {
 		});
 		chips.append(b);
 	};
-	const active = '.filters input[form="sf"]:checked, .filters input[type="number"][form="sf"], #sf input[type="hidden"]';
+	const active = '.filters input[form="sf"]:checked, #sf input[type="hidden"]';
 	for (const input of document.querySelectorAll(active)) {
 		if (!input.value || input.name === "sve") continue;
-		const label = input.type === "number" ? `${input.name === "from" ? "od" : "do"} ${input.value}`
+		const label = input.name === "from" ? `od ${input.value}` : input.name === "to" ? `do ${input.value}`
 			: input.dataset.name ?? input.value;
 		chip(label, () => {
-			if (input.type === "number") input.value = "";
-			else if (input.type === "hidden") input.remove();
+			if (input.type === "hidden") input.remove();
 			else document.querySelector(`.filters input[name="${input.name}"][value=""]`).checked = true;
 		});
 	}
@@ -329,14 +328,12 @@ function restoreFromUrl() {
 	newest = p.get("red") === "novije";
 	for (const input of document.querySelectorAll('input[form="sf"]')) {
 		if (input.type === "radio") input.checked = input.value === (p.get(input.name) ?? "");
-		else if (input.name === "from" || input.name === "to") input.value = p.get(input.name) ?? "";
 	}
-	// A teacher, a subject or a smer has no choice in the panel: it comes from a link (a teacher's page) and stays in
-	// the form as a hidden field, shown as a chip until it is removed.
-	for (const name of ["autor", "subject", "smer"]) {
+	// A teacher, a subject, a smer or the years have no choice in the panel: they come from a link (a teacher's page,
+	// a year on /statistika/) and stay in the form as a hidden field, shown as a chip until it is removed.
+	for (const name of ["autor", "subject", "smer", "from", "to"]) {
 		for (const value of p.getAll(name)) form.append(build("input", { type: "hidden", name, value }, []));
 	}
-	// The chips above the results show the active filters (on a phone the year is at the bottom of the page).
 	return p.size > 0;
 }
 

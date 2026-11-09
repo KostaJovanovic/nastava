@@ -16,6 +16,7 @@ import subprocess
 import sys
 import unicodedata
 from collections import Counter, defaultdict
+from datetime import date
 from html import unescape
 from pathlib import Path
 from urllib.parse import quote, urljoin
@@ -43,7 +44,8 @@ env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select
 # The noun after a number: 1, 21 tema; 2, 3, 4, 22 teme; 5–20, 11–14 tema.
 FORMS = {"tema": ("tema", "teme", "tema"), "objava": ("objava", "objave", "objava"),
          "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
-         "nastavnik": ("nastavnik", "nastavnika", "nastavnika")}
+         "nastavnik": ("nastavnik", "nastavnika", "nastavnika"), "autor": ("autor", "autora", "autora"),
+         "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja")}
 
 
 def plural(n, word):
@@ -52,6 +54,8 @@ def plural(n, word):
 
 
 env.filters["pl"] = plural
+# A count as Serbian writes it: 23.692.
+env.filters["n"] = lambda n: f"{n:,}".replace(",", ".")
 # An ISO date (2026-11-08...) as the board writes it: 08.11.2026.
 env.filters["dmy"] = lambda iso: ".".join(reversed((iso or "")[:10].split("-"))) + "." if iso else ""
 # 'Катедра за математику' -> 'математику': in a list headed Katedra the prefix only repeats.
@@ -126,6 +130,14 @@ FILE_KINDS = {**dict.fromkeys(["pdf"], "pdf"), **dict.fromkeys(["doc", "docx", "
               **dict.fromkeys(["zip", "rar", "7z"], "zip"), **dict.fromkeys(["jpg", "jpeg", "png", "gif"], "img")}
 
 
+def downloads(html):
+    """A post's attachments as (attachment id, file name, downloads), from clean_html's output.
+    shortcut: the count is as the board showed it when the topic was last fetched (only changed or recent topics are
+    fetched again); re-fetch every topic now and then if fresh counts matter."""
+    return [(int(i[1]), unescape(m[2]), int(n[0]) if (n := re.search(r"\d+", m[5])) else 0)
+            for m in ATTACHMENT.finditer(html or "") if (i := re.search(r"file\.php\?id=(\d+)", m[1]))]
+
+
 def attachments(html):
     """A post's attachments as rows (style.css .att): the file's type as a badge, its name, its comment, its size and
     downloads. It runs on clean_html's output and only moves its parts, which are sanitized already; the type is
@@ -180,16 +192,17 @@ def load_items(db, place):
     for p in posts.values():
         iso, year = parse_date(p["date"], p["posted"])
         smer, subj = place.get(p["forum"], (None, None))
+        html = clean_html(p["html"])
         items.append(dict(id=f"p{p['id']}", kind="post", title=p["title"], smer=smer, subj=subj,
                           subject=subj and subj["name"], date=iso, year=year,
                           topic=p["topic"], num=p["id"], when=p["date"], posted=p["posted"] or "",
-                          author=p["author"], body=p["content"], html=attachments(clean_html(p["html"])), gone=p["gone"],
+                          author=p["author"], body=p["content"], html=attachments(html), files=downloads(html), gone=p["gone"],
                           source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}"))
     for d in docs.values():
         p = posts.get(d["post"]) or {}
         iso, year = parse_date(p.get("date"), d["uploaded_at"])
         smer, subj = place.get(p.get("forum"), (None, None))
-        items.append(dict(id=f"d{d['id']}", kind="document", title=d["title"] or d["filename"], smer=smer, subj=subj,
+        items.append(dict(id=f"d{d['id']}", kind="document", title=d["title"] or d["filename"], smer=smer, subj=subj, files=[],
                           subject=subj and subj["name"], topic=None, when=p.get("date"), posted=p.get("posted") or "",
                           date=iso, year=year, author=p.get("author"), body=(d["text"] or "")[:PAGE_TEXT], html=None,
                           source_url=f"{BASE}viewtopic.php?p={d['post']}#p{d['post']}" if d["post"] else None,
@@ -665,7 +678,97 @@ def side_panel(items):
     """The counts of the side panel (sidebar.html), the same on every page."""
     years = Counter(r["year"] for r in items if r["year"])
     return dict(total=len(items), kinds=Counter(KIND[r["kind"]] for r in items),
-                year_hist=sorted(years.items()))
+                year_hist=sorted(years.items()), downloads=sum(n for n, _ in attachment_files(items).values()))
+
+
+def attachment_files(items):
+    """{attachment id: (downloads, post)}: a file that two posts link counts once."""
+    return {f: (n, it) for it in items for f, _, n in it["files"]}
+
+
+def bars(pairs, href=None):
+    """[(label, count)] -> the rows of a bar chart (stats.html chart), each bar's height in % of the highest."""
+    top = max((n for _, n in pairs), default=0) or 1
+    return [dict(label=label, n=n, pct=round(n / top * 100, 1), href=href and href(label)) for label, n in pairs]
+
+
+def ranking(counts, row, k=10):
+    """The k highest counts as rows of a ranked list (stats.html rank); row(key) -> (label, href, note)."""
+    top = counts.most_common(k)
+    return [dict(zip(("label", "href", "note"), row(key)), n=n, pct=round(n / top[0][1] * 100, 1)) for key, n in top]
+
+
+MONTHS = "jan feb mar apr maj jun jul avg sep okt nov dec".split()
+WEEKDAYS = "pon uto sre čet pet sub ned".split()
+
+
+def archive_stats(items, topics, teachers):
+    """The numbers of /statistika/: the board by time, who posts, what is downloaded, the teachers."""
+    posts = [it for it in items if it["kind"] == "post"]
+    dated = [it for it in posts if it["date"]]
+    files = attachment_files(posts)
+    by = {}  # a ranking's key (a username or a page's href) -> an item that names it
+    tally = defaultdict(Counter)
+    for it in posts:
+        if it["author"]:
+            tally["authors"][it["author"].lower()] += 1
+            by.setdefault(it["author"].lower(), it)
+        if it["subj"]:
+            tally["subjects"][it["subj"]["href"]] += 1
+            by.setdefault(it["subj"]["href"], it)
+        if it["smer"]:
+            tally["smerovi"][it["smer"]["href"]] += 1
+            by.setdefault(it["smer"]["href"], it)
+    for fid, (n, it) in files.items():
+        tally["files"][fid] = n
+        if it["teacher"]:
+            tally["teacher_dl"][it["teacher"]["href"]] += n
+            by.setdefault(it["teacher"]["href"], it)
+        if it["subj"]:
+            tally["subject_dl"][it["subj"]["href"]] += n
+        if it["smer"]:
+            tally["smer_dl"][it["smer"]["href"]] += n
+    names = {fid: name for it in posts for fid, name, _ in it["files"]}
+    author = lambda a: (by[a]["who"], by[a]["teacher"] and by[a]["teacher"]["href"], by[a]["teacher"] and "nastavnik")
+    subject = lambda h: (by[h]["subj"]["name"], h, short_smer(by[h]["smer"]["name"]))
+    smer = lambda h: (by[h]["smer"]["label"], h, None)
+    teacher = lambda h: (by[h]["teacher"]["shown"], h, by[h]["teacher"]["title"])
+    # A file's note has its post's date too: a teacher uploads a new copy of the same name for each exam.
+    upload = lambda f: (names[f], f"/item/{files[f][1]['id']}/",
+                        " · ".join(filter(None, [files[f][1]["subject"] or files[f][1]["who"], env.filters["dmy"](files[f][1]["date"])])))
+
+    years = Counter(it["year"] for it in dated)
+    months = Counter((it["year"], int(it["date"][5:7])) for it in dated)
+    top_month = max(months.values(), default=1)
+    hours = Counter(int(m[1]) for it in posts if (m := re.search(r"(\d{1,2}):\d\d", it["when"] or "")))
+    days = Counter(date.fromisoformat(it["date"][:10]).weekday() for it in dated)
+    busiest = Counter(it["date"][:10] for it in dated).most_common(1)
+    topic = {t["href"]: t for t in topics}
+
+    listed = [t for t in teachers if not t["gone"]]
+    posting = {t["username"] for t in listed if t["username"] and t["username"] in tally["authors"]}
+    by_teachers = sum(1 for it in posts if it["teacher"])
+    return dict(
+        first=min(dated, key=lambda it: it["date"], default=None), last=max(dated, key=lambda it: it["date"], default=None),
+        totals=[(len(posts), "objava"), (len(topics), "tema"), (len(tally["authors"]), "autor"),
+                (len(tally["subjects"]), "predmet"), (len(files), "prilog"), (sum(tally["files"].values()), "preuzimanje")],
+        years=bars(sorted(years.items()), lambda y: f"/?from={y}&to={y}"),
+        heat=[dict(year=y, cells=[dict(m=MONTHS[m - 1], n=months[(y, m)], pct=round(months[(y, m)] / top_month * 100))
+                                  for m in range(1, 13)]) for y in sorted(years)],
+        hours=bars([(h, hours[h]) for h in range(24)]),
+        days=bars([(d, days[i]) for i, d in enumerate(WEEKDAYS)]),
+        busiest=busiest[0] if busiest else None,
+        authors=ranking(tally["authors"], author), subjects=ranking(tally["subjects"], subject),
+        smerovi=ranking(tally["smerovi"], smer, k=20),
+        files=ranking(tally["files"], upload), teacher_dl=ranking(tally["teacher_dl"], teacher),
+        subject_dl=ranking(tally["subject_dl"], subject), smer_dl=ranking(tally["smer_dl"], smer, k=20),
+        longest=ranking(Counter({t["href"]: len(t["posts"]) for t in topics}),
+                        lambda h: (topic[h]["title"], h, topic[h]["subj"] and topic[h]["subj"]["name"])),
+        teachers=dict(listed=len(listed), emeritus=sum(1 for t in listed if t["emeritus"]), gone=len(teachers) - len(listed),
+                      posting=len(posting), share=round(by_teachers / (len(posts) or 1) * 100),
+                      titles=[(r, n) for r in RANKS if (n := sum(1 for t in listed if t["title"] == r))],
+                      katedre=ranking(Counter(t["katedra"] for t in listed if t["katedra"]),
+                                      lambda k: (env.filters["katedra"](k).capitalize(), f"/nastavnici/?katedra={slug(k)}", None))))
 
 
 def render_home(topics, smerovi, side, n_teachers):
@@ -719,6 +822,7 @@ def main(db_path, out):
     (site / "izbor.json").write_text(json.dumps(picker(subjects, book, teachers), ensure_ascii=False, separators=(",", ":")),
                                      encoding="utf-8")
     render_study_pages(site, db)
+    write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers)), encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")
     print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['count'])} subjects, "
@@ -783,6 +887,14 @@ if __name__ == "__main__":
             '<span class="att__t att__t--pdf">PDF</span><span class="att__n">Rok &amp; B.PDF<small>58.7 KiB · preuzeto 4 puta</small>'
             '</span></a>') in _at and "<dt>Prilozi</dt>" in _at, _at
     assert attachments(None) is None and attachments("<p>x</p>") == "<p>x</p>"
+    _dl = clean_html('<dl class="file"><dt><a class="postlink" href="./download/file.php?id=11&amp;sid=b0c">R&amp;T.zip</a></dt>'
+                     '<dd><em>овде</em></dd> <dd>(45.16 KiB) Downloaded 642 times</dd></dl>'
+                     '<dl class="file"><dt><a href="./download/file.php?id=12">b.pdf</a></dt><dd>(1 KiB) Downloaded 1 time</dd></dl>')
+    assert downloads(_dl) == [(11, "R&T.zip", 642), (12, "b.pdf", 1)] and downloads(None) == [], downloads(_dl)
+    assert bars([(2014, 5), (2015, 10)], str) == [dict(label=2014, n=5, pct=50.0, href="2014"), dict(label=2015, n=10, pct=100.0, href="2015")]
+    assert ranking(Counter(a=4, b=1, c=2), lambda k: (k.upper(), None, None), k=2) == [
+        dict(label="A", href=None, note=None, n=4, pct=100.0), dict(label="C", href=None, note=None, n=2, pct=50.0)]
+    assert env.filters["n"](23692) == "23.692" and plural(642, "preuzimanje") == "preuzimanja"
     _at = attachments('<dl>\n<dt><span></span> <a href="/f?id=1" rel="x">a.docx</a></dt>\n<dd><em>Ocene</em></dd> <dd>(1 KiB) preuzeto 2 puta</dd>\n</dl>')
     assert _at == ('<a class="att" href="/f?id=1" rel="noopener noreferrer"><span class="att__t att__t--doc">DOCX</span><span class="att__n">'
                    'a.docx<span class="att__c"><em>Ocene</em></span><small>1 KiB · preuzeto 2 puta</small></span></a>'), _at

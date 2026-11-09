@@ -57,13 +57,13 @@ with sync_playwright() as p:
 	assert main_text(page) == lat, 'switching back to latin gave a different text'
 	print('back to latin: identical')
 
-	# A side panel choice on an item page opens the search with that filter.
-	page.fill('input[name="from"]', '2024')
-	page.press('input[name="from"]', 'Enter')
+	# A year on /statistika/ opens the search with that year.
+	page.goto(f'{base}/statistika/')
+	page.click('.ch--years a[href*="from=2024"]')
 	page.wait_for_url(re.compile(r'from=2024'))
 	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('rezultat')")
 	page.wait_for_load_state('networkidle')
-	print('year from an item page ->', page.url.split('?')[1][:80], '|', page.inner_text('#res-h'))
+	print('year from /statistika/ ->', page.url.split('?')[1][:80], '|', page.inner_text('#res-h'))
 	page.screenshot(path=f'{out}/pismo-search.png')
 
 	# The choice is remembered on the next page.

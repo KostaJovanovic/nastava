@@ -40,7 +40,7 @@
     window.addEventListener('hashchange', function () { pick(decodeURIComponent(location.hash.slice(1)), true); });
   }
 
-  /* Apply filters right away when a choice or a year changes. On a page other than search, this opens the search
+  /* Apply filters right away when a choice changes. On a page other than search, this opens the search
      of the whole archive: the header's text was for the page's list, so it goes. */
   d.addEventListener('change', function (e) {
     if (!e.target.matches('.filters input[form=sf]') || !sf) return;

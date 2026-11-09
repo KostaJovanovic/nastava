@@ -50,22 +50,17 @@
       {%- endif %}
     </div>
   </div>
+  {#- Posts per year as a card that opens the archive's statistics (stats.html). -#}
   <div class="filters filters--years">
-    <div class="filters__body">
-      {#- A year applies when it changes (site.js), as the other choices do. -#}
-      <fieldset class="fgroup">
-        <legend class="sec">Godina</legend>
-        {%- if side.year_hist %}
-        {%- set _mx = (side.year_hist | map(attribute=1) | max) or 1 %}
-        <div class="hist" aria-hidden="true">
-          {%- for y, c in side.year_hist %}<i style="height:{{ [2, (c / _mx * 28) | round | int] | max }}px" title="{{ y }}: {{ c }}"></i>{% endfor %}
-        </div>
-        {%- endif %}
-        <div class="years">
-          <label for="f-from">od</label><input class="field" type="number" id="f-from" name="from" min="2014" max="2100" inputmode="numeric" placeholder="{{ side.year_hist[0][0] if side.year_hist else 2014 }}" form="sf">
-          <label for="f-to">do</label><input class="field" type="number" id="f-to" name="to" min="2014" max="2100" inputmode="numeric" placeholder="{{ side.year_hist[-1][0] if side.year_hist else 'danas' }}" form="sf">
-        </div>
-      </fieldset>
-    </div>
+    <a class="hcard" href="/statistika/">
+      <span class="sec">Statistika{% if side.year_hist %} <span>{{ side.year_hist[0][0] }}–{{ side.year_hist[-1][0] }}</span>{% endif %}</span>
+      {%- if side.year_hist %}
+      {%- set _mx = (side.year_hist | map(attribute=1) | max) or 1 %}
+      <span class="hist" aria-hidden="true">
+        {%- for y, c in side.year_hist %}<i style="height:{{ [4, (c / _mx * 100) | round | int] | max }}%"></i>{% endfor %}
+      </span>
+      {%- endif %}
+      <span class="hcard__n"><span><b>{{ side.total | n }}</b> {{ side.total | pl('objava') }}</span><span><b>{{ side.downloads | n }}</b> {{ side.downloads | pl('preuzimanje') }}</span></span>
+    </a>
   </div>
 </aside>

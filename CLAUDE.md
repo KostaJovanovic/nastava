@@ -77,6 +77,9 @@ if any of them failed.
 **Site build (`pages/build.py` + `pages/templates/` + `pages/static/`):** Jinja2 templates, post HTML sanitized with
 nh3 (`clean_html`). Pages: home (smerovi), `/smer/<smer>/`, `/predmet/<smer>/<subject>/`, `/tema/<id>/` (topics with
 several posts), `/item/<id>/` (one post; this is what Pagefind indexes), `/nastavnici/` and `/nastavnik/<name>/`,
+`/statistika/` (`archive_stats()`: the board by year, month, hour and weekday, the most active authors and
+subjects, the teachers by title and katedra, the most downloaded attachments, read from each post's attachment box
+by `downloads()`; the side panel's posts-per-year card links here, and each year links to `/?from=Y&to=Y`),
 `/raspored/` (the calendar, the lecture schedule read into programs by `parse_lectures()` and shown as tabs, the exam
 schedule), and the archived schedule pages behind it (the newest at `/studije/<slug>/`, each older version at
 `/studije/<slug>/<date>-<sha>/` with the files as they were then). Each subject page has a `novo.json` beside it (its newest topic rows), which `site.js` merges into
