@@ -22,7 +22,7 @@
 {%- macro last(r, title=true, same=false) -%}
 <div class="fr__last{% if same %} fr__last--same{% endif %}">
   {%- if r %}{% if title %}<a class="lt" href="{{ post_href(r) }}">{{ r.title }}</a>{% endif %}<span>od {{ who(r) }}</span><time datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
-  {%- else %}<span>nema objava</span>{% endif -%}
+  {%- else %}<span>nema postova</span>{% endif -%}
 </div>
 {%- endmacro -%}
 
@@ -30,17 +30,18 @@
     subjects (site.js data-scope), by their folded name and teachers (build.py render_places). -#}
 {%- macro forum_rows(title, places, icon, filter=false) -%}
 <section class="fb fb--forums"{% if filter %} data-filter data-scope="Predmeti smera" data-ph="Naziv predmeta ili nastavnik…"{% endif %}>
-  <div class="fb__h"><h2>{{ title }}</h2><span>Teme</span><span>Objave</span><span>Poslednja objava</span></div>
+  <div class="fb__h"><h2>{{ title }}</h2><span>Objave</span><span>Postovi</span><span>Poslednji post</span></div>
   <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for s in places %}
-    <li class="fr"{% if filter %} data-find="{{ s.find }}"{% endif %}>
+    {#- data-pid: a subject's row, data-pids: a smer's (its subjects); hidden while only "Moji predmeti" show (head.js). -#}
+    <li class="fr"{% if filter %} data-find="{{ s.find }}"{% endif %}{% if s.pids is defined %} data-pids="{{ s.pids }}"{% elif icon == 'book' %} data-pid="{{ s.href }}"{% endif %}>
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span>
       <div class="fr__t">
         <a class="fr__a" href="{{ s.href }}">{{ s.label or s.name }}</a>
         {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
         {%- elif s.subjects is number %}<p class="fr__sub">{{ s.subjects }} {{ s.subjects | pl('predmet') }}</p>{% endif %}
       </div>
-      <div class="fr__more"><span class="fr__n" data-l="{{ s.topics | pl('tema') }}">{{ s.topics }}</span><span class="fr__n" data-l="{{ s.count | pl('objava') }}">{{ s.count }}</span>{{ last(s.last) }}</div>
+      <div class="fr__more"><span class="fr__n" data-l="{{ s.topics | pl('objava') }}">{{ s.topics }}</span><span class="fr__n" data-l="{{ s.count | pl('post') }}">{{ s.count }}</span>{{ last(s.last) }}</div>
     </li>
     {%- endfor %}
   </ol>
@@ -57,7 +58,8 @@
     build.py also renders it alone, into a subject's novo.json (the home page's "Moji predmeti"). -#}
 {%- macro topic_row(t, place=false, filter=false) -%}
 {%- set many = t.posts | length > 1 %}
-    <li class="fr"{% if filter %} data-find="{{ t.find }}" data-a="{{ t.authors }}"{% endif %}>
+    {#- place (a list across subjects): data-pid, its subject ('' for a smer's own topic), for "Moji predmeti" (head.js). -#}
+    <li class="fr"{% if filter %} data-find="{{ t.find }}" data-a="{{ t.authors }}"{% endif %}{% if place %} data-pid="{{ t.subj.href if t.subj else '' }}"{% endif %}>
       <span class="fr__i{% if many %} fr__i--many{% endif %}" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'msgs' if many else 'msg' }}"></use></svg></span>
       <div class="fr__t">
         <a class="fr__a" href="{{ t.href }}">{{ t.title }}</a>{{ gone(t) }}
@@ -69,17 +71,20 @@
     </li>
 {%- endmacro -%}
 
-{#- Topics, newest last post first. -#}
-{%- macro topic_rows(title, topics, place=false, filter=false) -%}
-<section class="fb fb--topics">
+{#- Topics, newest last post first. short: the first five, the rest after a tap on the toggle under them (a checkbox,
+    no script; style.css .fb--short, which has the five). -#}
+{%- macro topic_rows(title, topics, place=false, filter=false, short=false) -%}
+{%- set short = short and topics | length > 5 %}
+<section class="fb fb--topics{% if short %} fb--short{% endif %}">
   {%- if caller is defined %}{{ caller() }}{% endif %}
-  <div class="fb__h"><h2>{{ title }}</h2><span>Odgovori</span><span>Poslednja objava</span></div>
+  <div class="fb__h"><h2>{{ title }}</h2><span>Odgovori</span><span>Poslednji post</span></div>
   <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for t in topics %}
     {{ topic_row(t, place, filter) }}
     {%- endfor %}
   </ol>
-  {%- if filter %}<p class="empty" data-none hidden>Nema tema za ovaj filter.</p>{% endif %}
+  {%- if short %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ topics | length - 5 }}</span></label>{% endif %}
+  {%- if filter %}<p class="empty" data-none hidden>Nema objava za ovaj filter.</p>{% endif %}
 </section>
 {%- endmacro -%}
 
@@ -109,7 +114,7 @@
     <{{ h }} class="post__title"{% if h == 'h1' %} id="title"{% endif %}>{% if link %}<a href="/item/{{ r.id }}/">{{ r.title }}</a>{% else %}{{ r.title }}{% endif %}</{{ h }}>
     <p class="post__meta">od {{ who(r) }} » <time datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
       {#- In a topic: a link to this post's place in it (site.js copies it). A post gone from the board has no original. -#}
-      {%- if link %} · <a href="#p{{ r.num }}" data-copy title="Link do ove objave u temi">link</a>{% endif %}
+      {%- if link %} · <a href="#p{{ r.num }}" data-copy title="Link do ovog posta u objavi">link</a>{% endif %}
       {%- if r.gone %} · {{ gone(r) }}
       {%- elif r.source_url %} · <a href="{{ r.source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
     {% if r.html %}<div class="prose prose--html">{{ r.html | safe }}</div>

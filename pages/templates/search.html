@@ -16,13 +16,13 @@
   {#- The subjects this browser follows (a star on a subject's page) and their newest topics: site.js fills it from each
       subject's novo.json. Hidden when none is followed, or without site.js. -#}
   <section class="fb fb--topics" id="moji" hidden>
-    <div class="fb__h"><h2>Moji predmeti</h2><span>Odgovori</span><span>Poslednja objava</span></div>
-    <p class="chips moji__s"></p>
+    <div class="fb__h"><h2>Moji predmeti</h2><span>Odgovori</span><span>Poslednji post</span></div>
     <ol class="fb__rows"></ol>
+    <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu.</p>
   </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
-  {{ topic_rows('Najnovije teme', recent, place=true) }}
-  <p class="stats">Ukupno objava <b>{{ stats.posts }}</b> · tema <b>{{ stats.topics }}</b> · nastavnika <b>{{ stats.teachers }}</b> · <a href="/statistika/">statistika</a></p>
+  {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
+  <p class="stats">Ukupno postova <b>{{ stats.posts }}</b> · objava <b>{{ stats.topics }}</b> · nastavnika <b>{{ stats.teachers }}</b> · <a href="/statistika/">statistika</a></p>
 </div>
 <nav class="status" aria-label="Stranice">
   <span class="keys"><span><kbd>/</kbd> traži</span><span><kbd>j</kbd><kbd>k</kbd> kretanje</span><span><kbd><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-enter"></use></svg><span class="vh">Enter</span></kbd> otvori</span></span>

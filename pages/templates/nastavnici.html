@@ -10,8 +10,8 @@
       <a class="pc__a" href="{{ t.href }}">{{ t.shown }}</a>
       <p>{{ t.title }}</p>
       {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra }}</p>{% endif %}
-      {%- if t.gone %}<p class="pc__m">na spisku do {{ t.last_seen | dmy }}{% if t.posts %}, {{ t.posts | length }} {{ t.posts | length | pl('objava') }}{% endif %}</p>
-      {%- else %}<p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length }} {{ t.posts | length | pl('objava') }}{% endif %}</p>{% endif %}
+      {%- if t.gone %}<p class="pc__m">na spisku do {{ t.last_seen | dmy }}{% if t.posts %}, {{ t.posts | length }} {{ t.posts | length | pl('post') }}{% endif %}</p>
+      {%- else %}<p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length }} {{ t.posts | length | pl('post') }}{% endif %}</p>{% endif %}
     </div>
   </li>
 {%- endmacro %}
@@ -19,7 +19,7 @@
 {% block main %}
 <div class="mh">
   <h1 id="title">Nastavnici</h1>
-  <p class="mh__sub">Ko predaje šta, gde je kabinet i kada su konsultacije. Broj objava je sa foruma nastave.</p>
+  <p class="mh__sub">Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave.</p>
 </div>
 {#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
 <form class="people__bar" data-filter data-scope="Nastavnici" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
@@ -49,7 +49,7 @@
       <option value="">po prezimenu</option>
       <option value="n">po imenu</option>
       <option value="r">po zvanju</option>
-      <option value="-c">po broju objava</option>
+      <option value="-c">po broju postova</option>
     </select>
   </div>
 </form>

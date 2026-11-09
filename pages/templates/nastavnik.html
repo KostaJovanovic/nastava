@@ -60,8 +60,8 @@
 
 <section class="tp__sec" id="objave">
   <div class="tp__h">
-    <h2>Objave na forumu{% if t.posts %} <span>{{ t.posts | length }}</span>{% endif %}</h2>
-    {%- if t.posts %}<a href="/?autor={{ t.username | urlencode }}">Pretraži u ovim objavama</a>{% endif %}
+    <h2>Postovi na forumu{% if t.posts %} <span>{{ t.posts | length }}</span>{% endif %}</h2>
+    {%- if t.posts %}<a href="/?autor={{ t.username | urlencode }}">Pretraži u ovim postovima</a>{% endif %}
   </div>
   {%- if t.posts %}
   {%- for year, rows in t.posts | groupby('year', default=0) | reverse %}
@@ -74,7 +74,7 @@
   </ol>
   {%- endfor %}
   {%- else %}
-  <p class="tp__none">{% if t.username %}Nema objava na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
+  <p class="tp__none">{% if t.username %}Nema postova na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
   {%- endif %}
 </section>
 

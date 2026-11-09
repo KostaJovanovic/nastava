@@ -11,7 +11,7 @@
 {#- A topic of several posts, as the board's topic page. Each post also has its own page (/item/), which search finds. -#}
 <div class="mh">
   <h1 id="title">{{ t.title }}</h1>
-  <p class="mh__sub">{{ t.posts | length }} {{ t.posts | length | pl('objava') }} · poslednja <time datetime="{{ t.last.date or '' }}">{{ t.last.when }}</time></p>
+  <p class="mh__sub">{{ t.posts | length }} {{ t.posts | length | pl('post') }} · poslednji <time datetime="{{ t.last.date or '' }}">{{ t.last.when }}</time></p>
 </div>
 <div class="posts">
   {%- for r in t.posts %}

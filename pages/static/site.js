@@ -53,6 +53,23 @@
     window.addEventListener('hashchange', function () { pick(decodeURIComponent(location.hash.slice(1)), true); });
   }
 
+  /* The side panel's switch "Samo moji predmeti": on, the site shows only the followed subjects (head.js) and
+     searches only them (search.js); off ("sve" = '1' in localStorage), all. 'moji' redraws what depends on it;
+     registered first, so the others see the new state. */
+  var only = d.querySelector('[data-moji-only]');
+  d.addEventListener('moji', function () {
+    if (window.moji) window.mojiNow = window.moji();
+    var all = false;
+    try { all = localStorage.getItem('sve') === '1'; } catch (e) {}
+    if (only) only.checked = !all;
+  });
+  d.dispatchEvent(new Event('moji'));
+  if (only) only.addEventListener('change', function () {
+    try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
+    // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows.
+    d.dispatchEvent(new Event('moji'));
+  });
+
   /* Apply filters right away when a choice changes. On a page other than search, this opens the search
      of the whole archive: the header's text was for the page's list, so it goes. */
   d.addEventListener('change', function (e) {
@@ -140,6 +157,9 @@
           if (c.tagName === 'SELECT') return ('|' + have + '|').indexOf('|' + v + '|') > -1;
           return fold(v).split(/\s+/).every(function (w) { return have.indexOf(w) > -1; });
         });
+        // A subject not followed while only the followed show (head.js hides it too).
+        var m = window.mojiNow;
+        if (m && m.only && r.dataset.pid !== undefined && !m.has(r.dataset.pid)) ok = false;
         r.hidden = !ok;
         // Counted once per subject, among the rows on view.
         if (ok && (!made || made.contains(r)) && (!left || !left.contains(r))) ids[r.dataset.id || i] = 1;
@@ -182,7 +202,9 @@
     });
     var ar = bar.querySelector('[data-arrange]');
     if (ar) ar.hidden = false;
-    if (p.size) { arrange(); runRows(); }
+    if (p.size) arrange();
+    if (p.size || (window.mojiNow && window.mojiNow.only)) runRows();
+    d.addEventListener('moji', runRows);
   }
 
   /* The header search in the page's context: [data-scope] names it and has the bar's placeholder (data-ph). On a
@@ -263,7 +285,7 @@
      the home page shows their newest topics, merged from each subject's novo.json (build.py, rows as the home page's).
      shortcut: a followed subject whose URL changes (a rename) shows no rows until it is followed again. */
   var mine = function () { try { return JSON.parse(localStorage.getItem('moji')) || []; } catch (e) { return []; } };
-  // 'moji': the list changed (the star, the side panel's picker, a chip); each view of it redraws, search.js too.
+  // 'moji': the list changed (the star, the side panel's picker); each view of it redraws, search.js too.
   var keepMine = function (list) {
     try { localStorage.setItem('moji', JSON.stringify(list)); } catch (e) {}
     d.dispatchEvent(new Event('moji'));
@@ -285,25 +307,6 @@
     d.addEventListener('moji', showStar);
   }
 
-  /* The followed subjects as chips, each a link with its × (the home page's "Moji predmeti", the side panel). */
-  var chipsOf = function (box) {
-    box.textContent = '';
-    mine().forEach(function (s) {
-      var chip = d.createElement('span'), a = d.createElement('a'), x = d.createElement('button');
-      chip.className = 'chip';
-      a.href = s.href;
-      a.textContent = s.name;
-      x.type = 'button';
-      x.setAttribute('aria-label', 'Ne prati: ' + s.name);
-      x.innerHTML = '<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg>';
-      x.addEventListener('click', function () {
-        keepMine(mine().filter(function (m) { return m.href !== s.href; }));
-      });
-      chip.appendChild(a);
-      chip.appendChild(x);
-      box.appendChild(chip);
-    });
-  };
 
   /* "Moji predmeti": the side panel lists the followed subjects, and its button opens a dialog to pick them
      (sidebar.html; /izbor.json from build.py picker). The dialog has a tab per program, a row of chips per level under
@@ -344,7 +347,7 @@
       // A plan's subject with no topics on the board yet: it can be followed, it is shown muted.
       if (ids.length === 1 && subj[ids[0]][2] === 0) {
         b.classList.add('mp__card--none');
-        hint = (hint ? hint + ' · ' : '') + 'nema tema na forumu';
+        hint = (hint ? hint + ' · ' : '') + 'nema objava na forumu';
       }
       b.type = 'button';
       b.dataset.ids = ids.join(',');
@@ -431,7 +434,10 @@
       mp.querySelector('[data-mp-n]').textContent = n || '';
       iz.querySelector('[data-moji-n]').textContent = n || '';
       iz.querySelector('[data-moji-scope]').hidden = !n;
-      chipsOf(iz.querySelector('[data-moji-list]'));
+      // The followed subjects are not listed here: the button says that some are, and opens them.
+      var open = iz.querySelector('[data-moji-open]');
+      open.classList.toggle('is-set', n > 0);
+      open.querySelector('span').textContent = n ? 'Izmeni predmete' : 'Izaberi predmete';
     };
     mp.addEventListener('click', function (e) {
       var b = e.target.closest('[data-ids]');
@@ -455,7 +461,6 @@
     var sec = d.getElementById('moji'), list = mine();
     if (!sec) return;
     sec.hidden = !list.length;
-    chipsOf(sec.querySelector('.moji__s'));
     // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
     Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
@@ -465,6 +470,7 @@
       var rows = [].concat.apply([], all.map(function (j) { return j.rows; }));
       rows.sort(function (a, b) { return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0; });
       sec.querySelector('ol').innerHTML = rows.slice(0, 10).map(function (r) { return r[1]; }).join('');
+      sec.querySelector('.moji__none').hidden = rows.length > 0;
     });
   };
   fillMine();

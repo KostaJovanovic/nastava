@@ -393,11 +393,22 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .opt input:checked + .rb { border-color: var(--accent); }
 .opt input:checked + .rb::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
-/* "Moji predmeti" in the side panel: the followed subjects and the button that opens the picker. */
-.moji__side { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 8px; border: 0; }
-.moji__side:empty { display: none; }
+/* "Samo moji predmeti": one switch over the whole row. */
+.tgl { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 16px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--fg); font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.tgl:hover { background: var(--hover); }
+.tgl:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+.tgl:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
+.tgl input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.tgl__s { position: relative; flex: none; width: 32px; height: 18px; border-radius: 9px; background: var(--slate); transition: background .15s; }
+.tgl__s::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--card); transition: transform .15s; }
+.tgl input:checked + .tgl__s { background: var(--accent); }
+.tgl input:checked + .tgl__s::after { transform: translateX(14px); }
+@media (prefers-reduced-motion: reduce) { .tgl__s, .tgl__s::after { transition: none; } }
+
+/* "Moji predmeti" in the side panel: the button that opens the picker; in the accent once subjects are followed. */
 .moji__open { padding: 0 16px; }
 .moji__open .btn { width: 100%; min-height: 34px; font-size: 13.5px; }
+.moji__open .btn.is-set { border-color: var(--accent); color: var(--accent-t); }
 
 /* The picker dialog (site.js): program tabs, then chips for the module and the year, then the subjects as cards.
    Its parts cover the whole dialog, so a click on the dialog itself is a click on the backdrop (it closes). */
@@ -634,14 +645,8 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .mh__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .star { flex: none; min-height: 32px; padding: 0 12px; font-size: 13px; }
 .star[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-t); }
-/* "Moji predmeti" on the home page: the followed subjects, each with its × (site.js). */
-.moji__s { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line-2); }
-.moji__s .chip { cursor: default; padding: 0 4px 0 10px; }
-.moji__s .chip:hover { background: var(--card); color: var(--accent-t); }
-.moji__s .chip a { color: inherit; text-decoration: none; }
-.moji__s .chip a:hover { text-decoration: underline; }
-.moji__s .chip button { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; }
-.moji__s .chip button:hover { background: var(--accent); color: var(--accent-fg); }
+/* "Moji predmeti" on the home page when the followed subjects have no topics yet. */
+.moji__none { margin: 0; padding: 12px 14px; color: var(--dim); font-size: 13.5px; }
 /* A post or topic the board no longer has (the archive keeps it). */
 .gone { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent-t); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
 .post__meta .gone { margin-left: 0; }
@@ -752,6 +757,16 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 
 /* The home page's tables, or the results. */
 #res { display: grid; gap: 10px; }
+/* A short topic list (the home page's newest): five rows, the rest after a tap on the toggle (a checkbox, no
+   script; rows.html topic_rows). While only "Moji predmeti" show (head.js), the list is short already: all of it. */
+:root:not(.moji-only) .fb--short:not(:has(.fb__more input:checked)) .fb__rows > li:nth-child(n+6) { display: none; }
+.fb__more { display: flex; justify-content: center; align-items: center; min-height: 42px; border-top: 1px solid var(--line); color: var(--link); font-size: 13.5px; cursor: pointer; }
+.fb__more:hover { background: var(--hover); }
+.fb__more:has(input:checked), .moji-only .fb__more { display: none; }
+.fb__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: -2px; }
+.fb__more input { position: absolute; opacity: 0; pointer-events: none; }
+/* The home page's boxes (Moji predmeti, Studije, Najnovije objave) read as separate parts. */
+#res > .fb:not([hidden]) ~ .fb { margin-top: 14px; }
 /* A search in the URL: the board index stays hidden until the results come (search.js shown()).
    If the script never gets there, the index shows after 6 s. */
 .searching .mh, .searching #res > * { visibility: hidden; animation: reveal 0s 6s forwards; }

@@ -59,9 +59,10 @@ the two in step. A template that changes anything outside `<title>`/`<main>` per
 
 **Scrapers share one database.** `nastava.py` owns the schema for `forums`, `topics`, `posts`, `documents` and the
 `connect()`/`get()`/`session()` helpers; `documents.py` imports `nastava`. `studije.py` (`study_pages`, `study_files`),
-`nastavnici.py` (`teachers`, `teacher_subjects`) and `predmeti.py` (`subjects`, `subject_places`) each declare their own
+`nastavnici.py` (`teachers`, `teacher_subjects`, `photos`: a copy of every teacher photo, which `build.py` writes to
+`/foto/`, since the faculty removes a departed teacher's) and `predmeti.py` (`subjects`, `subject_places`) each declare their own
 tables with `create table if not exists`.
-`build.py` imports `PAGES`, `SITE`, `media_path` from `studije.py`.
+`build.py` imports `PAGES`, `SITE`, `media_path` from `studije.py` and `photo_urls` from `nastavnici.py`.
 
 **Incremental sync = completeness check.** Each phpBB forum listing shows subforum topic/post counts and the last post
 id. A forum is re-walked only when those differ from the stored walk; a topic is re-fetched only when its last post id
@@ -88,7 +89,9 @@ schedule), and the archived schedule pages behind it (the newest at `/studije/<s
 (`/izbor.json`, `picker()`: program tabs, module and year chips, then the year's required subjects and each elective
 block as cards, plus a teacher/subject search; every subject of the current plans, one without board topics linked to
 its subject book page; board subjects in no plan under "Stari predmeti") that follows subjects the same way; a search then covers only those
-(Pagefind filter `pid`; `?sve=1` searches all). Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
+(Pagefind filter `pid`). The side panel's switch "Samo moji predmeti" (localStorage `sve`, `'1'` = off) applies it to
+the whole site: rows carry `data-pid` (a subject or a topic in one) or `data-pids` (a smer), and `head.js` writes a
+style that hides the others before the first paint; off, everything shows and the search covers all. Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
 appended); templates link with `.href`, never build these paths themselves. A forum author is linked to a teacher when
 the username equals the teacher's e-mail before `@`; a teacher's profile subject is matched to the board by code, or by
 name when they posted in a subject of that name.
@@ -116,6 +119,10 @@ and queries Pagefind client-side. `site.js` is optional enhancement: every page 
 build time into rows with a file-type badge (`attachments()` in `build.py`); links in a post's text get a CSS icon.
 
 ## Conventions
+
+- UI words: a board topic is an **objava**, one post in it a **post** (`pl('objava')`, `pl('post')`); "tema" is only
+  the colour theme. URLs keep `/tema/<id>/` and `/item/<id>/`. A katedra named alone (`katedra` filter) is in the
+  nominative: 'Катедра за математику' -> 'математика'.
 
 - Python scrapers and tests are indented with tabs; `pages/build.py` uses 4 spaces. JS in `pages/static/` uses tabs
   (`site.js` uses 2 spaces). Match the file you edit.

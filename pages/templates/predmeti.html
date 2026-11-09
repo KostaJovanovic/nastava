@@ -5,20 +5,21 @@
 {#- One row of the list. The data-* are what site.js filters, groups and sorts by: k katedra, p program (Latin slugs,
     as in the URL; the filter's option has the name), n name,
     e ECTS, c forum topics, i the place in the plans. A subject in several plans (master modules) has a row in each;
-    data-id tells site.js they are one subject. -#}
+    data-id tells site.js they are one subject. data-pid: the subject as "Moji predmeti" name it (build.py picker: its
+    board page when it has topics, else this list's page), for head.js. -#}
 {% macro srow(s) -%}
-<li class="sr" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
+<li class="sr" data-pid="{{ s.forum.href if s.forum and s.forum.count else s.href }}" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
   <a class="sr__a" href="{{ s.href }}">{{ s.name }}</a>
   <span class="sr__h">{% if s.holder_t %}{{ s.holder_t.shown }}{% endif %}</span>
   <span class="sr__e">{% if s.ects %}{{ s.ects }} ESPB{% endif %}</span>
-  <span class="sr__c">{% if s.forum %}<a href="{{ s.forum.href }}" title="Teme na forumu">{{ s.forum.topics }} {{ s.forum.topics | pl('tema') }}</a>{% endif %}</span>
+  <span class="sr__c">{% if s.forum %}<a href="{{ s.forum.href }}" title="Objave na forumu">{{ s.forum.topics }} {{ s.forum.topics | pl('objava') }}</a>{% endif %}</span>
 </li>
 {%- endmacro %}
 
 {% block main %}
 <div class="mh">
   <h1 id="title">Predmeti</h1>
-  <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj tema je sa foruma nastave.</p>
+  <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj objava je sa foruma nastave.</p>
 </div>
 {#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
 <form class="people__bar subj__bar" data-filter data-scope="Predmeti" data-ph="Naziv, šifra, nastavnik, katedra, modul…" onsubmit="return false">
@@ -47,7 +48,7 @@
       <option value="">kao u planu</option>
       <option value="n">po nazivu</option>
       <option value="-e">po ESPB</option>
-      <option value="-c">po broju tema</option>
+      <option value="-c">po broju objava</option>
     </select>
   </div>
 </form>

@@ -43,12 +43,12 @@
 </ul>
 
 <section class="st">
-  <h2 class="st__h">Objave po godinama <span>godina otvara svoje objave</span></h2>
+  <h2 class="st__h">Postovi po godinama <span>godina otvara svoje postove</span></h2>
   {{ chart(st.years, "ch--n ch--years") }}
 </section>
 
 <section class="st">
-  <h2 class="st__h">Po mesecima <span>jača boja: više objava</span></h2>
+  <h2 class="st__h">Po mesecima <span>jača boja: više postova</span></h2>
   <div class="hm__wrap">
     <table class="hm">
       <thead><tr><th></th>{% for c in st.heat[0].cells %}<th scope="col">{{ c.m }}</th>{% endfor %}</tr></thead>
@@ -63,14 +63,14 @@
 
 <div class="st-two">
   <section class="st">
-    <h2 class="st__h">Doba dana <span>sat objave</span></h2>
+    <h2 class="st__h">Doba dana <span>sat posta</span></h2>
     {{ chart(st.hours, "ch--hours") }}
   </section>
   <section class="st">
     <h2 class="st__h">Dan u nedelji</h2>
     {{ chart(st.days, "ch--n") }}
     {%- if st.busiest %}
-    <p class="st__note">Najviše objava u jednom danu: <b>{{ st.busiest[1] }}</b>, {{ st.busiest[0] | dmy }}</p>
+    <p class="st__note">Najviše postova u jednom danu: <b>{{ st.busiest[1] }}</b>, {{ st.busiest[0] | dmy }}</p>
     {%- endif %}
   </section>
 </div>
@@ -79,7 +79,7 @@
 <ul class="kpi">
   <li><b>{{ st.teachers.listed }}</b><span>{{ st.teachers.listed | pl('nastavnik') }} na spisku fakulteta</span></li>
   <li><b>{{ st.teachers.posting }}</b><span>piše na forumu</span></li>
-  <li><b>{{ st.teachers.share }}%</b><span>objava su napisali nastavnici</span></li>
+  <li><b>{{ st.teachers.share }}%</b><span>postova su napisali nastavnici</span></li>
   {%- if st.teachers.gone %}<li><b>{{ st.teachers.gone }}</b><span>više nije na spisku</span></li>{% endif %}
 </ul>
 <div class="st-two">
@@ -98,13 +98,13 @@
 <h2 class="st-sec">Ko piše i gde</h2>
 <div class="st-grid">
   {{ rank("Najaktivniji autori", st.authors) }}
-  {{ rank("Predmeti sa najviše objava", st.subjects) }}
+  {{ rank("Predmeti sa najviše postova", st.subjects) }}
   {{ rank("Studije", st.smerovi) }}
-  {{ rank("Najduže teme", st.longest) }}
+  {{ rank("Najduže objave", st.longest) }}
 </div>
 
 <h2 class="st-sec">Preuzimanja</h2>
-<p class="st__note">Broj preuzimanja priloga kakav je forum pokazivao kad je tema poslednji put arhivirana.</p>
+<p class="st__note">Broj preuzimanja priloga kakav je forum pokazivao kad je objava poslednji put arhivirana.</p>
 <div class="st-grid">
   {{ rank("Najpreuzimaniji prilozi", st.files) }}
   {{ rank("Nastavnici čiji se prilozi najviše preuzimaju", st.teacher_dl) }}

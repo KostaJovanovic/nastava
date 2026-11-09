@@ -8,6 +8,7 @@ Usage: uv run pages/build.py <nastava.db> <out dir>
 Writes <out>/site, most pages as fragments of shell.html (split_page), runs Pagefind (needs Node's npx) into
 <out>/site/pagefind, then removes the hidden text Pagefind read from the item pages.
 """
+import hashlib
 import json
 import re
 import shutil
@@ -28,6 +29,7 @@ from markupsafe import escape
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent))
 from studije import PAGES as STUDY_PAGES, SITE as STUDY_SITE, media_path  # noqa: E402
+from nastavnici import photo_urls  # noqa: E402
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
 KIND = {"post": "obavestenje", "document": "dokument"}
 RECENT = 20
@@ -41,8 +43,9 @@ CYR = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш",
 assert len(CYR) == 30
 
 env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
-# The noun after a number: 1, 21 tema; 2, 3, 4, 22 teme; 5–20, 11–14 tema.
-FORMS = {"tema": ("tema", "teme", "tema"), "objava": ("objava", "objave", "objava"),
+# The noun after a number: 1, 21 objava; 2, 3, 4, 22 objave; 5–20, 11–14 objava.
+# The site's words: a topic is an "objava", one post in it a "post".
+FORMS = {"objava": ("objava", "objave", "objava"), "post": ("post", "posta", "postova"),
          "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
          "nastavnik": ("nastavnik", "nastavnika", "nastavnika"), "autor": ("autor", "autora", "autora"),
          "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja")}
@@ -58,8 +61,21 @@ env.filters["pl"] = plural
 env.filters["n"] = lambda n: f"{n:,}".replace(",", ".")
 # An ISO date (2026-11-08...) as the board writes it: 08.11.2026.
 env.filters["dmy"] = lambda iso: ".".join(reversed((iso or "")[:10].split("-"))) + "." if iso else ""
-# 'Катедра за математику' -> 'математику': in a list headed Katedra the prefix only repeats.
-env.filters["katedra"] = lambda k: re.sub(r"^(Катедра|Katedra) (за|za) ", "", k or "")
+# The masculine plurals among the katedre; every other name changes only a feminine '-у' (or is neuter).
+KATEDRA_NOM = {"моторе": "мотори", "системе наоружања": "системи наоружања",
+               "хидрауличне машине и енергетске системе": "хидрауличне машине и енергетски системи"}
+
+
+def katedra(k):
+    """'Катедра за математику' -> 'математика': in a list headed Katedra the prefix only repeats, and the name
+    stands alone, so in the nominative."""
+    rest = re.sub(r"^(Катедра|Katedra) (за|za) ", "", k or "")
+    # What follows 'у' ('технологије у машинству') is in its own case: kept.
+    head, at, tail = rest.partition(" у ")
+    return KATEDRA_NOM.get(rest) or re.sub(r"у\b", "а", head) + at + tail
+
+
+env.filters["katedra"] = katedra
 
 
 def fold(s):
@@ -331,6 +347,8 @@ def render_places(site, topics, smerovi, subjects):
             s["find"] = fold(" ".join([s["name"]] + [t["full_name"] for t in s.get("teachers", [])]))
         rows = in_smer[m["id"]]
         m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
+        # Its subjects, for the home page's row: hidden while only followed subjects show (head.js).
+        m["pids"] = " ".join(s["href"] for s in subs)
         m["count"] = sum(len(t["posts"]) for t in rows) + sum(s["count"] for s in subs)
         m["last"] = max([t["last"] for t in rows[:1]] + [s["last"] for s in subs], key=lambda r: r["posted"], default=None)
         write(site / m["href"].strip("/") / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, topics=rows))
@@ -447,6 +465,18 @@ def render_study_pages(site, db):
         checked=max((n["page"]["last_seen"] for n in now.values()), default=None)))
 
 
+def photo_path(url, kind):
+    """A stored photo's path in the site: /foto/<hash of its source URL>.jpg."""
+    return f"/foto/{hashlib.sha1(url.encode()).hexdigest()[:16]}.{kind.split('/')[1].replace('jpeg', 'jpg')}"
+
+
+def write_photos(db, site):
+    """The teacher photos nastavnici.py stored, as files: the faculty removes a departed teacher's."""
+    (site / "foto").mkdir(parents=True, exist_ok=True)
+    for url, kind, data in db.execute("SELECT url, type, data FROM photos"):
+        (site / photo_path(url, kind).lstrip("/")).write_bytes(data)
+
+
 def load_teachers(db, subjects):
     """The teachers (nastavnici.py), each subject linked to its archive page when the board has its code."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'teachers'").fetchone():
@@ -458,16 +488,13 @@ def load_teachers(db, subjects):
     # A teacher who left the faculty's list (gone) keeps their page and their posts' links; only the list hides them.
     teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers ORDER BY rowid"))]
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
+    local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
     for t in teachers:
-        # The profile's photo: the faculty's 130 px copy for the list, the original (about 600x700) for the page.
-        # shortcut: photos load from www.mas.bg.ac.rs, so they go when the faculty removes one; host copies if that happens.
-        m = re.search(r'<img[^>]+src="([^"]*_media/fakultet/nastavnici/[^"]+)"', t["html"] or "")
-        own = m and urljoin(STUDY_SITE, unescape(m[1]))
-        # A departed teacher's photo the faculty lost: a Wayback or masinac.org copy (nastavnici.py history).
-        if t.get("photo"):
-            t["thumb"] = t["photo"]
-        else:
-            t["thumb"], t["photo"] = own, own and own.split("?")[0]
+        # The photo from our copy (write_photos); a listed teacher's not copied yet from the faculty, a departed
+        # one's none (the faculty took it down).
+        thumb, photo = photo_urls(t["html"], t.get("photo"))
+        t["thumb"] = local.get(thumb) or (None if t["gone"] else thumb)
+        t["photo"] = local.get(photo) or (None if t["gone"] else photo)
         # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
         t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
@@ -769,7 +796,7 @@ def archive_stats(items, topics, teachers):
     by_teachers = sum(1 for it in posts if it["teacher"])
     return dict(
         first=min(dated, key=lambda it: it["date"], default=None), last=max(dated, key=lambda it: it["date"], default=None),
-        totals=[(len(posts), "objava"), (len(topics), "tema"), (len(tally["authors"]), "autor"),
+        totals=[(len(posts), "post"), (len(topics), "objava"), (len(tally["authors"]), "autor"),
                 (len(tally["subjects"]), "predmet"), (len(files), "prilog"), (sum(tally["files"].values()), "preuzimanje")],
         years=bars(sorted(years.items()), lambda y: f"/?from={y}&to={y}"),
         heat=[dict(year=y, cells=[dict(m=MONTHS[m - 1], n=months[(y, m)], pct=round(months[(y, m)] / top_month * 100))
@@ -806,6 +833,8 @@ def main(db_path, out):
     place, smerovi, subjects = load_places(db)
     items = load_items(db, place)
     teachers = load_teachers(db, subjects)
+    if teachers:
+        write_photos(db, site)
     # A board author is a teacher when the username is the teacher's e-mail before @. When two rows share it (a
     # teacher who became emeritus), the one still listed comes last and wins.
     teacher_of = {t["username"]: t for t in sorted(teachers, key=lambda t: not t["gone"]) if t["username"]}
@@ -858,9 +887,14 @@ if __name__ == "__main__":
     set_hrefs(_r, lambda r: f"/p/{slug(r['n'])}/")
     assert [r["href"] for r in _r] == ["/p/mata-1/", "/p/mata-1-7/", "/p/drugo/"]
     assert subject_name("﻿Цевни  водови (1044) ") == "Цевни водови"
-    assert [plural(n, "tema") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "tema teme tema tema tema tema teme tema tema".split()
+    assert [plural(n, "objava") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "objava objave objava objava objava objava objave objava objava".split()
+    assert [plural(n, "post") for n in (1, 2, 5, 21, 22)] == "post posta postova post posta".split()
+    assert [katedra("Катедра за " + k) for k in ("термодинамику", "процесну технику", "теорију механизама и машина",
+            "аутоматско управљање", "моторна возила", "моторе", "информационе технологије у машинству")] == [
+        "термодинамика", "процесна техника", "теорија механизама и машина", "аутоматско управљање", "моторна возила", "мотори",
+        "информационе технологије у машинству"]
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
-    assert env.filters["katedra"]("Катедра за мехнику флуида") == "мехнику флуида" and env.filters["katedra"](None) == ""
+    assert env.filters["katedra"]("Катедра за механику флуида") == "механика флуида" and env.filters["katedra"](None) == ""
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
     assert slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4" and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"
     assert fold(short_smer(PROGRAMS[0].replace(" — ", " - "))) == fold("ОАС - МИ")

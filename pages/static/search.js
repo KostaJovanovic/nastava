@@ -41,6 +41,11 @@ function followed() {
 	try { return (JSON.parse(localStorage.getItem("moji")) || []).map((s) => s.href); } catch (e) { return []; }
 }
 
+// The side panel's switch "Samo moji predmeti" off (site.js): a choice of this browser, as the followed subjects are.
+function everySubject() {
+	try { return localStorage.getItem("sve") === "1"; } catch (e) { return false; }
+}
+
 function readState() {
 	const f = new FormData(form);
 	const s = {
@@ -52,9 +57,10 @@ function readState() {
 		authors: f.getAll("autor").map(String),
 		from: String(f.get("from") ?? ""),
 		to: String(f.get("to") ?? ""),
-		all: f.get("sve") === "1",
+		all: everySubject(),
 	};
-	// A search covers the followed subjects unless asked for all (?sve=1), or a link names a smer, subject or author.
+	// A search covers the followed subjects unless the side panel's switch is off, or a link names a smer, subject or
+	// author.
 	s.mine = s.all || s.smer || s.subjects.length || s.authors.length ? [] : followed();
 	return s;
 }
@@ -70,7 +76,6 @@ function writeUrl(s, page) {
 	for (const x of s.authors) p.append("autor", x);
 	if (s.from) p.set("from", s.from);
 	if (s.to) p.set("to", s.to);
-	if (s.all) p.set("sve", "1");
 	if (page > 1) p.set("page", page);
 	history.replaceState(null, "", p.size ? `?${p}` : location.pathname);
 }
@@ -171,7 +176,7 @@ function renderHeading(s, total) {
 	};
 	const active = '.filters input[form="sf"]:checked, #sf input[type="hidden"]';
 	for (const input of document.querySelectorAll(active)) {
-		if (!input.value || input.name === "sve") continue;
+		if (!input.value) continue;
 		const label = input.name === "from" ? `od ${input.value}` : input.name === "to" ? `do ${input.value}`
 			: input.dataset.name ?? input.value;
 		chip(label, () => {
@@ -179,7 +184,11 @@ function renderHeading(s, total) {
 			else document.querySelector(`.filters input[name="${input.name}"][value=""]`).checked = true;
 		});
 	}
-	if (s.mine.length) chip(`Moji predmeti (${s.mine.length})`, () => { form.elements.sve.value = "1"; });
+	// Its ×: the switch off, all subjects on the whole site too (site.js, head.js).
+	if (s.mine.length) chip(`Moji predmeti (${s.mine.length})`, () => {
+		try { localStorage.setItem("sve", "1"); } catch (e) {}
+		document.dispatchEvent(new Event("moji"));
+	});
 	if (chips.children.length) heading.append(chips);
 }
 

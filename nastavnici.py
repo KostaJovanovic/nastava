@@ -5,7 +5,8 @@
 """Archive the teacher pages of www.mas.bg.ac.rs: the list, every profile and the emeritus page.
 
 Usage: nastavnici.py sync
-       nastavnici.py history   (once: teachers who left before, from the Wayback Machine)
+       nastavnici.py history   (once: teachers who left before, from the Wayback Machine and masinac.org)
+       nastavnici.py photos    (the photos not stored yet; sync and history end with it)
 
 One row per teacher (the newest version of the profile) and one row per subject the teacher has.
 A teacher who leaves the list stays, marked gone. The forum username is the part of the e-mail before @.
@@ -14,6 +15,7 @@ import re
 import sys
 import time
 from datetime import datetime, timezone
+from html import unescape
 from urllib.parse import urljoin
 
 SITE = 'https://www.mas.bg.ac.rs/'
@@ -25,7 +27,48 @@ create table if not exists teachers (id text primary key, name text, full_name t
 	office text, email text, username text, phone text, hours text, research text, emeritus integer, html text,
 	first_seen text, last_seen text, gone integer default 0, photo text);
 create table if not exists teacher_subjects (teacher text, code text, name text, primary key (teacher, code));
+create table if not exists photos (url text primary key, data blob, type text, fetched text);
 '''
+
+
+def photo_urls(html, stored):
+	"""(list size, page size) URLs of a teacher's photo: a departed one's stored copy (history), else the profile's,
+	the faculty's 130 px copy and its original (about 600x700). build.py shows the local copy of each (photos)."""
+	if stored:
+		return stored, stored
+	m = re.search(r'<img[^>]+src="([^"]*_media/fakultet/nastavnici/[^"]+)"', html or '')
+	if not m:
+		return None, None
+	thumb = urljoin(SITE, unescape(m[1]))
+	return thumb, thumb.split('?')[0]
+
+
+def store_photos(db):
+	"""A local copy of each teacher photo, fetched once per URL (the faculty's changes with the file): the faculty
+	removes a departed teacher's photo, and masinac.org or the Wayback Machine can lose theirs. A failed one is
+	tried again on the next run."""
+	from nastava import DELAY, session
+	now = datetime.now(timezone.utc).isoformat(timespec='seconds')
+	have = {r[0] for r in db.execute('select url from photos')}
+	want = sorted({u for html, p in db.execute('select html, photo from teachers') for u in photo_urls(html, p) if u} - have)
+	failed = 0
+	for n, url in enumerate(want, 1):
+		time.sleep(DELAY)
+		try:
+			# masinac.org sends a missing photo to its home page: a redirect is a miss, but on the Wayback Machine.
+			r = session().get(url, timeout=90, allow_redirects=url.startswith(WAYBACK))
+		except Exception as e:
+			r = None
+			print(f'photo {url}: {e}', flush=True)
+		if r is not None and r.status_code == 200 and r.headers.get('content-type', '').startswith('image/'):
+			db.execute('insert into photos values (?,?,?,?)', (url, r.content, r.headers['content-type'].split(';')[0], now))
+		else:
+			failed += 1
+			print(f'photo {r is not None and r.status_code} {url}', flush=True)
+		if n % 25 == 0:
+			db.commit()
+	db.commit()
+	print(f'photos: {len(want) - failed} stored, {failed} failed', flush=True)
 
 
 def split_title(text):
@@ -156,6 +199,7 @@ def sync(db):
 	db.commit()
 	n = db.execute('select count(*) from teacher_subjects').fetchone()[0]
 	print(f'{len(listed)} teachers, {len(emeriti)} emeriti, {n} teacher subjects, {gone} gone', flush=True)
+	store_photos(db)
 
 
 WAYBACK = 'https://web.archive.org/'
@@ -184,6 +228,13 @@ def person_keys(row):
 	"""What identifies a person across ids and sites: the name, the e-mail before @."""
 	user = (row.get('email') or '').split('@')[0].lower()
 	return {name_key(plain_name(row['full_name']))} | ({user} if user else set())
+
+
+def image_key(url):
+	"""The person an image file is named after, as a username or a name_key: '.../dmilutinovic.jpg' -> 'dmilutinovic',
+	'.../photo_sonja_josipovic.jpg' -> 'sonja josipovic'."""
+	words = re.split(r'[_\-.\s]+', url.split('?')[0].rsplit('/', 1)[1].lower())[:-1]
+	return ' '.join(words[-2:])
 
 
 def parse_masinac(html):
@@ -230,10 +281,11 @@ def history(db):
 		if url.startswith(WAYBACK):
 			raise RuntimeError(f'wayback: no answer for {url}')
 
-	def captures(url, prefix=False):
-		"""[(timestamp, original url)] of each distinct 200 capture."""
+	def captures(url, prefix=False, match='', images=False):
+		"""[(timestamp, original url)] of each distinct 200 capture (match: 'domain' for every subdomain)."""
 		q = f'{WAYBACK}cdx/search/cdx?url={url}&filter=statuscode:200&fl=timestamp,original'
-		q += '&matchType=prefix' if prefix else '&collapse=digest'
+		q += f'&matchType={match or "prefix"}' if prefix or match else '&collapse=digest'
+		q += '&filter=mimetype:image/.*&collapse=urlkey' if images else ''
 		return sorted(tuple(l.split(' ')) for l in get(q).splitlines() if l)
 
 	def page(ts, url):
@@ -335,13 +387,13 @@ def history(db):
 	db.commit()
 	print(f'masinac.org: {len(lecturers)} lecturers, {len(new)} added: {", ".join(r["name"] for r in new)}', flush=True)
 
-	# A departed teacher's photo: the faculty's while it still has it (stored none), else the Wayback Machine's copy,
-	# else masinac.org's (live, then archived).
-	# shortcut: checked when history runs; a teacher who leaves later keeps the faculty's link until it runs again.
+	# A departed teacher's photo, the first that loads: the faculty's (stored none: the profile has it), its Wayback
+	# copy, masinac.org's (live, then archived), last an archived image on another faculty site named after them
+	# (the katedra sites, CeNT: 'dmilutinovic.jpg', 'photo_sonja_josipovic.jpg'). store_photos keeps a copy.
 	def image(url):
 		time.sleep(DELAY)
 		try:
-			r = session().head(url, timeout=60)
+			r = session().head(url, timeout=60, allow_redirects=url.startswith(WAYBACK))
 		except Exception:
 			return False
 		return r.status_code == 200 and r.headers.get('content-type', '').startswith('image')
@@ -351,43 +403,49 @@ def history(db):
 		archived[url.split('?')[0].rsplit('/', 1)[1].lower()] = f'{WAYBACK}web/{ts}im_/{url}'
 	for ts, url in captures('masinac.org/images/predavaci/', prefix=True):
 		archived[url.split('?')[0].split('masinac.org/', 1)[1].lower()] = f'{WAYBACK}web/{ts}im_/{url}'
+	elsewhere = {}  # username or 'first last' -> an archived image of that name on a *.mas.bg.ac.rs site
+	for ts, url in captures('mas.bg.ac.rs', match='domain', images=True):
+		elsewhere[image_key(url)] = f'{WAYBACK}web/{ts}im_/{url}'
 	theirs = {k: row['photo'] for row in lecturers if row['photo'] for k in row['keys']}
 	found = Counter()
 	for i, name, user, html in db.execute('select id, name, username, html from teachers where gone').fetchall():
 		m = re.search(r'_media/fakultet/nastavnici/([^"?]+)', html or '')
-		if m and image(SITE + '_media/fakultet/nastavnici/' + m[1]):
-			photo, how = None, 'faculty'
-		elif m and m[1].lower() in archived:
-			photo, how = archived[m[1].lower()], 'wayback'
-		else:
-			photo = next((theirs[k] for k in (user, name_key(name)) if k in theirs), None)
-			if photo and not image(photo):
-				photo = archived.get(photo.split('masinac.org/', 1)[1].lower())
-			how = 'masinac.org' if photo else 'none'
-		db.execute('update teachers set photo = ? where id = ?', (photo, i))
+		mine = next((theirs[k] for k in (user, name_key(name)) if k in theirs), None)
+		candidates = [('faculty', m and SITE + '_media/fakultet/nastavnici/' + m[1]), ('wayback', m and archived.get(m[1].lower())),
+			('masinac.org', mine), ('masinac.org', mine and archived.get(mine.split('masinac.org/', 1)[1].lower())),
+			('other site', next((elsewhere[k] for k in (user, name_key(name)) if k in elsewhere), None))]
+		how, photo = next(((how, url) for how, url in candidates if url and image(url)), ('none', None))
+		db.execute('update teachers set photo = ? where id = ?', (None if how == 'faculty' else photo, i))
 		found[how] += 1
 	db.commit()
 	print(f'photos of the departed: {dict(found)}', flush=True)
+	store_photos(db)
 
 
 def main():
 	from nastava import connect
 	sys.stdout.reconfigure(encoding='utf-8')
 	cmd = sys.argv[1] if len(sys.argv) > 1 else 'sync'
-	if cmd not in ('sync', 'history'):
+	commands = dict(sync=sync, history=history, photos=store_photos)
+	if cmd not in commands:
 		sys.exit(__doc__)
 	db = connect()
 	db.executescript(SCHEMA)
 	# photo: added after the table (history); null but for a departed teacher whose photo the faculty lost.
 	if 'photo' not in {c[1] for c in db.execute('pragma table_info(teachers)')}:
 		db.execute('alter table teachers add column photo text')
-	(sync if cmd == 'sync' else history)(db)
+	commands[cmd](db)
 
 
 if __name__ == '__main__':
 	assert split_title(' др Душан Љ. Ђукић,  ванредни професор ') == ('др Душан Љ. Ђукић', 'ванредни професор')
 	assert split_title('др Зоран В. Стаменић , доцент')[0] == 'др Зоран В. Стаменић'
 	assert wb_time('20140629012301') == '2014-06-29T01:23:01+00:00'
+	assert photo_urls('<img src="/_media/fakultet/nastavnici/7.jpg?w=130&amp;tok=a">', None) == (
+		'https://www.mas.bg.ac.rs/_media/fakultet/nastavnici/7.jpg?w=130&tok=a', 'https://www.mas.bg.ac.rs/_media/fakultet/nastavnici/7.jpg')
+	assert photo_urls('', 'https://x/y.jpg') == ('https://x/y.jpg', 'https://x/y.jpg')
+	assert image_key('http://cent.mas.bg.ac.rs/ljudi/slike/velike/dmilutinovic.jpg') == 'dmilutinovic'
+	assert image_key('http://ie.mas.bg.ac.rs/data_store/images/zaposleni/photo_sonja_josipovic.jpg?x=1') == 'sonja josipovic'
 	assert to_cyr('Miloš Lj. Glavonjić, Džajić') == 'Милош Љ. Главоњић, Џајић'
 	assert name_key('Весна К. Спасојевић-Бркић') == name_key('Vesna Spasojević Brkić') == 'vesna spasojevic brkic'
 	assert name_key('Dragan Lj.Milanović') == 'dragan milanovic'
