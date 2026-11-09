@@ -791,6 +791,24 @@ def write_photos(db, site):
         (site / photo_path(url, kind).lstrip("/")).write_bytes(data)
 
 
+# A teacher whose forum account is not their e-mail's name (the e-mail changed with a surname): theirs on the board.
+FORUM_ACCOUNT = {"sjosipovic": "sgrbic"}  # Sonja Josipović, née Grbić (ie.mas.bg.ac.rs/zaposleni.html)
+# Teachers who post on the board but are on no list of the faculty's (nastavnici.py), from the faculty's other pages.
+# source: where the profile's facts are from.
+_JOKSIMOVIC = ("https://mas.bg.ac.rs/_media/fakultet/izbori-u-zvanja/referati/2020/"
+               "referat_komisije_-_kandidat_joksimovic_aleksandra.pdf")
+OTHER_TEACHERS = [dict(
+    id="ajoksimovic", name="Александра Д. Јоксимовић", full_name="Александра Д. Јоксимовић", title="асистент",
+    katedra="Катедра за теорију механизама и машина", katedra_id=None, office=None, email=None, username="ajoksimovic",
+    phone=None, hours=None, research=None, emeritus=0, photo=None, first_seen="2026-11-09", last_seen="2026-11-09",
+    gone=0, source=_JOKSIMOVIC, source_name="реферат комисије, mas.bg.ac.rs",
+    html="<p>Мастер инжењер машинства (2017, модул Прехрамбено машинство). На Машинском факултету од 2012. ради на "
+         "предмету Инжењерска графика, од 2015. на предмету Мехатроника. Истраживач-приправник од 2017, изабрана у "
+         "звање асистента на Катедри за теорију механизама и машина 2020. године.</p>"
+         "<p>Није на списку наставника на сајту факултета; ово је из реферата комисије за њен избор у звање асистента "
+         f'(2020): <a href="{_JOKSIMOVIC}">PDF</a>.</p>')]
+
+
 def load_teachers(db, subjects):
     """The teachers (nastavnici.py), each subject linked to its archive page when the board has its code."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'teachers'").fetchone():
@@ -801,6 +819,9 @@ def load_teachers(db, subjects):
         taught[r["teacher"]].append(dict(code=r["code"], name=r["name"], subj=by_code.get(r["code"])))
     # A teacher who left the faculty's list (gone) keeps their page and their posts' links; only the list hides them.
     teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers ORDER BY rowid"))]
+    teachers += [dict(t, subjects=[]) for t in OTHER_TEACHERS]
+    for t in teachers:
+        t["username"] = FORUM_ACCOUNT.get(t["username"], t["username"])
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
     local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
     for t in teachers:
@@ -855,7 +876,9 @@ def render_teachers(site, teachers, items, book):
     for t in teachers:
         source = base = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
         name = "mas.bg.ac.rs"
-        if t["id"].startswith("masinac-"):
+        if t.get("source"):  # OTHER_TEACHERS
+            source, name = t["source"], t["source_name"]
+        elif t["id"].startswith("masinac-"):
             # Known only from masinac.org: 'masinac-omk-zoran-stamenic' is its page katedre/omk/predavaci/zoran-stamenic.
             _, k, who = t["id"].split("-", 2)
             source = base = f"https://www.masinac.org/fakultet/katedre/{k}/predavaci/{who}"

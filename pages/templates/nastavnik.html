@@ -84,7 +84,7 @@
 </section>
 
 <details class="tp__bio">
-  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{% if source_name == 'masinac.org' %}Profil sa studentskog portala masinac.org{% else %}Ceo profil sa sajta fakulteta: obrazovanje, radovi{% endif %}</summary>
+  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{% if source_name == 'masinac.org' %}Profil sa studentskog portala masinac.org{% elif t.source %}Odakle su ovi podaci{% else %}Ceo profil sa sajta fakulteta: obrazovanje, radovi{% endif %}</summary>
   <div class="prose prose--html">{{ html | safe }}</div>
   <p class="tp__src">Preuzeto {{ t.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">{{ source_name }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
 </details>
