@@ -945,6 +945,9 @@ def render_teachers(site, teachers, items, book):
     left = sorted((t for t in teachers if t["gone"]), key=lambda t: t["last_seen"], reverse=True)
     write(site / "nastavnici" / "index.html",
           env.get_template("nastavnici.html").render(teachers=listed, katedre=katedre, left=left))
+    write(site / "nastavnici" / "arhiva" / "index.html",
+          env.get_template("nastavnici.html").render(teachers=left, katedre=sorted({t["katedra"] for t in left if t["katedra"]}),
+                                                     archive=True))
 
 
 # The programs in the order of the faculty's studies; a subject book program not here goes last.

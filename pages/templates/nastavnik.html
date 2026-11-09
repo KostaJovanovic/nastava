@@ -5,7 +5,7 @@
 {% block title %}{{ t.shown }}{% endblock %}
 {% block description %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endblock %}
 {% block og_type %}profile{% endblock %}
-{% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
+{% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}
 
 {#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by
     year; the faculty's full profile last, folded, as it is long (education, bibliography). -#}

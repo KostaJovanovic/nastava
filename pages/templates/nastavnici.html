@@ -1,11 +1,16 @@
 {% extends "base.html" %}
 {% set origin = 'https://www.mas.bg.ac.rs/fakultet/nastavnici/start' %}
+{% from "rows.html" import crumb %}
+{#- Two pages: the faculty's teachers today (/nastavnici/) and, with archive, the ones no longer on its list
+    (/nastavnici/arhiva/). -#}
 
-{% block title %}Nastavnici{% endblock %}
-{% block description %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endblock %}
+{% block title %}{% if archive %}Arhiva nastavnika{% else %}Nastavnici{% endif %}{% endblock %}
+{% block description %}{% if archive %}Nastavnici Mašinskog fakulteta u Beogradu koji više nisu na spisku fakulteta: zvanja, katedre, predmeti i objave na forumu nastave.{% else %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
+{% block crumbs %}{% if archive %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endif %}{% endblock %}
 
 {%- macro card(t) %}
-  <li class="pc{% if t.gone %} pc--gone{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
+  {#- The grey corner: a departed teacher among the current ones (the list's search); on the archive page all are. -#}
+  <li class="pc{% if t.gone and not archive %} pc--gone{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
     {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
     <div class="pc__t">
@@ -20,11 +25,16 @@
 
 {% block main %}
 <div class="mh">
-  <h1 id="title">Nastavnici</h1>
-  <p class="mh__sub">Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave.</p>
+  <div class="mh__top">
+    <h1 id="title">{% if archive %}Arhiva nastavnika{% else %}Nastavnici{% endif %}</h1>
+    {%- if not archive %}
+    <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span></a>
+    {%- endif %}
+  </div>
+  <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na spisku fakulteta, poslednji otišli prvi. Njihove stranice i postovi ostaju.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave.{% endif %}</p>
 </div>
 {#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
-<form class="people__bar" data-filter data-scope="Nastavnici" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
+<form class="people__bar" data-filter data-scope="{% if archive %}Arhiva{% else %}Nastavnici{% endif %}" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
   <label class="vh" for="t-k">Katedra</label>
   {#- value: the name's Latin slug, which ?katedra= links and the rows' data-k use (no Cyrillic in a URL);
       data-label: the full name, a group's heading (site.js). -#}
@@ -35,10 +45,10 @@
   <label class="vh" for="t-z">Zvanje</label>
   <select class="field" id="t-z" name="zvanje" data-f="z">
     <option value="">Sva zvanja</option>
-    {%- for z in teachers | map(attribute='title') | unique | sort %}<option value="{{ z | slug }}" data-label="{{ z }}">{{ z }}</option>{% endfor %}
+    {%- for z in teachers | map(attribute='title') | select | unique | sort %}<option value="{{ z | slug }}" data-label="{{ z }}">{{ z }}</option>{% endfor %}
   </select>
   <span class="fbar__n">prikazano <b data-shown>{{ teachers | length }}</b></span>
-  {#- Grouping and order need site.js; without it the list stays by surname. -#}
+  {#- Grouping and order need site.js; without it the list stays in the page's order. -#}
   <div class="arrange" data-arrange hidden>
     <label for="t-g">Grupiši</label>
     <select class="field" id="t-g" name="grupa" data-group>
@@ -48,7 +58,8 @@
     </select>
     <label for="t-s">Poređaj</label>
     <select class="field" id="t-s" name="red" data-sort>
-      <option value="">po prezimenu</option>
+      {#- '': the page's order, by surname here, by departure in the archive. -#}
+      <option value="">{% if archive %}po odlasku{% else %}po prezimenu{% endif %}</option>
       <option value="n">po imenu</option>
       <option value="r">po zvanju</option>
       <option value="-c">po broju postova</option>
@@ -61,10 +72,13 @@
 </ol>
 </div>
 <p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
-{#- Teachers gone from the faculty's list keep their pages. Outside [data-groups]: the filter covers them, grouping
-    and order do not (site.js). -#}
-<section class="sg" data-left>
-  <h2 class="sg__h">Više nisu na spisku fakulteta <span>· <b data-left-n>{{ left | length }}</b></span></h2>
+{%- if not archive %}
+{#- The departed, so the search finds them too: shown under the current teachers only while there is search text
+    (site.js). Outside [data-groups]: grouping and order do not take them. -#}
+<section class="sg" data-left hidden>
+  <h2 class="sg__h">Više nisu na fakultetu <span>· <b data-left-n>{{ left | length }}</b></span></h2>
   <ol class="people" data-rows>{% for t in left %}{{ card(t) }}{% endfor %}</ol>
 </section>
+<a class="btn arch-all" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva nastavnika: <b>{{ left | length | n }}</b> koji više nisu na fakultetu</span><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg></a>
+{%- endif %}
 {% endblock %}

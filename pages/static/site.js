@@ -343,9 +343,13 @@
       });
       var shown = Object.keys(ids).length, n = bar.querySelector('[data-shown]'), none = d.querySelector('[data-none]');
       var gone = left ? left.querySelectorAll('[data-rows] > li:not([hidden])').length : 0;
-      if (left) left.querySelector('[data-left-n]').textContent = gone;
+      if (left) {
+        left.querySelector('[data-left-n]').textContent = gone;
+        // The departed show under the current teachers only for a text search (the archive page lists them all).
+        left.hidden = !gone || !ctl.some(function (c) { return c.tagName !== 'SELECT' && c.value.trim(); });
+      }
       if (n) n.textContent = shown;
-      if (none) none.hidden = shown + gone > 0;
+      if (none) none.hidden = shown > 0 || (left && !left.hidden);
       history.replaceState(null, '', p.size ? '?' + p : location.pathname);
     };
     // The header search's scope: the page's own (its text filters the list) or another (the list shows all).
