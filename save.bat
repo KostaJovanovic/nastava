@@ -9,8 +9,8 @@ rem   save.bat                          menu (numbered as mbrd's: 1 commit, 2 sa
 rem   save.bat save                     add + commit, then ask before pushing
 rem   save.bat commit                   add + commit, no push
 rem   save.bat deploy [sync]            add + commit + push, then bash ci/deploy.sh [sync]: build and publish
-rem   save.bat update [all]             no git: scrape the forum (all: every source), save the database, build and
-rem                                     publish (ci/deploy.sh forum^|sync), no pause
+rem   save.bat update [all]             add + commit ("update") + push, then scrape the forum (all: every source), save
+rem                                     the database, build and publish (ci/deploy.sh forum^|sync); no prompts, no pause
 rem   save.bat push                     push the current branch to its upstream
 rem   save.bat pull                     git pull (current branch, from its upstream)
 rem   save.bat quick "message"          add + commit + push, no menu, no prompts
@@ -44,12 +44,14 @@ if /i "%ACTION%"=="deploy" (
   if /i "!MSG!"=="sync" set "DEPLOY_ARGS=sync"
   goto checkrepo
 )
-rem Without git, so work in progress is never committed; QUICK only drops the final pause (for a scheduled run).
+rem QUICK: no prompts and no pause, so it can run on a schedule; the "all" argument is not a commit message.
 if /i "%ACTION%"=="update" (
   set "QUICK=1"
+  set "DEPLOY=1"
   set "DEPLOY_ARGS=forum"
   if /i "!MSG!"=="all" set "DEPLOY_ARGS=sync"
-  goto deploy
+  set "MSG="
+  goto checkrepo
 )
 if /i "%ACTION%"=="push"         goto pushonly
 if /i "%ACTION%"=="pull"         goto pull
@@ -65,7 +67,7 @@ echo   3  deploy       add + commit + push, then build and publish the site
 echo   4  pull         git pull
 echo   5  push         push the current branch to its upstream
 echo   6  deploy-sync  the same as 3, scraping first (ci/deploy.sh sync)
-echo   7  update       scrape the forum, build and publish, no git
+echo   7  update       add + commit + push, scrape the forum, build and publish
 echo   8  quit
 echo.
 set "CHOICE="
@@ -76,7 +78,7 @@ if "%CHOICE%"=="3" (set "DEPLOY=1" & goto checkrepo)
 if "%CHOICE%"=="4" goto pull
 if "%CHOICE%"=="5" goto pushonly
 if "%CHOICE%"=="6" (set "DEPLOY=1" & set "DEPLOY_ARGS=sync" & goto checkrepo)
-if "%CHOICE%"=="7" (set "DEPLOY_ARGS=forum" & goto deploy)
+if "%CHOICE%"=="7" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & goto checkrepo)
 if "%CHOICE%"=="8" exit /b 0
 echo [err]  invalid choice
 goto menu
