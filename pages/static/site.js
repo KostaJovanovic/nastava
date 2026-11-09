@@ -16,6 +16,19 @@
     if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');
   });
 
+  /* The logo on a phone, where the header has no room for the word: the first tap shows "nastava" beside it for a
+     few seconds, a tap while it shows goes home (style.css .brand.is-open). */
+  var brand = d.querySelector('.brand'), brandT;
+  if (brand && window.matchMedia) {
+    brand.addEventListener('click', function (e) {
+      if (!matchMedia('(max-width: 759px)').matches || brand.classList.contains('is-open')) return;
+      e.preventDefault();
+      brand.classList.add('is-open');
+      clearTimeout(brandT);
+      brandT = setTimeout(function () { brand.classList.remove('is-open'); }, 3000);
+    });
+  }
+
   /* The lecture schedule (/raspored/): a program at a time, picked by its tab; the choice is kept for the next visit
      and in the URL (#program). Without this, the tabs are links to the programs one under the other. */
   var rs = d.querySelector('[data-rs]'), progs = rs ? [].slice.call(rs.querySelectorAll('[data-prog]')) : [];

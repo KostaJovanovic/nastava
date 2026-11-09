@@ -109,17 +109,18 @@ kbd {
 
 /* ---- Header -------------------------------------------------------------- */
 /* The header stays at the top while the page scrolls. --hd: its height (the side panel and the anchors go under it). */
-:root { --hd: 117px; }
+/* A phone: one row, logo · search · script and theme. */
+:root { --hd: 61px; }
 @media (min-width: 760px) { :root { --hd: 65px; } }
 html { scroll-padding-top: calc(var(--hd) + 12px); }
 .hd {
   position: sticky; top: 0; z-index: 10;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "brand pismo" "cmd cmd";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "brand cmd pismo";
   align-items: center;
-  gap: 10px 12px;
-  padding: 12px;
+  gap: 8px;
+  padding: 8px 10px;
   background: var(--head);
   color: var(--head-fg);
   border-bottom: 3px solid var(--head-line);
@@ -134,6 +135,18 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .brand__name b { font: 800 20px/1.1 var(--sans); letter-spacing: .01em; }
 /* The subtitle: wide screens only (a phone has no room for it). */
 .brand__name span { display: none; color: var(--head-dim); font: 400 12px/1.4 var(--sans); white-space: nowrap; }
+/* A phone: the word only after a tap on the logo (site.js), over the start of the search; a second tap goes home. */
+@media (max-width: 759px) {
+  .brand { position: relative; }
+  .brand__mark svg { width: 34px; height: 34px; }
+  .brand__name {
+    position: absolute; left: calc(100% + 6px); top: 50%; z-index: 2;
+    padding: 7px 14px; border: 1px solid rgba(90, 122, 147, .45); border-radius: var(--r); background: var(--head);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+    opacity: 0; visibility: hidden; translate: -6px -50%; transition: opacity .15s, translate .15s, visibility .15s;
+  }
+  .brand.is-open .brand__name { opacity: 1; visibility: visible; translate: 0 -50%; }
+}
 
 .cmd {
   grid-area: cmd;
@@ -157,6 +170,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   font: 400 13px var(--sans); cursor: pointer;
 }
 .cmd__go:hover { background: var(--go-2); }
+/* A very narrow screen: no button, Enter (the keyboard's search key, enterkeyhint) searches. */
+@media (max-width: 420px) { .cmd__go { display: none; } .cmd { padding-right: 10px; } }
 /* The search's context on a list page (site.js): a chip after the text, in place of the / hint, whose × leaves it
    for the whole archive; on a teacher's page, the matching teachers under the bar. */
 .cmd { position: relative; }
