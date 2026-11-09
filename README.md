@@ -20,7 +20,7 @@ pipeline and site, with new scrapers for phpBB.
   2. reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
      with a post in the last 14 days (an edit does not change the counts);
   3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and on Monday the schedules,
-     the teachers and the subjects. A failure in these does not stop
+     the teachers, the subjects and the departments' sites. A failure in these does not stop
      the run;
   4. saves the state (`nastava.db`) to the `state` release (`ci/state.sh push`);
   5. builds the static site with Pagefind search, uploads it to the `site` release and starts the `deploy` workflow,
@@ -54,6 +54,10 @@ pipeline and site, with new scrapers for phpBB.
   (a version per change) and each notice apart, into `cent_pages` and `cent_notices`. The files stay linked on cent.
   The site puts each subject's notices among its topics with a "cent" mark, and its pages (predavanja, rezultati, …)
   under `/predmet/…/cent/`; a subject the board has no forum for gets a page too.
+- `katedre.py`: archive the departments' own sites (ie, etc, motori, meh, bmi, pt, ppm, fluidi, hidro, ciah): a crawl
+  from each site's start, on its host, each page's content as shown (a version per change of its text or links) into
+  `katedre_pages`. The files stay linked. Not the Moodles (a login) nor omk, geotermal, au, tmm (no answer).
+  The site does not show these pages yet.
 - `nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;

@@ -31,6 +31,8 @@ if [[ ${1:-} == sync || ${1:-} == forum ]]; then
 		uv run studije.py sync || failed+=(studije)
 		uv run nastavnici.py sync || failed+=(nastavnici)
 		uv run predmeti.py sync || failed+=(predmeti)
+		# The departments' own sites: a crawl of every page, ~600 requests.
+		uv run katedre.py sync || failed+=(katedre)
 	fi
 	bash ci/state.sh push
 fi

@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import nastava  # noqa: E402
 import cent  # noqa: E402
+import katedre  # noqa: E402
 import nastavnici  # noqa: E402
 import predmeti  # noqa: E402
 import studije  # noqa: E402
@@ -139,4 +140,25 @@ page = dict(id=5, parent=0, menu_order=0, slug='x', title=dict(rendered='X &amp;
 assert [cent.store_page(db, page, '1617', h, w) for h, w in (('a', 's1'), ('a', 's2'), ('b', 's3'), ('a', 's4'))] == [True, False, True, True]
 assert db.execute('select title, html, first_seen, last_seen from cent_pages order by last_seen desc').fetchall() == [
     ('X & Y', 'a', 's1', 's4'), ('X & Y', 'b', 's3', 's3')]
+
+# A department's site (katedre.py): the content without menus, hidden spam, Word's styles; links absolute; what to
+# follow from the whole page; one URL a page.
+U = 'https://etc.mas.bg.ac.rs/zr/'
+title, html, follow = katedre.parse(
+    '<html><head><title>MM2</title><meta http-equiv="refresh" content="0; url=a.htm"></head><body><nav><a href="m.htm">'
+    'meni</a></nav><p class=MsoNormal style="x">Rezultati<o:p></o:p></p><!-- c --><a href="r.pdf"><img src="i.gif"></a>'
+    '<div style="display:none"><a href="http://spam.example/">s</a></div><iframe src="https://forms.gle/f"></iframe>'
+    '</body></html>', U)
+assert title == 'MM2' and html == ('<p>Rezultati</p><a href="https://etc.mas.bg.ac.rs/zr/r.pdf">r.pdf</a>'
+                                   '<a href="https://forms.gle/f">https://forms.gle/f</a>'), html
+assert follow == [U + 'm.htm', U + 'r.pdf', 'http://spam.example/', 'https://forms.gle/f', U + 'a.htm'], follow
+assert katedre.norm('http://ppm.mas.bg.ac.rs/index.html#x') == 'https://ppm.mas.bg.ac.rs/'
+assert all(katedre.SKIP.search(u) for u in ('https://bmi.mas.bg.ac.rs/en/', 'https://motori.mas.bg.ac.rs/moodle/course/',
+                                            'https://pt.mas.bg.ac.rs/kutak/doku.php?id=a:b&do=login'))
+assert not katedre.SKIP.search('https://ciah.mas.bg.ac.rs/en-12972.html')
+db = sqlite3.connect(':memory:')
+db.executescript(katedre.SCHEMA)
+assert [katedre.store(db, 'etc', U, 't', h, w) for h, w in (('<p>a</p>', 's1'), ('<p class="x">a</p>', 's2'), ('<p>b</p>', 's3'))] == [True, False, True]
+assert db.execute('select html, first_seen, last_seen from katedre_pages order by last_seen').fetchall() == [
+    ('<p>a</p>', 's1', 's2'), ('<p>b</p>', 's3', 's3')]
 print('parsers ok')
