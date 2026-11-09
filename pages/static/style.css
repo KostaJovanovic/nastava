@@ -956,6 +956,8 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .tp__subj li:first-child { border-top: 0; }
 .tp__subj a { overflow: hidden; color: var(--link); font-size: 14px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .tp__subj a:hover { color: var(--accent-t); text-decoration: underline; }
+.tp__nm { display: flex; min-width: 0; align-items: baseline; }
+.tp__nm .ext { flex: none; }
 .tp__off a { color: var(--dim); }
 /* The line between the subjects on the forum and the rest. */
 .tp__subj .tp__offl { margin-top: 6px; padding-top: 6px; border-top: 2px solid var(--line); }

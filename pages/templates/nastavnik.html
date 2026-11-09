@@ -42,7 +42,9 @@
     {%- if on_forum %}
     <ul>
       {%- for c in on_forum %}
-      <li><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a><span class="tp__smer" title="{{ c.subj.smer.label }}">{{ (c.subj.smer.short[:1] | upper) ~ c.subj.smer.short[1:] }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
+      {#- Their own material elsewhere in it (build.py mark_elsewhere), not the subject's other teachers'. -#}
+      <li><span class="tp__nm"><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.subj.name }}</a>
+        {%- for e in (c.subj.elsewhere or {}).values() if t.username in e.users %}<span class="ext" title="Materijal i na: {{ e.name }}">{{ e.name }}</span>{% endfor %}</span><span class="tp__smer" title="{{ c.subj.smer.label }}">{{ (c.subj.smer.short[:1] | upper) ~ c.subj.smer.short[1:] }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
       {%- endfor %}
     </ul>
     {%- endif %}

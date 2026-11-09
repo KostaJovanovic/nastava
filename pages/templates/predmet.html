@@ -16,8 +16,9 @@
   </div>
   <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('objava') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}{% if subj.site %} · <a href="{{ subj.site }}" rel="noopener" target="_blank">sajt predmeta <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %} · <a href="{{ subj.href }}feed.xml" title="Novi postovi ovog predmeta u čitaču vesti (RSS)">RSS</a></p>
   {%- if subj.elsewhere %}
-  {#- Where its posts point for the material (build.py mark_elsewhere): each to the newest post that links it. -#}
-  <p class="mh__sub">Materijal i na:{% for e in subj.elsewhere.values() | sort(attribute='last.posted', reverse=true) %} <a class="ext" href="{{ post_href(e.last) }}" title="Pominje se u postovima od {{ e.first.posted | dmy }} do {{ e.last.posted | dmy }}; link: poslednji post">{{ e.name }} {{ e.first.posted[:4] }}{% if e.last.posted[:4] != e.first.posted[:4] %}–{{ e.last.posted[:4] }}{% endif %}</a>{% endfor %}</p>
+  {#- Where its posts point for the material (build.py mark_elsewhere): each to the newest post that links it, with who
+      links it (surnames; the full names in the title): often only some of a subject's teachers use it. -#}
+  <p class="mh__sub">Materijal i na:{% for e in subj.elsewhere.values() | sort(attribute='last.posted', reverse=true) %} <a class="ext" href="{{ post_href(e.last) }}" title="Pominje se u postovima od {{ e.first.posted | dmy }} do {{ e.last.posted | dmy }}: {{ e.who | join(', ') }}; link: poslednji post">{{ e.name }} {{ e.first.posted[:4] }}{% if e.last.posted[:4] != e.first.posted[:4] %}–{{ e.last.posted[:4] }}{% endif %} · {% for w in e.who[:3] %}{{ w.split()[-1] }}{% if not loop.last %}, {% endif %}{% endfor %}{% if e.who | length > 3 %} i još {{ e.who | length - 3 }}{% endif %}</a>{% endfor %}</p>
   {%- endif %}
   {%- if subj.teachers %}
   <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>

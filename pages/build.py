@@ -403,16 +403,25 @@ def service(url):
 
 
 def mark_elsewhere(items):
-    """Each subject's material elsewhere, from its posts' links: s["elsewhere"] = {name: dict(name, first, last)}, the
-    first and newest post that links it."""
+    """Each subject's material elsewhere, from its posts' links: s["elsewhere"] = {name: dict(name, first, last, who,
+    users)}: the first and newest post that links it, who links it (shown names, most posts first) and their usernames
+    (a teacher's page shows their own). A subject's teachers often split it, and only some use a service."""
     for it in items:
         if it["kind"] != "post" or not it["subj"]:
             continue
         for url in set(re.findall(r'href="(https?://[^"]+)"', it["html"] or "")):
             if name := service(url):
-                e = it["subj"].setdefault("elsewhere", {}).setdefault(name, dict(name=name, first=it, last=it))
+                e = it["subj"].setdefault("elsewhere", {}).setdefault(
+                    name, dict(name=name, first=it, last=it, by=Counter(), users=set()))
                 e["first"] = min(e["first"], it, key=lambda r: r["posted"])
                 e["last"] = max(e["last"], it, key=lambda r: r["posted"])
+                e["by"][it["who"]] += 1
+                if it["teacher"]:
+                    e["users"].add(it["teacher"]["username"])
+    for it in items:
+        for e in ((it.get("subj") or {}).get("elsewhere") or {}).values():
+            if "by" in e:
+                e["who"] = [w for w, _ in e.pop("by").most_common()]
 
 
 def render_cent(site, subjects):
@@ -1241,6 +1250,12 @@ if __name__ == "__main__":
                                  "https://abc.sharepoint.com/x", "https://youtu.be/x", "https://mat.mas.bg.ac.rs/moodle/login/",
                                  "http://it0.mas.bg.ac.rs/")] == [
         "Teams", "Google Drive", None, None, "ie.mas.bg.ac.rs", None, "OneDrive", "YouTube", "Moodle", "Moodle"]
+    # A mark names who links it, most posts first; only teachers' usernames (for their own pages).
+    _s, _t = dict(name="ME"), dict(username="pl")
+    _p = lambda who, t, d: dict(kind="post", subj=_s, who=who, teacher=t, posted=d, html='<a href="https://classroom.google.com/c/1">c</a>')
+    mark_elsewhere([_p("Ana", None, "2021"), _p("Petar L", _t, "2023"), _p("Petar L", _t, "2026"), dict(kind="post", subj=None)])
+    _e = _s["elsewhere"]["Classroom"]
+    assert (_e["who"], _e["users"], _e["first"]["posted"], _e["last"]["posted"]) == (["Petar L", "Ana"], {"pl"}, "2021", "2026")
     _a = lambda v: re.search(r'href="([^"]*)"', clean_html(f'<a href="{v}">x</a>'))[1].replace("&amp;", "&")
     assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
