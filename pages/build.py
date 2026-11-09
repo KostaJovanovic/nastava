@@ -323,6 +323,8 @@ def load_cent(db, smerovi, subjects):
                 s["href"] = f"{s['href'][:-1]}-{code}/"
             subjects[(m["id"], name)] = by_code[code] = s
         subj_of[r["id"]] = s
+        # The subject's own site: cent has files no page links (older uploads, past notices' attachments).
+        s.setdefault("site", r["link"])
     notices = defaultdict(list)
     for n in db.execute("SELECT * FROM cent_notices ORDER BY nid"):
         notices[n["page"]].append(dict(n))
@@ -483,7 +485,7 @@ def render_places(site, topics, smerovi, subjects):
     for s in subjects.values():
         rows = in_subject[s["id"]]
         s["topics"], s["count"], s["last"] = len(rows), sum(len(t["posts"]) for t in rows), rows[0]["last"] if rows else None
-        s["live"] = bool(rows or s.get("cent"))
+        s["live"] = bool(rows or s.get("cent") or s.get("site"))
         if s["live"]:
             authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
             write(site / s["href"].strip("/") / "index.html",
