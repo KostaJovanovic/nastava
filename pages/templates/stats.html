@@ -2,17 +2,18 @@
 
 {% block title %}Statistika{% endblock %}
 
-{#- A bar chart: rows from build.py bars(). A bar with an href (a year) opens the search for it. The count is in the
-    bar's text for screen readers and in its tooltip. -#}
+{#- A bar chart: rows from build.py bars(). A bar with an href (a year) opens the search for it. The count is over the
+    bar (.ch--n; a chart too dense for it keeps it for screen readers and in the tooltip). -#}
 {% macro chart(rows, cls="") -%}
 <ol class="ch {{ cls }}">
   {%- for r in rows %}
-  <li>{% if r.href %}<a href="{{ r.href }}"{% else %}<span{% endif %} class="ch__c" title="{{ r.label }}: {{ r.n | n }}"><i style="height:{{ r.pct }}%"></i><span class="vh">{{ r.n | n }}</span><b>{{ r.label }}</b>{% if r.href %}</a>{% else %}</span>{% endif %}</li>
+  <li>{% if r.href %}<a href="{{ r.href }}"{% else %}<span{% endif %} class="ch__c" style="--f:{{ r.pct / 100 }}" title="{{ r.label }}: {{ r.n | n }}"><span class="ch__n">{{ r.n | n }}</span><i></i><b>{{ r.label }}</b>{% if r.href %}</a>{% else %}</span>{% endif %}</li>
   {%- endfor %}
 </ol>
 {%- endmacro %}
 
-{#- A ranked list: rows from build.py ranking(); the bar behind a row is its share of the first. -#}
+{#- A ranked list: rows from build.py ranking(); the bar behind a row is its share of the first. A phone shows the
+    first five until the checkbox under the list is checked (style.css .rk__more; no script). -#}
 {% macro rank(title, rows) -%}
 <section class="st">
   <h3 class="st__h">{{ title }}</h3>
@@ -21,6 +22,9 @@
     <li style="--w:{{ r.pct }}%"><span class="rk__l">{% if r.href %}<a href="{{ r.href }}">{{ r.label }}</a>{% else %}{{ r.label }}{% endif %}{% if r.note %}<small>{{ r.note }}</small>{% endif %}</span><b>{{ r.n | n }}</b></li>
     {%- endfor %}
   </ol>
+  {%- if rows | length > 5 %}
+  <label class="rk__more"><input type="checkbox"><span>Prikaži svih {{ rows | length }}</span></label>
+  {%- endif %}
 </section>
 {%- endmacro %}
 
@@ -40,17 +44,17 @@
 
 <section class="st">
   <h2 class="st__h">Objave po godinama <span>godina otvara svoje objave</span></h2>
-  {{ chart(st.years, "ch--years") }}
+  {{ chart(st.years, "ch--n ch--years") }}
 </section>
 
 <section class="st">
-  <h2 class="st__h">Po mesecima <span>tamnije: više objava</span></h2>
+  <h2 class="st__h">Po mesecima <span>jača boja: više objava</span></h2>
   <div class="hm__wrap">
     <table class="hm">
       <thead><tr><th></th>{% for c in st.heat[0].cells %}<th scope="col">{{ c.m }}</th>{% endfor %}</tr></thead>
       <tbody>
         {%- for row in st.heat %}
-        <tr><th scope="row">{{ row.year }}</th>{% for c in row.cells %}<td style="--v:{{ c.pct }}%" title="{{ c.m }} {{ row.year }}: {{ c.n | n }}"><span class="vh">{{ c.n }}</span></td>{% endfor %}</tr>
+        <tr><th scope="row">{{ row.year }}</th>{% for c in row.cells %}<td style="--v:{{ c.pct }}%"{% if c.pct >= 60 %} class="hm--hi"{% endif %} title="{{ c.m }} {{ row.year }}: {{ c.n | n }}">{{ c.n or "" }}</td>{% endfor %}</tr>
         {%- endfor %}
       </tbody>
     </table>
@@ -64,7 +68,7 @@
   </section>
   <section class="st">
     <h2 class="st__h">Dan u nedelji</h2>
-    {{ chart(st.days) }}
+    {{ chart(st.days, "ch--n") }}
     {%- if st.busiest %}
     <p class="st__note">Najviše objava u jednom danu: <b>{{ st.busiest[1] }}</b>, {{ st.busiest[0] | dmy }}</p>
     {%- endif %}
