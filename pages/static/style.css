@@ -1017,7 +1017,7 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 }
 .pc:hover { border-color: var(--slate); }
 /* No longer on the faculty's list: a grey corner, top right. */
-.pc--gone::before { content: ""; position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-top-right-radius: inherit; background: radial-gradient(circle at top right, var(--line), transparent 70%); pointer-events: none; }
+.pc--gone::before { content: ""; position: absolute; top: 0; right: 0; width: 96px; height: 96px; border-top-right-radius: inherit; background: linear-gradient(225deg, var(--slate), transparent 50%); opacity: .45; pointer-events: none; }
 .pc:has(.pc__a:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .pc__img { display: block; width: 76px; aspect-ratio: 6 / 7; object-fit: cover; object-position: 50% 25%; border-radius: 4px; background: var(--icon-bg); }
 .pc__img--none { display: grid; place-items: center; color: var(--slate); font: 800 20px var(--sans); }
