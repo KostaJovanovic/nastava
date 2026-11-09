@@ -263,6 +263,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   /* The drive second, after masinci.org; the other links keep their order. */
   .ft__side .ft__site { order: 1; }
   .ft__links a:not(:first-child) { order: 2; }
+  /* A wider phone has room for three links a row. */
+  @media (min-width: 380px) { .ft { grid-template-columns: repeat(3, 1fr); } }
   .ft__by a { padding: 0; }
   .ft__by { order: -1; grid-column: 1 / -1; margin-bottom: 8px; padding-bottom: 14px; text-align: center;
     border-bottom: 1px solid color-mix(in srgb, var(--head-fg) 20%, transparent); }
