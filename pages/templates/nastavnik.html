@@ -93,6 +93,25 @@
 </section>
 {%- endif %}
 
+{%- if h and h.works %}
+{#- Their works in the faculty's repository (machinery.mas.bg.ac.rs), by year, newest first. -#}
+<section class="tp__sec" id="radovi">
+  <div class="tp__h">
+    <h2>Radovi <span>{{ h.works | length | n }}</span></h2>
+    <a href="https://machinery.mas.bg.ac.rs/" rel="noopener" target="_blank">Repozitorijum fakulteta</a>
+  </div>
+  {%- for year, rows in h.works | groupby('year', default=0) | reverse %}
+  <h3 class="tp__yr">{{ year or 'bez godine' }}</h3>
+  <ol class="tp__posts tp__works">
+    {%- for w in rows %}
+    <li><a href="{{ w.url }}" rel="noopener" target="_blank">{{ w.title }}</a>
+      {%- if w.source or w.type %}<span class="tp__smer">{{ w.source or w.type }}</span>{% endif %}</li>
+    {%- endfor %}
+  </ol>
+  {%- endfor %}
+</section>
+{%- endif %}
+
 {%- if h and h.sources %}
 {#- Where the history is from, each source quoted (nastavnici-istorija.jsonl). -#}
 <section class="tp__sec" id="izvori">

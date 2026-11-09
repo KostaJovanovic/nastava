@@ -1022,6 +1022,13 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
   .tp__posts time { grid-row: auto; padding-top: 0; }
   .tp__posts .tp__smer { grid-column: 3; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+/* A past teacher's works: no date column (the year is the heading); the journal under the title, beside it when wide. */
+.tp__posts.tp__works li { grid-template-columns: minmax(0, 1fr); }
+.tp__works .tp__smer { grid-column: 1; }
+@container main (min-width: 1000px) {
+  .tp__posts.tp__works li { grid-template-columns: minmax(0, 1fr) minmax(0, 260px); }
+  .tp__works .tp__smer { grid-column: 2; }
+}
 .tp__none { color: var(--dim); }
 
 /* The faculty's full profile, folded: it is long (education, papers). */
