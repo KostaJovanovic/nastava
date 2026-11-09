@@ -724,13 +724,30 @@
     tb.querySelector('use').setAttribute('href', '/static/icons.svg#i-' + v[0]);
     tb.setAttribute('aria-label', 'Tema: ' + v[1]);
   };
+  var setTheme = function (t) {
+    root.dataset.tema = t;
+    d.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#011321' : '#0076b1';
+    try { localStorage.setItem('tema', t); } catch (e) {}
+    showTheme();
+  };
   if (tb) {
+    /* The switch as a big circle the size of the screen: dark rolls in from the left to cover it, light shows again as
+       the dark rolls out to the right (a view transition; style.css puts the dark page on top). Where the browser has
+       no view transitions, or motion is reduced, the theme changes at once. */
     tb.addEventListener('click', function () {
       var t = theme() === 'dark' ? 'light' : 'dark';
-      root.dataset.tema = t;
-      d.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#011321' : '#0076b1';
-      try { localStorage.setItem('tema', t); } catch (e) {}
-      showTheme();
+      if (!d.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return setTheme(t);
+      var w = innerWidth, r = Math.hypot(w, innerHeight) / 2;
+      var at = function (x) { return 'circle(' + r + 'px at ' + x + 'px 50%)'; };
+      root.dataset.vt = t;
+      var vt = d.startViewTransition(function () { setTheme(t); });
+      vt.ready.then(function () {
+        root.animate({ clipPath: t === 'dark' ? [at(-r), at(w / 2)] : [at(w / 2), at(w + r)] }, {
+          duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)',
+          pseudoElement: t === 'dark' ? '::view-transition-new(root)' : '::view-transition-old(root)'
+        });
+      });
+      vt.finished.then(function () { delete root.dataset.vt; });
     });
     showTheme();
   }
