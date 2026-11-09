@@ -1,4 +1,4 @@
-// Script switch for the whole page: Latin (the default), Cyrillic, or the text as it was posted.
+// Script switch for the whole page: Latin (the default) or Cyrillic.
 // It rewrites the text nodes in the browser and keeps each original, so a switch back is exact.
 // New content (search results, the subject list) is converted as it arrives. The choice is kept in localStorage.
 (function () {
@@ -40,7 +40,7 @@
 	try { mode = localStorage.getItem(KEY) || mode; } catch (e) {}
 	const text = new WeakMap();
 	const attrs = new WeakMap();
-	const convert = (s) => (mode === "lat" ? toLat(s) : mode === "cyr" ? toCyr(s) : s);
+	const convert = (s) => (mode === "cyr" ? toCyr(s) : toLat(s));
 
 	function convertNode(n) {
 		if (!text.has(n)) text.set(n, n.nodeValue);
@@ -81,7 +81,8 @@
 	};
 
 	// The button's label per mode (the part in <span> shows on wide screens), in the order a click cycles them.
-	const LABEL = { lat: ["Lat", "inica"], cyr: ["Ћир", "илица"], orig: ["Orig", "inalno"] };
+	// A saved "orig" (the posted text, a choice no longer offered) is Latin again.
+	const LABEL = { lat: ["Lat", "inica"], cyr: ["Ћир", "илица"] };
 	const MODES = Object.keys(LABEL);
 	if (!LABEL[mode]) mode = "lat";
 
@@ -89,7 +90,7 @@
 	function set(m) {
 		mode = m;
 		try { localStorage.setItem(KEY, m); } catch (e) {}
-		document.documentElement.lang = m === "cyr" ? "sr-Cyrl" : m === "lat" ? "sr-Latn" : "sr";
+		document.documentElement.lang = m === "cyr" ? "sr-Cyrl" : "sr-Latn";
 		document.title = convert(title);
 		apply(document.body);
 		const b = document.getElementById("pismo");

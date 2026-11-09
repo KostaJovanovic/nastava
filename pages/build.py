@@ -507,40 +507,52 @@ def render_book(site, book):
 def picker(subjects, book, teachers):
     """The subject picker ("Moji predmeti", site.js): the subjects with topics, as [href, name]; a tree of them by the
     plans, program > (module >) year of study > group: '' for the required subjects, else the elective block
-    ('Изборни предмет 5.4'). The subjects in no plan are under their program's 'Ostalo'; the board's other forums
-    (katedre, moduli) are programs with one group. A group has its subjects in s, any other node its children in c.
-    teachers: each teacher with the subjects they teach (into the list); people: every listed teacher's
+    ('Изборни предмет 5.4'). Every subject of the plans is in it: one with topics as its board subject, one without
+    as its page in the subject book, [href, name, 0]. A board subject in no plan (a subject the faculty no longer
+    has) is under its program's 'Stari predmeti'; the board's other forums (katedre, moduli) are programs with one
+    group. A group has its subjects in s, any other node its children in c.
+    teachers: each teacher with the board subjects they teach (into the list); people: every listed teacher's
     [name, page], for the header search on a teacher's page.
     After render_places (the counts) and render_teachers (the courses)."""
     live = [s for s in subjects.values() if s.get("count")]
-    at = {s["id"]: i for i, s in enumerate(live)}
+    entries = [[s["href"], s["name"]] for s in live]
+    at = {("f", s["id"]): i for i, s in enumerate(live)}
     tree, placed = {}, set()
 
-    def add(path, s):
+    def index(b):
+        """A plan's subject in the list: its board subject when that has topics, else its page in the book."""
+        f = b["forum"]
+        key = ("f", f["id"]) if f and f.get("count") else ("b", b["id"])
+        if key not in at:
+            at[key] = len(entries)
+            entries.append([b["href"], b["name"], 0])
+        placed.add(key)
+        return at[key]
+
+    def add(path, i):
         node = tree
         for name in path:
             node = node.setdefault(name, {})
-        node.setdefault(None, []).append(at[s["id"]])
-        placed.add(s["id"])
+        node.setdefault(None, []).append(i)
 
     order = {p: i for i, p in enumerate(PROGRAMS)}
-    places = [(p, s["forum"]) for s in book if s["forum"] and s["forum"]["id"] in at for p in s["places"]]
-    for p, f in sorted(places, key=lambda x: (order.get(x[0]["program"], len(order)), x[0]["i"])):
+    places = [(p, b) for b in book if not b["gone"] for p in b["places"]]
+    for p, b in sorted(places, key=lambda x: (order.get(x[0]["program"], len(order)), x[0]["i"])):
         group = slot_label(p["slot_name"], p["slot"]) if p["slot"] else ""
-        add([p["program"]] + [p["module"]] * bool(p["module"]) + [f"{(p['semester'] + 1) // 2}. godina", group], f)
+        add([p["program"]] + [p["module"]] * bool(p["module"]) + [f"{(p['semester'] + 1) // 2}. godina", group], index(b))
     for s in live:
-        if s["id"] not in placed:
+        if ("f", s["id"]) not in placed:
             # The board's smer 'Основне академске студије - МИ' is the plans' 'Основне академске студије — МИ'.
             program = s["smer"]["label"].replace(" - ", " — ")
-            add([program, "Ostalo", ""] if " — " in program else [program, ""], s)
+            add([program, "Stari predmeti", ""] if " — " in program else [program, ""], at[("f", s["id"])])
 
     def nodes(tree):
         # The required subjects first, then the elective blocks in the plan's order.
         keys = sorted((k for k in tree if k is not None), key=lambda k: k != "")
-        return [dict(n=k, c=nodes(tree[k]), s=sorted(set(tree[k].get(None, [])), key=lambda i: azbuka(live[i]["name"])))
+        return [dict(n=k, c=nodes(tree[k]), s=sorted(set(tree[k].get(None, [])), key=lambda i: azbuka(entries[i][1])))
                 for k in keys]
-    return dict(subjects=[[s["href"], s["name"]] for s in live], tree=nodes(tree),
-                teachers=[[t["shown"], sorted({at[c["subj"]["id"]] for c in t["courses"] if c["subj"]})]
+    return dict(subjects=entries, tree=nodes(tree),
+                teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
                 people=[[t["shown"], t["href"]] for t in teachers if not t["gone"]])
 
@@ -583,7 +595,8 @@ def main(db_path, out):
     teacher_of = {t["username"]: t for t in sorted(teachers, key=lambda t: not t["gone"]) if t["username"]}
     for it in items:
         it["teacher"] = teacher_of.get((it["author"] or "").lower())
-        it["who"] = it["teacher"]["full_name"] if it["teacher"] else it["author"]
+        # The shown name: no title or middle initial (those are on the teacher's own page only).
+        it["who"] = it["teacher"]["shown"] if it["teacher"] else it["author"]
     topics = load_topics(db, items)
     env.globals["side"] = side = side_panel(items)
     global shell
@@ -642,15 +655,19 @@ if __name__ == "__main__":
     _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, smer=m) for i, n, m in
                       ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k)))
     _pl = dict(program=PROGRAMS[0], module=None, semester=3, i=0, slot=None)
-    _p = picker({1: _a, 2: _b, 3: _c, 4: _e}, [dict(forum=_a, places=[_pl, dict(_pl, i=1, slot="4.4", slot_name="Изборни предмет 4.4.5")]),
-                                        dict(forum=_c, places=[dict(_pl, i=2, semester=4)])],
+    _bk = lambda f, places, **kw: dict(dict(forum=f, places=places, gone=0, id="b", href="/b/", name="Б"), **kw)
+    _p = picker({1: _a, 2: _b, 3: _c, 4: _e}, [
+        _bk(_a, [_pl, dict(_pl, i=1, slot="4.4", slot_name="Изборни предмет 4.4.5")]), _bk(_c, [dict(_pl, i=2, semester=4)]),
+        _bk(None, [dict(_pl, i=3, semester=5)], id="b9", href="/b9/", name="Д"), _bk(None, [_pl], id="b8", gone=1)],
                 [dict(shown="Н", href="/n/", gone=0, courses=[dict(subj=_b), dict(subj=None)]),
                  dict(shown="Г", href="/g/", gone=1, courses=[dict(subj=_a)])])
     _g = lambda n, s: dict(n=n, c=[], s=s)
     assert _p["tree"] == [dict(n=PROGRAMS[0], s=[], c=[
         dict(n="2. godina", s=[], c=[_g("", [0, 2]), _g("Изборни предмет 4.4", [0])]),
-        dict(n="Ostalo", s=[], c=[_g("", [1])])]), dict(n="Катедре", s=[], c=[_g("", [3])])], _p["tree"]
-    assert _p["teachers"] == [["Н", [1]]] and _p["subjects"][0] == ["/1/", "Б"] and _p["people"] == [["Н", "/n/"]]
+        dict(n="3. godina", s=[], c=[_g("", [4])]),
+        dict(n="Stari predmeti", s=[], c=[_g("", [1])])]), dict(n="Катедре", s=[], c=[_g("", [3])])], _p["tree"]
+    assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [["Н", "/n/"]]
+    assert _p["subjects"][0] == ["/1/", "Б"] and _p["subjects"][4:] == [["/b9/", "Д", 0]], _p["subjects"]
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if len(sys.argv) != 3:

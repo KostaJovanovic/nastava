@@ -2,13 +2,23 @@
     It is static: search.js sets the choices from the URL on the search page; on other pages a choice submits the
     search form to the search page. side: the archive's counts (build.py side_panel). -#}
 <aside class="side" aria-label="Meni i filteri">
+  {#- Wide screens: a list. Phone: a tab bar at the bottom of the screen, the schedule pages in its "Raspored" menu
+      (the same links twice; each layout hides the other's). -#}
   <nav class="snav" aria-label="Stranice">
     <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Početna</a>
     <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
     <a href="/predmeti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Predmeti</a>
     {%- for slug, name in side.study_pages.items() %}
-    <a href="/studije/{{ slug }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>{{ name }}</a>
+    <a class="snav__wide" href="/studije/{{ slug }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>{{ name }}</a>
     {%- endfor %}
+    <details class="snav__more">
+      <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>Raspored</summary>
+      <div class="snav__menu">
+        {%- for slug, name in side.study_pages.items() %}
+        <a href="/studije/{{ slug }}/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>{{ name }}</a>
+        {%- endfor %}
+      </div>
+    </details>
   </nav>
   <details class="filters" open>
     <summary class="filters__sum">

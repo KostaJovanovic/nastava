@@ -81,7 +81,8 @@ schedule pages (the newest at `/studije/<slug>/`, each older version at `/studij
 as they were then). Each subject page has a `novo.json` beside it (its newest topic rows), which `site.js` merges into
 "Moji predmeti" on the home page for the subjects a browser follows (a star, kept in localStorage). The side panel lists them and opens a picker dialog
 (`/izbor.json`, `picker()`: program tabs, module and year chips, then the year's required subjects and each elective
-block as cards, plus a teacher/subject search) that follows subjects the same way; a search then covers only those
+block as cards, plus a teacher/subject search; every subject of the current plans, one without board topics linked to
+its subject book page; board subjects in no plan under "Stari predmeti") that follows subjects the same way; a search then covers only those
 (Pagefind filter `pid`; `?sve=1` searches all). Smer, subject and teacher URLs are slugs of their names (`slug()`, `set_hrefs()`; a namesake gets its id
 appended); templates link with `.href`, never build these paths themselves. A forum author is linked to a teacher when
 the username equals the teacher's e-mail before `@`; a teacher's profile subject is matched to the board by code, or by
@@ -98,7 +99,9 @@ subjects, a subject's topics, a smer's subjects) the bar filters the list (`?q=`
 teachers from `/izbor.json`. The chip's × (or Backspace in an empty bar) goes back to searching the whole archive.
 `pismoAttr()` in `pismo.js` sets the placeholder so the script switch keeps it.
 
-**Frontend:** plain JS, no bundler. `search.js` keeps all search state in the URL (`/?q=`, `smer`, year, `autor`, ...)
+**Frontend:** plain JS, no bundler. Light theme unless the visitor picks dark; the script switch is Latin/Cyrillic only.
+On phones the page links are a bottom tab bar (`.snav`; the schedule pages in its "Raspored" menu). Teachers are
+named without title or middle initial (`shown`) everywhere but their own page. `search.js` keeps all search state in the URL (`/?q=`, `smer`, year, `autor`, ...)
 and queries Pagefind client-side. `site.js` is optional enhancement: every page must work without it.
 
 **Attachments** are not hosted: links point straight at nastava.mas.bg.ac.rs. `documents.py` keeps a local copy in

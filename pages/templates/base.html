@@ -2,10 +2,9 @@
 <html lang="sr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#0076b1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#011321" media="(prefers-color-scheme: dark)">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0076b1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Pretraga{% endblock %} · arhiva nastave</title>
 <link rel="preload" href="/static/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -30,7 +29,7 @@
   </form>
   {#- Script (pismo.js) and theme (site.js) buttons; each click moves to the next choice. data-notx: pismo.js leaves their labels alone. -#}
   <div class="hd__ctl" data-notx>
-    <button type="button" class="tg" id="pismo" data-pismo="lat" aria-label="Pismo: Latinica" title="Pismo: latinica, ćirilica ili originalno">Lat<span>inica</span></button>
+    <button type="button" class="tg" id="pismo" data-pismo="lat" aria-label="Pismo: Latinica" title="Pismo: latinica ili ćirilica">Lat<span>inica</span></button>
     <button type="button" class="tg" id="tema" aria-label="Tema" title="Tema: svetla ili tamna"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-sun"></use></svg></button>
   </div>
 </header>

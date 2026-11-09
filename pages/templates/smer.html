@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% from "rows.html" import forum_rows, topic_rows %}
 
-{% block title %}{{ smer.name }}{% endblock %}
+{% block title %}{{ smer.label }}{% endblock %}
 
 {% block main %}
-<div class="mh">
-  <h1 id="title">{{ smer.name }}</h1>
-  <p class="mh__sub">{{ smer.subjects }} {{ smer.subjects | pl('predmet') }} · {{ smer.topics }} {{ smer.topics | pl('tema') }} · {{ smer.count }} {{ smer.count | pl('objava') }}</p>
+<div class="mh mh--card">
+  <div class="mh__row">
+    <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-folder"></use></svg></span>
+    <div>
+      <h1 id="title">{{ smer.label }}</h1>
+      <p class="mh__stats"><span><b>{{ smer.subjects }}</b> {{ smer.subjects | pl('predmet') }}</span><span><b>{{ smer.topics }}</b> {{ smer.topics | pl('tema') }}</span><span><b>{{ smer.count }}</b> {{ smer.count | pl('objava') }}</span></p>
+    </div>
+  </div>
 </div>
 {% if subjects %}{{ forum_rows('Predmeti', subjects, 'book', filter=true) }}{% endif %}
 {% if topics %}{{ topic_rows('Opšta obaveštenja smera', topics) }}{% endif %}

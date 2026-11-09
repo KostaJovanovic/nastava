@@ -23,8 +23,8 @@ def main_text(page):
 
 
 def pismo(page, mode):
-	"""Click the script button (it cycles lat → cyr → orig) until it is on mode."""
-	for _ in range(3):
+	"""Click the script button (it switches lat ↔ cyr) until it is on mode."""
+	for _ in range(2):
 		if page.get_attribute('#pismo', 'data-pismo') == mode:
 			return
 		page.click('#pismo')
@@ -43,7 +43,6 @@ with sync_playwright() as p:
 	words = ['Ђачки распоред, Čas', 'ЏЕМПЕР Љиљана Њива', 'ŠĐŽČĆ šđžčć', 'Ђорђе Đorđe', 'naïve Ñandú', 'Йод ӂ ё']
 	assert page.evaluate('w => w.map(pismoFold)', words) == [fold(w) for w in words]
 	print('pismoFold = build.py fold')
-	original =page.evaluate("() => fetch(location.href).then(r => r.text())")
 	lat = main_text(page)
 	print('default latin, cyrillic letters left in main:', len(CYR.findall(lat)), '| button:', page.get_attribute('#pismo', 'data-pismo'))
 	assert not CYR.findall(lat), lat[:300]
@@ -53,12 +52,6 @@ with sync_playwright() as p:
 	cyr = main_text(page)
 	print('cyrillic: latin words left:', LAT_WORD.findall(cyr.lower())[:8], '| title:', page.title())
 	page.screenshot(path=f'{out}/pismo-cyr.png')
-
-	pismo(page, 'orig')
-	orig = main_text(page)
-	first_line = re.search(r'<h1 class="post__title" id="title">(.*?)</h1>', original, re.S).group(1).strip()
-	print('original restored, title matches the built page:', page.inner_text('h1#title') == first_line)
-	assert page.inner_text('h1#title') == first_line
 
 	pismo(page, 'lat')
 	assert main_text(page) == lat, 'switching back to latin gave a different text'

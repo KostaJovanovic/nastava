@@ -3,7 +3,7 @@
 
 {% block title %}{{ t.title }}{% endblock %}
 {% block crumbs %}
-{%- if t.smer %}{{ crumb(t.smer.href, t.smer.name) }}{% endif %}
+{%- if t.smer %}{{ crumb(t.smer.href, t.smer.label) }}{% endif %}
 {%- if t.subj %}{{ crumb(t.subj.href, t.subj.name) }}{% endif %}
 {%- endblock %}
 

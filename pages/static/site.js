@@ -10,6 +10,18 @@
   // The side panel's picker and the header search on a teacher's page (build.py picker).
   var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
 
+  /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
+     (a teacher's page is under Nastavnici). The phone's "Raspored" menu closes on a tap elsewhere. */
+  var here = location.pathname.replace(/^\/nastavnik\//, '/nastavnici/');
+  [].forEach.call(d.querySelectorAll('.snav a'), function (a) {
+    if (a.pathname === '/' ? here !== '/' : here.indexOf(a.pathname) !== 0) return;
+    a.setAttribute('aria-current', 'page');
+    var m = a.closest('.snav__more');
+    if (m) m.classList.add('is-here');
+  });
+  var more = d.querySelector('.snav__more');
+  if (more) d.addEventListener('click', function (e) { if (!more.contains(e.target)) more.open = false; });
+
   /* Filters: open on wide screens, closed on phones (the search shows the active ones as chips). */
   var f = d.querySelector('details.filters');
   if (f && !wide) f.open = false;
@@ -288,6 +300,11 @@
     })(data.tree, []);
     var card = function (ids, name, hint) {
       var b = el('button', 'mp__card');
+      // A plan's subject with no topics on the board yet: it can be followed, it is shown muted.
+      if (ids.length === 1 && subj[ids[0]][2] === 0) {
+        b.classList.add('mp__card--none');
+        hint = (hint ? hint + ' · ' : '') + 'nema tema na forumu';
+      }
       b.type = 'button';
       b.dataset.ids = ids.join(',');
       b.appendChild(el('span', 'mp__check')).setAttribute('aria-hidden', 'true');
@@ -390,7 +407,8 @@
     if (!sec) return;
     sec.hidden = !list.length;
     chipsOf(sec.querySelector('.moji__s'));
-    Promise.all(list.map(function (s) {
+    // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
+    Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
         .catch(function () { return { rows: [] }; });
     })).then(function (all) {
@@ -415,14 +433,10 @@
     }, function () {});
   });
 
-  /* Theme button: light ↔ dark. Until the first click the system's scheme applies; head.js applies the saved one
-     before the first paint. */
+  /* Theme button: light ↔ dark. Light until the first click; head.js applies the saved one before the first paint. */
   var root = d.documentElement, tb = d.getElementById('tema');
   var THEMES = { light: ['sun', 'svetla'], dark: ['moon', 'tamna'] };
-  var theme = function () {
-    var t = root.dataset.tema;
-    return THEMES[t] ? t : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  };
+  var theme = function () { return THEMES[root.dataset.tema] ? root.dataset.tema : 'light'; };
   var showTheme = function () {
     var v = THEMES[theme()];
     tb.querySelector('use').setAttribute('href', '/static/icons.svg#i-' + v[0]);

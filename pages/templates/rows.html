@@ -5,9 +5,10 @@
 <svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><a href="{{ href }}" title="{{ name }}">{{ name }}</a>
 {%- endmacro -%}
 
-{#- The author: a teacher links to their page by full name; another author is a username, which stays in Latin. -#}
+{#- The author: a teacher links to their page by name (no title or middle initial: those are on their page only);
+    another author is a username, which stays in Latin. -#}
 {%- macro who(r) -%}
-{%- if r.teacher %}<a href="{{ r.teacher.href }}">{{ r.teacher.full_name }}</a>
+{%- if r.teacher %}<a href="{{ r.teacher.href }}">{{ r.teacher.shown }}</a>
 {%- else %}<span data-notx>{{ r.author or '' }}</span>{% endif -%}
 {%- endmacro -%}
 
@@ -36,7 +37,7 @@
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span>
       <div class="fr__t">
         <a class="fr__a" href="{{ s.href }}">{{ s.name }}</a>
-        {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="{{ t.href }}">{{ t.full_name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
+        {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
         {%- elif s.subjects is number %}<p class="fr__sub">{{ s.subjects }} {{ s.subjects | pl('predmet') }}</p>{% endif %}
       </div>
       <div class="fr__more"><span class="fr__n" data-l="{{ s.topics | pl('tema') }}">{{ s.topics }}</span><span class="fr__n" data-l="{{ s.count | pl('objava') }}">{{ s.count }}</span>{{ last(s.last) }}</div>
@@ -61,7 +62,7 @@
       <div class="fr__t">
         <a class="fr__a" href="{{ t.href }}">{{ t.title }}</a>{{ gone(t) }}
         <p class="fr__sub">od {{ who(t.first) }} » <time datetime="{{ t.first.date or '' }}">{{ t.first.when }}</time>
-          {%- if place and t.subj %} · <a href="{{ t.subj.href }}">{{ t.subj.name }}</a>{% elif place and t.smer %} · <a href="{{ t.smer.href }}">{{ t.smer.name }}</a>{% endif %}</p>
+          {%- if place and t.subj %} · <a href="{{ t.subj.href }}">{{ t.subj.name }}</a>{% elif place and t.smer %} · <a href="{{ t.smer.href }}">{{ t.smer.label }}</a>{% endif %}</p>
       </div>
       {%- set n = t.posts | length - 1 %}
       <div class="fr__more"><span class="fr__n" data-l="{{ n | pl('odgovor') }}">{{ n }}</span>{{ last(t.last, title=false, same=not many) }}</div>
@@ -92,7 +93,7 @@
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'file' if r.kind == 'document' else 'msg' }}"></use></svg></span>
       <div class="fr__t"><a class="fr__a" href="{{ post_href(r) }}">{{ r.title }}</a></div>
       <div class="fr__more">
-        <span class="fr__s">{% if r.subj %}<a href="{{ r.subj.href }}">{{ r.subj.name }}</a>{% elif r.smer %}<a href="{{ r.smer.href }}">{{ r.smer.name }}</a>{% endif %}</span>
+        <span class="fr__s">{% if r.subj %}<a href="{{ r.subj.href }}">{{ r.subj.name }}</a>{% elif r.smer %}<a href="{{ r.smer.href }}">{{ r.smer.label }}</a>{% endif %}</span>
         <time class="fr__d" datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
       </div>
     </li>
@@ -120,7 +121,7 @@
     <span class="av" aria-hidden="true"{% if not w %} data-notx{% endif %}>{% if w %}{{ w[0][0] }}{{ w[-1][0] }}{% else %}{{ (r.author or '?')[:2] | upper }}{% endif %}</span>
     <div>
       {%- if r.teacher %}
-      <a class="post__name" href="{{ r.teacher.href }}">{{ r.teacher.full_name }}</a>
+      <a class="post__name" href="{{ r.teacher.href }}">{{ r.teacher.shown }}</a>
       <span class="post__user" data-notx>{{ r.author }}</span>
       {%- if r.teacher.title %}<span>{{ r.teacher.title }}</span>{% endif %}
       {%- if r.teacher.katedra %}<span class="post__k">{{ r.teacher.katedra }}</span>{% endif %}

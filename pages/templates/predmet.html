@@ -2,10 +2,10 @@
 {% from "rows.html" import crumb, topic_rows %}
 
 {% block title %}{{ subj.name }}{% endblock %}
-{% block crumbs %}{{ crumb(subj.smer.href, subj.smer.name) }}{% endblock %}
+{% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{% endblock %}
 
 {% block main %}
-<div class="mh">
+<div class="mh mh--card">
   {#- The star needs site.js (the followed subjects are kept in the browser); without it, it stays hidden. -#}
   <div class="mh__top">
     <h1 id="title">{{ subj.name }}</h1>
@@ -13,7 +13,7 @@
   </div>
   <p class="mh__sub">{{ subj.topics }} {{ subj.topics | pl('tema') }} · {{ subj.count }} {{ subj.count | pl('objava') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}</p>
   {%- if subj.teachers %}
-  <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.full_name }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
+  <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
   {%- endif %}
 </div>
 {% call topic_rows('Teme', topics, filter=true) %}

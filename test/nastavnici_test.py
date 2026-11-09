@@ -33,8 +33,7 @@ with sync_playwright() as p:
 		'| posts:', page.locator('.tp__posts li').count())
 	page.screenshot(path='test/nastavnik.png')
 	page.click('#pismo')
-	page.click('#pismo')
-	print('original script h1:', page.inner_text('h1'), '| button:', page.get_attribute('#pismo', 'data-pismo'))
+	print('cyrillic h1:', page.inner_text('h1'), '| button:', page.get_attribute('#pismo', 'data-pismo'))
 	page.click('#pismo')
 	# On a teacher's page the header search lists teachers; Enter opens the first.
 	page.fill('#q', 'mladenov')
