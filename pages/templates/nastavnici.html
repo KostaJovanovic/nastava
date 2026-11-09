@@ -2,6 +2,7 @@
 {% set origin = 'https://www.mas.bg.ac.rs/fakultet/nastavnici/start' %}
 
 {% block title %}Nastavnici{% endblock %}
+{% block description %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endblock %}
 
 {%- macro card(t) %}
   <li class="pc" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">

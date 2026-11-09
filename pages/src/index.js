@@ -33,13 +33,18 @@ async function page(url) {
 	return new Response(join(await shell.text(), fragment), response);
 }
 
+// The fragment's own head (<title>, description, canonical) ends at this mark; the main part follows.
+const HEAD_END = "<!--/head-->";
+
 export function join(shell, fragment) {
 	const start = fragment.indexOf("<title>");
-	const end = fragment.indexOf("</title>") + "</title>".length;
-	const title = fragment.slice(start, end);
-	const main = fragment.slice(end, fragment.lastIndexOf("</html>"));
+	const mark = fragment.indexOf(HEAD_END);
+	// A fragment built before the mark: its head is the <title> alone.
+	const end = mark < 0 ? fragment.indexOf("</title>") + "</title>".length : mark;
+	const head = fragment.slice(start, end);
+	const main = fragment.slice(mark < 0 ? end : mark + HEAD_END.length, fragment.lastIndexOf("</html>"));
 	// Function replacements: a "$&" in a post must stay as it is.
-	return shell.replace("<title></title>", () => title).replace("<!--main-->", () => main);
+	return shell.replace("<title></title>", () => head).replace("<!--main-->", () => main);
 }
 
 // Web push: a browser's subscription with its followed subjects (site.js), in KV (binding PUSH): the key is the
@@ -85,6 +90,11 @@ export default {
 		if (url.pathname === "/push" || url.pathname === "/push/subs") return push(request, env, url);
 		if (request.method !== "GET" && request.method !== "HEAD") {
 			return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
+		}
+		// One domain for search engines and links: the second one moves there (/push stays: its subscriptions).
+		if (url.hostname === "nastava.valjdakosta.com") {
+			url.hostname = "nastava.masinci.org";
+			return Response.redirect(url.toString(), 301);
 		}
 		const key = new Request(url.toString());
 		const cached = await caches.default.match(key);

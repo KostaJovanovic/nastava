@@ -24,7 +24,8 @@ from urllib.parse import quote, urljoin, urlsplit
 
 import nh3
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from markupsafe import escape
+from jinja2.utils import htmlsafe_json_dumps
+from markupsafe import Markup, escape
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent))
@@ -96,6 +97,28 @@ def slug(s):
 
 # A filter's value in a URL (?katedra=katedra-za-matematiku): Latin only, the shown text stays the name.
 env.filters["slug"] = slug
+
+
+def desc(text, n=160):
+    """A page's description (base.html): its text on one line, cut at a word."""
+    text = " ".join(str(text or "").split())
+    return text if len(text) <= n else text[:n].rsplit(" ", 1)[0] + "…"
+
+
+def forum_post(it, replies=(), title=None):
+    """A post as schema.org's forum post, for Google (and a topic's later posts as its comments)."""
+    def one(r, kind):
+        d = {"@type": kind, "text": r["body"] or "", "url": SITE_URL + post_href(r),
+             "author": {"@type": "Person", "name": r["who"] or "?"}}
+        return d | ({"datePublished": r["posted"]} if r["posted"] else {})
+    return {"@context": "https://schema.org", **one(it, "DiscussionForumPosting"), "headline": title or it["title"] or "",
+            **({"comment": [one(r, "Comment") for r in replies]} if replies else {})}
+
+
+env.filters["desc"] = desc
+# Structured data in a page (schema.org), escaped for a <script> (<, >, &, ' as \u).
+env.filters["ld"] = lambda d: Markup(f'<script type="application/ld+json">{htmlsafe_json_dumps(d, ensure_ascii=False)}</script>')
+env.globals.update(forum_post=forum_post, site_url=SITE_URL)
 
 
 def set_hrefs(rows, path):
@@ -466,25 +489,44 @@ def newest(rows):
 
 
 MAIN = '<main class="main" id="sadrzaj">'
+HEAD_END = "<!--/head-->"
 shell = None  # shell.html, set by main()
+site_dir = None  # the site's folder, set by main(): write() makes a page's URL from its path in it
+# Every page's canonical URL, for sitemap.xml (write).
+urls = {f"{SITE_URL}/"}
 
 
 def split_page(html):
-    """A page -> (shell, fragment). The shell is the page with an empty <title> and <!--main--> for the main part;
-    the fragment is the <title> and the main part, in <html lang="sr"> so that Pagefind reads it.
+    """A page -> (shell, fragment). The shell is the page with an empty <title> (in place of the page's own head, from
+    <title> to <!--/head-->: base.html) and <!--main--> for the main part; the fragment is the page's head, <!--/head-->
+    and the main part, in <html lang="sr"> so that Pagefind reads it.
     The Worker (pages/src/index.js join) puts them together again."""
-    t0, t1 = html.index("<title>"), html.index("</title>") + len("</title>")
+    t0, t1 = html.index("<title>"), html.index(HEAD_END)
     m0, m1 = html.index(MAIN) + len(MAIN), html.rindex("</main>")
-    return (html[:t0] + "<title></title>" + html[t1:m0] + "<!--main-->" + html[m1:],
-            f'<html lang="sr">{html[t0:t1]}{html[m0:m1]}</html>')
+    return (html[:t0] + "<title></title>" + html[t1 + len(HEAD_END):m0] + "<!--main-->" + html[m1:],
+            f'<html lang="sr">{html[t0:t1]}{HEAD_END}{html[m0:m1]}</html>')
 
 
-def write(path, html):
-    """Write only the page's fragment: every page but the home and 404 pages shares shell.html."""
+def write(path, html, canonical=None):
+    """Write only the page's fragment: every page but the home and 404 pages shares shell.html. Its canonical link
+    (one URL on the main domain for search engines, also for its copy on github.io): its own URL, or the page
+    canonical names (a site path) that shows the same."""
     page_shell, fragment = split_page(html)
-    assert page_shell == shell, f"{path}: the page differs from shell.html outside <title> and <main>"
+    assert page_shell == shell, f"{path}: the page differs from shell.html outside its head and <main>"
+    url = SITE_URL + (canonical or f"/{path.parent.relative_to(site_dir).as_posix()}/")
+    urls.add(url)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(fragment, encoding="utf-8")
+    path.write_text(fragment.replace(HEAD_END, f'<link rel="canonical" href="{escape(url)}">{HEAD_END}', 1), encoding="utf-8")
+
+
+def write_sitemap(site):
+    """sitemap.xml with every page's canonical URL, and robots.txt naming it (Cloudflare puts its own rules above)."""
+    assert len(urls) <= 50_000, "a sitemap holds 50,000 URLs: split it into several under a sitemap index"
+    (site / "sitemap.xml").write_text('<?xml version="1.0" encoding="utf-8"?>\n'
+                                      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                                      + "".join(f"<url><loc>{escape(u)}</loc></url>" for u in sorted(urls))
+                                      + "</urlset>\n", encoding="utf-8")
+    (site / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n", encoding="utf-8")
 
 
 def load_topics(db, items):
@@ -1135,8 +1177,8 @@ def main(db_path, out):
     env.globals["side"] = side = side_panel(items)
     # The footer's "Ažurirano" (base.html): the build follows the sync (ci/deploy.sh). UTC; site.js shows local time.
     env.globals["built"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
-    global shell
-    shell = split_page(env.get_template("base.html").render())[0]
+    global shell, site_dir
+    shell, site_dir = split_page(env.get_template("base.html").render())[0], site
     (site / "shell.html").write_text(shell, encoding="utf-8")
     # The faculty's subject code often differs from the board's: a subject of the same name the teacher posted in wins.
     posted = defaultdict(dict)
@@ -1157,7 +1199,9 @@ def main(db_path, out):
     render_cent(site, subjects)
     write_feeds(site, items, subjects, cent_pushed)
     for it in items:
-        write(site / "item" / it["id"] / "index.html", render_item(it))
+        # A post of a topic of several posts is also on the topic's page, which search engines get instead.
+        many = it.get("thread") and len(it["thread"]["posts"]) > 1
+        write(site / "item" / it["id"] / "index.html", render_item(it), many and it["thread"]["href"])
     render_teachers(site, teachers, items, book)
     render_book(site, book)
     raspored = render_study_pages(site, db)
@@ -1170,6 +1214,7 @@ def main(db_path, out):
     (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers), vesti),
                                      encoding="utf-8")
     (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")
+    write_sitemap(site)
     print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['live'])} subjects, "
           f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti", flush=True)
     npx = shutil.which("npx") or sys.exit("npx not found: Pagefind needs Node.js")
@@ -1253,8 +1298,10 @@ if __name__ == "__main__":
     _at = attachments('<dl>\n<dt><span></span> <a href="/f?id=1" rel="x">a.docx</a></dt>\n<dd><em>Ocene</em></dd> <dd>(1 KiB) preuzeto 2 puta</dd>\n</dl>')
     assert _at == ('<a class="att" href="/f?id=1" rel="noopener noreferrer"><span class="att__t att__t--doc">DOCX</span><span class="att__n">'
                    'a.docx<span class="att__c"><em>Ocene</em></span><small>1 KiB · preuzeto 2 puta</small></span></a>'), _at
-    _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
-    assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
+    _s, _f = split_page(f"<html><title>T</title><meta>{HEAD_END}<x>{MAIN}a</main><p></main></html>")
+    assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>",
+                        f'<html lang="sr"><title>T</title><meta>{HEAD_END}a</main><p></html>'), (_s, _f)
+    assert desc(" a\n b ") == "a b" and desc("aaa bbb ccc", 9) == "aaa bbb…"
     assert drop_empty_tables('<table><tr><th>Predmet</th></tr><tr><td> &nbsp;</td></tr></table><p>x</p>') == "<p>x</p>"
     assert drop_empty_tables('<table><tr><td></td><td><b>2.11.</b></td></tr></table>').startswith("<table>")
     assert drop_empty_tables('<h2>A</h2><div><table><td>1</td></table></div><h2>B</h2>\n<div class="l">'

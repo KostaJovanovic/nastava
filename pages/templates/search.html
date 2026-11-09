@@ -3,6 +3,8 @@
 {% from "rows.html" import forum_rows, topic_rows, vest_rows %}
 
 {% block title %}Forum nastave{% endblock %}
+{#- A whole page, not written by build.py write(): its canonical link here. A search (/?q=) is this page too. -#}
+{% block head %}<link rel="canonical" href="{{ site_url }}/">{% endblock %}
 
 {% block navbar %}{% endblock %}
 

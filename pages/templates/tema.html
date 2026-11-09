@@ -2,6 +2,9 @@
 {% from "rows.html" import crumb, post %}
 
 {% block title %}{{ t.title }}{% endblock %}
+{% block title_more %}{% if t.subj %} · {{ t.subj.name }}{% endif %}{% endblock %}
+{% block description %}{{ (t.first.body or t.title) | desc }}{% endblock %}
+{% block og_type %}article{% endblock %}
 {% block crumbs %}
 {%- if t.smer %}{{ crumb(t.smer.href, t.smer.label) }}{% endif %}
 {%- if t.subj %}{{ crumb(t.subj.href, t.subj.name) }}{% endif %}
@@ -18,6 +21,7 @@
   {{ post(r) }}
   {%- endfor %}
 </div>
+{{ forum_post(t.first, t.posts[1:], t.title) | ld }}
 {%- if t.subj %}
 <p class="acts"><a class="btn" href="{{ t.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Nazad na {{ t.subj.name }}</a></p>
 {%- endif %}

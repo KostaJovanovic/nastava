@@ -3,6 +3,8 @@
 {% from "rows.html" import crumb %}
 
 {% block title %}{{ v.title }}{% endblock %}
+{% block description %}{{ (v.body or v.title) | desc }}{% endblock %}
+{% block og_type %}article{% endblock %}
 {% block crumbs %}{{ crumb(v.year_href, 'Vesti ' ~ v.year) }}{% endblock %}
 
 {% block main %}
@@ -18,4 +20,7 @@
     <div class="prose prose--html">{{ v.html | safe }}</div>
   </div>
 </article>
+{{ {"@context": "https://schema.org", "@type": "NewsArticle", "headline": v.title, "datePublished": v.posted,
+    "url": site_url ~ v.href, "publisher": {"@type": "CollegeOrUniversity", "name": "Mašinski fakultet Univerziteta u Beogradu",
+    "url": "https://www.mas.bg.ac.rs/"}} | ld }}
 {% endblock %}

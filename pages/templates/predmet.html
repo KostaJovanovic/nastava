@@ -2,6 +2,9 @@
 {% from "rows.html" import crumb, topic_rows, post_href %}
 
 {% block title %}{{ subj.name }}{% endblock %}
+{#- One name is a subject in several smerovi. -#}
+{% block title_more %} · {{ subj.smer.short }}{% endblock %}
+{% block description %}{{ subj.name }} ({{ subj.smer.label }}), Mašinski fakultet u Beogradu: sve objave sa foruma nastave, {{ subj.topics | n }} {{ subj.topics | pl('objava') }} — rezultati, termini ispita i obaveštenja.{% endblock %}
 {% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{% endblock %}
 
 {% block main %}

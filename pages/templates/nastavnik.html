@@ -3,6 +3,8 @@
 {% from "rows.html" import crumb, post_href %}
 
 {% block title %}{{ t.shown }}{% endblock %}
+{% block description %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endblock %}
+{% block og_type %}profile{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
 
 {#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by
@@ -84,4 +86,9 @@
   <div class="prose prose--html">{{ html | safe }}</div>
   <p class="tp__src">Preuzeto {{ t.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">{{ source_name }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
 </details>
+{#- A teacher who left: no longer the faculty's (worksFor). -#}
+{%- set _person = {"@type": "Person", "name": t.shown, "jobTitle": t.title, "url": site_url ~ t.href} %}
+{%- if t.photo %}{% set _ = _person.update(image=(site_url ~ t.photo) if t.photo.startswith('/') else t.photo) %}{% endif %}
+{%- if not t.gone %}{% set _ = _person.update(worksFor={"@type": "CollegeOrUniversity", "name": "Mašinski fakultet Univerziteta u Beogradu", "url": "https://www.mas.bg.ac.rs/"}) %}{% endif %}
+{{ {"@context": "https://schema.org", "@type": "ProfilePage", "mainEntity": _person} | ld }}
 {% endblock %}

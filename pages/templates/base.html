@@ -5,8 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#0076b1">
-<meta name="robots" content="noindex, nofollow">
-<title>{% block title %}Pretraga{% endblock %} · arhiva nastave</title>
+{#- From <title> to <!--/head-->: the page's own head, kept in its fragment (build.py split_page, which adds the
+    canonical link). title_more: words only the tab and search results show (the crumbs show the title alone).
+    description: for search results and link previews (Viber, Discord). -#}
+<title>{% block title %}Pretraga{% endblock %}{% block title_more %}{% endblock %} · arhiva nastave</title>
+<meta name="description" content="{% block description %}Arhiva foruma nastave Mašinskog fakulteta u Beogradu: sve objave od 2014, vesti, rasporedi, predmeti i nastavnici, sa pretragom ćirilicom i latinicom.{% endblock %}">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="{{ self.description() }}">
+<meta property="og:type" content="{% block og_type %}website{% endblock %}">
+<meta property="og:site_name" content="arhiva nastave · Mašinski fakultet">
+<meta property="og:locale" content="sr_RS">
+{%- block head %}{% endblock %}<!--/head-->
 <link rel="preload" href="/static/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/style.css">
 <script src="/static/head.js"></script>

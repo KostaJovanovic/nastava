@@ -2,6 +2,10 @@
 {% from "rows.html" import crumb, post, who %}
 
 {% block title %}{{ it.title }}{% endblock %}
+{#- The board repeats titles ("Обавештење", "Re: …"): the subject and the date tell them apart. -#}
+{% block title_more %}{% if it.subject %} · {{ it.subject }}{% endif %}{% if it.date %} · {{ it.date | dmy }}{% endif %}{% endblock %}
+{% block description %}{{ (it.body or it.title) | desc }}{% endblock %}
+{% block og_type %}article{% endblock %}
 {% block crumbs %}
 {%- if it.smer %}{{ crumb(it.smer.href, it.smer.label) }}{% endif %}
 {%- if it.subj %}{{ crumb(it.subj.href, it.subj.name) }}{% endif %}
@@ -37,6 +41,7 @@
 </p>
 {% else %}
 {{ post(it, 'h1', link=false) }}
+{%- if not _many %}{{ forum_post(it) | ld }}{% endif %}
 <p class="acts">
   {%- if _many %}<a class="btn btn--pri" href="{{ it.thread.href }}#p{{ it.num }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-msgs"></use></svg>Cela objava</a>{% endif %}
   {%- if it.prev %}<a class="btn" href="/item/{{ it.prev.id }}/" rel="prev" title="{{ it.prev.title }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Prethodni post</a>{% endif %}

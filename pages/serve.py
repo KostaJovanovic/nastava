@@ -22,9 +22,8 @@ FRAGMENT = '<html lang="sr"><title>'
 
 
 def join(shell, fragment):
-    end = fragment.index("</title>") + len("</title>")
-    title, main = fragment[fragment.index("<title>"):end], fragment[end:fragment.rindex("</html>")]
-    return shell.replace("<title></title>", title, 1).replace("<!--main-->", main, 1)
+    head, _, main = fragment[fragment.index("<title>"):fragment.rindex("</html>")].partition("<!--/head-->")
+    return shell.replace("<title></title>", head, 1).replace("<!--main-->", main, 1)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -78,7 +77,7 @@ def lan_ip():
 
 
 if __name__ == "__main__":
-    assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title>$& M</html>") == "<title>T</title><b>$& M</b>"
+    assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title><meta><!--/head-->$& M</html>") == "<title>T</title><meta><b>$& M</b>"
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 15497  # server.bat's PORT, drawn at random
     lan = f"http://{lan_ip()}:{port}"
     if os.name == "nt":  # ANSI colours for the QR in the classic console; Windows Terminal has them already
