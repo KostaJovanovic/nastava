@@ -171,7 +171,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .cmd input::placeholder { color: var(--dim); opacity: 1; }
 /* What the bar searches (site.js): a quiet pill after the text. */
 .cmd select {
-  flex: none; max-width: 40%; height: 28px; padding: 0 8px;
+  /* As wide as the chosen option, not the longest one. */
+  flex: none; field-sizing: content; max-width: 40%; height: 28px; padding: 0 8px;
   border: 0; border-radius: 14px; background: light-dark(#e1ebf2, #2f4d63); color: var(--fg);
   font: 400 12.5px var(--sans); text-overflow: ellipsis; cursor: pointer;
 }
