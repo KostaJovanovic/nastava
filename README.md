@@ -112,4 +112,4 @@ When the attachments are wanted: `uv run documents.py sync`. Old .doc/.xls/.ppt 
 ## License
 
 The code is under the [GNU GPL v3](LICENSE). It covers the code only: the archived posts, news, schedules, files and
-photos belong to their authors and the faculty.
+photos belong to their authors and the faculty. The parts taken from dlwms are under it with Omar Žunić's consent.
