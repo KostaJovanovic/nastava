@@ -545,6 +545,10 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .svc[data-s="etc"] { --c: #475569; }
 .svc[data-s="mat"] { --c: #92400e; }
 .svc[data-s="geotermal"] { --c: #115e59; }
+.svc[data-s="fluidi"] { --c: #1e40af; }
+.svc[data-s="motori"] { --c: #9f1239; }
+.svc[data-s="meh"] { --c: #3f6212; }
+.svc[data-s="pt"] { --c: #6d28d9; }
 .mp__none { margin: 16px 0; color: var(--dim); }
 .mp__foot span { margin-right: auto; }
 .mp__foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--dim); font-size: 13px; }

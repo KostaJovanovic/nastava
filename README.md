@@ -57,7 +57,8 @@ pipeline and site, with new scrapers for phpBB.
 - `katedre.py`: archive the departments' own sites (ie, etc, motori, meh, bmi, pt, ppm, fluidi, hidro, ciah): a crawl
   from each site's start, on its host, each page's content as shown (a version per change of its text or links) into
   `katedre_pages`. The files stay linked. Not the Moodles (a login) nor omk, geotermal, au, tmm (no answer).
-  The site does not show these pages yet.
+  The site does not show these pages yet; "Moji predmeti" marks the subjects that have one (a page titled with the
+  subject's name).
 - `nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
