@@ -74,7 +74,10 @@
        The rows are moved, not copied (pismo.js keeps each text's original). A row with the data-id of an earlier one
        (a subject in two plans) is only in the page's own grouping. */
     var box = d.querySelector('[data-groups]'), gsel = bar.querySelector('[data-group]'), ssel = bar.querySelector('[data-sort]');
-    var own = box ? [].slice.call(box.children) : [], home = rows.map(function (r) { return [r, r.parentNode]; }), made = null;
+    // Grouped and ordered: the rows in [data-groups] only (the teachers who left keep their own list).
+    var own = box ? [].slice.call(box.children) : [], made = null;
+    var home = rows.filter(function (r) { return !box || box.contains(r); }).map(function (r) { return [r, r.parentNode]; });
+    var left = d.querySelector('[data-left]');
     // A group's heading: the row's value is a Latin slug (it goes in the URL), so the name is the filter option's
     // data-label, in full ('Катедра за бродоградњу'; without the prefix it reads in the wrong case).
     var label = function (g, v) {
@@ -139,7 +142,7 @@
         });
         r.hidden = !ok;
         // Counted once per subject, among the rows on view.
-        if (ok && (!made || made.contains(r))) ids[r.dataset.id || i] = 1;
+        if (ok && (!made || made.contains(r)) && (!left || !left.contains(r))) ids[r.dataset.id || i] = 1;
       });
       // A group, semester or elective slot with no row left is hidden; while a filter is set, a folded group with
       // rows opens, so no result is hidden inside one.
@@ -152,8 +155,10 @@
         if (filtering && !empty && g.tagName === 'DETAILS') g.open = true;
       });
       var shown = Object.keys(ids).length, n = bar.querySelector('[data-shown]'), none = d.querySelector('[data-none]');
+      var gone = left ? left.querySelectorAll('[data-rows] > li:not([hidden])').length : 0;
+      if (left) left.querySelector('[data-left-n]').textContent = gone;
       if (n) n.textContent = shown;
-      if (none) none.hidden = shown > 0;
+      if (none) none.hidden = shown + gone > 0;
       history.replaceState(null, '', p.size ? '?' + p : location.pathname);
     };
     // The header search left for the whole archive: the list shows all again.

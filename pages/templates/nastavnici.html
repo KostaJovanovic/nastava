@@ -59,12 +59,10 @@
 </ol>
 </div>
 <p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
-{#- Teachers gone from the faculty's list keep their pages; outside [data-rows], so the filter and grouping skip them.
-    shortcut: the header search does not filter this section, add it to site.js once the section grows long. -#}
-{%- if left %}
-<details class="sg">
-  <summary class="sg__h">Više nisu na spisku fakulteta <span>· {{ left | length }}</span></summary>
-  <ol class="people">{% for t in left %}{{ card(t) }}{% endfor %}</ol>
-</details>
-{%- endif %}
+{#- Teachers gone from the faculty's list keep their pages. Outside [data-groups]: the filter covers them, grouping
+    and order do not (site.js). -#}
+<section class="sg" data-left>
+  <h2 class="sg__h">Više nisu na spisku fakulteta <span>· <b data-left-n>{{ left | length }}</b></span></h2>
+  <ol class="people" data-rows>{% for t in left %}{{ card(t) }}{% endfor %}</ol>
+</section>
 {% endblock %}

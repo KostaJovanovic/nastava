@@ -462,8 +462,12 @@ def load_teachers(db, subjects):
         # The profile's photo: the faculty's 130 px copy for the list, the original (about 600x700) for the page.
         # shortcut: photos load from www.mas.bg.ac.rs, so they go when the faculty removes one; host copies if that happens.
         m = re.search(r'<img[^>]+src="([^"]*_media/fakultet/nastavnici/[^"]+)"', t["html"] or "")
-        t["thumb"] = m and urljoin(STUDY_SITE, unescape(m[1]))
-        t["photo"] = m and t["thumb"].split("?")[0]
+        own = m and urljoin(STUDY_SITE, unescape(m[1]))
+        # A departed teacher's photo the faculty lost: a Wayback or masinac.org copy (nastavnici.py history).
+        if t.get("photo"):
+            t["thumb"] = t["photo"]
+        else:
+            t["thumb"], t["photo"] = own, own and own.split("?")[0]
         # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
         t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
@@ -507,13 +511,25 @@ def render_teachers(site, teachers, items, book):
         t["find"] = fold(" ".join([t["full_name"], t["title"] or "", t["katedra"] or "", t["email"] or "", t["research"] or "",
                                    t["office"] or ""] + [s["name"] for s in t["subjects"]]))
     for t in teachers:
-        source = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
+        source = base = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
+        name = "mas.bg.ac.rs"
+        if t["id"].startswith("masinac-"):
+            # Known only from masinac.org: 'masinac-omk-zoran-stamenic' is its page katedre/omk/predavaci/zoran-stamenic.
+            _, k, who = t["id"].split("-", 2)
+            source = base = f"https://www.masinac.org/fakultet/katedre/{k}/predavaci/{who}"
+            name = "masinac.org"
+        elif t["gone"]:
+            name = "web.archive.org"
+            # The faculty took the profile down: the Wayback Machine's copy nearest the last day it was listed.
+            stamp = re.sub(r"\D", "", t["last_seen"])[:14]
+            source = f"https://web.archive.org/web/{stamp}/{source}"
         local = lambda v: pages.get(v.split("?")[0]) or subj_pages.get(v.split("?")[0])
         # The profile repeats the name as its first heading and the photo; the page has both above it.
         html = re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S)
-        html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), source, local)
+        # base: the profile's relative links are the faculty's (or masinac.org's), even when shown from the Wayback copy.
+        html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), base, local)
         write(site / t["href"].strip("/") / "index.html",
-              env.get_template("nastavnik.html").render(t=t, html=html, source_url=source))
+              env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name))
     listed = [t for t in teachers if not t["gone"]]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
     # The ones who left, most recent first: a section below the list.

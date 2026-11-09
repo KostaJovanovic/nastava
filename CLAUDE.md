@@ -15,6 +15,7 @@ Every script is a uv script with inline dependencies (`# /// script` header), so
     uv run nastava.py stats         # board counts vs stored rows; exit 1 when posts are missing
     uv run studije.py sync          # schedule pages + their files (versioned by sha256)
     uv run nastavnici.py sync       # teacher list, profiles, emeritus page
+    uv run nastavnici.py history    # once: teachers who left before, from the Wayback Machine and masinac.org (~20 min)
     uv run predmeti.py sync         # subject book, subject pages, where each is in the plans (~815 requests)
     uv run documents.py sync        # attachments into files/ + text extraction (not run by CI)
     uv run pages/build.py nastava.db pages/.build      # render pages/.build/site, run Pagefind (npx), strip its hidden text
