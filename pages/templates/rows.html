@@ -25,13 +25,14 @@
 </div>
 {%- endmacro -%}
 
-{#- Smerovi (home) or the subjects of a smer; icon: 'folder' or 'book'. -#}
-{%- macro forum_rows(title, places, icon) -%}
-<section class="fb fb--forums">
+{#- Smerovi (home) or the subjects of a smer; icon: 'folder' or 'book'. filter: the header search filters the
+    subjects (site.js data-scope), by their folded name and teachers (build.py render_places). -#}
+{%- macro forum_rows(title, places, icon, filter=false) -%}
+<section class="fb fb--forums"{% if filter %} data-filter data-scope="Predmeti smera" data-ph="Naziv predmeta ili nastavnik…"{% endif %}>
   <div class="fb__h"><h2>{{ title }}</h2><span>Teme</span><span>Objave</span><span>Poslednja objava</span></div>
-  <ol class="fb__rows">
+  <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for s in places %}
-    <li class="fr">
+    <li class="fr"{% if filter %} data-find="{{ s.find }}"{% endif %}>
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span>
       <div class="fr__t">
         <a class="fr__a" href="{{ s.href }}">{{ s.name }}</a>
@@ -42,6 +43,7 @@
     </li>
     {%- endfor %}
   </ol>
+  {%- if filter %}<p class="empty" data-none hidden>Nijedan predmet ne odgovara pretrazi.</p>{% endif %}
 </section>
 {%- endmacro -%}
 

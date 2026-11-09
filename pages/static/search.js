@@ -327,9 +327,6 @@ function restoreFromUrl() {
 	const p = new URLSearchParams(location.search);
 	form.elements.q.value = p.get("q") ?? "";
 	newest = p.get("red") === "novije";
-	// "Pretraži tekst objava" on a subject's page: the box is where the search goes on (wide screens; on a phone the
-	// keyboard would cover the results).
-	if (!p.get("q") && p.has("subject") && matchMedia("(min-width: 900px)").matches) form.elements.q.focus();
 	for (const input of document.querySelectorAll('input[form="sf"]')) {
 		if (input.type === "radio") input.checked = input.value === (p.get(input.name) ?? "");
 		else if (input.name === "from" || input.name === "to") input.value = p.get(input.name) ?? "";

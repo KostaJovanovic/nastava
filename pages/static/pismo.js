@@ -70,6 +70,16 @@
 		}
 	}
 
+	// An attribute a script changes later (site.js: the header search's placeholder): pismoAttr(el, a, v) keeps v as
+	// the original and shows it converted; pismoAttr(el, a) returns the original.
+	window.pismoAttr = (el, a, v) => {
+		const saved = attrs.get(el) ?? {};
+		if (v === undefined) return saved[a] ?? el.getAttribute(a);
+		saved[a] = v;
+		attrs.set(el, saved);
+		el.setAttribute(a, convert(v));
+	};
+
 	// The button's label per mode (the part in <span> shows on wide screens), in the order a click cycles them.
 	const LABEL = { lat: ["Lat", "inica"], cyr: ["Ћир", "илица"], orig: ["Orig", "inalno"] };
 	const MODES = Object.keys(LABEL);

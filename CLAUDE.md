@@ -91,6 +91,12 @@ lower case for the Pagefind index; the browser folds the query the same way (`pi
 used by `search.js` and `site.js`). The two must stay in sync. `pismo.js` also switches the whole page between Latin,
 Cyrillic and the original text.
 
+**Header search in context:** the header bar is in the shell, so a page names its context with `data-scope` (and
+`data-ph`, `data-enter`, `data-people`); `site.js` adds a chip to the bar. On a list page (`[data-filter]`: teachers,
+subjects, a subject's topics, a smer's subjects) the bar filters the list (`?q=`); on a teacher's page it lists
+teachers from `/izbor.json`. The chip's × (or Backspace in an empty bar) goes back to searching the whole archive.
+`pismoAttr()` in `pismo.js` sets the placeholder so the script switch keeps it.
+
 **Frontend:** plain JS, no bundler. `search.js` keeps all search state in the URL (`/?q=`, `smer`, year, `autor`, ...)
 and queries Pagefind client-side. `site.js` is optional enhancement: every page must work without it.
 

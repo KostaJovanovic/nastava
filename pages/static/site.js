@@ -4,23 +4,32 @@
   var d = document;
   var wide = window.matchMedia && matchMedia('(min-width: 900px)').matches;
   var fold = window.pismoFold;
+  var sf = d.getElementById('sf'), q = d.getElementById('q');
+  // The page's context for the header search (see below); null on a page without one, or once it is left.
+  var scope = q && sf && d.querySelector('[data-scope]'), leaveScope = null;
+  // The side panel's picker and the header search on a teacher's page (build.py picker).
+  var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
 
   /* Filters: open on wide screens, closed on phones (the search shows the active ones as chips). */
   var f = d.querySelector('details.filters');
   if (f && !wide) f.open = false;
 
-  /* Apply filters right away when a choice or a year changes. On a page other than search, this opens the search. */
+  /* Apply filters right away when a choice or a year changes. On a page other than search, this opens the search
+     of the whole archive: the header's text was for the page's list, so it goes. */
   d.addEventListener('change', function (e) {
-    if (!e.target.matches('.filters input[form=sf]')) return;
-    var s = d.getElementById('sf'); if (s) s.requestSubmit ? s.requestSubmit() : s.submit();
+    if (!e.target.matches('.filters input[form=sf]') || !sf) return;
+    if (scope) { leaveScope(); q.value = ''; }
+    sf.requestSubmit ? sf.requestSubmit() : sf.submit();
   });
 
-  /* A table filter in the page (a subject's topics, the teachers): every row is in the page.
-     data-f="find": all words in the row's folded data-find; data-f="x" on a select: the value is one of row data-x ("a|b"). */
-  var bar = d.querySelector('[data-filter]');
+  /* A table filter in the page (a subject's topics, the teachers, a smer's subjects): every row is in the page.
+     data-f="find": all words in the row's folded data-find; data-f="x" on a select: the value is one of row data-x ("a|b").
+     With data-scope on it, the header search is its text box (?q=). */
+  var bar = d.querySelector('[data-filter]'), runRows = null;
   if (bar) {
     var rows = [].slice.call(d.querySelectorAll('[data-rows] > li'));
     var ctl = [].slice.call(bar.querySelectorAll('[data-f]'));
+    if (bar === scope) { q.dataset.f = 'find'; ctl.unshift(q); }
     /* Grouping and order (the teachers, the subjects): [data-group] groups by a row's data-<value> ('-': one group),
        '' is the page's own grouping; [data-sort] orders each group by data-<value>, '-x' by the number x, highest first.
        The rows are moved, not copied (pismo.js keeps each text's original). A row with the data-id of an earlier one
@@ -94,10 +103,18 @@
       if (box) [].forEach.call(box.querySelectorAll('.sg, .sg__s, .sg__slot'), function (g) {
         g.classList.toggle('is-empty', !g.querySelector('[data-rows] > li:not([hidden])'));
       });
-      var shown = Object.keys(ids).length;
-      bar.querySelector('[data-shown]').textContent = shown;
-      d.querySelector('[data-none]').hidden = shown > 0;
+      var shown = Object.keys(ids).length, n = bar.querySelector('[data-shown]'), none = d.querySelector('[data-none]');
+      if (n) n.textContent = shown;
+      if (none) none.hidden = shown > 0;
       history.replaceState(null, '', p.size ? '?' + p : location.pathname);
+    };
+    // The header search left for the whole archive: the list shows all again.
+    var dropFind = function () {
+      var i = ctl.indexOf(q);
+      if (i < 0) return;
+      ctl.splice(i, 1);
+      delete q.dataset.f;
+      runRows();
     };
     var p = new URLSearchParams(location.search);
     ctl.forEach(function (c) {
@@ -113,6 +130,78 @@
     var ar = bar.querySelector('[data-arrange]');
     if (ar) ar.hidden = false;
     if (p.size) { arrange(); runRows(); }
+  }
+
+  /* The header search in the page's context: [data-scope] names it and has the bar's placeholder (data-ph). On a
+     list page ([data-filter], above) the bar filters the list; data-people lists matching teachers under the bar;
+     data-enter is where Enter goes, with q= appended. A chip before the text names the context: its ×, or Backspace
+     in an empty bar, leaves it for the search of the whole archive. */
+  if (scope) {
+    var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
+    var ph = attr(q, 'placeholder'), chip = d.createElement('button'), list = null;
+    chip.type = 'button';
+    chip.className = 'cmd__scope';
+    chip.title = 'Pretraži celu arhivu';
+    chip.setAttribute('aria-label', scope.dataset.scope + ': ukloni, pretraži celu arhivu');
+    chip.innerHTML = '<span></span><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg>';
+    chip.firstChild.textContent = scope.dataset.scope;
+    q.parentNode.insertBefore(chip, q);
+    attr(q, 'placeholder', scope.dataset.ph);
+    leaveScope = function () {
+      scope = null;
+      chip.remove();
+      if (list) list.hidden = true;
+      attr(q, 'placeholder', ph);
+      if (dropFind) dropFind();
+    };
+    chip.addEventListener('click', function () { leaveScope(); q.focus(); });
+    q.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !q.value && scope) leaveScope();
+    });
+    sf.addEventListener('submit', function (e) {
+      if (!scope) return;
+      e.preventDefault();
+      var a = list && !list.hidden && list.querySelector('a'), v = q.value.trim();
+      if (a) location.href = a.href;
+      else if (scope.dataset.enter && v) location.href = scope.dataset.enter + 'q=' + encodeURIComponent(fold(v));
+    });
+    if ('people' in scope.dataset && izbor) izbor.then(function (data) {
+      list = d.createElement('ul');
+      list.className = 'cmd__list';
+      list.id = 'q-list';
+      list.hidden = true;
+      sf.appendChild(list);
+      q.setAttribute('aria-controls', 'q-list');
+      var show = function () {
+        var w = fold(q.value.trim()).split(/\s+/).filter(Boolean);
+        list.textContent = '';
+        if (scope && w.length) data.people.filter(function (t) {
+          var n = fold(t[0]);
+          return w.every(function (x) { return n.indexOf(x) > -1; });
+        }).slice(0, 8).forEach(function (t) {
+          var li = d.createElement('li'), a = d.createElement('a');
+          a.href = t[1];
+          a.textContent = t[0];
+          li.appendChild(a);
+          list.appendChild(li);
+        });
+        list.hidden = !list.children.length;
+      };
+      q.addEventListener('input', show);
+      q.addEventListener('focus', show);
+      // Arrow keys move between the bar and the names; Escape or a click elsewhere closes the list.
+      sf.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { list.hidden = true; return; }
+        if (list.hidden || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
+        var links = [].slice.call(list.querySelectorAll('a')), i = links.indexOf(d.activeElement);
+        e.preventDefault();
+        i = e.key === 'ArrowDown' ? Math.min(i + 1, links.length - 1) : i - 1;
+        (i < 0 ? q : links[i]).focus();
+      });
+      d.addEventListener('click', function (e) { if (!sf.contains(e.target)) list.hidden = true; });
+      // Typed before the list loaded.
+      if (d.activeElement === q) show();
+    }).catch(function () {});
   }
 
   /* My subjects: the subjects this browser follows, [{href, name}] in localStorage. A subject's page has the star;
@@ -145,7 +234,7 @@
      groups render when first opened, or, while the box has text, the teachers and subjects that match it. Ticking a
      subject follows it; ticking a teacher follows all their subjects (checked: all followed, mixed: some). */
   var iz = d.querySelector('[data-izbor]');
-  if (iz && window.fetch) fetch('/izbor.json').then(function (r) { return r.json(); }).then(function (data) {
+  if (iz && izbor) izbor.then(function (data) {
     var subj = data.subjects, tree = iz.querySelector('[data-tree]'), q = iz.querySelector('[data-izbor-q]');
     var hits = d.createElement('div');
     hits.className = 'izbor';
@@ -173,7 +262,7 @@
         c.indeterminate = k > 0 && k < ids.length;
       });
       iz.querySelector('[data-moji-n]').textContent = list.length || '';
-      iz.querySelector('[data-scope]').hidden = !list.length;
+      iz.querySelector('[data-moji-scope]').hidden = !list.length;
     };
     iz.addEventListener('change', function (e) {
       if (!e.target.dataset.ids) return;

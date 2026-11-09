@@ -7,9 +7,8 @@
   <h1 id="title">Nastavnici</h1>
   <p class="mh__sub">Ko predaje šta, gde je kabinet i kada su konsultacije. Broj objava je sa foruma nastave.</p>
 </div>
-<form class="people__bar" data-filter role="search" onsubmit="return false">
-  <label class="vh" for="t-q">Traži nastavnika</label>
-  <input class="field" id="t-q" name="q" type="search" placeholder="Ime, predmet, katedra, kabinet, mejl…" autocomplete="off" data-f="find">
+{#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
+<form class="people__bar" data-filter data-scope="Nastavnici" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
   <label class="vh" for="t-k">Katedra</label>
   {#- value: the name's Latin slug, which ?katedra= links and the rows' data-k use (no Cyrillic in a URL);
       data-label: the full name, a group's heading (site.js). -#}

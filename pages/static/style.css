@@ -154,6 +154,26 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   font: 400 13px var(--sans); cursor: pointer;
 }
 .cmd__go:hover { background: var(--go-2); }
+/* The search's context on a list page (site.js): a chip before the text, whose × leaves it for the whole archive;
+   on a teacher's page, the matching teachers under the bar. */
+.cmd { position: relative; }
+.cmd__scope {
+  display: inline-flex; align-items: center; gap: 4px; flex: none; max-width: 45%;
+  height: 26px; padding: 0 6px 0 10px;
+  border: 0; border-radius: 999px; background: rgba(240, 235, 231, .16); color: var(--head-fg);
+  font: 400 12.5px var(--sans); cursor: pointer;
+}
+.cmd__scope span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmd__scope .i { width: 14px; height: 14px; flex: none; }
+.cmd__scope:hover { background: rgba(240, 235, 231, .26); }
+.cmd__scope:focus-visible { outline: 2px solid var(--head-fg); outline-offset: 1px; }
+.cmd__list {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+  margin: 0; padding: 4px; list-style: none;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+.cmd__list a { display: block; padding: 7px 10px; border-radius: 6px; color: var(--fg); font-size: 14px; text-decoration: none; }
+.cmd__list a:hover, .cmd__list a:focus-visible { background: var(--hover); color: var(--accent); outline: none; }
 
 /* The script button (pismo.js: lat → ćir → orig) and the theme button (site.js: light ↔ dark). */
 .hd__ctl { grid-area: pismo; justify-self: end; display: flex; gap: 6px; }
@@ -469,7 +489,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .fbar__n { color: var(--dim); font-size: 13px; align-self: center; white-space: nowrap; }
 .fbar__n b { color: var(--fg); font-variant-numeric: tabular-nums; }
 @container main (min-width: 760px) {
-  .fbar { grid-template-columns: minmax(0, 1fr) minmax(0, 240px) auto; align-items: center; }
+  .fbar { grid-template-columns: minmax(0, 240px) auto; justify-content: space-between; align-items: center; }
 }
 
 .stats { padding: 4px 2px; color: var(--dim); font-size: 13px; }
@@ -605,7 +625,7 @@ a.post__name:hover { color: var(--accent); text-decoration: underline; }
 
 /* ---- The teachers ---------------------------------------------------------- */
 .people__bar { display: grid; gap: 8px; }
-@container main (min-width: 760px) { .people__bar { grid-template-columns: minmax(0, 1fr) minmax(0, 230px) minmax(0, 170px) auto; align-items: center; } }
+@container main (min-width: 760px) { .people__bar { grid-template-columns: minmax(0, 260px) minmax(0, 200px) 1fr; align-items: center; } .people__bar .fbar__n { justify-self: end; } }
 .people { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .pc {
   position: relative; display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 14px; align-items: start;
@@ -639,7 +659,7 @@ a.post__name:hover { color: var(--accent); text-decoration: underline; }
 .sg__slot h4 span { color: var(--dim); font-weight: 400; }
 
 /* ---- The subjects ---------------------------------------------------------- */
-@container main (min-width: 760px) { .subj__bar { grid-template-columns: minmax(0, 1fr) minmax(0, 260px) minmax(0, 230px) auto; } }
+@container main (min-width: 760px) { .subj__bar { grid-template-columns: minmax(0, 300px) minmax(0, 260px) 1fr; } }
 /* One line a subject: name | holder | ECTS | its forum topics. Phone: the name, the rest under it. */
 .subj { margin: 0; padding: 0; list-style: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
 .sr { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 1px 12px; padding: 5px 12px; border-top: 1px solid var(--line-2); color: var(--dim); font-size: 13px; }

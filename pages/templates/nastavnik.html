@@ -7,7 +7,8 @@
 {#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by
     year; the faculty's full profile last, folded, as it is long (education, bibliography). -#}
 {% block main %}
-<section class="tp" aria-labelledby="title">
+{#- data-scope: the header search lists matching teachers (site.js, /izbor.json); Enter with none opens the list. -#}
+<section class="tp" aria-labelledby="title" data-scope="Nastavnici" data-ph="Ime nastavnika…" data-people data-enter="/nastavnici/?">
   {%- if t.photo %}
   <img class="tp__img" src="{{ t.photo }}" alt="" fetchpriority="high">
   {%- else %}

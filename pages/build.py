@@ -291,6 +291,8 @@ def render_places(site, topics, smerovi, subjects):
                 ensure_ascii=False), encoding="utf-8")
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m and s["count"]), key=lambda s: fold(s["name"]))
+        for s in subs:
+            s["find"] = fold(" ".join([s["name"]] + [t["full_name"] for t in s.get("teachers", [])]))
         rows = in_smer[m["id"]]
         m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
         m["count"] = sum(len(t["posts"]) for t in rows) + sum(s["count"] for s in subs)
@@ -506,6 +508,7 @@ def picker(subjects, book, teachers):
     """The side panel's subject picker (site.js): the subjects with topics, as [href, name]; a tree of them by the
     plans, level > program > (module >) year of study, then the subjects in no plan ('Ostalo') and the board's other
     forums (katedre, moduli); and each teacher with the subjects they teach. Tree and teachers point into the list.
+    people: every listed teacher's [name, page], for the header search on a teacher's page.
     After render_places (the counts) and render_teachers (the courses)."""
     live = [s for s in subjects.values() if s.get("count")]
     at = {s["id"]: i for i, s in enumerate(live)}
@@ -533,7 +536,8 @@ def picker(subjects, book, teachers):
                 for k, v in tree.items() if k]
     return dict(subjects=[[s["href"], s["name"]] for s in live], tree=nodes(tree),
                 teachers=[[t["shown"], sorted({at[c["subj"]["id"]] for c in t["courses"] if c["subj"]})]
-                          for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])])
+                          for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
+                people=[[t["shown"], t["href"]] for t in teachers if not t["gone"]])
 
 
 def write_bytes(path, data):
@@ -632,10 +636,11 @@ if __name__ == "__main__":
     _m, _k = dict(label="Основне академске студије - МИ"), dict(label="Катедре")
     _a, _b, _c = (dict(id=i, name=n, href=f"/{i}/", count=1, smer=m) for i, n, m in ((1, "Б", _m), (2, "А", _m), (3, "В", _k)))
     _p = picker({1: _a, 2: _b, 3: _c}, [dict(forum=_a, places=[dict(program=PROGRAMS[0], module=None, semester=3, i=0)])],
-                [dict(shown="Н", gone=0, courses=[dict(subj=_b), dict(subj=None)]), dict(shown="Г", gone=1, courses=[dict(subj=_a)])])
+                [dict(shown="Н", href="/n/", gone=0, courses=[dict(subj=_b), dict(subj=None)]),
+                 dict(shown="Г", href="/g/", gone=1, courses=[dict(subj=_a)])])
     assert _p["tree"] == [dict(n="Основне академске студије", s=[], c=[dict(n="МИ", s=[], c=[
         dict(n="2. godina", c=[], s=[0]), dict(n="Ostalo", c=[], s=[1])])]), dict(n="Катедре", c=[], s=[2])]
-    assert _p["teachers"] == [["Н", [1]]] and _p["subjects"][0] == ["/1/", "Б"]
+    assert _p["teachers"] == [["Н", [1]]] and _p["subjects"][0] == ["/1/", "Б"] and _p["people"] == [["Н", "/n/"]]
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if len(sys.argv) != 3:
