@@ -108,7 +108,8 @@ named without title or middle initial (`shown`) everywhere but their own page. `
 and queries Pagefind client-side. `site.js` is optional enhancement: every page must work without it.
 
 **Attachments** are not hosted: links point straight at nastava.mas.bg.ac.rs. `documents.py` keeps a local copy in
-`files/` (git-ignored) for later hosting via dlwms's release-files route.
+`files/` (git-ignored) for later hosting via dlwms's release-files route. The board's attachment box is rewritten at
+build time into rows with a file-type badge (`attachments()` in `build.py`); links in a post's text get a CSS icon.
 
 ## Conventions
 

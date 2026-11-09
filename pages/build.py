@@ -116,6 +116,29 @@ def clean_html(html, base=BASE, local=lambda value: None):
                      url_schemes=nh3.ALLOWED_URL_SCHEMES | {"data"}, link_rel="noopener noreferrer") or None
 
 
+# A board attachment after clean_html: <dl><dt><span></span> <a href>name</a></dt>[<dd>comment</dd>]<dd>(size)
+# preuzeto N puta</dd></dl>.
+ATTACHMENT = re.compile(r'<dl>\s*<dt>(?:<span></span>)?\s*<a href="([^"]+)"[^>]*>([^<]*)</a>\s*</dt>\s*'
+                        r'(?:<dd>((?:(?!</?d[dlt]>).)*)</dd>\s*)?<dd>\(([^)<]*)\)\s*([^<]*)</dd>\s*</dl>', re.S)
+# A file type's colour on its badge (style.css .att__t--*).
+FILE_KINDS = {**dict.fromkeys(["pdf"], "pdf"), **dict.fromkeys(["doc", "docx", "odt", "rtf"], "doc"),
+              **dict.fromkeys(["xls", "xlsx", "ods", "csv"], "xls"), **dict.fromkeys(["ppt", "pptx", "pps", "ppsx", "odp"], "ppt"),
+              **dict.fromkeys(["zip", "rar", "7z"], "zip"), **dict.fromkeys(["jpg", "jpeg", "png", "gif"], "img")}
+
+
+def attachments(html):
+    """A post's attachments as rows (style.css .att): the file's type as a badge, its name, its comment, its size and
+    downloads. It runs on clean_html's output and only moves its parts, which are sanitized already; the type is
+    letters only."""
+    def row(m):
+        ext = re.search(r"\.([a-z0-9]{1,5})\s*$", unescape(m[2]).lower())
+        ext = ext[1] if ext else ""
+        note = f'<span class="att__c">{m[3].strip()}</span>' if m[3] and m[3].strip() else ""
+        return (f'<a class="att" href="{m[1]}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
+                f'{ext.upper() or "FAJL"}</span><span class="att__n">{m[2]}{note}<small>{m[4]} · {m[5].strip()}</small></span></a>')
+    return ATTACHMENT.sub(row, html) if html else html
+
+
 def subject_name(forum_name):
     """'Цевни водови (1044)' -> 'Цевни водови': one subject for all the codes it had."""
     return " ".join(re.sub(r"\(\d+\)\s*$", "", forum_name.replace("﻿", "")).split())
@@ -160,7 +183,7 @@ def load_items(db, place):
         items.append(dict(id=f"p{p['id']}", kind="post", title=p["title"], smer=smer, subj=subj,
                           subject=subj and subj["name"], date=iso, year=year,
                           topic=p["topic"], num=p["id"], when=p["date"], posted=p["posted"] or "",
-                          author=p["author"], body=p["content"], html=clean_html(p["html"]), gone=p["gone"],
+                          author=p["author"], body=p["content"], html=attachments(clean_html(p["html"])), gone=p["gone"],
                           source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}"))
     for d in docs.values():
         p = posts.get(d["post"]) or {}
@@ -514,8 +537,11 @@ def load_book(db, subjects, teachers):
         s["holder_t"] = teacher.get(s["holder"])
     # i: the order the plans were read in (predmeti.py: programs, then the modules as the master's page lists them).
     for i, r in enumerate(db.execute("SELECT * FROM subject_places ORDER BY rowid")):
-        if r["subject"] in by_id:
-            by_id[r["subject"]]["places"].append(dict(r, i=i, label=slot_label(r["slot_name"], r["slot"]) if r["slot"] else None))
+        places = by_id[r["subject"]]["places"] if r["subject"] in by_id else None
+        # A place stored more than once (predmeti.py before it listed a slot's subject once: Завршни предмет 102 times).
+        key = lambda p: (p["program"], p["module"], p["semester"], p["slot"])
+        if places is not None and not any(key(p) == key(r) for p in places):
+            places.append(dict(r, i=i, label=slot_label(r["slot_name"], r["slot"]) if r["slot"] else None))
     for s in book:
         s["find"] = fold(" ".join([s["name"], s["id"], s["katedra"] or "", s["program"]]
                                   + [t["name"] for t in s["teachers"]] + [p["module"] or "" for p in s["places"]]))
@@ -750,6 +776,16 @@ if __name__ == "__main__":
         rooms=[("324", "/f/3.pdf")], notes=[]), _l["programs"][0]
     assert _l["programs"][1]["cards"] == [("BMI", "Biomedicina", "/f/b.pdf"), ("3", "3. godina", "/f/i.pdf")]
     assert _l["programs"][2]["notes"] == ["Biće objavljen!"] and parse_lectures("<p>x</p>") is None
+    _at = attachments(clean_html('<dl class="attachbox"><dt>Attachments</dt><dd><dl class="file"><dt><span class="imageset"></span> '
+                                 '<a class="postlink" href="./download/file.php?id=7">Rok &amp; B.PDF</a></dt><dd>(58.7 KiB) Downloaded 4 times'
+                                 '</dd></dl></dd></dl>'))
+    assert ('<a class="att" href="https://nastava.mas.bg.ac.rs/nastava/download/file.php?id=7" rel="noopener noreferrer">'
+            '<span class="att__t att__t--pdf">PDF</span><span class="att__n">Rok &amp; B.PDF<small>58.7 KiB · preuzeto 4 puta</small>'
+            '</span></a>') in _at and "<dt>Prilozi</dt>" in _at, _at
+    assert attachments(None) is None and attachments("<p>x</p>") == "<p>x</p>"
+    _at = attachments('<dl>\n<dt><span></span> <a href="/f?id=1" rel="x">a.docx</a></dt>\n<dd><em>Ocene</em></dd> <dd>(1 KiB) preuzeto 2 puta</dd>\n</dl>')
+    assert _at == ('<a class="att" href="/f?id=1" rel="noopener noreferrer"><span class="att__t att__t--doc">DOCX</span><span class="att__n">'
+                   'a.docx<span class="att__c"><em>Ocene</em></span><small>1 KiB · preuzeto 2 puta</small></span></a>'), _at
     _s, _f = split_page(f"<html><title>T</title><x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>", '<html lang="sr"><title>T</title>a</main><p></html>')
     if len(sys.argv) != 3:

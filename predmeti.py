@@ -84,14 +84,15 @@ def parse_plan(html, index=0):
 
 
 def parse_electives(html):
-	"""{'section54': [subject ids]}: an elective list, one heading ('5.4') per slot."""
+	"""{'section54': [subject ids]}: an elective list, one heading ('5.4') per slot. A subject linked again in the same
+	slot (Завршни предмет 6.5 is linked once per teacher, 102 times) is listed once."""
 	out, key = {}, None
 	for el in soup(html).select_one('div.page').find_all(['h2', 'h3', 'h4', 'a']):
 		if el.name != 'a':
 			m = re.fullmatch(r'(\d+)\.(\d+)', el.get_text(strip=True))
 			key = m and f'section{m.group(1)}{m.group(2)}'
-		elif key and (sid := subject_id(el.get('href'))):
-			out.setdefault(key, []).append(sid)
+		elif key and (sid := subject_id(el.get('href'))) and sid not in out.setdefault(key, []):
+			out[key].append(sid)
 	return out
 
 

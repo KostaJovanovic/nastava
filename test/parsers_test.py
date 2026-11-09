@@ -82,8 +82,9 @@ assert len(electives['section54']) == 19
 rows = predmeti.places(predmeti.parse_plan(read('oas.html'), 0), lambda href: electives.get(href.split('#')[1], []))
 assert (1, 1, None, None, '1623') in rows and (1, 3, None, None, '0203') in rows and (1, 3, None, None, '1415') in rows
 assert len([r for r in rows if r[2] == '5.4']) == 19
-# The final subject's cell has no link; its list is linked elsewhere on the page.
-assert len([r for r in rows if r[2] == '6.5']) == 102
+# The final subject's cell has no link; its list is linked elsewhere on the page. The list links the one final
+# subject once per teacher: it is one place.
+assert [r[4] for r in rows if r[2] == '6.5'] == ['0361']
 assert [s for s, p, td in predmeti.parse_plan(read('oas.html'), 1)].count(1) == 6
 modules = predmeti.parse_modules(read('mas.html'))
 assert len(modules) == 21 and modules[0] == ('Аутоматско управљање', 'studije/mas/modul-18')
