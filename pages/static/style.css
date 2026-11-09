@@ -529,6 +529,22 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .mp__name { min-width: 0; overflow-wrap: anywhere; }
 .mp__card--none:not([aria-pressed="true"]) { border-style: dashed; color: var(--dim); background: transparent; }
 .mp__name small { display: block; margin-top: 2px; color: var(--dim); font-size: 12px; }
+/* Where else a picker's subject has material (site.js card): a colour per site, cent in the accent as .src. */
+.svc { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 9px; background: var(--c, var(--slate)); color: #fff; font: 700 11px/18px var(--sans); white-space: nowrap; vertical-align: 1px; }
+.svc[data-s="cent"] { --c: var(--accent); color: var(--accent-fg); }
+.svc[data-s="Teams"] { --c: #5b5fc7; }
+.svc[data-s="YouTube"] { --c: light-dark(#27272a, #52525b); }
+.svc[data-s="Google Drive"] { --c: #1a73e8; }
+.svc[data-s="Classroom"] { --c: #137333; }
+.svc[data-s="Moodle"] { --c: #c2410c; }
+.svc[data-s="OneDrive"] { --c: #0e7490; }
+.svc[data-s="Dropbox"] { --c: #7e22ce; }
+.svc[data-s="Box"] { --c: #a16207; }
+.svc[data-s="ie"] { --c: #4d7c0f; }
+.svc[data-s="omk"] { --c: #a21caf; }
+.svc[data-s="etc"] { --c: #475569; }
+.svc[data-s="mat"] { --c: #92400e; }
+.svc[data-s="geotermal"] { --c: #115e59; }
 .mp__none { margin: 16px 0; color: var(--dim); }
 .mp__foot span { margin-right: auto; }
 .mp__foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--dim); font-size: 13px; }

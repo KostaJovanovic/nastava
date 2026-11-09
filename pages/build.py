@@ -1003,7 +1003,7 @@ def picker(subjects, book, teachers):
     has) is under its program's 'Stari predmeti'; the board's other forums (katedre, moduli) are programs with one
     group. A group has its subjects in s, any other node its children in c.
     teachers: each teacher with the board subjects they teach (into the list); people: every listed teacher's
-    [name, page], for the header search on a teacher's page.
+    [name, page], for the header search on a teacher's page; marks: a subject's index to where else it has material.
     After render_places (the counts) and render_teachers (the courses)."""
     live = [s for s in subjects.values() if s.get("live")]
     entries = [[s["href"], s["name"]] for s in live]
@@ -1045,7 +1045,12 @@ def picker(subjects, book, teachers):
     return dict(subjects=entries, tree=nodes(tree),
                 teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
-                people=[[t["shown"], t["href"]] for t in teachers if not t["gone"]])
+                people=[[t["shown"], t["href"]] for t in teachers if not t["gone"]],
+                # A subject's pages besides the board, by index: cent's, then the services its posts link, newest first;
+                # a department's site by its first label ('ie.mas.bg.ac.rs': 'ie').
+                marks={i: list(dict.fromkeys(["cent"] * bool(s.get("cent")) + [e["name"].removesuffix(".mas.bg.ac.rs") for e in sorted(
+                    (s.get("elsewhere") or {}).values(), key=lambda e: e["last"]["posted"], reverse=True)]))
+                       for i, s in enumerate(live) if s.get("cent") or s.get("elsewhere")})
 
 
 def write_bytes(path, data):
@@ -1286,6 +1291,8 @@ if __name__ == "__main__":
     _m, _k = dict(label="Основне академске студије - МИ"), dict(label="Катедре")
     _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, live=True, smer=m) for i, n, m in
                       ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k)))
+    _b.update(cent=[{}], elsewhere={n: dict(name=n, last=dict(posted=d)) for n, d in
+                                    (("Teams", "2021"), ("Moodle", "2024"), ("cent.mas.bg.ac.rs", "2025"))})
     _pl = dict(program=PROGRAMS[0], module=None, semester=3, i=0, slot=None)
     _bk = lambda f, places, **kw: dict(dict(forum=f, places=places, gone=0, id="b", href="/b/", name="Б"), **kw)
     _p = picker({1: _a, 2: _b, 3: _c, 4: _e}, [
@@ -1299,6 +1306,7 @@ if __name__ == "__main__":
         dict(n="3. godina", s=[], c=[_g("", [4])]),
         dict(n="Stari predmeti", s=[], c=[_g("", [1])])]), dict(n="Катедре", s=[], c=[_g("", [3])])], _p["tree"]
     assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [["Н", "/n/"]]
+    assert _p["marks"] == {1: ["cent", "Moodle", "Teams"]}, _p["marks"]
     assert _p["subjects"][0] == ["/1/", "Б"] and _p["subjects"][4:] == [["/b9/", "Д", 0]], _p["subjects"]
     assert first_link('<h1>K</h1><a href="/f/k.pdf?a=1&amp;b=2">Календар  2026</a>') == ("Календар 2026", "/f/k.pdf?a=1&b=2")
     _pr = ('<h2>Raspored 2026</h2><h3>Jesenji semestar</h3><h4>OSNOVNE AKADEMSKE STUDIJE - <b>MAŠINSKO</b> INŽENjERSTVO</h4>'
