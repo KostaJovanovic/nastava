@@ -37,7 +37,7 @@
   <div class="mh__top">
     <h1 id="title">{% if archive %}Arhiva nastavnika{% else %}Nastavnici{% endif %}</h1>
     {%- if not archive %}
-    <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span></a>
+    <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span><b class="arch__n">{{ left | length | n }}</b></a>
     {%- endif %}
   </div>
   <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na fakultetu.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave.{% endif %}</p>
