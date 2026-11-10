@@ -26,7 +26,7 @@
   <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj objava je sa foruma nastave.</p>
 </div>
 {#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
-<form class="people__bar subj__bar" data-filter data-scope="Predmeti" data-ph="Naziv, šifra, nastavnik, katedra, modul…" onsubmit="return false">
+<form class="people__bar" data-filter data-scope="Predmeti" data-ph="Naziv, šifra, nastavnik, katedra, modul…" onsubmit="return false">
   <label class="vh" for="s-p">Studijski program</label>
   <select class="field" id="s-p" name="program" data-f="p">
     <option value="">Svi programi</option>
@@ -40,20 +40,20 @@
   <span class="fbar__n">prikazano <b data-shown>{{ n }}</b></span>
   {#- Grouping and order need site.js; without it the list stays as the plans have it. -#}
   <div class="arrange" data-arrange hidden>
-    <label for="s-g">Grupiši</label>
-    <select class="field" id="s-g" name="grupa" data-group>
+    <label class="pick">Grupiši
+    <select id="s-g" name="grupa" data-group>
       <option value="">po nastavnom planu</option>
       <option value="p">po programu</option>
       <option value="k">po katedri</option>
       <option value="-">bez grupa</option>
-    </select>
-    <label for="s-s">Poređaj</label>
-    <select class="field" id="s-s" name="red" data-sort>
+    </select></label>
+    <label class="pick">Poređaj
+    <select id="s-s" name="red" data-sort>
       <option value="">kao u planu</option>
       <option value="n">po nazivu</option>
       <option value="-e">po ESPB</option>
       <option value="-c">po broju objava</option>
-    </select>
+    </select></label>
   </div>
 </form>
 <div class="groups" data-groups>

@@ -59,20 +59,20 @@
   <span class="fbar__n">prikazano <b data-shown>{{ teachers | length }}</b></span>
   {#- Grouping and order need site.js; without it the list stays in the page's order. -#}
   <div class="arrange" data-arrange hidden>
-    <label for="t-g">Grupiši</label>
-    <select class="field" id="t-g" name="grupa" data-group>
+    <label class="pick">Grupiši
+    <select id="t-g" name="grupa" data-group>
       <option value="">bez grupa</option>
       <option value="k">po katedri</option>
       <option value="z">po zvanju</option>
-    </select>
-    <label for="t-s">Poređaj</label>
-    <select class="field" id="t-s" name="red" data-sort>
+    </select></label>
+    <label class="pick">Poređaj
+    <select id="t-s" name="red" data-sort>
       {#- '': the page's order, by surname here, by departure in the archive. -#}
       <option value="">{% if archive %}po odlasku{% else %}po prezimenu{% endif %}</option>
       <option value="n">po imenu</option>
       <option value="r">po zvanju</option>
       <option value="-c">po broju postova</option>
-    </select>
+    </select></label>
   </div>
 </form>
 <div class="groups" data-groups>
