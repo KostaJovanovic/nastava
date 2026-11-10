@@ -1210,6 +1210,10 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 .err ul { margin: 18px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }
 .err li a { display: flex; align-items: center; gap: 10px; min-height: 40px; border-bottom: 1px solid var(--line-2); color: var(--fg); text-decoration: none; }
 
+/* Between pages: the old page stays on screen until the new one can paint, then swaps (no animation, below), so
+   there is no blank frame. Chrome, Edge, Safari 18.2+; others load as before. */
+@view-transition { navigation: auto; }
+
 /* The theme switch (site.js): no cross-fade, the circle's clip is the whole effect; going light, the old (dark) page
    is the one on top, rolling out. */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
