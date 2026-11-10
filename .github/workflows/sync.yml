@@ -6,7 +6,7 @@ name: sync
 # scrape the board and the news, on another day only the night run. The schedule pages also on the 1st of the month
 # and on the first day of a registration or an exam period; the teachers and the subjects on 1 October.
 # GitHub's cron is UTC: 12:23, 17:23 and 21:23 in Belgrade in winter, an hour later in summer. GitHub may start a
-# scheduled run late, and turns the schedule off after 60 days without a commit.
+# scheduled run late, and turns the schedule off after 60 days without a commit (the first step below prevents that).
 on:
   schedule:
     - cron: "23 11 * * *"  # noon
@@ -40,6 +40,10 @@ jobs:
         || github.event.schedule == '23 16 * * *' && 'auto evening'
         || 'auto night' }}
     steps:
+      # The runs commit nothing (the state and the site are release assets): enabling the workflow again through the
+      # API restarts GitHub's 60 days, as the keepalive-workflow action does. First, so a failed run still counts.
+      - name: Keep the schedule on
+        run: gh workflow enable sync.yml -R "$GITHUB_REPOSITORY"
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:

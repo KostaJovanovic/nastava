@@ -89,6 +89,13 @@ def subscriptions(key):
             return subs
 
 
+def wait_url(new):
+    """The page that shows the deploy is up: the newest post's or notice's own /item/ page, which is new with it (its
+    topic page, /tema/, may be up already). None when only cent pages changed: their pages were there before."""
+    p = next((p for p in new if p.get("k", "p") != "s"), None)
+    return p and f"{SITE}/item/{p.get('k', 'p')}{p['id']}/"
+
+
 def send(*before):
     after = dict(zip("pcs", before))  # board posts, cent notices, cent page versions
     if after.get("p", 0) <= 0:
@@ -102,13 +109,16 @@ def send(*before):
         return
     # The deploy workflow publishes a few minutes after deploy.sh starts it: wait for the newest post's page
     # (push.json has the newest post or notice first, then the page versions).
-    newest = f"{SITE}{new[0]['u'].split('#')[0]}"
-    for _ in range(40):
-        if requests.head(newest, timeout=30).status_code == 200:
-            break
-        time.sleep(30)
+    newest = wait_url(new)
+    if newest is None:
+        time.sleep(300)  # only cent page versions: no new page to wait for; a deploy takes a few minutes
     else:
-        sys.exit(f"push: {newest} is not on the site after 20 minutes")
+        for _ in range(40):
+            if requests.head(newest, timeout=30).status_code == 200:
+                break
+            time.sleep(30)
+        else:
+            sys.exit(f"push: {newest} is not on the site after 20 minutes")
     by_subject = defaultdict(list)
     for p in sorted(new, key=lambda p: p["id"]):
         by_subject[p["s"]].append(p)
@@ -143,6 +153,8 @@ if __name__ == "__main__":
     _p = [dict(n="Биофизика", t="Резултати", u="/item/p9/"), dict(n="Биофизика", t="Испит", u="/tema/3/#p2")]
     assert message(_p[:1]) == dict(title="Биофизика", body="Резултати", url=SITE + "/item/p9/")
     assert message(_p) == dict(title="2 nove objave", body="Биофизика", url=SITE + "/")
+    assert wait_url([dict(k="s", id=3, u="/predmet/a/b/cent/x/"), dict(id=9, u="/tema/3/#p9")]) == SITE + "/item/p9/"
+    assert wait_url([dict(k="c", id=4, u="/item/c4/")]) == SITE + "/item/c4/" and wait_url([dict(k="s", id=3, u="/x/")]) is None
     assert PUSH_HOST.match("https://fcm.googleapis.com/fcm/send/x") and not PUSH_HOST.match("https://evil.com/fcm.googleapis.com/")
     match sys.argv[1:]:
         case ["keys"]:

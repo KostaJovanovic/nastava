@@ -55,10 +55,15 @@ def calendars(db):
     out = {}
     rows = db.execute("select path, data from study_files where path like 'studije/kalendar%.pdf' order by first_seen")
     for path, data in rows:
-        text = "\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(data)).pages)
-        m = re.search(r"_(\d\d)_\d\d\.pdf$", path) or re.search(r"школска\s+20(\d\d)/", text)
-        if m:
-            out[2000 + int(m[1])] = windows(text, 2000 + int(m[1]))
+        # One bad PDF (cut short, a typo date such as 30.2.) must not stop every run: studije, which would fetch a
+        # fixed one, runs only when this plans it. check still reports a year left without a calendar.
+        try:
+            text = "\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(data)).pages)
+            m = re.search(r"_(\d\d)_\d\d\.pdf$", path) or re.search(r"школска\s+20(\d\d)/", text)
+            if m:
+                out[2000 + int(m[1])] = windows(text, 2000 + int(m[1]))
+        except Exception as e:
+            print(f"calendar {path} skipped: {type(e).__name__}: {e}", file=sys.stderr)
     return out
 
 
@@ -67,7 +72,8 @@ def for_year(cals, y):
     if y in cals or not cals:
         return cals.get(y, [])
     near = min(cals, key=lambda c: abs(c - y))
-    move = lambda d: d.replace(year=d.year + y - near)
+    # 29 February into a year without one: the 28th.
+    move = lambda d: d.replace(year=d.year + y - near, day=28 if (d.month, d.day) == (2, 29) else d.day)
     return [(k, move(a), move(b)) for k, a, b in cals[near]]
 
 
@@ -153,6 +159,7 @@ if __name__ == "__main__":
     assert hot(D(2026, 10, 3), [("rok", D(2026, 9, 13), D(2026, 9, 26))]) and not hot(D(2026, 10, 4), [("rok", D(2026, 9, 13), D(2026, 9, 26))])
     _c = {2026: _w}
     assert for_year(_c, 2027)[0] == ("prijave", D(2028, 1, 11), D(2028, 1, 13)) and for_year(_c, 2026) == _w and for_year({}, 2026) == []
+    assert for_year({2027: [("rok", D(2028, 2, 15), D(2028, 2, 29))]}, 2028) == [("rok", D(2029, 2, 15), D(2029, 2, 28))]
     today = D.fromisoformat(os.environ["TODAY"]) if os.getenv("TODAY") else dt.datetime.now(dt.timezone.utc).date()
     match sys.argv[1:]:
         case ["fingerprint"]:

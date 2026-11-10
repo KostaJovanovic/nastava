@@ -51,7 +51,7 @@ pipeline and site, with new scrapers for phpBB.
 - `studije.py`: archive the schedule pages of www.mas.bg.ac.rs (kalendar nastave, raspored predavanja, raspored ispita)
   and every file they link, into `nastava.db`. A changed page or file adds a version; the site shows the newest and
   serves the files itself (PDFs open in the browser).
-- `vesti.py`: archive the news of vesti.mas.bg.ac.rs (WordPress REST API, all posts and categories each run) into the
+- `vesti.py`: archive the news of vesti.mas.bg.ac.rs (WordPress REST API: each run lists every post, and reads the new or changed ones) into the
   `vesti` and `vesti_categories` tables; a changed post adds a version, a deleted one stays, marked gone. Images and
   files stay on the news site (linked). The site has `/vesti/` (a year per page, filter by category), a page per news
   post (which search finds; the header's scope "Vesti"), the newest five on the home page, and `/vesti/feed.xml`.

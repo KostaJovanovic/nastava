@@ -23,7 +23,7 @@ from urllib.parse import urljoin, urlsplit
 import requests
 from bs4 import BeautifulSoup, Comment
 
-from cent import FILE, name_icons, now, session
+from cent import FILE, name_icons, now
 
 DB = os.getenv("DB", str(Path(__file__).resolve().parent / "nastava.db"))
 DELAY = float(os.getenv("DELAY", "1.0"))
@@ -165,7 +165,9 @@ def crawl(db, s, site, starts, seen):
 def sync(names):
     db = sqlite3.connect(DB)
     db.executescript(SCHEMA)
-    s, seen = session(), now()
+    # No retries (not nastava.session): a crawl meets dead links, and backing off on each would take minutes apiece.
+    s, seen = requests.Session(), now()
+    s.headers["User-Agent"] = "Mozilla/5.0 (personal archive)"
     down = [n for n in names if not crawl(db, s, n, SITES[n], seen)]
     if down:
         sys.exit(f"katedre: no answer from {', '.join(down)}")

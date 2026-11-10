@@ -23,8 +23,10 @@ from html import unescape
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-import requests
 from bs4 import BeautifulSoup
+
+# The board's session: retries a 429 or 5xx with backoff, so one hiccup does not end the run.
+from nastava import session
 
 SITE = "https://cent.mas.bg.ac.rs"
 DB = os.getenv("DB", str(Path(__file__).resolve().parent / "nastava.db"))
@@ -45,12 +47,6 @@ FOOTER = "ОАС МАС ДАС"
 
 def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-def session():
-    s = requests.Session()
-    s.headers["User-Agent"] = "Mozilla/5.0 (personal archive)"
-    return s
 
 
 def get(s, url, **kw):
@@ -192,7 +188,8 @@ def sync():
     for p in pages:
         # The notices pages every time: a notice may not change the page's "modified".
         if known.get(p["id"]) == p["modified"] and "obavestenja" not in p["slug"]:
-            db.execute("update cent_pages set last_seen = ? where id = ? and last_seen = "
+            # gone = 0: a page one listing missed and marked gone is back (as katedre.store does).
+            db.execute("update cent_pages set last_seen = ?, gone = 0 where id = ? and last_seen = "
                        "(select max(last_seen) from cent_pages where id = ?)", (seen, p["id"], p["id"]))
             continue
         code, html, notices = parse(get(s, p["link"]).text, p["link"])

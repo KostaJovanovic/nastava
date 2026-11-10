@@ -6,8 +6,9 @@
 
 Usage: vesti.py sync
 
-Every run reads all posts and categories (about 46 requests of 100 posts, ~75 MB): a post whose `modified` changed
-adds a version and the old one stays; a post no longer listed is marked gone. The images and files stay on
+Every run lists all posts' ids and `modified` (about 46 small requests) and the categories, and reads the content of
+the new or changed posts only: a post whose `modified` changed adds a version and the old one stays; a post no longer
+listed is marked gone. The images and files stay on
 vesti.mas.bg.ac.rs: the site links them.
 """
 import json
@@ -47,12 +48,18 @@ def sync(db):
 	now = datetime.now(timezone.utc).isoformat(timespec='seconds')
 	cats = listing('categories', 'id,name,parent')
 	db.executemany('insert or replace into vesti_categories values (?,?,?)', [(c['id'], c['name'], c['parent']) for c in cats])
-	posts = listing('posts', 'id,date,date_gmt,modified,title,content,categories,link')
-	for p in posts:
-		db.execute('insert into vesti (id, modified, date, date_gmt, title, html, categories, link, first_seen, last_seen) values (?,?,?,?,?,?,?,?,?,?) '
-			'on conflict(id, modified) do update set last_seen = excluded.last_seen',
-			(p['id'], p['modified'], p['date'], p['date_gmt'], p['title']['rendered'], p['content']['rendered'], json.dumps(p['categories']),
-			p['link'], now, now))
+	# Every post's id and modified (small); the content only of the posts new or changed since the last run.
+	posts = listing('posts', 'id,modified')
+	have = set(db.execute('select id, modified from vesti'))
+	need = [p['id'] for p in posts if (p['id'], p['modified']) not in have]
+	for i in range(0, len(need), 100):
+		ids = ','.join(map(str, need[i:i + 100]))
+		for p in listing(f'posts&include={ids}', 'id,date,date_gmt,modified,title,content,categories,link'):
+			db.execute('insert into vesti (id, modified, date, date_gmt, title, html, categories, link, first_seen, last_seen) values (?,?,?,?,?,?,?,?,?,?) '
+				'on conflict(id, modified) do update set last_seen = excluded.last_seen',
+				(p['id'], p['modified'], p['date'], p['date_gmt'], p['title']['rendered'], p['content']['rendered'], json.dumps(p['categories']),
+				p['link'], now, now))
+	db.executemany('update vesti set last_seen = ? where id = ? and modified = ?', [(now, p['id'], p['modified']) for p in posts])
 	# Every version of a post seen in this run is current; a post not seen is gone (it stays in the archive).
 	db.execute('update vesti set gone = id not in (select id from vesti where last_seen = ?)', (now,))
 	db.commit()

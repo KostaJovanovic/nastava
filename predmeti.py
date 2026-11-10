@@ -174,6 +174,8 @@ def sync(db):
 	db.execute('drop table subject_places')
 	db.executescript(SCHEMA)
 	db.executemany('insert into subject_places values (?,?,?,?,?,?,?,?)', rows)
+	# Now: the drop above is saved at once (outside a transaction), so a failed page below must not leave the table empty.
+	db.commit()
 	for i, (sid, (name, program)) in enumerate(book.items(), 1):
 		html = page(f'studije/predmeti/{sid}')
 		row = dict(id=sid, name=name, program=program)
