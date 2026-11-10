@@ -999,15 +999,18 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
   .tp__subj { grid-column: auto; align-self: stretch; padding-left: 22px; border-left: 1px solid var(--line-2); }
 }
 
-/* The sources of a teacher's history: each one's name as a link, its words quoted under it. */
+/* The sources of a teacher's history: each work named once, its entries under it, each its place (a link) and its words. */
 .srcs { margin: 0; padding: 0; list-style: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
 .srcs li { padding: 10px 14px; border-top: 1px solid var(--line-2); }
 .srcs li:first-child { border-top: 0; }
 .srcs a { color: var(--link); font-size: 13.5px; text-decoration: none; }
 .srcs a:hover { color: var(--accent-t); text-decoration: underline; }
 .srcs .i { width: 12px; height: 12px; vertical-align: -1px; }
-.srcs blockquote, .srcs p { margin: 4px 0 0; color: var(--text); font-size: 14px; overflow-wrap: anywhere; }
-.srcs blockquote { padding-left: 10px; border-left: 2px solid var(--line); }
+.srcs__h { margin: 0; color: var(--text); font-size: 13.5px; font-weight: 600; }
+.srcs__q { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: baseline; gap: 6px 14px; margin-top: 6px; }
+.srcs__q--one { grid-template-columns: minmax(0, 1fr); }
+.srcs__q > a { white-space: nowrap; }
+.srcs blockquote, .srcs p { margin: 0; color: var(--text); font-size: 14px; overflow-wrap: anywhere; }
 /* Their posts by year, newest first, one line each on a wide screen: the day, the title, the subject. */
 .tp__sec { margin-top: 6px; }
 .tp__h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 8px; }

@@ -133,32 +133,45 @@
 
 {%- set ps = t.photo_src %}
 {%- if (h and h.sources) or ps %}
-{#- Where the history is from, each source quoted (nastavnici-istorija.jsonl); last, the photo's (nastavnici-foto.jsonl). -#}
+{#- Where the history is from, each source quoted (nastavnici-istorija.jsonl); last, the photo's (nastavnici-foto.jsonl).
+    Each work named once, in the order it first comes, its entries under it: g the work, l where in it (a page, the
+    old site's years; the photo's says so), q its words quoted, p the old site's titles. A work with one link and no
+    such places is the link itself; else each entry links its own place. -#}
+{%- set NAMES = {'monografija': 'Monografija „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“',
+  'in-memoriam': 'In memoriam, vesti.mas.bg.ac.rs', 'wikipedia': 'Vikipedija',
+  'stari-sajt': 'Stari sajt fakulteta (Wayback Machine)', 'referat': 'Referat za izbor u zvanje, mas.bg.ac.rs'} %}
+{%- set items = [] %}
+{%- for s in (h.sources if h else []) %}
+{%- set _ = items.append(dict(g=NAMES.get(s.kind) or s.url.split('/')[2], url=s.url, years=s.years,
+  l='str. %s' % s.page if s.kind == 'monografija' and s.page else s.years if s.kind == 'stari-sajt' else '',
+  q=s.quote, p=(s.titles or []) | join(', ') ~ (', ' if s.titles and s.katedra else '') ~ (s.katedra or ''))) %}
+{%- endfor %}
+{%- if ps %}
+{%- set pk = 'monografija' if ps.book_page else 'stari-sajt' if 'web.archive.org' in ps.page else 'wikipedia' if 'wikipedia' in ps.page else '' %}
+{%- set _ = items.append(dict(g=NAMES.get(pk) or ps.page.split('/')[2], url=ps.page, years='',
+  l=('str. %s, ' % ps.book_page if ps.book_page else '') ~ 'fotografija', q=ps.caption, p='')) %}
+{%- endif %}
+{%- set groups = [] %}
+{%- for it in items if it.g not in groups %}{% set _ = groups.append(it.g) %}{% endfor %}
 <section class="tp__sec" id="izvori">
-  <div class="tp__h"><h2>Izvori <span>{{ (h.sources | length if h else 0) + (1 if ps else 0) }}</span></h2></div>
+  <div class="tp__h"><h2>Izvori <span>{{ items | length }}</span></h2></div>
   <ol class="srcs">
-    {%- for s in (h.sources if h else []) %}
+    {%- for g in groups %}
+    {%- set its = items | selectattr('g', 'equalto', g) | list %}
+    {%- set one = (its | map(attribute='url') | unique | list | length == 1) and not (its | selectattr('l') | list) %}
     <li>
-      <a href="{{ s.url }}" rel="noopener" target="_blank">
-        {%- if s.kind == 'monografija' %}Monografija „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“{% if s.page %}, str. {{ s.page }}{% endif %}
-        {%- elif s.kind == 'in-memoriam' %}In memoriam, vesti.mas.bg.ac.rs
-        {%- elif s.kind == 'wikipedia' %}Vikipedija
-        {%- elif s.kind == 'stari-sajt' %}Stari sajt fakulteta, {{ s.years }} (Wayback Machine)
-        {%- elif s.kind == 'referat' %}Referat za izbor u zvanje, mas.bg.ac.rs
-        {%- else %}{{ s.url.split('/')[2] }}{% endif %} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>
-      {%- if s.quote %}<blockquote>{{ s.quote }}</blockquote>
-      {%- elif s.titles or s.katedra %}<p>{{ s.titles | join(', ') }}{% if s.titles and s.katedra %}, {% endif %}{{ s.katedra or '' }}</p>{% endif %}
+      <h3 class="srcs__h">{% if one %}<a href="{{ its[0].url }}" rel="noopener" target="_blank">{{ g }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% else %}{{ g }}{% endif %}</h3>
+      <div class="srcs__q{% if one %} srcs__q--one{% endif %}">
+        {%- for it in its %}
+        {#- The same place as the entry above: once. #}
+        {%- if one %}
+        {%- elif loop.previtem and (loop.previtem.url, loop.previtem.l) == (it.url, it.l) %}<span></span>
+        {%- else %}<a href="{{ it.url }}" rel="noopener" target="_blank">{{ it.l or it.years or it.url.split('/')[2] }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}
+        {%- if it.q %}<blockquote>{{ it.q }}</blockquote>{% else %}<p>{{ it.p }}</p>{% endif %}
+        {%- endfor %}
+      </div>
     </li>
     {%- endfor %}
-    {%- if ps %}
-    <li>
-      <a href="{{ ps.page }}" rel="noopener" target="_blank">Fotografija: {% if ps.book_page %}Monografija „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“, str. {{ ps.book_page }}
-        {%- elif 'web.archive.org' in ps.page %}Stari sajt fakulteta (Wayback Machine)
-        {%- elif 'wikipedia' in ps.page %}Vikipedija
-        {%- else %}{{ ps.page.split('/')[2] }}{% endif %} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>
-      {%- if ps.caption %}<blockquote>{{ ps.caption }}</blockquote>{% endif %}
-    </li>
-    {%- endif %}
   </ol>
 </section>
 {%- endif %}
