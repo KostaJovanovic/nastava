@@ -15,3 +15,10 @@ routes = [
 [[kv_namespaces]]
 binding = "PUSH"
 id = "6fb27ef7a0ec47eaab4cbf6e284be04e"
+
+# The visitor counter (src/index.js visit). Once: npx wrangler d1 create nastava, and its id here; then
+# npx wrangler d1 execute nastava --remote --file schema.sql.
+[[d1_databases]]
+binding = "DB"
+database_name = "nastava"
+database_id = "SET-ME"

@@ -41,6 +41,8 @@
   {%- for n, word in st.totals %}
   <li><b>{{ n | n }}</b><span>{{ n | pl(word) }}</span></li>
   {%- endfor %}
+  {#- The Worker's visitor count (/visit), filled in by site.js; hidden without it. #}
+  <li id="posete" hidden><b></b><span>posetilaca sajta</span></li>
 </ul>
 
 <section class="st">

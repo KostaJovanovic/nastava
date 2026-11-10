@@ -79,8 +79,9 @@ pipeline and site, with new scrapers for phpBB.
   Atom feeds for a feed reader: `/feed.xml` (the board's newest posts) and `feed.xml` on each subject page.
   The side panel's "Moji predmeti" gives the followed subjects' feeds as one OPML file, and notifications.
 - Notifications (web push): the switch in "Moji predmeti" subscribes the browser (`pages/static/sw.js` shows them; an
-  iPhone only from the home screen). The Worker keeps each subscription with its subjects in KV: that is the only
-  data the site keeps about a visitor, and it goes with the switch off. After a deploy with a scrape, `ci/deploy.sh`
+  iPhone only from the home screen). The Worker keeps each subscription with its subjects in KV, and it goes with
+  the switch off. Besides it the site keeps only a visitor's IP, three days, for the visitor counter on
+  `/statistika/` (D1, `pages/schema.sql`; counted like valjdakosta.com's, each IP once per three days). After a deploy with a scrape, `ci/deploy.sh`
   runs `ci/push.py send`: once the new posts are on the site, each browser gets one notification for those in its
   subjects. The keys are in `push-secret.json` (git-ignored) and, for sync.yml, in the repository secret `PUSH_SECRET`
   (`gh secret set PUSH_SECRET < push-secret.json`). Lost keys mean new ones and every subscriber turning the switch
@@ -111,7 +112,8 @@ Then turn on GitHub Pages (source: GitHub Actions), publish the site with `bash 
 
 For notifications, once: `uv run ci/push.py keys` (writes `push-secret.json`; its public key goes in `pages/static/site.js`),
 `wrangler kv namespace create PUSH` (its id into `pages/wrangler.toml`) and `wrangler secret put PUSH_KEY` (the "key"
-from `push-secret.json`), before `wrangler deploy`.
+from `push-secret.json`), before `wrangler deploy`. For the visitor counter, once: `wrangler d1 create nastava` (its id
+into `pages/wrangler.toml`) and `wrangler d1 execute nastava --remote --file schema.sql`.
 
 When the attachments are wanted: `uv run documents.py sync`. Old .doc/.xls/.ppt files need LibreOffice (`soffice`) for their text; without it they stay pending and the next
 `uv run documents.py extract` on a machine with LibreOffice reads them.

@@ -839,4 +839,17 @@
   };
   // A page prerendered on hover (base.html's speculation rules) sees the tab's sessionStorage only once shown.
   if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
+
+  /* Visitor counter: every page tells the Worker (/visit, each IP once in three days); only /statistika/ shows the
+     total. A prerendered page counts once shown. */
+  var visit = function () {
+    if (!window.fetch) return;
+    fetch('/visit', { method: 'POST' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+      var li = d.getElementById('posete');
+      if (!li || !v) return;
+      li.firstChild.textContent = v.n.toLocaleString('de-DE'); // 23.692, as build.py's n filter
+      li.hidden = false;
+    }).catch(function () {});
+  };
+  if (d.prerendering) d.addEventListener('prerenderingchange', visit, { once: true }); else visit();
 })();

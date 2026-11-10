@@ -83,11 +83,31 @@ async function push(request, env, url) {
 	return status(204);
 }
 
+// Visitor counter, as on valjdakosta.com: each IP counts once per three-day period (D1 binding DB, schema.sql). The
+// IPs older than that are deleted, so the total is kept on its own. site.js posts from every page; /statistika/ shows n.
+async function visit(request, env) {
+	if (request.method !== "POST") return new Response(null, { status: 405 });
+	if (!env.DB) return new Response(null, { status: 503 });
+	const ip = request.headers.get("CF-Connecting-IP") || "";
+	const { meta } = await env.DB
+		.prepare("INSERT OR IGNORE INTO visits (ip, period) VALUES (?, date(cast(julianday('now') / 3 as integer) * 3))")
+		.bind(ip).run();
+	if (meta.changes) {
+		await env.DB.batch([
+			env.DB.prepare("UPDATE visit_total SET n = n + 1"),
+			env.DB.prepare("DELETE FROM visits WHERE period < date('now', '-3 days')"),
+		]);
+	}
+	const { n } = await env.DB.prepare("SELECT n FROM visit_total").first();
+	return Response.json({ n });
+}
+
 export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
 		// Before the cache: these are not pages.
 		if (url.pathname === "/push" || url.pathname === "/push/subs") return push(request, env, url);
+		if (url.pathname === "/visit") return visit(request, env);
 		if (request.method !== "GET" && request.method !== "HEAD") {
 			return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
 		}
