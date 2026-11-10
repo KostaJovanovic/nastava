@@ -875,6 +875,8 @@ HISTORY = Path(__file__).resolve().parent.parent / "nastavnici-istorija.jsonl"
 # Portraits of teachers without one, from the monograph, the old site, In memoriam, Wikipedia, SANU: page id, the
 # image's key in the photos table, the page it is on and its caption there.
 FOTOS = HISTORY.with_name("nastavnici-foto.jsonl")
+# Biographies from the faculty's 2023 monograph, its own words: page id, the paragraphs about them, each with its page.
+BIOS = HISTORY.with_name("nastavnici-biografije.jsonl")
 
 
 def load_history(teachers):
@@ -926,7 +928,9 @@ def load_teachers(db, subjects):
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
     local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
     fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
+    bios = {b["id"]: b["paras"] for b in map(json.loads, BIOS.read_text(encoding="utf-8").splitlines())} if BIOS.exists() else {}
     for t in teachers:
+        t["bio"] = bios.pop(t["id"], None)
         # The photo from our copy (write_photos); a listed teacher's not copied yet from the faculty, a departed
         # one's none (the faculty took it down).
         thumb, photo = photo_urls(t["html"], t.get("photo"))
@@ -942,8 +946,9 @@ def load_teachers(db, subjects):
         t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
         t["rank"] = RANKS.index(t["title"]) if t["title"] in RANKS else 9
-    if fotos:
-        print(f"nastavnici-foto.jsonl: no page for {', '.join(fotos)}", file=sys.stderr)
+    for name, left in (("nastavnici-foto.jsonl", fotos), ("nastavnici-biografije.jsonl", bios)):
+        if left:
+            print(f"{name}: no page for {', '.join(left)}", file=sys.stderr)
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 

@@ -72,6 +72,21 @@
   {%- endif %}
 </section>
 
+{#- The faculty's 2023 monograph about them, in its own words, each paragraph with its page (nastavnici-biografije.jsonl):
+    a past teacher's under the band, the others' folded at the end. -#}
+{%- macro bio_body() %}
+  {%- for p in t.bio %}
+  <p>{{ p.text }}</p>
+  {%- endfor %}
+  <p class="tp__src">Iz monografije „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“, {% for p in t.bio | unique(attribute='page') %}<a href="{{ p.url }}" rel="noopener" target="_blank">str. {{ p.page }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+{%- endmacro %}
+{%- if t.bio and past %}
+<section class="tp__sec" id="biografija">
+  <div class="tp__h"><h2>Biografija</h2></div>
+  <div class="tp__biotext">{{ bio_body() }}</div>
+</section>
+{%- endif %}
+
 {%- if not past %}
 <section class="tp__sec" id="objave">
   <div class="tp__h">
@@ -143,6 +158,13 @@
     {%- endif %}
   </ol>
 </section>
+{%- endif %}
+
+{%- if t.bio and not past %}
+<details class="tp__bio">
+  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>Biografija iz monografije fakulteta (2023)</summary>
+  <div class="tp__biotext">{{ bio_body() }}</div>
+</details>
 {%- endif %}
 
 {%- if h and h.card %}

@@ -1042,6 +1042,11 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 /* The old site's card: its fields as the band's, with room for the long ones (education, publications). */
 .tp__card { padding: 4px 18px 0; gap: 6px 18px; }
 .tp__card dd { white-space: pre-line; }
+/* The monograph's biography: a card of its own on a past teacher's page, inside the folded box on the others'. */
+.tp__biotext { padding: 4px 18px 0; font-size: 15px; line-height: 1.6; }
+.tp__biotext p { margin: 0 0 10px; max-width: 78ch; }
+.tp__biotext .tp__src { max-width: none; margin: 12px -18px 0; }
+#biografija .tp__biotext { padding-top: 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
 .tp__src { margin: 14px 0 0; padding: 10px 18px 12px; border-top: 1px solid var(--line-2); color: var(--dim); font-size: 12.5px; }
 .tp__src a { color: var(--link); }
 
