@@ -1100,6 +1100,9 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 /* The katedra's icon, top right: above the card's link (z-index), so its title shows on hover. */
 .tp__ki { position: absolute; top: 14px; right: 14px; z-index: 1; display: flex; color: var(--slate); font-size: 30px; }
 .tp--gone .tp__ki { color: var(--card); }
+/* A departed teacher's years at the faculty; an estimated year dimmer, with a '~' (title: 'procena'). */
+.pc__yrs { position: absolute; right: 12px; bottom: 9px; margin: 0; color: var(--dim); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.pc__yrs .est { opacity: .6; cursor: help; }
 .pc__ki { position: absolute; top: 10px; right: 10px; z-index: 1; display: flex; color: var(--slate); font-size: 24px; }
 .pc:hover .pc__ki { color: var(--accent-t); }
 /* On a departed teacher's grey corner: knocked out in the card's colour, so it reads on the grey. */

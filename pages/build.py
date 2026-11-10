@@ -906,7 +906,7 @@ def load_history(teachers):
                         title=h["title"] or "", katedra=h["katedra"], katedra_id=None, office=None, email=None, username=None,
                         phone=None, hours=None, research=((h.get("card") or {}).get("fields") or {}).get("research"),
                         emeritus=0, html=None, first_seen=None,
-                        last_seen=max(years) if years else "0000", gone=1, photo=None, subjects=[], history=h,
+                        last_seen=max(years) if years else str((h.get("span") or {}).get("to") or "0000"), gone=1, photo=None, subjects=[], history=h,
                         suffix=h["life"] and slug(h["life"])))
     return new
 
@@ -961,6 +961,24 @@ def azbuka(word):
     return [AZBUKA.get(c, 100 + ord(c)) for c in word.lower()]
 
 
+def gone_span(t, first_list):
+    """A departed teacher's years at the faculty for the archive's card: {from, to, from_est, to_est}, an estimate
+    where no source says it. From the past (nastavnici-istorija.jsonl): its span. Off the faculty's list: to, the
+    year they left it; from, the earliest of their election report's year (exact), a source's year and their first
+    year on the list (exact unless it is the first list's: they were there before)."""
+    h = t.get("history") or {}
+    if not t["gone"]:
+        return None
+    if not t["first_seen"]:
+        return h.get("span")
+    seen = [(int(t["first_seen"][:4]), t["first_seen"][:4] == first_list)]
+    seen += [(int(y), True) for y in re.findall(r"\d{4}", h.get("years") or "")]
+    if h.get("start"):
+        seen.append((h["start"], False))
+    start, est = min(seen, key=lambda s: (s[0], s[1]))
+    return {"from": start, "to": int(t["last_seen"][:4]), "from_est": est, "to_est": False}
+
+
 def render_teachers(site, teachers, items, book):
     """A list of all teachers with a filter, and one page per teacher: the faculty's profile and their posts here."""
     posts = defaultdict(list)
@@ -969,6 +987,8 @@ def render_teachers(site, teachers, items, book):
     pages = {f"/fakultet/nastavnici/{t['id']}": t["href"] for t in teachers}
     # A subject's link: its forum page, else its page in the subject list.
     book_href = {s["id"]: s["href"] for s in book}
+    # The year the faculty's lists were first read (2014): a teacher on the first one was there before it.
+    first_list = min((t["first_seen"][:4] for t in teachers if t["first_seen"]), default="0000")
     subj_pages = {f"/studije/predmeti/{c}": h for c, h in book_href.items()}
     subj_pages |= {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
                    for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("live")}
@@ -995,6 +1015,7 @@ def render_teachers(site, teachers, items, book):
         # the card, up to 85% for the 1860s; by the square root, so the recent decades still differ. No year: none.
         ago = date.today().year - int(t["last_seen"][:4]) if t["gone"] and t["last_seen"][:4] != "0000" else 0
         t["age"] = round(85 * min(1, max(0, ago) / 165) ** 0.5)
+        t["span"] = gone_span(t, first_list)
     for t in teachers:
         source = base = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
         name = "mas.bg.ac.rs"

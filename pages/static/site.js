@@ -272,6 +272,9 @@
     var arrange = function () {
       var g = gsel ? gsel.value : '', s = ssel ? ssel.value : '';
       home.forEach(function (h) { h[1].appendChild(h[0]); });
+      // The archive's 'no year' heading back before its first row (the rows were moved to the end past it).
+      var u = sep && box.querySelector('.pc--undated');
+      if (u) u.parentNode.insertBefore(sep, u);
       if (made) { made.remove(); made = null; }
       own.forEach(function (c) { c.hidden = !!g; });
       if (g) {
