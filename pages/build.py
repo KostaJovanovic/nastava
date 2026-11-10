@@ -1294,8 +1294,22 @@ def ranking(counts, row, k=10):
 
 MONTHS = "jan feb mar apr maj jun jul avg sep okt nov dec".split()
 WEEKDAYS = "pon uto sre čet pet sub ned".split()
-# Words of the post titles the word cloud leaves out: frequent, but they say nothing of what a post is about.
-CLOUD_STOP = set("prof dela posle nakon koji koja koje prvi drugi treći prva druga treća prve prvog drugog trećeg".split())
+# Words of the posts the word cloud leaves out: frequent, but they say nothing of what a post is about.
+CLOUD_STOP = set("""prof dela posle nakon koji koja koje koju kojima prvi drugi treći prva druga treća prve prvog drugog
+    trećeg biće biti bilo bude mogu može možete imaju nisu nije neće samo treba više prema kako isto istom ukoliko tokom
+    jedan preko radi putem zbog svih ovog ovom ovaj takođe""".split())
+# What in a post's text is not its words: a link, an e-mail, a file's name, an attachment's "(1.2 MiB) preuzeto 5 puta".
+NOT_WORDS = re.compile(r"\S*(?:://|www\.|@)\S*|\S+\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|jpe?g|png|gif|txt|dwg|m)\b"
+                       r"|\([\d.,]+ [KMG]?i?B\) preuzeto \d+ puta", re.I)
+
+
+def post_words(it):
+    """A post's words for the word cloud (stats.html): its title and text in Latin, lower case, without its
+    attachments' names, links and file names."""
+    text = it["title"] + "\n" + it["body"]
+    for _, name, _ in it["files"]:
+        text = text.replace(name, " ")
+    return [w for w in re.findall(r"[^\W\d_]{4,}", lat(NOT_WORDS.sub(" ", text)).lower()) if w not in CLOUD_STOP]
 
 
 def archive_stats(items, topics, teachers):
@@ -1340,8 +1354,7 @@ def archive_stats(items, topics, teachers):
     days = Counter(date.fromisoformat(it["date"][:10]).weekday() for it in dated)
     busiest = Counter(it["date"][:10] for it in dated).most_common(1)
     topic = {t["href"]: t for t in topics}
-    # Titles, not bodies: a body of exam results is mostly the students' names.
-    words = Counter(w for it in posts for w in re.findall(r"[^\W\d_]{4,}", lat(it["title"]).lower()) if w not in CLOUD_STOP)
+    words = Counter(w for it in posts for w in post_words(it))
 
     listed = [t for t in teachers if not t["gone"]]
     posting = {t["username"] for t in listed if t["username"] and t["username"] in tally["authors"]}
@@ -1595,6 +1608,9 @@ if __name__ == "__main__":
     assert drop_empty_tables('<h2>A</h2><div><table><td>1</td></table></div><h2>B</h2>\n<div class="l">'
                              '<table><th>x</th><td> </td></table></div>') == '<h2>A</h2><div><table><td>1</td></table></div>\n<div class="l"></div>'
     assert preuzeto("(1 KiB) Downloaded 1 time, Downloaded 22 times") == "(1 KiB) preuzeto 1 puta, preuzeto 22 puta"
+    assert post_words(dict(title="Rezultati ispita", files=[(1, "OPK 3. predavanje.pdf", 9)], body="Видети http://x.rs/a, "
+                           "www.mas.bg.ac.rs, a@b.rs i Moodle_2015.pdf\nOPK 3. predavanje.pdf\n(4.29 MiB) preuzeto 1021 puta")) == [
+        "rezultati", "ispita", "videti"]
     import xml.etree.ElementTree as ET
     _it = dict(id="p5", num=5, title="A & <b>", posted="2026-11-08T14:39:57+00:00", who="Ђ", html="<p>x &amp; y</p>", body="",
                subj=dict(name="Мата 1"), smer=None, thread=dict(href="/tema/3/", posts=[1, 2]))
