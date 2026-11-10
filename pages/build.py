@@ -542,6 +542,24 @@ shell = None  # shell.html, set by main()
 site_dir = None  # the site's folder, set by main(): write() makes a page's URL from its path in it
 # Every page's canonical URL, for sitemap.xml (write).
 urls = {f"{SITE_URL}/"}
+# The /static/ files the pages link get ?v=<hash of the file> (version_static): each deploy that changes one changes
+# its URL, so no cache (the browser's, Cloudflare's, GitHub's) pairs new pages with an old file. Not sw.js (its URL
+# is the push registration), the fonts or the images: those rarely change. icons.svg first: the JS links it.
+VERSIONED = ("icons.svg", "style.css", "head.js", "pismo.js", "search.js", "site.js")
+ASSET = re.compile(r"/static/(%s)(?![\w?.-])" % "|".join(map(re.escape, VERSIONED)))
+asset_v = {}  # file name -> its hash, set by version_static()
+
+
+def versioned(text):
+    return ASSET.sub(lambda m: f"{m[0]}?v={asset_v[m[1]]}" if m[1] in asset_v else m[0], text)
+
+
+def version_static(static):
+    """Hash each VERSIONED file after pointing its own links at the files hashed before it."""
+    for name in VERSIONED:
+        f = static / name
+        f.write_text(versioned(f.read_text(encoding="utf-8")), encoding="utf-8")
+        asset_v[name] = hashlib.sha256(f.read_bytes()).hexdigest()[:10]
 
 
 def split_page(html):
@@ -571,7 +589,7 @@ def write(path, html, index=True, canonical=None):
     else:
         head += '<meta name="robots" content="noindex">'
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(fragment.replace(HEAD_END, head + HEAD_END, 1), encoding="utf-8")
+    path.write_text(versioned(fragment.replace(HEAD_END, head + HEAD_END, 1)), encoding="utf-8")
 
 
 def breadcrumbs(page, url):
@@ -639,7 +657,7 @@ def render_places(site, topics, smerovi, subjects):
                   env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors))
             # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
             (site / s["href"].strip("/") / "novo.json").write_text(json.dumps(
-                {"name": s["name"], "rows": [[t["last"]["posted"], str(topic_row(t, place=True))] for t in rows[:MINE]]},
+                {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},
                 ensure_ascii=False), encoding="utf-8")
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m and s["live"]), key=lambda s: fold(s["name"]))
@@ -1377,7 +1395,8 @@ def main(db_path, out):
     site = Path(out) / "site"
     shutil.rmtree(site, ignore_errors=True)
     shutil.copytree(HERE / "static", site / "static")
-    db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    version_static(site / "static")
+    db =sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
     place, smerovi, subjects = load_places(db)
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
@@ -1399,7 +1418,7 @@ def main(db_path, out):
     env.globals["built"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     global shell, site_dir
     shell, site_dir = split_page(env.get_template("base.html").render())[0], site
-    (site / "shell.html").write_text(shell, encoding="utf-8")
+    (site / "shell.html").write_text(versioned(shell), encoding="utf-8")
     # The faculty's subject code often differs from the board's: a subject of the same name the teacher posted in wins.
     posted = defaultdict(dict)
     for it in items:
@@ -1431,9 +1450,9 @@ def main(db_path, out):
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
     vesti = load_vesti(db)
     render_vesti(site, vesti)
-    (site / "index.html").write_text(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers), vesti),
-                                     encoding="utf-8")
-    (site / "404.html").write_text(env.get_template("error.html").render(), encoding="utf-8")
+    (site / "index.html").write_text(versioned(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers),
+                                                           vesti)), encoding="utf-8")
+    (site / "404.html").write_text(versioned(env.get_template("error.html").render()), encoding="utf-8")
     write_sitemap(site)
     print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['live'])} subjects, "
           f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti", flush=True)
@@ -1444,6 +1463,11 @@ def main(db_path, out):
 
 if __name__ == "__main__":
     assert fold("Ђачки распоред, Čas") == "djacki raspored, cas"
+    asset_v["icons.svg"] = "ab"
+    assert versioned('<use href="/static/icons.svg#i-x"> `/static/icons.svg#${k}` /static/icons.svg?v=ab /static/sw.js '
+                     '/static/site.js') == ('<use href="/static/icons.svg?v=ab#i-x"> `/static/icons.svg?v=ab#${k}` '
+                                            '/static/icons.svg?v=ab /static/sw.js /static/site.js')
+    asset_v.clear()
     assert slug(" Душан Љ. Ђукић ") == "dusan-lj-djukic" and slug(short_smer("основне академске студије - МИ")) == "oas-mi"
     _r = [dict(id=1, n="Мата 1"), dict(id=7, n="Mata 1"), dict(id=9, n="Друго")]
     set_hrefs(_r, lambda r: f"/p/{slug(r['n'])}/")
