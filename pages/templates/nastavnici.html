@@ -19,8 +19,9 @@
       {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra | capitalize }}</p>
       {#- title: the name on hover; the text above already says it, so the icon is hidden from screen readers. -#}
       <span class="pc__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
-      {%- if t.gone %}<p class="pc__m">{% if t.posts %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}{% endif %}</p>
-      {%- else %}<p class="pc__m">{% if t.office %}kabinet {{ t.office }}{% endif %}{% if t.office and t.posts %}, {% endif %}{% if t.posts %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}{% endif %}</p>{% endif %}
+      {#- .pc__p: the post count, shown only while the list is ordered by it (style.css). -#}
+      {%- set office = t.office and not t.gone %}
+      <p class="pc__m">{% if office %}kabinet {{ t.office }}{% endif %}{% if t.posts %}<span class="pc__p">{% if office %}, {% endif %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}</span>{% endif %}</p>
     </div>
     {#- Their years at the faculty, bottom right; '~' and a dimmer year where no source says it (an estimate). -#}
     {%- set s = t.span %}
