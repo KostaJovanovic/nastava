@@ -54,7 +54,8 @@ env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select
 FORMS = {"objava": ("objava", "objave", "objava"), "post": ("post", "posta", "postova"),
          "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
          "nastavnik": ("nastavnik", "nastavnika", "nastavnika"), "autor": ("autor", "autora", "autora"),
-         "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja")}
+         "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja"),
+         "verzija": ("verzija", "verzije", "verzija")}
 
 
 def plural(n, word):
@@ -1409,6 +1410,50 @@ def render_home(topics, smerovi, side, n_teachers, vesti):
         years_json=json.dumps([y for y, _ in side["year_hist"]]))
 
 
+# verzije.md's tags: the shown word and the class (style.css .vz__tag--).
+VZ_TAGS = {"novo": ("Novo", "new"), "ispravka": ("Ispravka", "fix"), "brže": ("Brže", "fast")}
+VZ_ITEM = re.compile(r"- (?:(\d+(?:–\d+)?(?:, \d+(?:–\d+)?)*) )?(?:\[(\w+)\] )?(.*)")
+
+
+def load_verzije(text):
+    """verzije.md (its own head says how it is written) -> the days of /verzije/, newest first:
+    [{date, lead, span, n, parts: [{head, items: [{v, tag, html}]}]}]. Every commit 1..N must be listed exactly once."""
+    inline = lambda s: Markup(re.sub(r"`(.+?)`", r"<span data-notx>\1</span>",
+                                     re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", str(escape(s)))))
+    days, seen = [], []
+    for block in re.split(r"^## ", text, flags=re.M)[1:]:
+        date, *lines = block.rstrip().split("\n")
+        rows = []
+        for line in lines:
+            if line.startswith("  ") and rows:
+                rows[-1] += " " + line.strip()
+            elif line.strip():
+                rows.append(line.strip())
+        day = dict(date=date.strip(), lead=None, parts=[dict(head=None, items=[])], nums=[])
+        for r in rows:
+            if r.startswith("### "):
+                day["parts"].append(dict(head=r[4:], items=[]))
+            elif r.startswith("- "):
+                m = VZ_ITEM.fullmatch(r)
+                spans = [(int(a), int(b or a)) for a, _, b in (s.partition("–") for s in m[1].split(", "))] if m[1] else []
+                assert not m[2] or m[2] in VZ_TAGS, f"verzije.md: unknown tag [{m[2]}]"
+                for a, b in spans:
+                    day["nums"] += range(a, b + 1)
+                day["parts"][-1]["items"].append(dict(
+                    v=", ".join(f"0.{a}" if a == b else f"0.{a}–0.{b}" for a, b in spans),
+                    tag=VZ_TAGS.get(m[2]), html=inline(m[3])))
+            else:
+                assert not day["lead"], f"verzije.md, {date}: one lead line a day, then the entries"
+                day["lead"] = inline(r)
+        lo, hi = min(day["nums"]), max(day["nums"])
+        day.update(n=len(day["nums"]), span=f"0.{lo}" if lo == hi else f"0.{lo}–0.{hi}")
+        seen += day.pop("nums")
+        days.append(day)
+    missing, twice = set(range(1, max(seen) + 1)) - set(seen), {n for n in seen if seen.count(n) > 1}
+    assert not missing and not twice, f"verzije.md: commits missing {sorted(missing)}, listed twice {sorted(twice)}"
+    return days
+
+
 def main(db_path, out):
     site = Path(out) / "site"
     shutil.rmtree(site, ignore_errors=True)
@@ -1466,6 +1511,8 @@ def main(db_path, out):
     about = env.get_template("o_sajtu.html").render()
     write(site / "o-sajtu" / "index.html", about)
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
+    days = load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
+    write(site / "verzije" / "index.html", env.get_template("verzije.html").render(days=days))
     vesti = load_vesti(db)
     render_vesti(site, vesti)
     (site / "index.html").write_text(versioned(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers),
@@ -1493,6 +1540,10 @@ if __name__ == "__main__":
     assert subject_name("﻿Цевни  водови (1044) ") == "Цевни водови"
     assert [plural(n, "objava") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "objava objave objava objava objava objava objave objava objava".split()
     assert [plural(n, "post") for n in (1, 2, 5, 21, 22)] == "post posta postova post posta".split()
+    _v = load_verzije("note\n## 2. x\nLead **b**.\n- 2–3 [novo] **A** `B`\n  dalje\n### H\n- 1, 4 C <i>\n")[0]
+    assert (_v["span"], _v["n"], _v["lead"]) == ("0.1–0.4", 4, Markup("Lead <b>b</b>.")), _v
+    assert _v["parts"][0]["items"] == [dict(v="0.2–0.3", tag=("Novo", "new"), html=Markup('<b>A</b> <span data-notx>B</span> dalje'))]
+    assert _v["parts"][1]["head"] == "H" and _v["parts"][1]["items"][0]["html"] == Markup("C &lt;i&gt;"), _v
     assert [katedra("Катедра за " + k) for k in ("термодинамику", "процесну технику", "теорију механизама и машина",
             "аутоматско управљање", "моторна возила", "моторе", "информационе технологије у машинству")] == [
         "термодинамика", "процесна техника", "теорија механизама и машина", "аутоматско управљање", "моторна возила", "мотори",
