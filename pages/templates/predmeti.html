@@ -69,20 +69,20 @@
     {%- for sem in g.sems %}
     <div class="sg__s">
     {%- if sem.sem %}<h3 class="sg__sem">{{ (sem.sem + 1) // 2 }}. godina · {{ sem.sem }}. semestar</h3>{% endif %}
-    {%- if sem.req %}
     <div class="sg__box">
+    {%- if sem.req %}
     <ol class="subj" data-rows>{% for s in sem.req %}{{ srow(s) }}{% endfor %}</ol>
     {%- endif %}
     {%- for slot in sem.slots %}{% set short = slot.rows | length > 7 %}
     <div class="sg__slot{% if short %} sg__slot--short{% endif %}">
       <h4>{{ slot.label }} <span>· bira se jedan od {{ slot.rows | length }}</span></h4>
       <ol class="subj" data-rows>{% for s in slot.rows %}{{ srow(s) }}{% endfor %}</ol>
-    </div>
       {%- if short %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ slot.rows | length - 5 }}</span></label>{% endif %}
-    {%- endfor %}
     </div>
     {%- endfor %}
     </div>
+    </div>
+    {%- endfor %}
   </details>
   {%- endfor %}
 </div>
