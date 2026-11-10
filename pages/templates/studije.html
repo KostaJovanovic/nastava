@@ -6,6 +6,7 @@
 {%- set _old = page is not sameas current %}
 {% block title %}{{ page.title }}{% if _old %} ({{ page.first_seen | dmy }}){% endif %}{% endblock %}
 {% block description %}{{ page.title }}, Mašinski fakultet u Beogradu: {{ html | striptags | desc }}{% endblock %}
+{% block og %}-raspored{% endblock %}
 {% block crumbs %}{{ crumb('/raspored/', 'Kalendar i rasporedi') }}{% if _old %}{{ crumb(current.href, current.title) }}{% endif %}{% endblock %}
 
 {% block main %}

@@ -7,6 +7,7 @@
 {%- set _newest = year == years[0] %}
 {% block title %}Vesti{% if not _newest %} {{ year }}{% endif %}{% endblock %}
 {% block description %}Vesti Mašinskog fakulteta u Beogradu iz {{ year }}. godine, sa vesti.mas.bg.ac.rs, i one koje je fakultet uklonio.{% endblock %}
+{% block og %}-vesti{% endblock %}
 {% block crumbs %}{% if not _newest %}{{ crumb('/vesti/', 'Vesti') }}{% endif %}{% endblock %}
 
 {% block main %}

@@ -2,6 +2,7 @@
 {% from "rows.html" import forum_rows, topic_rows %}
 
 {% block title %}{{ smer.label }}{% endblock %}
+{% block og %}-predmeti{% endblock %}
 {% block description %}{{ smer.label }}, Mašinski fakultet u Beogradu: {{ smer.subjects | n }} {{ smer.subjects | pl('predmet') }} i {{ smer.topics | n }} {{ smer.topics | pl('objava') }} sa foruma nastave.{% endblock %}
 
 {% block main %}

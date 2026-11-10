@@ -6,6 +6,7 @@
 {%- set _old = v is not sameas page.versions[0] %}
 {% block title %}{{ v.title }} · {{ subj.name }}{% if _old %} ({{ v.first_seen | dmy }}){% endif %}{% endblock %}
 {% block description %}{{ v.title }} · {{ subj.name }}: {{ v.html | striptags | desc }}{% endblock %}
+{% block og %}-predmeti{% endblock %}
 {% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{{ crumb(subj.href, subj.name) }}{% if _old %}{{ crumb(page.versions[0].href, page.title) }}{% endif %}{% endblock %}
 
 {% block main %}

@@ -5,6 +5,7 @@
 {% block title %}{{ s.name }}{% endblock %}
 {% block title_more %} · {{ s.program }}{% endblock %}
 {% block description %}{{ s.name }}, {{ s.program }}{% if s.ects %}, {{ s.ects }} ESPB{% endif %}, Mašinski fakultet u Beogradu: nastavnici, cilj, sadržaj i literatura predmeta.{% endblock %}
+{% block og %}-predmeti{% endblock %}
 {% block crumbs %}{{ crumb('/predmeti/', 'Predmeti') }}{% endblock %}
 
 {#- A subject of the faculty's subject book: its head (where it is taught, by whom), its forum topics here, then the

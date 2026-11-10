@@ -16,11 +16,14 @@
 <meta property="og:type" content="{% block og_type %}website{% endblock %}">
 <meta property="og:site_name" content="arhiva nastave · Mašinski fakultet">
 <meta property="og:locale" content="sr_RS">
-{#- The site's image (pages/og.html) for every page; summary_large_image: X and Discord show it wide. -#}
-<meta property="og:image" content="{{ site_url }}/static/og.png">
+{#- The section's image (pages/og.html): block og is its name after "og", as "-predmeti"; the home page, the forum's
+    posts and the rest keep og.png. The alt: the image's headline. summary_large_image: X and Discord show it wide. -#}
+{%- set og_alt = {'': 'Forum nastave i više', '-raspored': 'Kalendar i rasporedi', '-nastavnici': 'Nastavnici',
+                  '-arhiva': 'Arhiva nastavnika', '-predmeti': 'Predmeti', '-vesti': 'Vesti'} %}
+<meta property="og:image" content="{{ site_url }}/static/og{% block og %}{% endblock %}.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="nastava, arhiva foruma nastave Mašinskog fakulteta u Beogradu">
+<meta property="og:image:alt" content="nastava: {{ og_alt[self.og()] }}, Mašinski fakultet u Beogradu">
 <meta name="twitter:card" content="summary_large_image">
 {%- block head %}{% endblock %}<!--/head-->
 <link rel="preload" href="/static/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
