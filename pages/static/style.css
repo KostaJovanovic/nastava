@@ -1085,7 +1085,7 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 /* No year known: hatched instead of a length of time, fading out of the corner. */
 .pc--undated::before {
   background: repeating-linear-gradient(135deg, var(--slate) 0 2px, transparent 2px 9px);
-  mask: linear-gradient(225deg, #000 0, transparent 55%);
+  mask: linear-gradient(225deg, #000 0, transparent 30%);
 }
 .people__sep { grid-column: 1 / -1; margin: 22px 0 0; }
 .people__sep .sg__h { margin: 0; }

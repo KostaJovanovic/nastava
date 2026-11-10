@@ -250,7 +250,7 @@
      With data-scope on it, the header search is its text box (?q=). */
   var bar = d.querySelector('[data-filter]'), runRows = null;
   if (bar) {
-    var rows = [].slice.call(d.querySelectorAll('[data-rows] > li'));
+    var rows = [].slice.call(d.querySelectorAll('[data-rows] > li:not([data-sep])')), sep = d.querySelector('[data-sep]');
     var ctl = [].slice.call(bar.querySelectorAll('[data-f]'));
     if (bar === scope) { q.dataset.f = 'find'; ctl.unshift(q); }
     /* Grouping and order (the teachers, the subjects): [data-group] groups by a row's data-<value> ('-': one group),
@@ -349,6 +349,8 @@
         left.hidden = !gone || !ctl.some(function (c) { return c.tagName !== 'SELECT' && c.value.trim(); });
       }
       if (n) n.textContent = shown;
+      // The archive's 'no year' heading: in the page's own order only, while a row under it is on view.
+      if (sep) sep.hidden = !!(gsel && gsel.value) || !!(ssel && ssel.value) || !d.querySelector('[data-sep] ~ li:not([hidden])');
       if (none) none.hidden = shown > 0 || (left && !left.hidden);
       history.replaceState(null, '', p.size ? '?' + p : location.pathname);
     };

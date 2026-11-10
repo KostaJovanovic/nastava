@@ -10,7 +10,7 @@
 
 {%- macro card(t) %}
   {#- The grey corner: a departed teacher, on the archive page and in the list's search. -#}
-  <li class="pc{% if t.gone %} pc--gone" style="--p: {{ t.age }}%{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
+  <li class="pc{% if t.gone %} pc--gone{% if t.last_seen[:4] == '0000' %} pc--undated{% endif %}" style="--p: {{ t.age }}%{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
     {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
     <div class="pc__t">
@@ -70,7 +70,16 @@
 </form>
 <div class="groups" data-groups>
 <ol class="people" data-rows>
-  {%- for t in teachers %}{{ card(t) }}{% endfor %}
+  {#- The archive's last ones: no source gives a year (site.js hides the heading once regrouped or reordered). -#}
+  {%- set ns = namespace(sep=false) %}
+  {%- for t in teachers %}
+  {%- if archive and not ns.sep and t.last_seen[:4] == '0000' %}{% set ns.sep = true %}
+  <li class="people__sep" data-sep>
+    <h2 class="sg__h">Godina odlaska nepoznata <span>· {{ teachers | selectattr('last_seen', 'equalto', '0000') | list | length }}</span></h2>
+    <p>Izvori iz istorije fakulteta ih pominju, ali bez godine.</p>
+  </li>
+  {%- endif %}{{ card(t) }}
+  {%- endfor %}
 </ol>
 </div>
 <p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
