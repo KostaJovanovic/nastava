@@ -76,14 +76,16 @@
   </section>
 </div>
 
-{#- A word cloud of the posts (build.py post_words), rows from ranking(), in alphabetical order; a word's size grows
-    with the square root of its share of the first (linear would leave most words tiny); a word opens its search. -#}
+{#- A word cloud of the posts (build.py post_words), rows from ranking(), in alphabetical order. --s, a word's size:
+    the square root of its share of the first (linear would leave most words tiny), stretched so the rarest shown word
+    is 0 and the first 1; a word opens its search. -#}
 {%- if st.words %}
+{%- set lo = ((st.words | map(attribute="pct") | min) / 100) ** 0.5 %}
 <section class="st">
   <h2 class="st__h">Najčešće reči u postovima <span>reč otvara pretragu</span></h2>
   <ul class="wc">
     {%- for r in st.words %}
-    <li><a href="{{ r.href }}" style="--s:{{ '%.2f' | format((r.pct / 100) ** 0.5) }}" title="{{ r.label }}: {{ r.n | n }}">{{ r.label }}</a></li>
+    <li><a href="{{ r.href }}" style="--s:{{ '%.2f' | format(((r.pct / 100) ** 0.5 - lo) / ((1 - lo) or 1)) }}" title="{{ r.label }}: {{ r.n | n }}">{{ r.label }}</a></li>
     {%- endfor %}
   </ul>
 </section>
