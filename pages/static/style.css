@@ -285,6 +285,8 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 /* A link's underline skips its inline-block letters: each letter has its own, so it waves with them. */
 .ft__by a, .ft__by a .wave { text-decoration: underline; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .wave { animation: none; } }
+/* The credit's name per script (base.html): Latin unless pismo.js has set Cyrillic. */
+html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [data-cyr] { display: none; }
 @media (min-width: 900px) {
   .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px; padding: 16px 20px 28px; }}
 

@@ -693,7 +693,11 @@
     var waveText = [], walker = d.createTreeWalker(wave, NodeFilter.SHOW_TEXT), tn;
     while ((tn = walker.nextNode())) waveText.push(tn);
     var waveN = waveText.reduce(function (n, t) { return n + (t.data.match(/\s+|\S️?/g) || []).length; }, 0), waveI = 0;
+    var altI;
     waveText.forEach(function (t) {
+      // The name's two scripts (only one shows) start on the same step, so the hump doesn't skip the hidden one.
+      if (t.parentNode.hasAttribute('data-cyr')) altI = waveI;
+      else if (t.parentNode.hasAttribute('data-lat')) waveI = altI;
       var frag = d.createDocumentFragment();
       t.data.split(/(\s+)/).forEach(function (word) {
         if (!word) return;
