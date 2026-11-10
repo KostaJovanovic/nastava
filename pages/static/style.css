@@ -626,6 +626,14 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .hm td { height: 22px; min-width: 22px; border-radius: 3px; background: color-mix(in srgb, var(--accent) var(--v), var(--line-2)); color: var(--fg); text-align: center; }
 .hm td.hm--hi { color: var(--accent-fg); font-weight: 800; }
 @container main (max-width: 599px) { .hm { border-spacing: 1px; font-size: 9.5px; } .hm th[scope="row"] { padding-right: 3px; } .hm td { min-width: 0; } }
+/* The word cloud (stats.html): --s, 0 to 1, sets a word's size and how strong its colour is. */
+.wc { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 12px; margin: 0; padding: 4px 0; list-style: none; }
+.wc a {
+  color: color-mix(in srgb, var(--accent-t) calc(var(--s) * 100%), var(--link)); text-decoration: none;
+  font: 800 calc(12px + var(--s) * 26px)/1.25 var(--sans);
+}
+.wc a:hover { text-decoration: underline; }
+@container main (max-width: 599px) { .wc a { font-size: calc(12px + var(--s) * 16px); } }
 /* A ranked list: the bar behind a row is its share of the first row. */
 .rk { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; counter-reset: rk; }
 .rk li {

@@ -76,6 +76,19 @@
   </section>
 </div>
 
+{#- A word cloud of the post titles: rows from build.py ranking(), in alphabetical order; a word's size grows with the
+    square root of its share of the first (linear would leave most words tiny); a word opens its search. -#}
+{%- if st.words %}
+<section class="st">
+  <h2 class="st__h">Reči iz naslova <span>reč otvara pretragu</span></h2>
+  <ul class="wc">
+    {%- for r in st.words %}
+    <li><a href="{{ r.href }}" style="--s:{{ '%.2f' | format((r.pct / 100) ** 0.5) }}" title="{{ r.label }}: {{ r.n | n }}">{{ r.label }}</a></li>
+    {%- endfor %}
+  </ul>
+</section>
+{%- endif %}
+
 <h2 class="st-sec">Nastavnici</h2>
 <ul class="kpi">
   <li><b>{{ st.teachers.listed }}</b><span>{{ st.teachers.listed | pl('nastavnik') }} na spisku fakulteta</span></li>

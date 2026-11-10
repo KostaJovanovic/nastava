@@ -1294,6 +1294,8 @@ def ranking(counts, row, k=10):
 
 MONTHS = "jan feb mar apr maj jun jul avg sep okt nov dec".split()
 WEEKDAYS = "pon uto sre čet pet sub ned".split()
+# Words of the post titles the word cloud leaves out: frequent, but they say nothing of what a post is about.
+CLOUD_STOP = set("prof dela posle nakon koji koja koje prvi drugi treći prva druga treća prve prvog drugog trećeg".split())
 
 
 def archive_stats(items, topics, teachers):
@@ -1338,6 +1340,8 @@ def archive_stats(items, topics, teachers):
     days = Counter(date.fromisoformat(it["date"][:10]).weekday() for it in dated)
     busiest = Counter(it["date"][:10] for it in dated).most_common(1)
     topic = {t["href"]: t for t in topics}
+    # Titles, not bodies: a body of exam results is mostly the students' names.
+    words = Counter(w for it in posts for w in re.findall(r"[^\W\d_]{4,}", lat(it["title"]).lower()) if w not in CLOUD_STOP)
 
     listed = [t for t in teachers if not t["gone"]]
     posting = {t["username"] for t in listed if t["username"] and t["username"] in tally["authors"]}
@@ -1352,6 +1356,7 @@ def archive_stats(items, topics, teachers):
         hours=bars([(h, hours[h]) for h in range(24)]),
         days=bars([(d, days[i]) for i, d in enumerate(WEEKDAYS)]),
         busiest=busiest[0] if busiest else None,
+        words=sorted(ranking(words, lambda w: (w, f"/?q={quote(fold(w))}", None), k=60), key=lambda r: fold(r["label"])),
         authors=ranking(tally["authors"], author), subjects=ranking(tally["subjects"], subject),
         smerovi=ranking(tally["smerovi"], smer, k=20),
         files=ranking(tally["files"], upload), teacher_dl=ranking(tally["teacher_dl"], teacher),
