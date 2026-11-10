@@ -48,7 +48,8 @@
     var studije = [], folded = [];
     setScope = function (v) {
       u = qk.value = sf.dataset.u = v;
-      attr(q, 'placeholder', PH[v]);
+      // On a phone the scope's long placeholder can't fit; the select beside it names the scope anyway.
+      attr(q, 'placeholder', matchMedia('(max-width: 759px)').matches ? 'Pretraži…' : PH[v]);
       if (findOn) findOn(v === pageU);
     };
     var show = function () {
