@@ -690,11 +690,13 @@
   if (wave) {
     var waveText = [], walker = d.createTreeWalker(wave, NodeFilter.SHOW_TEXT), tn;
     while ((tn = walker.nextNode())) waveText.push(tn);
-    var waveN = waveText.reduce(function (n, t) { return n + (t.data.match(/\S️?/g) || []).length; }, 0), waveI = 0;
+    var waveN = waveText.reduce(function (n, t) { return n + (t.data.match(/\s+|\S️?/g) || []).length; }, 0), waveI = 0;
     waveText.forEach(function (t) {
       var frag = d.createDocumentFragment();
       t.data.split(/(\s+)/).forEach(function (word) {
-        if (!word || /^\s+$/.test(word)) { frag.appendChild(d.createTextNode(word)); return; }
+        if (!word) return;
+        // A space is a step of the wave too (nothing to lift), so the hump doesn't skip between words.
+        if (/^\s+$/.test(word)) { frag.appendChild(d.createTextNode(word)); waveI++; return; }
         var w = frag.appendChild(el('span'));
         w.style.whiteSpace = 'nowrap';
         word.match(/.️?/g).forEach(function (ch) {
