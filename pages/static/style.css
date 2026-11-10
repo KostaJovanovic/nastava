@@ -1075,12 +1075,13 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 }
 .pc:hover { border-color: var(--slate); }
 /* No longer on the faculty's list: a grey corner, top right. */
-/* The departed: solid grey from the top right corner to --p of the card (build.py: the longer ago, the further),
-   then a fade of fixed width. Under the text (isolation, z-index -1), so it stays readable. */
+/* The departed: grey from the top right corner, reaching further the longer ago they left (build.py --p), the whole
+   card for 1900 and before. Under the text (isolation, z-index -1), so it stays readable. */
 .pc--gone, .tp--gone { isolation: isolate; }
 .pc--gone::before, .tp--gone::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: .45;
-  background: linear-gradient(225deg, var(--slate) var(--p, 0%), transparent calc(var(--p, 0%) + 68px));
+  /* A fade a quarter of the card long, its solid end at the card's far corner for --p 100% (1900 and before). */
+  background: linear-gradient(225deg, var(--slate) calc(var(--p, 0%) * 1.1 - 10%), transparent calc(var(--p, 0%) * 1.1 + 15%));
 }
 /* No year known: hatched instead of a length of time, fading out of the corner. */
 .pc--undated::before {

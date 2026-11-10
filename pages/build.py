@@ -1012,9 +1012,9 @@ def render_teachers(site, teachers, items, book):
         t["find"] = fold(" ".join([t["full_name"], t["title"] or "", t["katedra"] or "", t["email"] or "", t["research"] or "",
                                    t["office"] or ""] + [s["name"] for s in t["subjects"]]))
         # How far the grey corner reaches (style.css --p): the longer since they were last at the faculty, the more of
-        # the card, up to 85% for the 1860s; by the square root, so the recent decades still differ. No year: none.
+        # the card, evenly by the year, all of it for 1900 and before. No year: none.
         ago = date.today().year - int(t["last_seen"][:4]) if t["gone"] and t["last_seen"][:4] != "0000" else 0
-        t["age"] = round(85 * min(1, max(0, ago) / 165) ** 0.5)
+        t["age"] = round(100 * min(1, max(0, ago) / (date.today().year - 1900)))
         t["span"] = gone_span(t, first_list)
     for t in teachers:
         source = base = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
