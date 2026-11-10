@@ -180,6 +180,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .cmd select:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 1px; }
 /* The open list rounded like Traži: a customizable select (Chromium); elsewhere the system's own list. */
 .cmd select, .cmd select::picker(select) { appearance: base-select; }
+/* base-select lays the select out as a flex box, its text at the top unless centred. */
+.cmd select { align-items: center; }
 .cmd select::picker(select) {
   margin-top: 4px; padding: 4px;
   border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--fg);
