@@ -828,6 +828,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   .fb__h > :not(:first-child) { display: block; text-align: center; }
   .fb__h > :last-child:not(:first-child) { text-align: left; }
   .fr__more { display: contents; }
+  /* One line here: the icon centred like the cells (on a phone it stays by the title, above the counts' line). */
+  .fr__i { align-self: center; }
   .fb--forums .fr__sub { display: block; }
   .fb--forums .fr__n { display: grid; }
   .fr__n { text-align: center; font-size: 14px; }
@@ -963,6 +965,8 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .tp__who h1 { align-self: end; color: var(--fg); font: 800 20px/1.15 var(--sans); overflow-wrap: anywhere; }
 .tp__who > p { align-self: start; color: var(--dim); }
 .tp__who a { color: var(--link); }
+/* The katedra's icon: isometric, so drawn on a 32 grid, too fine at text size. */
+.tp__who > p > .i { font-size: 24px; color: var(--slate); }
 .tp__dl, .tp__subj { grid-column: 1 / -1; }
 .tp__dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 14px; }
 .tp__dl dt { color: var(--dim); }
@@ -1078,10 +1082,12 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .pc:has(.pc__a:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .pc__img { display: block; width: 76px; aspect-ratio: 6 / 7; object-fit: cover; object-position: 50% 25%; border-radius: 4px; background: var(--icon-bg); }
 .pc__img--none { display: grid; place-items: center; color: var(--slate); font: 800 20px var(--sans); }
-.pc__t { min-width: 0; padding-top: 2px; padding-right: 20px; }
+.pc__t { min-width: 0; padding-top: 2px; padding-right: 32px; }
 /* The katedra's icon, top right: above the card's link (z-index), so its title shows on hover. */
-.pc__ki { position: absolute; top: 10px; right: 10px; z-index: 1; display: flex; color: var(--slate); font-size: 18px; }
+.pc__ki { position: absolute; top: 8px; right: 8px; z-index: 1; display: flex; color: var(--slate); font-size: 32px; }
 .pc:hover .pc__ki { color: var(--accent-t); }
+/* On a departed teacher's grey corner: knocked out in the card's colour, so it reads on the grey. */
+.pc--gone .pc__ki, .pc--gone:hover .pc__ki { color: var(--card); }
 /* The name's link covers the whole card. */
 .pc__a { display: block; margin-bottom: 2px; color: var(--fg); font: 800 14.5px/1.25 var(--sans); text-decoration: none; overflow-wrap: anywhere; }
 .pc__a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
