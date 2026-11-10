@@ -399,7 +399,8 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
   border: 1px solid var(--line); border-radius: 10px; background: var(--card);
   color: var(--fg); text-decoration: none; transition: border-color .12s, transform .12s;
 }
-.rs-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+/* Hover lifts only where there is a hover: on a phone a tap leaves :hover stuck on. */
+@media (hover: hover) { .rs-card:hover { border-color: var(--accent); transform: translateY(-1px); } }
 .rs-card:focus-visible, .rs-chips a:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .rs-card__b { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--head); color: var(--head-fg); font: 800 19px var(--sans); }
 .rs-card__b--code { background: var(--icon-bg); color: var(--head); font-size: 12px; letter-spacing: .04em; }
@@ -500,7 +501,7 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
   transition: border-color .12s, background .12s, transform .12s;
 }
 .mp__tab small { color: var(--dim); font-size: 11px; font-weight: 400; }
-.mp__tab:hover { border-color: var(--accent); transform: translateY(-1px); }
+@media (hover: hover) { .mp__tab:hover { border-color: var(--accent); transform: translateY(-1px); } }
 /* aria-current: the same tabs as links (the schedule page's programs). */
 .mp__tab[aria-pressed="true"], .mp__tab[aria-current="true"], .mp__tab[aria-current="page"] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
 .mp__tab[aria-pressed="true"] small, .mp__tab[aria-current="true"] small { color: inherit; opacity: .85; }
@@ -524,13 +525,15 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
   background: var(--card); color: var(--fg); font: 400 14px/1.3 var(--sans); text-align: left; cursor: pointer;
   transition: border-color .12s, background .12s, transform .12s;
 }
-.mp__card:hover { border-color: var(--accent); transform: translateY(-1px); }
+@media (hover: hover) { .mp__card:hover { border-color: var(--accent); transform: translateY(-1px); } }
 .mp__card:active { transform: scale(.97); }
 .mp__card:focus-visible, .mp__tab:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .mp__card[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
 .mp__card[aria-pressed="mixed"] { border-color: var(--accent); border-style: dashed; }
 .mp__check { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border: 1.5px solid var(--slate); border-radius: 50%; }
-.mp__card[aria-pressed="true"] .mp__check, .mp__card[aria-pressed="mixed"] .mp__check { border-color: var(--accent); background: var(--accent); animation: mp-pop .25s ease-out; }
+.mp__card[aria-pressed="true"] .mp__check, .mp__card[aria-pressed="mixed"] .mp__check { border-color: var(--accent); background: var(--accent); }
+/* Only the card just clicked pops (site.js): a redraw (a tab, a letter of the search) marks the rest again. */
+.mp__card--pop:not([aria-pressed="false"]) .mp__check { animation: mp-pop .25s ease-out; }
 .mp__card[aria-pressed="true"] .mp__check::after { content: ""; width: 4px; height: 8px; margin-top: -2px; border: solid var(--accent-fg); border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .mp__card[aria-pressed="mixed"] .mp__check::after { content: ""; width: 8px; height: 2px; background: var(--accent-fg); }
 @keyframes mp-pop { 0% { transform: scale(.5); } 60% { transform: scale(1.18); } }
@@ -555,8 +558,12 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 .mp:not([open]), .leave:not([open]) { opacity: 0; transform: translateY(6px) scale(.98); }
 .mp::backdrop, .leave::backdrop { transition: opacity 150ms ease-in, overlay 150ms allow-discrete, display 150ms allow-discrete; }
 .mp:not([open])::backdrop, .leave:not([open])::backdrop { opacity: 0; }
+/* Opening, the backdrop fades in with its dialog, as it fades out on closing. */
+.mp[open]::backdrop { animation: mp-fade .18s ease-out; }
+.leave[open]::backdrop { animation: mp-fade .15s ease-out; }
+@keyframes mp-fade { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .mp[open], .mp__check, .leave[open], .star--pop .i { animation: none !important; }
+  .mp[open], .mp__check, .leave[open], .star--pop .i, .mp[open]::backdrop, .leave[open]::backdrop { animation: none !important; }
   .mp::backdrop, .leave::backdrop { transition: none; }
 }
 
@@ -656,8 +663,8 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
   transition: transform 160ms ease-out;
 }
 .btn:hover { border-color: var(--accent); color: var(--accent-t); }
-/* Pressed: the press of the picker's cards. */
-.btn:active { transform: scale(.97); }
+/* Pressed: the press of the picker's cards, on everything pressable. */
+.btn:active, .rs-card:active, .mp__tab:active, .order button:active, .chip:active { transform: scale(.97); }
 .btn .i { width: 15px; height: 15px; }
 .btn--pri { background: var(--red); border-color: var(--red); color: #fff; }
 .btn--pri:hover { background: var(--red-2); color: #fff; }
@@ -710,13 +717,13 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
   min-height: 28px; padding: 0 8px 0 10px;
   border: 1px solid var(--accent); border-radius: 14px;
   background: var(--card); color: var(--accent-t);
-  font: 400 13px var(--sans); cursor: pointer;
+  font: 400 13px var(--sans); cursor: pointer; transition: transform 160ms ease-out;
 }
 .chip .i { width: 11px; height: 11px; }
 .chip:hover { background: var(--accent); color: var(--accent-fg); }
 /* A search's order (search.js): two buttons, the one in use pressed. */
 .order { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; color: var(--dim); font-size: 13px; }
-.order button { min-height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--fg); font: 400 13px var(--sans); cursor: pointer; }
+.order button { min-height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--fg); font: 400 13px var(--sans); cursor: pointer; transition: transform 160ms ease-out; }
 .order button:hover { border-color: var(--accent); color: var(--accent-t); }
 .order button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
 /* A subject's name with the star that follows it (site.js). */
@@ -1223,7 +1230,9 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 :root[data-vt="dark"]::view-transition-new(root) { clip-path: circle(0 at 0 0); }
 
 /* ---- Preferences ---------------------------------------------------------- */
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+/* Apart: a browser without ::details-content would drop the whole rule above with it. */
+@media (prefers-reduced-motion: reduce) { ::details-content { transition: none !important; } }
 @media (forced-colors: active) { mark { background: Highlight; color: HighlightText; } }
 @media print {
   .hd, .side, .status, .acts, .skip, .crumbs, .fbar { display: none !important; }

@@ -572,6 +572,8 @@
       var list = mine().filter(function (s) { return hrefs.indexOf(s.href) < 0; });
       keepMine(b.getAttribute('aria-pressed') === 'true' ? list
         : list.concat(ids.map(function (i) { return { href: subj[i][0], name: subj[i][1] }; })));
+      // keepMine's 'moji' event has run sync(): the card is marked; only a click pops its check (style.css).
+      b.classList.toggle('mp__card--pop', b.getAttribute('aria-pressed') !== 'false');
     });
     mq.addEventListener('input', render);
     iz.querySelector('[data-moji-open]').addEventListener('click', function () {
@@ -769,6 +771,7 @@
     try { localStorage.setItem('tema', t); } catch (e) {}
     showTheme();
   };
+  var vtNow = null;
   if (tb) {
     /* The switch as a big circle the size of the screen, on a valley's path: dark comes down from the upper left to
        cover it; light shows again as the dark goes on up to the upper right (a view transition; style.css puts the
@@ -784,13 +787,14 @@
           + (h / 2 - r * (dark ? (1 - s) * (1 - s) : s * s)) + 'px)' });
       }
       root.dataset.vt = t;
-      var vt = d.startViewTransition(function () { setTheme(t); });
+      var vt = vtNow = d.startViewTransition(function () { setTheme(t); });
       vt.ready.then(function () {
         // fill both: no frame without the clip at either end (that was a flash of the whole dark page).
         root.animate(frames, { duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'both',
           pseudoElement: dark ? '::view-transition-new(root)' : '::view-transition-old(root)' });
-      });
-      vt.finished.then(function () { delete root.dataset.vt; });
+      }, function () {});
+      // A second click cuts this one short and sets its own data-vt first: only the latest clears it.
+      vt.finished.then(function () { if (vtNow === vt) delete root.dataset.vt; });
     });
     showTheme();
   }
