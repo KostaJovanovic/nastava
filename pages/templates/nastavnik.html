@@ -23,7 +23,7 @@
   {%- endif %}
   <div class="tp__who">
     <h1 id="title">{{ t.shown }}</h1>
-    <p>{{ t.title }}{% if t.katedra %}{% if t.title %}, {% endif %}<a href="/nastavnici/{% if t.gone %}arhiva/{% endif %}?katedra={{ t.katedra | slug }}">{{ t.katedra }}</a>{% endif %}</p>
+    <p>{{ t.title }}{% if t.katedra %}{% if t.title %}, {% endif %}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg> <a href="/nastavnici/{% if t.gone %}arhiva/{% endif %}?katedra={{ t.katedra | slug }}">{{ t.katedra }}</a>{% endif %}</p>
     <dl class="tp__dl">
       {%- if h and h.life %}<dt>Život</dt><dd>{{ h.life }}</dd>{% endif %}
       {#- Gone: office and hours are no longer theirs. The past: the years their sources name. -#}

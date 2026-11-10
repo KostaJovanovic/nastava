@@ -1078,7 +1078,10 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .pc:has(.pc__a:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .pc__img { display: block; width: 76px; aspect-ratio: 6 / 7; object-fit: cover; object-position: 50% 25%; border-radius: 4px; background: var(--icon-bg); }
 .pc__img--none { display: grid; place-items: center; color: var(--slate); font: 800 20px var(--sans); }
-.pc__t { min-width: 0; padding-top: 2px; }
+.pc__t { min-width: 0; padding-top: 2px; padding-right: 20px; }
+/* The katedra's icon, top right: above the card's link (z-index), so its title shows on hover. */
+.pc__ki { position: absolute; top: 10px; right: 10px; z-index: 1; display: flex; color: var(--slate); font-size: 18px; }
+.pc:hover .pc__ki { color: var(--accent-t); }
 /* The name's link covers the whole card. */
 .pc__a { display: block; margin-bottom: 2px; color: var(--fg); font: 800 14.5px/1.25 var(--sans); text-decoration: none; overflow-wrap: anywhere; }
 .pc__a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }

@@ -1019,6 +1019,11 @@ def render_teachers(site, teachers, items, book):
               env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name))
     listed = [t for t in teachers if not t["gone"]]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
+    # Each katedra's icon is a symbol in icons.svg (the cards, nastavnik.html); a new one shows a blank until drawn.
+    sprite = (HERE / "static" / "icons.svg").read_text(encoding="utf-8")
+    for k in sorted({t["katedra"] for t in teachers if t["katedra"]}):
+        if f'id="i-{slug(k)}"' not in sprite:
+            print(f"[warn] no icon for {k}: add <symbol id=\"i-{slug(k)}\"> to static/icons.svg", file=sys.stderr)
     # The ones who left, most recent first: a section below the list.
     left = sorted((t for t in teachers if t["gone"]), key=lambda t: t["last_seen"], reverse=True)
     write(site / "nastavnici" / "index.html",
