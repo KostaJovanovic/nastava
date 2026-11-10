@@ -782,4 +782,23 @@
       links[n].focus(); links[n].closest('.fr, .pc, .sr').scrollIntoView({ block: 'nearest' });
     }
   });
+
+  /* Back up the crumbs to where you were: each page's scroll is kept for the tab (sessionStorage) as it is left, and a
+     page opened from the crumbs goes back to it. Other links open a page at the top, as usual. 'crumb': the page the
+     crumb leads to, so a stale one (a crumb opened in a new tab) does not move another page. */
+  var here = location.pathname + location.search;
+  addEventListener('pagehide', function () { try { sessionStorage.setItem('y' + here, scrollY); } catch (e) {} });
+  d.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.crumbs a');
+    if (a) try { sessionStorage.setItem('crumb', a.pathname + a.search); } catch (e) {}
+  });
+  var back = function () {
+    try {
+      var to = sessionStorage.getItem('crumb');
+      sessionStorage.removeItem('crumb');
+      if (to === here) scrollTo(0, +sessionStorage.getItem('y' + here));
+    } catch (e) {}
+  };
+  // A page prerendered on hover (base.html's speculation rules) sees the tab's sessionStorage only once shown.
+  if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
 })();
