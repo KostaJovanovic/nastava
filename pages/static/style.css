@@ -778,8 +778,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 }
 .fr__i .i { width: 14px; height: 14px; }
 .fr__i--many { background: var(--fg); color: var(--paper); }
-/* A forum row's icon (a katedra's, a smer's folder), centred: ~12px above and below in the two-line phone row, as on the left. */
-.fb--forums .fr__i { align-self: center; }
+/* A forum row's icon (a katedra's, a smer's folder), centred on both phone lines (title, last post): ~12px above and below, as on the left. */
+.fb--forums .fr__i { align-self: center; grid-row: span 2; }
 .fb--forums .fr__i .i { width: 25px; height: 25px; }
 .fr__t { min-width: 0; }
 .fr__a { color: var(--link); font-size: 14.5px; line-height: 1.3; text-decoration: none; overflow-wrap: anywhere; }
@@ -831,7 +831,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   /* Every forum row as tall as one with a last post (its three lines), "nema postova" too; the cent mark fits a line. */
   .fb--forums .fr__last { min-height: calc(3em * 1.3); }
   /* The 30px icon as far from the row's left edge as from its top and bottom: (the 3-line row - 30px) / 2, less the 12px padding. */
-  .fb--forums .fr__i { width: 30px; height: 30px; margin-left: calc((3 * 12.5px * 1.3 + 12px - 30px) / 2 - 12px); }
+  .fb--forums .fr__i { grid-row: auto; width: 30px; height: 30px; margin-left: calc((3 * 12.5px * 1.3 + 12px - 30px) / 2 - 12px); }
   .fb--forums .fr__i .i { width: 24px; height: 24px; }
   .fr__last .src { line-height: 14px; }
   /* The last post's title is a pointer, quieter than the row's own title. */
