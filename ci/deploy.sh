@@ -1,25 +1,55 @@
 #!/usr/bin/env bash
-# Build the site and publish it, on this PC or in the scheduled run (sync.yml): the site goes up as an asset of the
-# "site" release, and the deploy workflow puts it on GitHub Pages as it is.
-# Usage: bash ci/deploy.sh [sync|forum]   (from the repo root)
-#   sync   test the parsers, get the state (ci/state.sh pull), run the scrapers (posts, news, schedule pages, teachers,
-#          subjects), save the state (ci/state.sh push), build, publish, then the web push of the new posts
-#   forum  the same, but only the board and the news (the daily changing sources; the other scrapers ~8 min of
-#          unchanged pages)
-#   (none) build and publish this copy's nastava.db
-# Missing posts or a failed side scraper do not stop the publish, but the script exits 1 at the end.
+# Scrape, build and publish: the scheduled run (sync.yml) and this PC (by hand, as an override) run the same steps.
+# The site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
+# Usage: bash ci/deploy.sh [auto SLOT | sync | forum [studije] [nastavnici] [predmeti] [katedre]]   (from the repo root)
+#   auto SLOT  the scheduled run: SLOT is noon, evening or night; ci/plan.py picks the scrapers from the faculty's
+#              teaching calendar, or "skip" (stop at once)
+#   sync       every scraper: the board, the news, the schedule pages, the teachers, the subjects, the departments'
+#              sites
+#   forum ...  the board and the news, and the scrapers named after it
+#   (none)     build and publish this copy's nastava.db, nothing scraped
+# A scrape first gets the saved state (ci/state.sh pull), so this PC goes on from the last scheduled run. When the
+# scrapers changed nothing (ci/plan.py fingerprint), nothing is saved, built or published. Otherwise: save the state,
+# build, publish, then the web push of the new posts. Missing posts, a failed scraper, a failed push or an unreadable
+# calendar do not stop the rest, but the script exits 1 at the end (a red run: GitHub's e-mail).
 set -euo pipefail
 repo=KostaJovanovic/nastava
 export PYTHONIOENCODING=utf-8
 failed=()
+finish() {
+	if ((${#failed[@]})); then
+		echo "failed: ${failed[*]}" >&2
+		exit 1
+	fi
+	exit 0
+}
 
-if [[ ${1:-} == sync || ${1:-} == forum ]]; then
-	uv run test/parsers_test.py
-	# The saved state, not this PC's copy: the scheduled run on Actions (sync.yml) may be newer, and an older copy
-	# would scrape and notify its posts again.
+if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
+	# The saved state, not this PC's copy: the scheduled run may be newer, and an older copy would scrape and notify
+	# its posts again.
 	bash ci/state.sh pull
+	parts=("$@")
+	if [[ $1 == auto ]]; then
+		# tr: on Windows, Python ends its lines with \r\n.
+		plan=$(uv run -q ci/plan.py "${2:?usage: deploy.sh auto noon|evening|night}" | tr -d '\r')
+		echo "plan for the $2 run: $plan"
+		read -ra parts <<< "$plan"
+		[[ ${parts[0]} == skip ]] && exit 0
+		# Once a day: a calendar the next days' runs can read.
+		if [[ $2 == night ]]; then
+			uv run -q ci/plan.py check || failed+=(kalendar)
+		fi
+	elif [[ $1 == sync ]]; then
+		# katedre: the departments' own sites, a crawl of every page, ~600 requests.
+		parts=(forum studije nastavnici predmeti katedre)
+	fi
+	for p in "${parts[@]:1}"; do
+		[[ $p == studije || $p == nastavnici || $p == predmeti || $p == katedre ]] || { echo "unknown scraper: $p" >&2; exit 2; }
+	done
+	uv run test/parsers_test.py
 	# The newest post before the scrape: the posts after it get a web push once published (ci/push.py).
-	before=$(uv run -q ci/push.py last) || before=
+	before=$(uv run -q ci/push.py last | tr -d '\r') || before=
+	print=$(uv run -q ci/plan.py fingerprint | tr -d '\r')
 	uv run nastava.py sync
 	# Right after the scrape, so a post made since then does not count as missing.
 	uv run nastava.py stats || failed+=(stats)
@@ -27,12 +57,12 @@ if [[ ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run vesti.py sync || failed+=(vesti)
 	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
 	uv run cent.py sync || failed+=(cent)
-	if [[ $1 == sync ]]; then
-		uv run studije.py sync || failed+=(studije)
-		uv run nastavnici.py sync || failed+=(nastavnici)
-		uv run predmeti.py sync || failed+=(predmeti)
-		# The departments' own sites: a crawl of every page, ~600 requests.
-		uv run katedre.py sync || failed+=(katedre)
+	for p in "${parts[@]:1}"; do
+		uv run "$p.py" sync || failed+=("$p")
+	done
+	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" ]]; then
+		echo "nothing changed: no save, build or publish"
+		finish
 	fi
 	bash ci/state.sh push
 fi
@@ -57,7 +87,4 @@ if [[ -n ${before:-} && -f push-secret.json ]]; then
 	# Unquoted: three numbers (post, cent notice, cent page version).
 	uv run -q ci/push.py send $before || failed+=(push)
 fi
-if ((${#failed[@]})); then
-	echo "failed: ${failed[*]} (published anyway)" >&2
-	exit 1
-fi
+finish

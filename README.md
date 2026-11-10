@@ -13,20 +13,25 @@ pipeline and site, with new scrapers for phpBB.
 
 ## How it works
 
-- `.github/workflows/sync.yml` updates the site on GitHub: `bash ci/deploy.sh forum` every 2 hours by day (06–22 in
-  Belgrade), `bash ci/deploy.sh sync` on Monday night. By hand: `gh workflow run sync.yml` (`-f what=sync` for all),
-  or the same `ci/deploy.sh` on a PC. A run:
-  1. tests the parsers on saved pages (`test/parsers_test.py`) and gets the state (`ci/state.sh pull`);
+- `.github/workflows/sync.yml` updates the site on GitHub (`bash ci/deploy.sh auto noon|evening|night`). `ci/plan.py`
+  reads the exam dates from the faculty's teaching calendar (the PDF `studije.py` archives): on a hot day
+  (registration, an exam period and the 7 days after it) the board and the news are scraped at 12:23, 17:23 and
+  21:23 Belgrade time (an hour later in summer), on other days at 21:23 only. The schedule pages also on the 1st of
+  the month and on the first day of each registration and exam period; the teachers and the subjects on 1 October.
+  A run that finds nothing new stops before saving and publishing. By hand, on GitHub:
+  `gh workflow run sync.yml -f what=forum` (or `"forum studije"`, `sync`); on a PC: `bash ci/deploy.sh forum`
+  (or `forum studije`, `sync`), which first gets the saved state. A run:
+  1. gets the state (`ci/state.sh pull`) and tests the parsers on saved pages (`test/parsers_test.py`);
   2. reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
      with a post in the last 14 days (an edit does not change the counts);
-  3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and on Monday the schedules,
-     the teachers, the subjects and the departments' sites. A failure in these does not stop
-     the run;
+  3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and the schedules, the
+     teachers and the subjects when they are due (the departments' sites only with `sync`). A failure in these does
+     not stop the run;
   4. saves the state (`nastava.db`) to the `state` release (`ci/state.sh push`);
   5. builds the static site with Pagefind search, uploads it to the `site` release and starts the `deploy` workflow,
      which only publishes it to GitHub Pages;
   6. sends the web push of the new posts once they are on the site (`ci/push.py`);
-  7. exits 1 (a red run) when the count check, a side scraper or the push failed.
+  7. exits 1 (a red run, GitHub's e-mail) when the count check, a scraper, the push or the calendar check failed.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
   edge cache for a day at most (Pagefind's hashed files: a year). Most pages are stored as only their title and main
   part; the Worker puts them into `shell.html` (head, header, sidebar), which saves about 190 MB on GitHub Pages.
@@ -80,7 +85,9 @@ pipeline and site, with new scrapers for phpBB.
   subjects. The keys are in `push-secret.json` (git-ignored) and, for sync.yml, in the repository secret `PUSH_SECRET`
   (`gh secret set PUSH_SECRET < push-secret.json`). Lost keys mean new ones and every subscriber turning the switch
   on again.
-- `ci/deploy.sh`: scrape (with `sync`), build and publish from this PC. `ci/state.sh`: get and save `nastava.db`.
+- `ci/deploy.sh`: scrape, build and publish (`auto SLOT`, `sync`, `forum [studije] [nastavnici] [predmeti] [katedre]`,
+  or nothing: only build and publish). `ci/plan.py`: what a scheduled run does, from the calendar; the database
+  fingerprint. `ci/state.sh`: get and save `nastava.db`.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
 - `save.bat`: git (commit, push, pull), and `deploy [sync]`: commit, push, then `ci/deploy.sh`. `server.bat`: build

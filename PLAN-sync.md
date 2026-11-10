@@ -1,8 +1,8 @@
 # Plan: the automatic update (scheduled sync on GitHub Actions)
 
-Status: planned 2026-11-09, agreed with the user, not built. Instructions for the Claude that builds it: follow the steps
-in order, copy the code as it is (it was tested against the real `nastava.db` and the real calendar PDF), run the
-checks, commit. Do not redesign; if something here turns out wrong, stop and ask the user.
+Status: built 2026-11-10, commit "Calendar-driven sync schedule" (the commit after this line was written). One change
+from the code below: `katedre.py` (added to `deploy.sh sync` after this plan) stays in `sync` and is an allowed
+`forum` part, and its table `katedre_pages` is in the fingerprint.
 
 ## Rules for this work (from the user)
 

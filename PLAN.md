@@ -78,6 +78,7 @@ Where they go:
 
 ## Daily refresh
 
+- Built as planned in `PLAN-sync.md` (scheduled sync).
 - nastava: `search.php?search_id=active_topics` (last 7 days, public) + Atom feed + attachment ids above the last known. Weekly full listing reconcile (~1,500 requests).
 - vesti / WordPress: REST `modified_after`. Static sites: weekly re-crawl.
 - First full run (~4–6 h) runs locally, then the state goes to the release; Actions does the daily runs.
