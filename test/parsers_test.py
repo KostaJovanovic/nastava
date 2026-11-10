@@ -75,6 +75,10 @@ assert len(emeriti) == 6 and emeriti[0]['id'] == 'emeritus-madzic' and emeriti[0
 # The name of a listed teacher whose profile is missing: the same as the profile's.
 assert nastavnici.plain_name(next(t['full_name'] for t in listed if t['id'] == '52')) == profile['name']
 assert nastavnici.plain_name('мастер маш. инж. Јована Р. Антић') == 'Јована Р. Антић'
+# A department's staff: titled, a researcher, and untitled (an emeritus, or staff off the teachers' list).
+assert nastavnici.parse_katedra('<div class="page"><h2 id="наставници_и_сарадници">x</h2><p>др Миша Д. Стојићевић, '
+    'ванредни професор<br/>Огњен С. Стаменковић, истраживач сарадник<br/>Младен М. Регодић<br/></p></div>') == {
+    'misa stojicevic': 'ванредни професор', 'ognjen stamenkovic': 'истраживач сарадник', 'mladen regodic': ''}
 
 # The subject book, the plans (a grid of rowspans; an elective slot is a link to its list) and a subject page.
 book = predmeti.parse_book(read('predmeti.html'))

@@ -948,13 +948,17 @@ def load_teachers(db, subjects):
     local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
     fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
     bios = {b["id"]: b["paras"] for b in map(json.loads, BIOS.read_text(encoding="utf-8").splitlines())} if BIOS.exists() else {}
+    # The last day the teachers' list was read: one not on it then (gone, or a department's staff nastavnici.py keeps)
+    # has no profile at the faculty.
+    listed_day = max((t["last_seen"] for t in teachers if not t["gone"] and not t.get("source")), default="")
     for t in teachers:
+        t["off_list"] = t["gone"] or t["last_seen"] < listed_day
         t["bio"] = bios.pop(t["id"], None)
-        # The photo from our copy (write_photos); a listed teacher's not copied yet from the faculty, a departed
-        # one's none (the faculty took it down).
+        # The photo from our copy (write_photos); a listed teacher's not copied yet from the faculty, one off the
+        # list none (the faculty took it down).
         thumb, photo = photo_urls(t["html"], t.get("photo"))
-        t["thumb"] = local.get(thumb) or (None if t["gone"] else thumb)
-        t["photo"] = local.get(photo) or (None if t["gone"] else photo)
+        t["thumb"] = local.get(thumb) or (None if t["off_list"] else thumb)
+        t["photo"] = local.get(photo) or (None if t["off_list"] else photo)
         # One without: a portrait found elsewhere (nastavnici-foto.jsonl), its source shown among the page's sources.
         f = fotos.pop(t["id"], None)
         if f and not t["photo"] and f["image"] in local:
@@ -1045,7 +1049,7 @@ def render_teachers(site, teachers, items, book):
             _, k, who = t["id"].split("-", 2)
             source = base = f"https://www.masinac.org/fakultet/katedre/{k}/predavaci/{who}"
             name = "masinac.org"
-        elif t["gone"]:
+        elif t["off_list"]:
             name = "web.archive.org"
             # The faculty took the profile down: the Wayback Machine's copy nearest the last day it was listed.
             stamp = re.sub(r"\D", "", t["last_seen"])[:14]

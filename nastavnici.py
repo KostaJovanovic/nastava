@@ -9,7 +9,7 @@ Usage: nastavnici.py sync
        nastavnici.py photos    (the photos not stored yet; sync and history end with it)
 
 One row per teacher (the newest version of the profile) and one row per subject the teacher has.
-A teacher who leaves the list stays, marked gone. The forum username is the part of the e-mail before @.
+A teacher who leaves the list stays, marked gone unless a department page still lists them. The forum username is the part of the e-mail before @.
 """
 import re
 import sys
@@ -157,13 +157,14 @@ def parse_emeritus(html):
 
 
 def parse_katedra(html):
-	"""The untitled names on a department page's staff list: its emeriti ('Мирољуб М. Аџић'), as name_key."""
+	"""A department page's staff list, {name_key: title}: the untitled are its emeriti ('Мирољуб М. Аџић') and staff
+	off the teachers' list ('Младен М. Регодић')."""
 	from bs4 import BeautifulSoup
 	h = BeautifulSoup(html, 'html.parser').select_one('div.page h2[id^="наставници"]')
 	if h is None:
 		raise RuntimeError('katedra: no staff list, the site changed')
 	lines = [split_title(l) for l in h.find_next('p').get_text('\n').split('\n') if l.strip()]
-	return {name_key(plain_name(full)) for full, title in lines if not title}
+	return {name_key(plain_name(full)): title for full, title in lines}
 
 
 def save(db, row, now):
@@ -210,16 +211,29 @@ def sync(db):
 	# is left without one. save keeps a found one (an emeritus row has no katedra).
 	missing = {name_key(r['name']): r['id'] for r in emeriti}
 	missing = {k: i for k, i in missing.items() if not db.execute('select katedra from teachers where id = ?', (i,)).fetchone()[0]}
-	found = {}
+	found, staff = {}, {}
 	katedre = dict(db.execute('select katedra_id, katedra from teachers where katedra_id is not null and not gone'))
-	for k, name in katedre.items() if missing else ():
+	for k, name in katedre.items():
 		html = page(f'organizacija/katedre/{k}')
-		for key in (parse_katedra(html) if html else set()) & missing.keys():
-			found.setdefault(key, []).append((name, k))
+		for key, title in (parse_katedra(html) if html else {}).items():
+			staff[key] = title
+			if key in missing and not title:
+				found.setdefault(key, []).append((name, k))
 	for key, places in found.items():
 		if len(places) == 1:
 			db.execute('update teachers set katedra = ?, katedra_id = ? where id = ?', (*places[0], missing[key]))
 	gone = db.execute('update teachers set gone = 1 where last_seen != ?', (now,)).rowcount
+	# Off the teachers' list but on a department's (an assistant now a researcher): still at the faculty, not gone;
+	# last_seen stays their last day on the list (the build links that day's Wayback copy of the profile). A name a
+	# listed teacher has (an old id of an emeritus) is theirs.
+	live = {name_key(n) for n, in db.execute('select name from teachers where not gone')}
+	back = {}
+	for i, n in db.execute('select id, name from teachers where gone order by last_seen'):
+		if name_key(n) in staff.keys() - live:
+			back[name_key(n)] = i  # of two ids, the newest
+	for key, i in back.items():
+		db.execute('update teachers set gone = 0, title = coalesce(?, title) where id = ?', (staff[key] or None, i))
+	gone -= len(back)
 	db.commit()
 	n = db.execute('select count(*) from teacher_subjects').fetchone()[0]
 	print(f'{len(listed)} teachers, {len(emeriti)} emeriti, {n} teacher subjects, {gone} gone', flush=True)
