@@ -1095,6 +1095,8 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .pc__img--none { display: grid; place-items: center; color: var(--slate); font: 800 20px var(--sans); }
 .pc__t { min-width: 0; padding-top: 2px; padding-right: 24px; }
 /* The katedra's icon, top right: above the card's link (z-index), so its title shows on hover. */
+.tp__ki { position: absolute; top: 14px; right: 14px; z-index: 1; display: flex; color: var(--slate); font-size: 30px; }
+.tp--gone .tp__ki { color: var(--card); }
 .pc__ki { position: absolute; top: 10px; right: 10px; z-index: 1; display: flex; color: var(--slate); font-size: 24px; }
 .pc:hover .pc__ki { color: var(--accent-t); }
 /* On a departed teacher's grey corner: knocked out in the card's colour, so it reads on the grey. */

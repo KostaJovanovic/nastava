@@ -21,9 +21,11 @@
   {%- set w = t.name.split() %}
   <span class="tp__img tp__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>
   {%- endif %}
+  {#- The katedra's icon in the band's top right corner, as on the list's cards. -#}
+  {%- if t.katedra %}<span class="tp__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
   <div class="tp__who">
     <h1 id="title">{{ t.shown }}</h1>
-    <p>{{ t.title }}{% if t.katedra %}{% if t.title %}, {% endif %}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg> <a href="/nastavnici/{% if t.gone %}arhiva/{% endif %}?katedra={{ t.katedra | slug }}">{{ t.katedra }}</a>{% endif %}</p>
+    <p>{{ t.title }}{% if t.katedra %}{% if t.title %}, {% endif %}<a href="/nastavnici/{% if t.gone %}arhiva/{% endif %}?katedra={{ t.katedra | slug }}">{{ t.katedra }}</a>{% endif %}</p>
     <dl class="tp__dl">
       {%- if h and h.life %}<dt>Život</dt><dd>{{ h.life }}</dd>
       {%- elif h and (h.born or h.died) %}<dt>Život</dt><dd>{% if h.born %}rođ. {{ h.born }}.{% endif %}{% if h.born and h.died %} – {% endif %}{% if h.died %}† {{ h.died }}.{% endif %}</dd>{% endif %}
