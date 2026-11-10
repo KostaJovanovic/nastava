@@ -419,7 +419,6 @@
   var iz = d.querySelector('[data-izbor]'), mp = d.querySelector('[data-mp]');
   if (iz && mp && mp.showModal && izbor) izbor.then(function (data) {
     var subj = data.subjects, path = [], badges = [];
-    data.marks = data.marks || {};
     var nav = mp.querySelector('[data-mp-nav]'), body = mp.querySelector('[data-mp-body]'), mq = mp.querySelector('[data-mp-q]');
     var followed = function () { var o = {}; mine().forEach(function (s) { o[s.href] = 1; }); return o; };
     // The followed subjects under a node, each once (a subject can be in several of its groups).
@@ -451,13 +450,6 @@
       b.dataset.ids = ids.join(',');
       b.appendChild(el('span', 'mp__check')).setAttribute('aria-hidden', 'true');
       var t = b.appendChild(el('span', 'mp__name', name));
-      // Where else a subject has material (build.py picker marks), each in its service's colour (style.css .svc).
-      if (ids.length === 1 && data.marks[ids[0]]) data.marks[ids[0]].forEach(function (m) {
-        var s = t.appendChild(el('span', 'svc', m));
-        s.dataset.s = m;
-        // A department's site is in lower case ('ie', 'cent'), a service capitalized.
-        s.title = 'Materijal i na: ' + (/^[a-z]/.test(m) ? m + '.mas.bg.ac.rs' : m);
-      });
       if (hint) t.appendChild(el('small', null, hint));
       return b;
     };

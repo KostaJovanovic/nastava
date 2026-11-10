@@ -1162,7 +1162,7 @@ def render_book(site, book):
         programs=[p for p in PROGRAMS if any(s["program"] == p for s in listed)]))
 
 
-def picker(subjects, book, teachers, katedre={}):
+def picker(subjects, book, teachers):
     """The subject picker ("Moji predmeti", site.js): the subjects with topics, as [href, name]; a tree of them by the
     plans, program > (module >) year of study > group: '' for the required subjects, else the elective block
     ('Изборни предмет 5.4'). Every subject of the plans is in it: one with topics as its board subject, one without
@@ -1170,8 +1170,7 @@ def picker(subjects, book, teachers, katedre={}):
     has) is under its program's 'Stari predmeti'; the board's other forums (katedre, moduli) are programs with one
     group. A group has its subjects in s, any other node its children in c.
     teachers: each teacher with the board subjects they teach (into the list); people: every listed teacher's
-    [name, page], for the header search on a teacher's page; marks: a subject's index to where else it has material.
-    katedre: the department sites' subject pages (load_katedre).
+    [name, page], for the header search on a teacher's page.
     After render_places (the counts) and render_teachers (the courses)."""
     live = [s for s in subjects.values() if s.get("live")]
     entries = [[s["href"], s["name"]] for s in live]
@@ -1194,14 +1193,6 @@ def picker(subjects, book, teachers, katedre={}):
             node = node.setdefault(name, {})
         node.setdefault(None, []).append(i)
 
-    def marks(s, name):
-        """An entry's other pages: cent's, its page on a department's site (load_katedre), then the services its posts
-        link, newest first; a department's site by its first label ('ie.mas.bg.ac.rs': 'ie')."""
-        own = katedre.get(fold(name))
-        return list(dict.fromkeys(["cent"] * bool(s.get("cent")) + ([urlsplit(own).hostname.split(".")[0]] if own else []) + [
-            e["name"].removesuffix(".mas.bg.ac.rs")
-            for e in sorted((s.get("elsewhere") or {}).values(), key=lambda e: e["last"]["posted"], reverse=True)]))
-
     order = {p: i for i, p in enumerate(PROGRAMS)}
     places = [(p, b) for b in book if not b["gone"] for p in b["places"]]
     for p, b in sorted(places, key=lambda x: (order.get(x[0]["program"], len(order)), x[0]["i"])):
@@ -1221,8 +1212,7 @@ def picker(subjects, book, teachers, katedre={}):
     return dict(subjects=entries, tree=nodes(tree),
                 teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
-                people=[[t["shown"], t["href"]] for t in teachers if not t["gone"]],
-                marks={i: m for i, e in enumerate(entries) if (m := marks(live[i] if i < len(live) else {}, e[1]))})
+                people=[[t["shown"], t["href"]] for t in teachers if not t["gone"]])
 
 
 def write_bytes(path, data):
@@ -1408,7 +1398,7 @@ def main(db_path, out):
     render_teachers(site, teachers, items, book)
     render_book(site, book)
     raspored = render_study_pages(site, db)
-    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, load_katedre(db)), raspored=raspored),
+    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers), raspored=raspored),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     about = env.get_template("o_sajtu.html").render()
@@ -1472,22 +1462,19 @@ if __name__ == "__main__":
     _m, _k = dict(label="Основне академске студије - МИ"), dict(label="Катедре")
     _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, live=True, smer=m) for i, n, m in
                       ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k)))
-    _b.update(cent=[{}], elsewhere={n: dict(name=n, last=dict(posted=d)) for n, d in
-                                    (("Teams", "2021"), ("Moodle", "2024"), ("cent.mas.bg.ac.rs", "2025"))})
     _pl = dict(program=PROGRAMS[0], module=None, semester=3, i=0, slot=None)
     _bk = lambda f, places, **kw: dict(dict(forum=f, places=places, gone=0, id="b", href="/b/", name="Б"), **kw)
     _p = picker({1: _a, 2: _b, 3: _c, 4: _e}, [
         _bk(_a, [_pl, dict(_pl, i=1, slot="4.4", slot_name="Изборни предмет 4.4.5")]), _bk(_c, [dict(_pl, i=2, semester=4)]),
         _bk(None, [dict(_pl, i=3, semester=5)], id="b9", href="/b9/", name="Д"), _bk(None, [_pl], id="b8", gone=1)],
                 [dict(shown="Н", href="/n/", gone=0, courses=[dict(subj=_b), dict(subj=None)]),
-                 dict(shown="Г", href="/g/", gone=1, courses=[dict(subj=_a)])], {"d": "https://fluidi.mas.bg.ac.rs/d/"})
+                 dict(shown="Г", href="/g/", gone=1, courses=[dict(subj=_a)])])
     _g = lambda n, s: dict(n=n, c=[], s=s)
     assert _p["tree"] == [dict(n=PROGRAMS[0], s=[], c=[
         dict(n="2. godina", s=[], c=[_g("", [0, 2]), _g("Изборни предмет 4.4", [0])]),
         dict(n="3. godina", s=[], c=[_g("", [4])]),
         dict(n="Stari predmeti", s=[], c=[_g("", [1])])]), dict(n="Катедре", s=[], c=[_g("", [3])])], _p["tree"]
     assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [["Н", "/n/"]]
-    assert _p["marks"] == {1: ["cent", "Moodle", "Teams"], 4: ["fluidi"]}, _p["marks"]
     # A department page is a subject's when its title or first heading is the name; a list of subjects is none's.
     _db = sqlite3.connect(":memory:")
     _db.execute("CREATE TABLE katedre_pages (url, title, html, gone)")
