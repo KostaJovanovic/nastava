@@ -86,3 +86,16 @@ Where they go:
 ## Privacy
 
 The sources are already public. The archive stays public. Optional: `noindex` so search engines don't index student lists through the archive.
+
+## Later
+
+- **Limit `POST /push`** (audit 2026-11-10). The Worker stores any well-formed subscription with no limit, so a
+  script can fill KV with fake endpoints: KV's 1,000 writes a day run out (real visitors can't turn notifications on)
+  and `ci/push.py send` makes a request per fake entry each run. Cloudflare's free rate-limiting rule (on the zone:
+  domain → Security → Security rules) counts over 10 seconds only, too short to protect a daily quota. Better: the
+  Workers rate-limit binding (`[[ratelimits]]` in `pages/wrangler.toml`, a 60 s period, keyed by `CF-Connecting-IP`
+  in `push()` in `pages/src/index.js`); it covers both domains. A per-IP limit slows a flood, it does not cap the
+  daily total.
+- **Check the 60-day keepalive** (`sync.yml`, step "Keep the schedule on"): after a run, the sync workflow should
+  still show as active with no "disabled soon" warning from GitHub. If `gh workflow enable` does not restart the 60
+  days, the schedule stops after 60 days without a commit.
