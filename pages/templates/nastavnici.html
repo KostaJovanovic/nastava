@@ -25,7 +25,7 @@
     {#- Their years at the faculty, bottom right; '~' and a dimmer year where no source says it (an estimate). -#}
     {%- set s = t.span %}
     {%- if s and s.to %}
-    <p class="pc__yrs">
+    <p class="pc__yrs" title="Godine na fakultetu">
       {%- if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }}</p>
     {%- endif %}
   </li>

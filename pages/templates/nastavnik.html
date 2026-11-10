@@ -4,9 +4,10 @@
 
 {% block title %}{{ t.shown }}{% endblock %}
 {#- past (set in each block): known only from the faculty's history (build.py load_history), never on its list here. -#}
-{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.shown }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} ({{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
+{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.shown }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
 {% block og_type %}profile{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}
+{%- macro est(y, guess) %}{% if guess %}<span class="est" title="procena">~{{ y }}</span>{% else %}{{ y }}{% endif %}{% endmacro %}
 
 {#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by
     year; the faculty's full profile last, folded, as it is long (education, bibliography). -#}
@@ -29,8 +30,11 @@
     <dl class="tp__dl">
       {%- if h and h.life %}<dt>Život</dt><dd>{{ h.life }}</dd>
       {%- elif h and (h.born or h.died) %}<dt>Život</dt><dd>{% if h.born %}rođ. {{ h.born }}.{% endif %}{% if h.born and h.died %} – {% endif %}{% if h.died %}† {{ h.died }}.{% endif %}</dd>{% endif %}
-      {#- Gone: office and hours are no longer theirs. The past: the years their sources name. -#}
-      {%- if past %}{% if h.years %}<dt>U izvorima</dt><dd>{{ h.years }}</dd>{% endif %}
+      {#- Gone: office and hours are no longer theirs. The past: their years at the faculty (the archive card's, '~'
+          an estimate), said to be that and not their life, which the row above gives. -#}
+      {%- if past %}{% set s = t.span %}
+      {%- if s and s.to %}<dt>Na fakultetu</dt><dd>{% if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }} <small>· godine rada na fakultetu, ne godine života{% if s.from_est or s.to_est %}; ~ je procena{% endif %}</small></dd>
+      {%- elif h.years %}<dt>Na fakultetu</dt><dd>{{ h.years }} <small>· godine rada na fakultetu, ne godine života</small></dd>{% endif %}
       {%- elif t.gone %}<dt>Na spisku</dt><dd>do {{ t.last_seen | dmy }}, više nije na spisku fakulteta</dd>
       {%- else %}
       {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}
