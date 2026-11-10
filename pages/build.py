@@ -224,7 +224,7 @@ def load_places(db):
             top = forums[top["parent"]]
         # label: the name as shown ('Основне академске студије - МИ'); short: its abbreviation, for URLs and matching.
         smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"], "short": short_smer(top["name"]),
-                                              "label": top["name"][:1].upper() + top["name"][1:]})
+                                              "label": smer_label(top["name"])})
         if f is top:
             place[f["id"]] = (smer, None)
             continue
@@ -344,7 +344,7 @@ def load_cent(db, smerovi, subjects):
             smer_name = smer_name[:1].lower() + smer_name[1:]
             m = smer_of.get(fold(short_smer(smer_name)))
             if not m:
-                m = dict(id=f"cent:{program}", name=smer_name, short=short_smer(smer_name), label=smer_name[:1].upper() + smer_name[1:])
+                m = dict(id=f"cent:{program}", name=smer_name, short=short_smer(smer_name), label=smer_label(smer_name))
                 m["href"] = f"/smer/{slug(m['short'])}/"
                 m["key"] = m["href"].strip("/").split("/")[-1]
                 smerovi[m["id"]] = smer_of[fold(m["short"])] = m
@@ -1057,6 +1057,8 @@ def render_teachers(site, teachers, items, book):
 # The programs in the order of the faculty's studies; a subject book program not here goes last.
 PROGRAMS = ["Основне академске студије — МИ", "Основне академске студије — ИТМ", "Мастер академске студије — МИ",
             "Мастер академске студије — Индустрија 4.0", "Докторске студије — МИ"]
+# The board's smer names end in these abbreviations; the pages spell them out.
+PROGRAM_NAMES = {"МИ": "Машинско инжењерство", "ИТМ": "Информационе технологије у машинству"}
 
 
 def slot_label(slot_name, slot):
@@ -1201,7 +1203,7 @@ def picker(subjects, book, teachers):
     for s in live:
         if ("f", s["id"]) not in placed:
             # The board's smer 'Основне академске студије - МИ' is the plans' 'Основне академске студије — МИ'.
-            program = s["smer"]["label"].replace(" - ", " — ")
+            program = (s["smer"]["name"][:1].upper() + s["smer"]["name"][1:]).replace(" - ", " — ")
             add([program, "Stari predmeti", ""] if " — " in program else [program, ""], at[("f", s["id"])])
 
     def nodes(tree):
@@ -1240,6 +1242,12 @@ def write_bytes(path, data):
 def short_smer(name):
     """'основне академске студије - МИ' -> 'ОАС - МИ': the faculty's own abbreviations, for the smer's URL."""
     return re.sub(r"^мастер академске студије", "МАС", re.sub(r"^основне академске студије", "ОАС", name, flags=re.I), flags=re.I)
+
+
+def smer_label(name):
+    """'основне академске студије - МИ' -> 'Основне академске студије - Машинско инжењерство': the smer as shown."""
+    name = re.sub(r" - (МИ|ИТМ)$", lambda m: " - " + PROGRAM_NAMES[m[1]], name)
+    return name[:1].upper() + name[1:]
 
 
 def side_panel(items):
@@ -1476,7 +1484,8 @@ if __name__ == "__main__":
     assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
     assert env.filters["slug"]("Катедра за математику") == "katedra-za-matematiku" and env.filters["slug"](None) == ""
-    _m, _k = dict(label="Основне академске студије - МИ"), dict(label="Катедре")
+    _m, _k = dict(name="основне академске студије - МИ"), dict(name="катедре")
+    assert smer_label(_m["name"]) == "Основне академске студије - Машинско инжењерство" and smer_label("катедре") == "Катедре"
     _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, live=True, smer=m) for i, n, m in
                       ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k)))
     _pl = dict(program=PROGRAMS[0], module=None, semester=3, i=0, slot=None)
