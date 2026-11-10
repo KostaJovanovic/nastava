@@ -364,7 +364,10 @@
       });
       // A group, semester or elective slot with no row left is hidden; while a filter is set, a folded group with
       // rows opens, so no result is hidden inside one.
-      var filtering = ctl.some(function (c) { return c.value.trim(); });
+      // "Samo moji predmeti" counts as a filter too: the followed subjects would be hidden in a folded program.
+      var filtering = ctl.some(function (c) { return c.value.trim(); }) || !!(window.mojiNow && window.mojiNow.only);
+      // .filtering: a long elective slot shows all its rows (style.css .sg__slot--short).
+      if (box) box.classList.toggle('filtering', filtering);
       if (box) [].forEach.call(box.querySelectorAll('.sg, .sg__s, .sg__slot'), function (g) {
         var shownRows = g.querySelectorAll('[data-rows] > li:not([hidden])').length, n = g.querySelector(':scope > summary .sg__n');
         var empty = !shownRows;
