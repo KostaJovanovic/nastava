@@ -1209,10 +1209,27 @@ def picker(subjects, book, teachers):
         keys = sorted((k for k in tree if k is not None), key=lambda k: k != "")
         return [dict(n=k, c=nodes(tree[k]), s=sorted(set(tree[k].get(None, [])), key=lambda i: azbuka(entries[i][1])))
                 for k in keys]
+
+    def person(t):
+        """[name, page, photo, title · katedra]; one who left: [name, page, photo, title · years, the grey corner's
+        length (style.css --p), or None when no year is known (hatched)], as their card on /nastavnici/."""
+        if not t["gone"]:
+            return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], katedra(t["katedra"])]))]
+        s = t["span"] or {}
+        est = lambda y, guess: f"~{y}" if guess else str(y)
+        years = s.get("to") and ((f"{est(s['from'], s.get('from_est'))}–" if s["from"] != s["to"] else "") if s.get("from")
+                                 else "do ") + est(s["to"], s.get("to_est"))
+        undated = t["last_seen"][:4] == "0000"
+        return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
+
+    listed = Counter(t["katedra"] for t in teachers if not t["gone"] and t["katedra"])
     return dict(subjects=entries, tree=nodes(tree),
                 teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
-                people=[[t["shown"], t["href"]] for t in teachers if not t["gone"]])
+                # The listed teachers first, then the ones who left (the header search shows them where there is room).
+                people=[person(t) for t in sorted(teachers, key=lambda t: t["gone"])],
+                # [full name, short name, ?katedra= slug, listed teachers]: a katedra has no page, its teachers' list is it.
+                katedre=[[k, katedra(k).capitalize(), slug(k), n] for k, n in sorted(listed.items(), key=lambda x: azbuka(x[0]))])
 
 
 def write_bytes(path, data):
@@ -1467,14 +1484,21 @@ if __name__ == "__main__":
     _p = picker({1: _a, 2: _b, 3: _c, 4: _e}, [
         _bk(_a, [_pl, dict(_pl, i=1, slot="4.4", slot_name="Изборни предмет 4.4.5")]), _bk(_c, [dict(_pl, i=2, semester=4)]),
         _bk(None, [dict(_pl, i=3, semester=5)], id="b9", href="/b9/", name="Д"), _bk(None, [_pl], id="b8", gone=1)],
-                [dict(shown="Н", href="/n/", gone=0, courses=[dict(subj=_b), dict(subj=None)]),
-                 dict(shown="Г", href="/g/", gone=1, courses=[dict(subj=_a)])])
+                [dict(shown="Г", href="/g/", gone=1, courses=[dict(subj=_a)], thumb=None, title="доцент", katedra=None,
+                      span={"from": 1950, "to": 1980, "from_est": True}, last_seen="1980", age=40),
+                 dict(shown="Н", href="/n/", gone=0, courses=[dict(subj=_b), dict(subj=None)], thumb="/foto/n.jpg",
+                      title="доцент", katedra="Катедра за математику"),
+                 dict(shown="Ж", href="/z/", gone=1, courses=[], thumb=None, title=None, katedra=None,
+                      span={"to": 1990}, last_seen="0000", age=0)])
     _g = lambda n, s: dict(n=n, c=[], s=s)
     assert _p["tree"] == [dict(n=PROGRAMS[0], s=[], c=[
         dict(n="2. godina", s=[], c=[_g("", [0, 2]), _g("Изборни предмет 4.4", [0])]),
         dict(n="3. godina", s=[], c=[_g("", [4])]),
         dict(n="Stari predmeti", s=[], c=[_g("", [1])])]), dict(n="Катедре", s=[], c=[_g("", [3])])], _p["tree"]
-    assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [["Н", "/n/"]]
+    assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [
+        ["Н", "/n/", "/foto/n.jpg", "доцент · математика"], ["Г", "/g/", None, "доцент · ~1950–1980", 40],
+        ["Ж", "/z/", None, "do 1990", None]], _p["people"]
+    assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1]], _p["katedre"]
     # A department page is a subject's when its title or first heading is the name; a list of subjects is none's.
     _db = sqlite3.connect(":memory:")
     _db.execute("CREATE TABLE katedre_pages (url, title, html, gone)")

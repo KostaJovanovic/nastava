@@ -60,21 +60,23 @@
       // The page's own list filtered by the bar (q.dataset.f, below): nothing under the bar.
       if (!w.length || q.dataset.f || u === 'ovde') { list.hidden = true; return; }
       if (!u || ENTER[u]) {
-        // rows: [subgroup, name, hint, href]. In Sve, the first 5 of a type with a list page, and a link to the rest.
-        var section = function (key, title, rows) {
-          var cap = !u && ENTER[key] ? 5 : 200, sub = null;
-          if (!rows.length || (u && u !== key)) return;
+        // rows: [subgroup, name, hint, href, decorate(a)]. In Sve, the first 5 of a type with a list page (3 of the
+        // katedre), and a link to the rest. of: the scope it shows in besides Sve (the katedre in Nastavnici too).
+        var section = function (key, title, rows, of) {
+          var cap = u ? 200 : ENTER[key] ? 5 : key === 'katedre' ? 3 : 200, sub = null;
+          if (!rows.length || (u && u !== (of || key))) return;
           var g = list.appendChild(el('div', 'cmd__g'));
           g.setAttribute('role', 'group');
           g.setAttribute('aria-label', title);
-          if (!u) g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
+          if (u !== key) g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
           rows.slice(0, cap).forEach(function (r) {
             if (r[0] && r[0] !== sub) g.appendChild(el('p', 'cmd__s', sub = r[0])).setAttribute('aria-hidden', 'true');
             var a = g.appendChild(el('a', null, r[1]));
             a.href = r[3];
             if (r[2]) a.appendChild(el('small', null, r[2]));
+            if (r[4]) r[4](a);
           });
-          if (rows.length > cap) {
+          if (rows.length > cap && ENTER[key]) {
             var m = g.appendChild(el('a', 'cmd__more', 'Još ' + (rows.length - cap) + ' →'));
             m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
             m.dataset.u = key;
@@ -85,8 +87,33 @@
           s[1].forEach(function (i) { if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0]]); });
         });
         section('predmeti', 'Predmeti', subj);
+        // A teacher as on /nastavnici/: the photo (or the initials), the title; one who left under its own subheading,
+        // with the cards' grey corner (style.css .pc--gone). The listed first, so those show where there is room.
         section('nastavnici', 'Nastavnici', data.people.filter(function (t) { return has(fold(t[0])); })
-          .map(function (t) { return ['', t[0], '', t[1]]; }));
+          .map(function (t) {
+            var gone = t.length > 4;
+            return [gone ? 'Više nisu na fakultetu' : '', t[0], t[3], t[1], function (a) {
+              var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
+              if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
+              a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
+              // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
+              if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
+              a.insertBefore(img, a.firstChild);
+            }];
+          }));
+        // A katedra: its icon, and its teachers' list.
+        section('katedre', 'Katedre', (data.katedre || []).filter(function (k) { return has(fold(k[0])); })
+          .map(function (k) {
+            var n = k[3] % 10 === 1 && k[3] % 100 !== 11 ? ' nastavnik' : ' nastavnika';
+            return ['', k[1], k[3] + n, '/nastavnici/?katedra=' + k[2], function (a) {
+              var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
+              svg.setAttribute('class', 'i cmd__img');
+              svg.setAttribute('aria-hidden', 'true');
+              use.setAttribute('href', '/static/icons.svg#i-' + k[2]);
+              a.className = 'cmd__p';
+              a.insertBefore(svg, a.firstChild).appendChild(use);
+            }];
+          }), 'nastavnici');
         section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
           .map(function (r) { return ['', r[0], r[1], r[2]]; }));
       }
