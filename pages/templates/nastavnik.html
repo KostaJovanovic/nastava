@@ -35,7 +35,7 @@
       {%- if past %}{% set s = t.span %}
       {%- if s and s.to %}<dt>Na fakultetu</dt><dd>{% if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }}</dd>
       {%- elif h.years %}<dt>Na fakultetu</dt><dd>{{ h.years }}</dd>{% endif %}
-      {%- elif t.gone %}<dt>Na spisku</dt><dd>do {{ t.last_seen | dmy }}, više nije na spisku fakulteta</dd>
+      {%- elif t.gone %}<dt>Na spisku</dt><dd>do {{ t.last_seen[:4] }}., više nije na spisku fakulteta</dd>
       {%- else %}
       {%- if t.hours %}<dt>Konsultacije</dt><dd>{{ t.hours }}</dd>{% endif %}
       {%- if t.office %}<dt>Kabinet</dt><dd>{{ t.office }}</dd>{% endif %}
@@ -206,7 +206,8 @@
 <details class="tp__bio">
   <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{% if source_name == 'masinac.org' %}Profil sa studentskog portala masinac.org{% elif t.source %}Odakle su ovi podaci{% else %}Ceo profil sa sajta fakulteta: obrazovanje, radovi{% endif %}</summary>
   <div class="prose prose--html">{{ html | safe }}</div>
-  <p class="tp__src">Preuzeto {{ t.last_seen | dmy }} sa <a href="{{ source_url }}" rel="noopener" target="_blank">{{ source_name }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+  {#- Gone: the date is only the Wayback Machine's copy, so just its year. -#}
+  <p class="tp__src">Preuzeto {% if t.gone %}{{ t.last_seen[:4] }}.{% else %}{{ t.last_seen | dmy }}{% endif %} sa <a href="{{ source_url }}" rel="noopener" target="_blank">{{ source_name }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
 </details>
 {%- endif %}
 {#- A teacher who left: no longer the faculty's (worksFor). -#}
