@@ -3,6 +3,9 @@
 Status: built 2026-11-10, commit "Calendar-driven sync schedule" (the commit after this line was written). One change
 from the code below: `katedre.py` (added to `deploy.sh sync` after this plan) stays in `sync` and is an allowed
 `forum` part, and its table `katedre_pages` is in the fingerprint.
+Changed 2026-11-10 with the user: the smaller block (manji blok, autumn and spring) is not hot, so `check` finds 12
+windows, not 16. Its registration and exam week are no busier than a normal day (2024: 5.6 posts a day, the weeks
+around it 4.6 and 6.6; 2026's first days the same).
 
 ## Rules for this work (from the user)
 

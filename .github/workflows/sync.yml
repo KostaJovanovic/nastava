@@ -1,7 +1,8 @@
 name: sync
 
 # The automatic update. Three scheduled runs a day; ci/plan.py (through ci/deploy.sh auto) decides from the faculty's
-# teaching calendar what each one does: on a hot day (registration, an exam period and the 7 days after it) all three
+# teaching calendar what each one does: on a hot day (registration, an exam period and the 7 days after it; not the
+# smaller block) all three
 # scrape the board and the news, on another day only the night run. The schedule pages also on the 1st of the month
 # and on the first day of a registration or an exam period; the teachers and the subjects on 1 October.
 # GitHub's cron is UTC: 12:23, 17:23 and 21:23 in Belgrade in winter, an hour later in summer. GitHub may start a

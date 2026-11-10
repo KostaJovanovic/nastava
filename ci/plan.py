@@ -29,20 +29,17 @@ RANGE = re.compile(r"(\d{1,2})\.(\d{1,2})\.\s*(?:-|–|и|i)\s*(\d{1,2})\.(\d{1,
 
 def windows(text, y1):
     """[(kind, first day, last day)] of the school year y1/y1+1, by first day: kind "prijave" (registration) or "rok"
-    (an exam period). October to December are in y1, the rest in y1+1. A smaller block's exams are only "VI недеља":
-    the Monday to Sunday after its registration."""
+    (an exam period). October to December are in y1, the rest in y1+1. The smaller block (мањи блок) is left out:
+    its registration and exam week are no busier than a normal day (2024: 5.6 posts a day, around it 4.6–6.6)."""
     day = lambda d, m: dt.date(y1 if m >= 10 else y1 + 1, m, d)
     out = []
     for line in text.splitlines():
         u, r = line.upper(), RANGE.search(line)
-        if not r:
+        if not r or "МАЊЕГ" in u or "MANJEG" in u:
             continue
         a, b = day(int(r[1]), int(r[2])), day(int(r[3]), int(r[4]))
         if "ПРИЈАВЕ" in u or "PRIJAVE" in u:
             out.append(("prijave", a, b))
-            if "МАЊЕГ" in u or "MANJEG" in u:
-                monday = b + dt.timedelta(days=7 - b.weekday())
-                out.append(("rok", monday, monday + dt.timedelta(days=6)))
         elif "ИСПИТНИ РОК" in u or "ISPITNI ROK" in u:
             out.append(("rok", a, b))
     return sorted(out, key=lambda w: w[1])
@@ -137,17 +134,16 @@ if __name__ == "__main__":
     D = dt.date
     _w = windows(_t, 2026)
     assert _w == [
-        ("prijave", D(2026, 11, 2), D(2026, 11, 4)), ("rok", D(2026, 11, 9), D(2026, 11, 15)),
         ("prijave", D(2027, 1, 11), D(2027, 1, 13)), ("rok", D(2027, 1, 18), D(2027, 1, 31)),
         ("prijave", D(2027, 2, 3), D(2027, 2, 4)), ("rok", D(2027, 2, 8), D(2027, 2, 21)),
-        ("prijave", D(2027, 3, 22), D(2027, 3, 24)), ("rok", D(2027, 3, 29), D(2027, 4, 4)),
         ("prijave", D(2027, 5, 31), D(2027, 6, 2)), ("rok", D(2027, 6, 7), D(2027, 6, 20)),
         ("prijave", D(2027, 6, 23), D(2027, 6, 24)), ("rok", D(2027, 6, 28), D(2027, 7, 11)),
         ("prijave", D(2027, 8, 16), D(2027, 8, 18)), ("rok", D(2027, 8, 23), D(2027, 9, 5)),
         ("prijave", D(2027, 9, 8), D(2027, 9, 9)), ("rok", D(2027, 9, 13), D(2027, 9, 26))], _w
     _p = lambda slot, *ymd: parts(slot, D(*ymd), _w)
-    assert _p("noon", 2026, 11, 9) == "forum studije" and _p("night", 2026, 11, 9) == "forum"  # an exam period starts
-    assert _p("evening", 2026, 11, 22) == "forum" and _p("noon", 2026, 11, 23) == "skip"       # 7 days after it, then not
+    assert _p("noon", 2027, 1, 18) == "forum studije" and _p("night", 2027, 1, 18) == "forum"  # an exam period starts
+    assert _p("evening", 2027, 2, 28) == "forum" and _p("noon", 2027, 3, 1) == "skip"          # 7 days after it, then not
+    assert _p("noon", 2026, 11, 10) == "skip" and _p("noon", 2027, 3, 30) == "skip"            # the smaller block: quiet
     assert _p("night", 2026, 12, 1) == "forum studije" and _p("noon", 2026, 12, 1) == "skip"   # the 1st of a quiet month
     assert _p("night", 2026, 12, 5) == "forum" and _p("evening", 2026, 12, 5) == "skip"
     assert _p("noon", 2027, 1, 11) == "forum studije" and _p("evening", 2027, 1, 11) == "forum"  # registration opens
@@ -156,7 +152,7 @@ if __name__ == "__main__":
     assert _p("night", 2026, 10, 1) == "forum studije nastavnici predmeti"
     assert hot(D(2026, 10, 3), [("rok", D(2026, 9, 13), D(2026, 9, 26))]) and not hot(D(2026, 10, 4), [("rok", D(2026, 9, 13), D(2026, 9, 26))])
     _c = {2026: _w}
-    assert for_year(_c, 2027)[0] == ("prijave", D(2027, 11, 2), D(2027, 11, 4)) and for_year(_c, 2026) == _w and for_year({}, 2026) == []
+    assert for_year(_c, 2027)[0] == ("prijave", D(2028, 1, 11), D(2028, 1, 13)) and for_year(_c, 2026) == _w and for_year({}, 2026) == []
     today = D.fromisoformat(os.environ["TODAY"]) if os.getenv("TODAY") else dt.datetime.now(dt.timezone.utc).date()
     match sys.argv[1:]:
         case ["fingerprint"]:

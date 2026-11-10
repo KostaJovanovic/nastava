@@ -15,7 +15,7 @@ pipeline and site, with new scrapers for phpBB.
 
 - `.github/workflows/sync.yml` updates the site on GitHub (`bash ci/deploy.sh auto noon|evening|night`). `ci/plan.py`
   reads the exam dates from the faculty's teaching calendar (the PDF `studije.py` archives): on a hot day
-  (registration, an exam period and the 7 days after it) the board and the news are scraped at 12:23, 17:23 and
+  (registration, an exam period and the 7 days after it; not the smaller block, which is no busier) the board and the news are scraped at 12:23, 17:23 and
   21:23 Belgrade time (an hour later in summer), on other days at 21:23 only. The schedule pages also on the 1st of
   the month and on the first day of each registration and exam period; the teachers and the subjects on 1 October.
   A run that finds nothing new stops before saving and publishing. By hand, on GitHub:
