@@ -827,9 +827,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   .fr__last time::before { content: none; }
   /* Every forum row as tall as one with a last post (its three lines), "nema postova" too; the cent mark fits a line. */
   .fb--forums .fr__last { min-height: calc(3em * 1.3); }
-  /* The icon fills its 36px column: ~12px above and below it in the ~61px row, as the row's 12px on the left. */
-  .fb--forums .fr__i { width: 36px; height: 36px; }
-  .fb--forums .fr__i .i { width: 22px; height: 22px; }
+  /* The 28px icon as far from the row's left edge as from its top and bottom: (the 3-line row - 28px) / 2, less the 12px padding. */
+  .fb--forums .fr__i { margin-left: calc((3 * 12.5px * 1.3 + 12px - 28px) / 2 - 12px); }
   .fr__last .src { line-height: 14px; }
   /* The last post's title is a pointer, quieter than the row's own title. */
   .fr__last .lt { display: block; color: var(--link); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
