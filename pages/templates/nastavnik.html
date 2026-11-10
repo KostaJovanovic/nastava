@@ -101,15 +101,20 @@
     {%- if t.posts %}<a href="/?autor={{ t.username | urlencode }}">Pretraži u ovim postovima</a>{% endif %}
   </div>
   {%- if t.posts %}
+  {#- The newest 10; data-more the rest (and a year all of whose posts are), shown by the toggle under them (a checkbox,
+      no script; style.css .tp__more). -#}
+  {%- set ns = namespace(i=0) %}
   {%- for year, rows in t.posts | groupby('year', default=0) | reverse %}
-  <h3 class="tp__yr">{{ year or 'bez datuma' }}</h3>
-  <ol class="tp__posts">
-    {%- for r in rows %}
-    <li><time datetime="{{ r.date or '' }}">{{ (r.date | dmy)[:6] }}</time><a href="{{ post_href(r) }}">{{ r.title }}</a>
+  {%- set more = ' data-more' if ns.i >= 10 else '' %}
+  <h3 class="tp__yr"{{ more }}>{{ year or 'bez datuma' }}</h3>
+  <ol class="tp__posts"{{ more }}>
+    {%- for r in rows %}{% set ns.i = ns.i + 1 %}
+    <li{{ ' data-more' if ns.i > 10 else '' }}><time datetime="{{ r.date or '' }}">{{ (r.date | dmy)[:6] }}</time><a href="{{ post_href(r) }}">{{ r.title }}</a>
       {%- if r.subj %}<span class="tp__smer">{{ r.subj.name }}</span>{% endif %}</li>
     {%- endfor %}
   </ol>
   {%- endfor %}
+  {%- if ns.i > 10 %}<label class="tp__more"><input type="checkbox"><span>Prikaži još {{ ns.i - 10 }}</span></label>{% endif %}
   {%- else %}
   <p class="tp__none">{% if t.username %}Nema postova na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
   {%- endif %}

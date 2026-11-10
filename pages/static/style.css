@@ -1046,6 +1046,14 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
   .tp__works .tp__smer { grid-column: 2; }
 }
 .tp__none { color: var(--dim); }
+/* A teacher's posts past the newest 10 (nastavnik.html data-more), until the toggle under them is ticked; as .fb__more. */
+.tp__sec:not(:has(.tp__more input:checked)) [data-more] { display: none; }
+.tp__more { display: flex; justify-content: center; align-items: center; min-height: 42px; margin-top: 10px; background: var(--card);
+  border: 1px solid var(--line); border-radius: var(--r); color: var(--link); font-size: 13.5px; cursor: pointer; }
+.tp__more:hover { background: var(--hover); }
+.tp__more:has(input:checked) { display: none; }
+.tp__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: -2px; }
+.tp__more input { position: absolute; opacity: 0; pointer-events: none; }
 
 /* The faculty's full profile, folded: it is long (education, papers). */
 .tp__bio { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
