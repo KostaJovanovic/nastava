@@ -771,16 +771,15 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fr:first-child { border-top: 0; }
 .fr:nth-child(even) { background: var(--alt); }
 .fr:hover { background: var(--hover); }
+/* A row's icon (a katedra's, a smer's folder, a topic's, a news post's, a file's), centred on both phone lines (title,
+   the line under it): ~12px above and below, as on the left. */
 .fr__i {
-  display: grid; place-items: center; align-self: start;
-  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; align-self: center; grid-row: span 2;
+  width: 32px; height: 32px; border-radius: 50%;
   background: var(--icon-bg); color: var(--slate);
 }
-.fr__i .i { width: 14px; height: 14px; }
+.fr__i .i { width: 24px; height: 24px; }
 .fr__i--many { background: var(--fg); color: var(--paper); }
-/* A forum row's icon (a katedra's, a smer's folder), centred on both phone lines (title, last post): ~12px above and below, as on the left. */
-.fb--forums .fr__i { align-self: center; grid-row: span 2; width: 32px; height: 32px; }
-.fb--forums .fr__i .i { width: 25px; height: 25px; }
 .fr__t { min-width: 0; }
 .fr__a { color: var(--link); font-size: 14.5px; line-height: 1.3; text-decoration: none; overflow-wrap: anywhere; }
 .fr__a:hover { color: var(--accent-t); text-decoration: underline; }
@@ -807,6 +806,12 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fr__last time::before { content: "poslednja "; }
 /* Phone: a forum row (a smer, a subject) is its name and its last post only; its teachers and counts are on wide screens. */
 .fb--forums .fr__sub, .fb--forums .fr__n { display: none; }
+/* Phone: every forum row as tall as one whose name takes two lines (the long smer names): padding, two title lines,
+   the gap, the date line; a shorter row's name and date centred together. Wide screens: .fr__last's min-height. */
+@container main (max-width: 759.98px) {
+  /* shortcut: measured in Edge (6 + 40.6 two title lines + 2 + 18.1 date + 6 + 1 border); redo after a font size change. */
+  .fb--forums .fr { min-height: 74px; align-content: center; }
+}
 .fr__s { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
 .fr__s .s2 { color: var(--dim); }
 
@@ -819,8 +824,6 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   .fb__h > :not(:first-child) { display: block; text-align: center; }
   .fb__h > :last-child:not(:first-child) { text-align: left; }
   .fr__more { display: contents; }
-  /* One line here: the icon centred like the cells (on a phone it stays by the title, above the counts' line). */
-  .fr__i { align-self: center; }
   .fb--forums .fr__sub { display: block; }
   .fb--forums .fr__n { display: grid; }
   .fr__n { text-align: center; font-size: 14px; }
@@ -830,9 +833,9 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   .fr__last time::before { content: none; }
   /* Every forum row as tall as one with a last post (its three lines), "nema postova" too; the cent mark fits a line. */
   .fb--forums .fr__last { min-height: calc(3em * 1.3); }
-  /* The 30px icon as far from the row's left edge as from its top and bottom: (the 3-line row - 30px) / 2, less the 12px padding. */
-  .fb--forums .fr__i { grid-row: auto; width: 30px; height: 30px; margin-left: calc((3 * 12.5px * 1.3 + 12px - 30px) / 2 - 12px); }
-  .fb--forums .fr__i .i { width: 24px; height: 24px; }
+  /* The 32px icon as far from the row's left edge as from its top and bottom: (the 3-line row - 32px) / 2, less the 12px padding. */
+  /* Every table's the same, so the icons line up from one table to the next. */
+  .fr__i { grid-row: auto; margin-left: calc((3 * 12.5px * 1.3 + 12px - 32px) / 2 - 12px); }
   .fr__last .src { line-height: 14px; }
   /* The last post's title is a pointer, quieter than the row's own title. */
   .fr__last .lt { display: block; color: var(--link); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
