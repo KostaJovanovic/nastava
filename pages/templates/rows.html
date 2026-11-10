@@ -36,7 +36,9 @@
     {%- for s in places %}
     {#- data-pid: a subject's row, data-pids: a smer's (its subjects); hidden while only "Moji predmeti" show (head.js). -#}
     <li class="fr"{% if filter %} data-find="{{ s.find }}"{% endif %}{% if s.pids is defined %} data-pids="{{ s.pids }}"{% elif icon == 'book' %} data-pid="{{ s.href }}"{% endif %}>
-      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span>
+      {#- A subject: its katedra's icon (from the subject book, build.py load_book), else the book. -#}
+      {%- set k = s.info.katedra if s.info is defined and s.info else None %}
+      <span class="fr__i" aria-hidden="true"{% if k %} title="{{ k }}"{% endif %}><svg class="i"><use href="/static/icons.svg#i-{{ k | slug if k else icon }}"></use></svg></span>
       <div class="fr__t">
         <a class="fr__a" href="{{ s.href }}">{{ s.label or s.name }}</a>
         {%- if s.elsewhere %}{% for e in s.elsewhere.values() | sort(attribute='last.posted', reverse=true) %}<span class="ext" title="{{ e.name }}: {{ e.who | join(', ') }}">{{ e.name }}</span>{% endfor %}{% endif %}
