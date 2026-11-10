@@ -33,7 +33,7 @@
       {#- Gone: office and hours are no longer theirs. The past: their years at the faculty (the archive card's, '~'
           an estimate). -#}
       {%- if past %}{% set s = t.span %}
-      {%- if s and s.to %}<dt>Na fakultetu</dt><dd>{% if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }}{% if s.from_est or s.to_est %} <small>· ~ je procena</small>{% endif %}</dd>
+      {%- if s and s.to %}<dt>Na fakultetu</dt><dd>{% if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }}</dd>
       {%- elif h.years %}<dt>Na fakultetu</dt><dd>{{ h.years }}</dd>{% endif %}
       {%- elif t.gone %}<dt>Na spisku</dt><dd>do {{ t.last_seen | dmy }}, više nije na spisku fakulteta</dd>
       {%- else %}
