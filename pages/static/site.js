@@ -507,7 +507,8 @@
   /* The picker, /mojipredmeti/ (mojipredmeti.html; /izbor.json from build.py picker), in two steps.
      1, the subjects: a tab per program, a row of chips per level under it (a master's module, a year), and the year's
      subjects as cards: the required ones, then each elective block. Each tab and chip counts the followed subjects
-     under it. Text in its box shows the matching teachers and subjects instead. A card follows its subject; a
+     under it. Text in its box narrows the subjects shown to those whose name, acronym or teacher matches; with
+     nothing picked it searches all of them, and the teachers as cards too. A card follows its subject; a
      teacher's card follows all their subjects (pressed: all, mixed: some).
      2 (#nastavnici), the teachers: each followed subject with the teachers who posted in it, as cards with their
      photos; the picked ones are the subject's t (slugs of their pages), whose posts alone notify (ci/push.py). None
@@ -515,7 +516,8 @@
   if (mp && izbor) izbor.then(function (data) {
     var subj = data.subjects, path = [], badges = [];
     var nav = mp.querySelector('[data-mp-nav]'), body = mp.querySelector('[data-mp-body]'), mq = mp.querySelector('[data-mp-q]');
-    var tbox = mp.querySelector('[data-mp-teachers]'), at = {};
+    var tbox = mp.querySelector('[data-mp-teachers]'), at = {}, taught = {};
+    data.teachers.forEach(function (t) { t[1].forEach(function (i) { taught[i] = (taught[i] || '') + ' ' + t[0]; }); });
     subj.forEach(function (s, i) { at[s[0]] = i; });
     var posters = function (href) { return at[href] === undefined ? [] : data.posters[at[href]] || []; };
     var slugOf = function (p) { return p[1].split('/')[2]; };
@@ -587,8 +589,17 @@
       nav.textContent = '';
       body.textContent = '';
       badges = [];
-      nav.hidden = !!w.length;
-      if (w.length) {
+      // A row per level down to the groups, whose nodes have no children; shown in a search too, which stays within them.
+      var level = data.tree, depth = 0, node = null;
+      while (level.length && level[0].c.length) {
+        node = row(level, depth++);
+        if (!node) break;
+        level = node.c;
+      }
+      // A subject matches by its name, its acronyms or a teacher's name.
+      var hit = function (i) { return has(subj[i][1] + ' ' + data.acr[i] + ' ' + (taught[i] || '')); };
+      if (w.length && !path.length) {
+        // Nothing picked: the teachers too, whose cards follow all their subjects.
         // shortcut: the first 12 teachers and 48 subjects only; a longer word narrows them.
         var ts = data.teachers.filter(function (t) { return has(t[0]); }).slice(0, 12).map(function (t) {
           var n = t[1].length;
@@ -598,26 +609,18 @@
         subj.forEach(function (s, i) { if (ss.length < 48 && has(s[1] + ' ' + data.acr[i])) ss.push(card([i], s[1], where[i])); });
         if (ts.length) group('Nastavnici', ts);
         if (ss.length) group('Predmeti', ss);
-        if (!ts.length && !ss.length) body.appendChild(el('p', 'mp__none', 'Nema takvog predmeta ni nastavnika.'));
-      } else {
-        // A row per level down to the groups, whose nodes have no children.
-        var level = data.tree, depth = 0, node = null;
-        while (level.length && level[0].c.length) {
-          node = row(level, depth++);
-          if (!node) break;
-          level = node.c;
-        }
+      } else if (level.length && level[0].c.length) {
         // A row left unpicked: every subject under it, each once, by name (folded: Edge's 'sr' collation put Avionika before Adaptivne).
-        if (level.length && level[0].c.length) {
-          var all = {};
-          (function walk(x) { x.s.forEach(function (i) { all[i] = 1; }); x.c.forEach(walk); })({ s: [], c: level });
-          group('Svi predmeti', Object.keys(all).sort(function (a, b) { return fold(subj[a][1]).localeCompare(fold(subj[b][1])); })
-            .map(function (i) { return card([+i], subj[i][1], where[i]); }));
-        } else level.forEach(function (g) {
-          var title = g.n || (/godina$/.test(node.n) ? 'Obavezni predmeti' : 'Predmeti');
-          group(title, g.s.map(function (i) { return card([i], subj[i][1]); }));
-        });
-      }
+        var all = {};
+        (function walk(x) { x.s.forEach(function (i) { all[i] = 1; }); x.c.forEach(walk); })({ s: [], c: level });
+        var ids = Object.keys(all).filter(function (i) { return hit(+i); });
+        if (ids.length) group(w.length ? 'Predmeti' : 'Svi predmeti', ids.sort(function (a, b) { return fold(subj[a][1]).localeCompare(fold(subj[b][1])); })
+          .map(function (i) { return card([+i], subj[i][1], where[i]); }));
+      } else level.forEach(function (g) {
+        var title = g.n || (/godina$/.test(node.n) ? 'Obavezni predmeti' : 'Predmeti'), ids = g.s.filter(hit);
+        if (ids.length) group(title, ids.map(function (i) { return card([i], subj[i][1]); }));
+      });
+      if (w.length && !body.firstChild) body.appendChild(el('p', 'mp__none', path.length ? 'Ovde nema takvog predmeta ni nastavnika.' : 'Nema takvog predmeta ni nastavnika.'));
       sync();
     };
     // Step 2: a section per followed subject that teachers posted in, a card per teacher (posts, most first).
