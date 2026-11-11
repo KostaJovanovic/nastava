@@ -33,6 +33,8 @@ with tarfile.open(sys.argv[1], 'w:zst', level=10) as t: t.add('nastava.db')" "$t
 	gh release view state -R "$repo" --json assets -q '.assets[].name' | sort | head -n -2 |
 		xargs -r -I{} gh release delete-asset state {} -R "$repo" -y
 	echo "pushed $name ($(du -h "$tmp/$name" | cut -f1))"
+	# Its size for the run log (ci/deploy.sh, ci/runs.py).
+	if [[ -n ${RUN_DIR:-} ]]; then wc -c < "$tmp/$name" > "$RUN_DIR/state"; fi
 	;;
 *)
 	echo "usage: $0 pull | push" >&2

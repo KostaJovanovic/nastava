@@ -24,6 +24,7 @@ import requests
 from bs4 import BeautifulSoup, Comment
 
 from cent import FILE, name_icons, now
+from nastava import instrument
 
 DB = os.getenv("DB", str(Path(__file__).resolve().parent / "nastava.db"))
 # One request at a time, never two in flight: 8 of the 10 sites are one server (147.91.26.9), so they are not crawled
@@ -171,7 +172,7 @@ def sync(names):
     db = sqlite3.connect(DB)
     db.executescript(SCHEMA)
     # No retries (not nastava.session): a crawl meets dead links, and backing off on each would take minutes apiece.
-    s, seen = requests.Session(), now()
+    s, seen = instrument(requests.Session()), now()
     s.headers["User-Agent"] = "Mozilla/5.0 (personal archive)"
     down = [n for n in names if not crawl(db, s, n, SITES[n], seen)]
     if down:

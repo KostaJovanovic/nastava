@@ -13,6 +13,7 @@ The scheduled run (sync.yml) writes push-secret.json from the repository secret 
 """
 import base64
 import json
+import os
 import re
 import secrets
 import sqlite3
@@ -96,6 +97,14 @@ def wait_url(new):
     return p and f"{SITE}/item/{p.get('k', 'p')}{p['id']}/"
 
 
+def run_log(**kw):
+    """In a logged run (ci/deploy.sh's RUN_DIR): kw into RUN_DIR/push.json, for ci/runs.py."""
+    if not os.getenv("RUN_DIR"):
+        return
+    f = Path(os.environ["RUN_DIR"]) / "push.json"
+    f.write_text(json.dumps({**(json.loads(f.read_text()) if f.exists() else {}), **kw}))
+
+
 def send(*before):
     after = dict(zip("pcs", before))  # board posts, cent notices, cent page versions
     if after.get("p", 0) <= 0:
@@ -115,6 +124,8 @@ def send(*before):
     else:
         for _ in range(40):
             if requests.head(newest, timeout=30).status_code == 200:
+                # When the new posts were on the site (the run log's "live"; within the 30 s of a check).
+                run_log(live=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
                 break
             time.sleep(30)
         else:
@@ -123,7 +134,8 @@ def send(*before):
     for p in sorted(new, key=lambda p: p["id"]):
         by_subject[p["s"]].append(p)
     sent = gone = failed = 0
-    for sub in subscriptions(secret["key"]):
+    subs = subscriptions(secret["key"])
+    for sub in subs:
         posts = [p for s in dict.fromkeys(sub.get("s", [])) for p in by_subject.get(s, [])]
         if not posts or not PUSH_HOST.match(sub["endpoint"]):
             continue
@@ -142,6 +154,7 @@ def send(*before):
                 failed += 1
                 print("push failed:", e, file=sys.stderr)
     print(f"push: {len(new)} new posts; {sent} sent, {gone} gone, {failed} failed")
+    run_log(subscribers=len(subs), new=len(new), sent=sent, gone=gone, failed=failed)
     if failed:
         sys.exit(1)
 

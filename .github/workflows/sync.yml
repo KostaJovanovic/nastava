@@ -37,6 +37,8 @@ jobs:
     timeout-minutes: 180
     env:
       GH_TOKEN: ${{ github.token }}
+      # The run's cron, empty when started by hand: the run log's GitHub delay (ci/runs.py).
+      CRON: ${{ github.event.schedule }}
       WHAT: >-
         ${{ github.event_name != 'schedule' && inputs.what
         || github.event.schedule == '52 5 * * *' && 'auto morning'

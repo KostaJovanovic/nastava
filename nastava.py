@@ -13,6 +13,7 @@ A forum is walked only when these differ from the last complete walk, and a topi
 fetched only when its last post id changed. So the first run and the daily run are the
 same code, and the counts double as the completeness check.
 """
+import json
 import os
 import re
 import sqlite3
@@ -20,6 +21,7 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -31,6 +33,9 @@ DELAY = float(os.getenv('DELAY', '0.5'))
 WORKERS = int(os.getenv('WORKERS', '2'))
 DB = os.getenv('DB', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nastava.db'))
 LOCAL = threading.local()
+# A logged run (ci/deploy.sh): the folder its log is gathered in, for ci/runs.py.
+RUN_DIR = os.getenv('RUN_DIR')
+_LOG = threading.Lock()
 # A topic to fetch: never fetched, or its last post changed since.
 PENDING = '(done_last_post is null or done_last_post != coalesce(last_post, -1))'
 
@@ -83,8 +88,40 @@ def session():
 		s.headers['User-Agent'] = 'Mozilla/5.0 (personal archive)'
 		retry = Retry(total=6, backoff_factor=2, status_forcelist=(429, 500, 502, 503, 504), allowed_methods=('GET',))
 		s.mount('https://', HTTPAdapter(max_retries=retry))
-		LOCAL.s = s
+		LOCAL.s = instrument(s)
 	return LOCAL.s
+
+
+def instrument(s):
+	"""In a logged run (RUN_DIR), every request of the session is a line of RUN_DIR/requests.jsonl for ci/runs.py:
+	the scraper, host, status or error, seconds, bytes, retries, and whether the server sends ETag / Last-Modified (so
+	a request could ask for the page only if it changed). Returns s."""
+	if not RUN_DIR:
+		return s
+	scraper = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+	request = s.request
+
+	def logged(method, url, *a, **kw):
+		t = time.monotonic()
+		rec = dict(scraper=scraper, method=method, url=url, host=urlsplit(url).hostname)
+		try:
+			r = request(method, url, *a, **kw)
+		except requests.RequestException as e:
+			rec.update(status=type(e).__name__, s=round(time.monotonic() - t, 3))
+			raise
+		else:
+			h = r.headers
+			# A streamed body (a file katedre.py does not download) by its header: reading it would download it.
+			size = int(h.get('Content-Length') or 0) if kw.get('stream') else len(r.content)
+			history = getattr(getattr(r.raw, 'retries', None), 'history', None) or ()
+			rec.update(status=r.status_code, s=round(time.monotonic() - t, 3), bytes=size, retries=len(history),
+			           etag='ETag' in h, modified='Last-Modified' in h)
+			return r
+		finally:
+			with _LOG, open(os.path.join(RUN_DIR, 'requests.jsonl'), 'a', encoding='utf-8') as f:
+				f.write(json.dumps(rec) + '\n')
+	s.request = logged
+	return s
 
 
 def get(path):

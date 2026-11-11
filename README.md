@@ -87,9 +87,14 @@ pipeline and site, with new scrapers for phpBB.
   subjects. The keys are in `push-secret.json` (git-ignored) and, for sync.yml, in the repository secret `PUSH_SECRET`
   (`gh secret set PUSH_SECRET < push-secret.json`). Lost keys mean new ones and every subscriber turning the switch
   on again.
-- `ci/deploy.sh`: scrape, build and publish (`auto SLOT`, `sync`, `forum [studije] [nastavnici] [predmeti] [katedre]`,
-  or nothing: only build and publish). `ci/plan.py`: what a scheduled run does, from the calendar; the database
+- `ci/deploy.sh`: scrape, build and publish (`auto SLOT`, `sync`, `forum [studije] [nastavnici] [predmeti]`, or
+  nothing: only build and publish). `ci/plan.py`: what a scheduled run does, from the calendar; the database
   fingerprint. `ci/state.sh`: get and save `nastava.db`.
+- The run log: every `ci/deploy.sh` run, here and on GitHub, adds a JSON line to `runs.jsonl` on the `runs` release
+  (`ci/runs.py`): each step's time, each scraper's requests per site (errors, retries, ETag / Last-Modified support,
+  the slowest pages), what was new, how long new posts took to be found and to be on the site, the sizes, the
+  notifications, and on GitHub how late the run started. `uv run ci/runs.py report` sums it up; `uv run ci/runs.py
+  schedule` replays the board's posts since 2022 against the schedule in use and the best 2–6 runs a day per season.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
 - `save.bat`: git (commit, push, pull), and `deploy [sync]`: commit, push, then `ci/deploy.sh`. `server.bat`: build
