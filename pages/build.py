@@ -1495,9 +1495,15 @@ def render_vesti(site, vesti):
     (site / "vesti" / "feed.xml").write_text(atom("Vesti · Mašinski fakultet", "/vesti/", vesti[:FEED_ALL]), encoding="utf-8")
 
 
+# The home page's smerovi, by level then program (their URL slugs); any other after them, in the board's order.
+HOME_ORDER = ["oas-mi", "oas-itm", "mas-mi", "mas-industrija-4-0", "doktorske-studije-mi", "katedre", "moduli"]
+
+
 def render_home(topics, smerovi, side, n_teachers, vesti):
+    live = [m for m in smerovi.values() if m.get("live")]
+    live.sort(key=lambda m: HOME_ORDER.index(m["key"]) if m["key"] in HOME_ORDER else len(HOME_ORDER))
     return env.get_template("search.html").render(
-        smerovi=[m for m in smerovi.values() if m.get("live")], recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
+        smerovi=live, recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
         stats=dict(posts=side["total"], topics=len(topics), teachers=n_teachers),
         years_json=json.dumps([y for y, _ in side["year_hist"]]))
 
