@@ -75,7 +75,10 @@
   <h2 class="lk__h" id="lk-{{ loop.index }}">{{ title }}</h2>
   <ul class="lk__grid">
     {%- for name, href, icon, domain in links %}
+    {#- Another site's icon in the corner (build.py icons), unless the corner says it does not work. -#}
+    {%- set host = href.split('/')[2] if '://' in href else '' %}
     <li><a class="lk__a{% if href in down %} lk__a--down{% endif %}" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}>
+      {%- if host in icons and href not in down %}<img class="lk__fav" src="/static/link/{{ icons[host] }}" alt="" width="16" height="16" loading="lazy" decoding="async">{% endif %}
       {%- if href in down %}<span class="lk__down">ne radi</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ name }}</b><small data-notx>{{ 'OneDrive' if domain else href.split('://')[-1].rstrip('/') }}</small></span></a></li>
     {%- endfor %}
   </ul>

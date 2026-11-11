@@ -1352,11 +1352,14 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 .lk__a {
   display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 0 12px; height: 100%;
   min-height: 60px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
-  color: var(--link); text-decoration: none;
+  color: var(--link); text-decoration: none; position: relative; overflow: hidden;
 }
 .lk__a:hover { background: var(--hover); color: var(--accent-t); }
+/* The site's own icon in the top right corner (link.html). */
+.lk__a:has(.lk__fav) { padding-right: 34px; }
+.lk__fav { position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; object-fit: contain; }
 /* A site that did not work when last checked (link.html down): a mark in the card's corner. */
-.lk__a--down { position: relative; padding-right: 70px; }
+.lk__a--down { padding-right: 70px; }
 .lk__down {
   position: absolute; top: 6px; right: 6px; padding: 1px 7px; border-radius: 99px;
   background: var(--mark); color: var(--red); font: 800 10.5px/1.6 var(--sans); letter-spacing: .04em; text-transform: uppercase;

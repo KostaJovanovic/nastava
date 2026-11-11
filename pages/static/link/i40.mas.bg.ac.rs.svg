@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 25.2.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
+	<!ENTITY ns_extend "http://ns.adobe.com/Extensibility/1.0/">
+	<!ENTITY ns_ai "http://ns.adobe.com/AdobeIllustrator/10.0/">
+	<!ENTITY ns_graphs "http://ns.adobe.com/Graphs/1.0/">
+	<!ENTITY ns_vars "http://ns.adobe.com/Variables/1.0/">
+	<!ENTITY ns_imrep "http://ns.adobe.com/ImageReplacement/1.0/">
+	<!ENTITY ns_sfw "http://ns.adobe.com/SaveForWeb/1.0/">
+	<!ENTITY ns_custom "http://ns.adobe.com/GenericCustomNamespace/1.0/">
+	<!ENTITY ns_adobe_xpath "http://ns.adobe.com/XPath/1.0/">
+]>
+<svg version="1.1" id="Layer_1" xmlns:x="&ns_extend;" xmlns:i="&ns_ai;" xmlns:graph="&ns_graphs;"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 69 68.5"
+	 style="enable-background:new 0 0 69 68.5;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#FFFFFF;}
+	.st1{enable-background:new    ;}
+	.st2{fill:#1C2A44;}
+</style>
+<metadata>
+	<sfw  xmlns="&ns_sfw;">
+		<slices></slices>
+		<sliceSourceBounds  bottomLeftOrigin="true" height="68.5" width="69" x="0" y="24.5"></sliceSourceBounds>
+	</sfw>
+</metadata>
+<g id="Logo" transform="translate(-126 -50)">
+	<rect id="Rectangle_13" x="126" y="50" class="st0" width="69" height="68.5"/>
+	<g class="st1">
+		<path class="st2" d="M152.8,79V67.6l-4.9,7.5h-0.1l-4.9-7.4V79h-3.8V61.5h4.1l4.6,7.4l4.6-7.4h4.1V79H152.8z"/>
+	</g>
+	<g class="st1">
+		<path class="st2" d="M153.6,89.4v10.7h2.3v3.1h-2.3v3.8h-3.7v-3.8h-8.5l-0.6-2.7l9.6-11.1H153.6z M149.9,94.7l-4.6,5.4h4.6V94.7z"
+			/>
+	</g>
+	<g class="st1">
+		<path class="st2" d="M174.1,107.3c-4.7,0-7.7-3.9-7.7-9s3.1-9.1,7.8-9.1c4.7,0,7.7,3.9,7.7,9C181.9,103.3,178.8,107.3,174.1,107.3
+			z M174.1,92.7c-2.3,0-3.8,2.3-3.8,5.5c0,3.2,1.5,5.6,3.8,5.6c2.3,0,3.8-2.3,3.8-5.5S176.4,92.7,174.1,92.7z"/>
+	</g>
+	<g class="st1">
+		<path class="st2" d="M171.2,79.3V61.1h4v18.2H171.2z"/>
+	</g>
+</g>
+</svg>
