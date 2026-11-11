@@ -26,7 +26,9 @@ from bs4 import BeautifulSoup, Comment
 from cent import FILE, name_icons, now
 
 DB = os.getenv("DB", str(Path(__file__).resolve().parent / "nastava.db"))
-DELAY = float(os.getenv("DELAY", "1.0"))
+# One request at a time, never two in flight: 8 of the 10 sites are one server (147.91.26.9), so they are not crawled
+# in parallel; 0.3 s keeps it to ~2-3 requests a second, a run ~3-4 minutes.
+DELAY = float(os.getenv("DELAY", "0.3"))
 MAX = int(os.getenv("MAX", "400"))  # pages a site, so a calendar or a gallery cannot crawl forever
 SITES = {
     "ie": ["https://ie.mas.bg.ac.rs/", "https://ie.mas.bg.ac.rs/predmeti.php"],

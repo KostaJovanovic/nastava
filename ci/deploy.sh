@@ -57,7 +57,7 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
 	uv run cent.py sync || failed+=(cent)
 	# The other departments' sites, every run as cent (a subject's material changes with its posts): ~400 requests,
-	# ~7 minutes.
+	# ~3-4 minutes.
 	uv run katedre.py sync || failed+=(katedre)
 	for p in "${parts[@]:1}"; do
 		uv run "$p.py" sync || failed+=("$p")
