@@ -36,7 +36,7 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 		read -ra parts <<< "$plan"
 		[[ ${parts[0]} == skip ]] && exit 0
 		# Once a day: a calendar the next days' runs can read.
-		if [[ $2 == night ]]; then
+		if [[ $2 == evening ]]; then  # the last run every day has (night is on hot days only)
 			uv run -q ci/plan.py check || failed+=(kalendar)
 		fi
 	elif [[ $1 == sync ]]; then
