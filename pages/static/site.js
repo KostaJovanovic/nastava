@@ -425,6 +425,11 @@
       // The archive's 'no year' heading: in the page's own order only, while a row under it is on view.
       if (sep) sep.hidden = !!(gsel && gsel.value) || !!(ssel && ssel.value) || !d.querySelector('[data-sep] ~ li:not([hidden])');
       if (none) none.hidden = shown > 0 || (left && !left.hidden);
+      // While a filter is set, a list with no row on view goes with its heading (a smer's subjects, its notices, its
+      // subjects without posts); the one that says nothing matched stays.
+      [].forEach.call(d.querySelectorAll('.fb'), function (f) {
+        if (f.querySelector('[data-rows]')) f.hidden = filtering && !f.querySelector('[data-rows] > li:not([hidden])') && !(none && !none.hidden && f.contains(none));
+      });
       // String(p), not p.size: Safari before 17 has no size.
       history.replaceState(null, '', String(p) ? '?' + p : location.pathname);
     };

@@ -20,6 +20,6 @@
 {%- set used = subjects | selectattr('topics') | list %}
 {%- set empty = subjects | rejectattr('topics') | list %}
 {% if used %}{{ forum_rows('Predmeti', used, 'book', filter=true) }}{% endif %}
-{% if topics %}{{ topic_rows('Opšta obaveštenja smera', topics) }}{% endif %}
+{% if topics %}{{ topic_rows('Opšta obaveštenja smera', topics, filter=true) }}{% endif %}
 {% if empty %}{{ forum_rows('Predmeti bez objava', empty, 'book', filter=true) }}{% endif %}
 {% endblock %}
