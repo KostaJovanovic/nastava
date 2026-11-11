@@ -425,7 +425,8 @@
       // The archive's 'no year' heading: in the page's own order only, while a row under it is on view.
       if (sep) sep.hidden = !!(gsel && gsel.value) || !!(ssel && ssel.value) || !d.querySelector('[data-sep] ~ li:not([hidden])');
       if (none) none.hidden = shown > 0 || (left && !left.hidden);
-      history.replaceState(null, '', p.size ? '?' + p : location.pathname);
+      // String(p), not p.size: Safari before 17 has no size.
+      history.replaceState(null, '', String(p) ? '?' + p : location.pathname);
     };
     // The header search's scope: the page's own (its text filters the list) or another (the list shows all).
     if (bar === scope) findOn = function (on) {
@@ -447,8 +448,8 @@
     });
     var ar = bar.querySelector('[data-arrange]');
     if (ar) ar.hidden = false;
-    if (p.size) arrange();
-    if (p.size || (window.mojiNow && window.mojiNow.only)) runRows();
+    if (String(p)) arrange();
+    if (String(p) || (window.mojiNow && window.mojiNow.only)) runRows();
     d.addEventListener('moji', runRows);
   }
 

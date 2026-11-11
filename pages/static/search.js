@@ -78,7 +78,8 @@ function writeUrl(s, page) {
 	if (s.from) p.set("from", s.from);
 	if (s.to) p.set("to", s.to);
 	if (page > 1) p.set("page", page);
-	history.replaceState(null, "", p.size ? `?${p}` : location.pathname);
+	// String(p), not p.size: Safari before 17 has no size.
+	history.replaceState(null, "", String(p) ? `?${p}` : location.pathname);
 }
 
 function filtersOf(s) {
@@ -333,7 +334,7 @@ function restoreFromUrl() {
 	for (const name of ["autor", "subject", "smer", "from", "to"]) {
 		for (const value of p.getAll(name)) form.append(build("input", { type: "hidden", name, value }, []));
 	}
-	return p.size > 0 || form.elements.q.value.trim() !== "";
+	return String(p) !== "" || form.elements.q.value.trim() !== "";
 }
 
 // The header search's scope (site.js): in the teachers or the subjects, the bar does not search the posts.

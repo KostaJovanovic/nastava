@@ -59,6 +59,7 @@
 }
 :root[data-tema="light"] { color-scheme: light; }
 :root[data-tema="dark"] { color-scheme: dark; }
+/* Without light-dark() (Safari before 17.5): see "Old Safari" after the header. */
 
 /* ---- Base --------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -105,7 +106,8 @@ kbd {
 }
 
 /* Icons: one file for all pages (icons.svg), used with <svg class="i"><use href="/static/icons.svg#i-..."></svg>. */
-.i { width: 1em; height: 1em; flex: none; vertical-align: calc(0.5cap - 0.5em - 0.02em); }
+/* The first vertical-align: for Safari before 17.2, which has no cap unit (Geist's cap height is ~0.7em). */
+.i { width: 1em; height: 1em; flex: none; vertical-align: -0.17em; vertical-align: calc(0.5cap - 0.5em - 0.02em); }
 /* The folded copy of the text that Pagefind indexes (build.py mark_for_pagefind). */
 .pf { display: none; }
 
@@ -122,7 +124,9 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   grid-template-areas: "brand cmd pismo";
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  /* max(): an iPhone in landscape (viewport-fit=cover) has the notch at a side; the bar's colour reaches it, its
+     content clears it. The same on the frame, the footer and the tab bar. */
+  padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
   background: var(--head);
   color: var(--head-fg);
   border-bottom: 3px solid var(--head-line);
@@ -143,7 +147,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   .brand__mark { position: relative; z-index: 3; }
   .brand__mark svg { width: 34px; height: 34px; }
   .brand__name {
-    position: absolute; inset: 0 0 0 52px; z-index: 2;
+    position: absolute; inset: 0 0 0 calc(max(10px, env(safe-area-inset-left)) + 42px); z-index: 2;
     align-content: center; padding-right: 10px; background: var(--head);
     opacity: 0; visibility: hidden; translate: -8px 0; transition: opacity .15s, translate .15s, visibility .15s;
   }
@@ -234,24 +238,50 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 #tema { padding: 0 8px; }
 .tg span { display: none; }
 
+/* ---- Old Safari: no light-dark() (before 17.5, iOS 16) -------------------- */
+/* Every colour above would be invalid: the light theme only, so no theme button. After the header's rules, which a
+   light-dark() with a var() in it would still win. Keep in step with the light values above. */
+@supports not (color: light-dark(#000, #fff)) {
+  :root, :root[data-tema="dark"] {
+    color-scheme: light;
+    --head: #0076b1; --head-2: #0076b1; --head-fg: #ffffff; --head-dim: #f2f7fa;
+    --paper: #f5f7fa; --card: #ffffff; --alt: #ecf3f7; --hover: #f6f4d0; --line: #cadceb; --line-2: #e1ebf2;
+    --fg: #28313f; --link: #105289; --text: #333333; --dim: #536482;
+    --accent: #bc2a4d; --accent-t: #bc2a4d; --accent-fg: #ffffff; --red: #bc2a4d; --red-2: #9e1f3e;
+    --mark: rgba(188, 42, 77, .16);
+    --head-line: #00608f; --go: #105289; --go-2: #0d4473; --wave: #ffffff; --field: #ffffff; --icon-bg: #e1ebf2;
+  }
+  #tema { display: none; }
+  .brand__mark circle { stroke: #ffffff; }
+  .cmd { border: 1px solid #ffffff; background: #ffffff; }
+  .cmd:focus-within { border-color: #ffffff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .45); }
+  .cmd select { background: #e1ebf2; }
+  .cmd select:hover { background: #cadceb; }
+  .tg { border: 1px solid rgba(255, 255, 255, .6); }
+  .tg:hover { background: rgba(0, 0, 0, .14); }
+}
+
 @media (min-width: 760px) {
   /* Equal side columns, so the search is in the middle of the header. */
-  .hd { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); grid-template-areas: "brand cmd pismo"; gap: 24px; padding: 10px 24px; }
+  .hd { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); grid-template-areas: "brand cmd pismo"; gap: 24px;
+    padding: 10px max(24px, env(safe-area-inset-right)) 10px max(24px, env(safe-area-inset-left)); }
   .cmd input { font-size: 14px; }
   .tg span { display: inline; }
   .brand__name span { display: block; }
 }
 
 /* ---- Frame: side panel + the central column ---------------------------- */
-.frame { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 1560px; margin: 0 auto; padding: 12px; }
+.frame { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 1560px; margin: 0 auto;
+  padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left)); }
 .main { container: main / inline-size; flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 /* The footer (base.html): under the frame, which fills the screen, so at its bottom however short the page. Blue as
    the header, its line on top. */
 .ft {
-  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 14px 32px; padding: 18px 16px 20px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 14px 32px;
+  padding: 18px max(16px, env(safe-area-inset-right)) 20px max(16px, env(safe-area-inset-left));
   background: var(--head); color: var(--head-dim); border-top: 3px solid var(--head-line); font: 400 14px/1.5 var(--sans);
 }
-@media (min-width: 900px) { .ft { padding: 22px 24px 24px; } }
+@media (min-width: 900px) { .ft { padding: 22px max(24px, env(safe-area-inset-right)) 24px max(24px, env(safe-area-inset-left)); } }
 .ft__in { display: grid; gap: 8px; }
 /* The links as a row with room between them, not underlined (their place says they are links). */
 .ft__links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
@@ -267,7 +297,8 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 /* Phone: the credit centred on top, a line, the six links in two even columns (three on a wider phone) tall enough
    to tap, then the note under a line. The wrappers step aside so all of them are items of one grid. */
 @media (max-width: 759px) {
-  .ft { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; padding: 16px 16px 18px; }
+  .ft { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px;
+    padding: 16px max(16px, env(safe-area-inset-right)) 18px max(16px, env(safe-area-inset-left)); }
   .ft__in, .ft__side, .ft__links { display: contents; }
   .ft a { padding: 7px 0; justify-self: center; text-align: center; }
   /* A wider phone has room for three links a row. */
@@ -292,7 +323,8 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 /* The credit's name per script (base.html): Latin unless pismo.js has set Cyrillic. */
 html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [data-cyr] { display: none; }
 @media (min-width: 900px) {
-  .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px; padding: 16px 20px 28px; }}
+  .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px;
+    padding: 16px max(20px, env(safe-area-inset-right)) 28px max(20px, env(safe-area-inset-left)); }}
 
 /* ---- Side panel --------------------------------------------------------- */
 .side { min-width: 0; }
@@ -342,7 +374,8 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
   .snav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
     display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
-    padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); overflow: visible;
+    padding: 4px max(6px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+    overflow: visible;
     background: var(--card); border-top: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -6px 18px rgba(1, 19, 33, .08);
   }
   .snav__long { display: none; }
@@ -488,7 +521,7 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
   background: var(--paper); color: var(--text);
 }
 .mp[open] { display: flex; flex-direction: column; animation: mp-in .18s ease-out; }
-.mp::backdrop { background: rgba(1, 19, 33, .5); backdrop-filter: blur(2px); }
+.mp::backdrop { background: rgba(1, 19, 33, .5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 @keyframes mp-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
 .mp__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 10px; }
 .mp__top h2 { display: flex; align-items: center; gap: 8px; color: var(--fg); font: 800 19px/1.2 var(--sans); }
@@ -930,7 +963,7 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 }
 .note { padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: var(--r); background: var(--card); font-size: 14px; }
 .note--plain { border-left-width: 1px; border-left-color: var(--line); }
-.prose { max-width: 78ch; color: var(--text); font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; hyphens: auto; }
+.prose { max-width: 78ch; color: var(--text); font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-hyphens: auto; hyphens: auto; }
 .prose--html { white-space: normal; }
 .prose--html > :first-child { margin-top: 0; }
 .prose--html a { color: var(--accent-t); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
@@ -1185,6 +1218,11 @@ details.sg::details-content, .tp__bio::details-content {
   transition: height 200ms ease-out, content-visibility 200ms ease-out allow-discrete;
 }
 details.sg[open]::details-content, .tp__bio[open]::details-content { height: auto; }
+/* Safari has ::details-content but no clip margin, which cut the cards' focus outline; nor interpolate-size, so it
+   folds at once and an open group need not clip at all. */
+@supports not (overflow-clip-margin: 6px) {
+  details.sg[open]::details-content, .tp__bio[open]::details-content { overflow: visible; }
+}
 summary.sg__h:hover { background: var(--hover); }
 summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .sg__n { color: var(--dim); font-size: 13px; font-weight: 400; font-variant-numeric: tabular-nums; }
@@ -1310,6 +1348,9 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 /* Apart: a browser without ::details-content would drop the whole rule above with it. */
 @media (prefers-reduced-motion: reduce) { ::details-content { transition: none !important; } }
 @media (forced-colors: active) { mark { background: Highlight; color: HighlightText; } }
+/* A touch screen (an iPhone, an iPad at any width): iOS zooms in on a field under 16px when it is tapped. Last, so it
+   wins over the smaller sizes of the wide-screen rules. */
+@media (pointer: coarse) { .cmd input, .cmd select, .field, .pick select { font-size: 16px; } }
 @media print {
   .hd, .side, .status, .acts, .skip, .crumbs, .fbar { display: none !important; }
   .frame { display: block; padding: 0; }
