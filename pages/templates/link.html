@@ -9,7 +9,9 @@
     ('Mašinski fakultet', 'https://www.mas.bg.ac.rs/', 'globe', none),
     ('Vesti o predmetima', 'https://www.mas.bg.ac.rs/studije/vesti', 'news', none),
     ('Raspored ispita', 'https://www.mas.bg.ac.rs/studije/raspored-ispita', 'calendar', none),
+    ('Vesti fakulteta', 'https://vesti.mas.bg.ac.rs/', 'news', none),
     ('Prezentacije nastavnika', 'https://etc.mas.bg.ac.rs/', 'file', none),
+    ('FSEL (Moodle)', 'https://fsel.mas.bg.ac.rs/moodle/', 'book', none),
   ]),
   ('Katedre i programi', [
     ('Katedra za proizvodno mašinstvo', 'https://cent.mas.bg.ac.rs/', 'katedra-za-proizvodno-masinstvo', none),
@@ -18,10 +20,27 @@
     ('Katedra za motore', 'https://motori.mas.bg.ac.rs/', 'katedra-za-motore', none),
     ('Katedra za mehanizaciju', 'https://meh.mas.bg.ac.rs/', 'katedra-za-mehanizaciju', none),
     ('Katedra za mehaniku fluida', 'https://fluidi.mas.bg.ac.rs/', 'katedra-za-mehaniku-fluida', none),
+    ('Katedra za vazduhoplovstvo', 'http://vaz.mas.bg.ac.rs/', 'katedra-za-vazduhoplovstvo', none),
+    ('Katedra za opšte mašinske konstrukcije', 'https://omk.mas.bg.ac.rs/', 'katedra-za-opste-masinske-konstrukcije', none),
+    ('Katedra za matematiku', 'https://mat.mas.bg.ac.rs/', 'katedra-za-matematiku', none),
     ('Poljoprivredno prehrambeno mašinstvo', 'https://ppm.mas.bg.ac.rs/', 'katedra-za-poljoprivredno-masinstvo', none),
     ('Informacione tehnologije u mašinstvu', 'https://it0.mas.bg.ac.rs/', 'katedra-za-informacione-tehnologije-u-masinstvu', none),
+    ('MF-ITM', 'http://cs.mas.bg.ac.rs/', 'katedra-za-informacione-tehnologije-u-masinstvu', none),
+    ('Mašinstvo i informacione tehnologije', 'http://mit.mas.bg.ac.rs/', 'folder', none),
     ('Industrija 4.0', 'https://i40.mas.bg.ac.rs/', 'folder', none),
     ('Modul ZZK', 'https://zzk.mas.bg.ac.rs/', 'folder', none),
+  ]),
+  ('Ostali sajtovi fakulteta', [
+    ('Sajt na engleskom', 'http://www.en.mas.bg.ac.rs/', 'globe', none),
+    ('Pretprijava kandidata', 'https://pretprijava.mas.bg.ac.rs/', 'user', none),
+    ('Probni prijemni testovi', 'https://testovi.mas.bg.ac.rs/', 'file', none),
+    ('Repozitorijum Machinery', 'https://machinery.mas.bg.ac.rs/', 'book', none),
+    ('Alumni fondacija', 'https://alumni.mas.bg.ac.rs/', 'users', none),
+    ('Inovacioni inkubator', 'https://inkubator.mas.bg.ac.rs/', 'globe', none),
+    ('Laboratorija za toplotne turbomašine', 'https://ltt.mas.bg.ac.rs/', 'globe', none),
+    ('Mission4.0', 'https://mission4-0.mas.bg.ac.rs/', 'globe', none),
+    ('LGS', 'https://lgs.mas.bg.ac.rs/', 'globe', none),
+    ('Geotermal', 'https://geotermal.mas.bg.ac.rs/', 'globe', none),
   ]),
   ('Studenti', [
     ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'cloud', 'kosta-onedrive.com'),
@@ -38,6 +57,10 @@
     ('Prijavi grešku', 'https://github.com/KostaJovanovic/nastava/issues', 'msg', none),
   ]),
 ] %}
+{#- The sites that did not work when last checked (11.11.2026.): no answer, an empty page, the server's default
+    page or "under reconstruction". The card stays, with a mark in its corner. -#}
+{% set down = ['https://omk.mas.bg.ac.rs/', 'https://mat.mas.bg.ac.rs/', 'http://www.en.mas.bg.ac.rs/',
+               'https://lgs.mas.bg.ac.rs/', 'https://geotermal.mas.bg.ac.rs/'] %}
 
 {% block title %}Linkovi{% endblock %}
 {% block description %}Važni linkovi Mašinskog fakulteta u Beogradu na jednom mestu: forum nastave, studentski servis, webmail, vesti, raspored ispita i Veliki drajv.{% endblock %}
@@ -52,7 +75,8 @@
   <h2 class="lk__h" id="lk-{{ loop.index }}">{{ title }}</h2>
   <ul class="lk__grid">
     {%- for name, href, icon, domain in links %}
-    <li><a class="lk__a" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}><span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ name }}</b><small data-notx>{{ 'OneDrive' if domain else href.split('://')[-1].rstrip('/') }}</small></span></a></li>
+    <li><a class="lk__a{% if href in down %} lk__a--down{% endif %}" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}>
+      {%- if href in down %}<span class="lk__down">ne radi</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ name }}</b><small data-notx>{{ 'OneDrive' if domain else href.split('://')[-1].rstrip('/') }}</small></span></a></li>
     {%- endfor %}
   </ul>
 </section>
