@@ -36,8 +36,8 @@
     {%- for s in places %}
     {#- data-pid: a subject's row, data-pids: a smer's (its subjects); hidden while only "Moji predmeti" show (head.js). -#}
     <li class="fr"{% if filter %} data-find="{{ s.find }}"{% endif %}{% if s.pids is defined %} data-pids="{{ s.pids }}"{% elif icon == 'book' %} data-pid="{{ s.href }}"{% endif %}>
-      {#- A subject: its katedra's icon (from the subject book, build.py load_book), else the book. -#}
-      {%- set k = s.info.katedra if s.info is defined and s.info else None %}
+      {#- A subject: its katedra's icon (build.py row_katedra), else the book. -#}
+      {%- set k = s.katedra %}
       <span class="fr__i" aria-hidden="true"{% if k %} title="{{ k }}"{% endif %}><svg class="i"><use href="/static/icons.svg#i-{{ k | slug if k else s.key if s.key in ('katedre', 'moduli') else icon }}"></use></svg></span>
       <div class="fr__t">
         {#- A smer's program in full, or on a phone its abbreviation (style.css). -#}

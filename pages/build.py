@@ -21,6 +21,7 @@ from datetime import date
 from html import unescape
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlsplit
+from xml.etree import ElementTree
 
 import nh3
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -323,6 +324,20 @@ def load_vesti(db):
 def board_subject(by_code, by_name, code, name, program):
     """The board's subject of a subject-book entry: the same code, else the same name in the smer of its program."""
     return by_code.get(code) or by_name.get((fold(short_smer(program.replace(" — ", " - "))), fold(name)))
+
+
+def row_katedra(s, topics):
+    """The katedra whose icon marks a forum subject's row (rows.html): in the forum Katedre the subject is one; else
+    the subject book's, its holder's, or the one most of its teachers are in: by their profiles, then by their posts
+    in it (the moduli). Only for the icon: the book's own field is left as the faculty wrote it."""
+    if s["smer"]["key"] == "katedre":
+        return s["name"]
+    i = s.get("info") or {}
+    if i.get("katedra") or (i.get("holder_t") or {}).get("katedra"):
+        return i.get("katedra") or i["holder_t"]["katedra"]
+    c = (Counter(t["katedra"] for t in s.get("teachers", []) + i.get("teachers", []) if t["katedra"])
+         or Counter(p["teacher"]["katedra"] for t in topics for p in t["posts"] if p.get("teacher") and p["teacher"]["katedra"]))
+    return c.most_common(1)[0][0] if c else None
 
 
 def load_cent(db, smerovi, subjects):
@@ -696,6 +711,7 @@ def render_places(site, topics, smerovi, subjects):
         subs = sorted((s for s in subjects.values() if s["smer"] is m and s["live"]), key=lambda s: fold(s["name"]))
         for s in subs:
             s["find"] = fold(" ".join([s["name"], *s["acr"]] + [t["full_name"] for t in s.get("teachers", [])]))
+            s["katedra"] = row_katedra(s, in_subject[s["id"]])
         rows = in_smer[m["id"]]
         m["live"] = bool(rows or subs)
         m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
@@ -1097,6 +1113,7 @@ def render_teachers(site, teachers, items, book):
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
     # Each katedra's icon is a symbol in icons.svg (the cards, nastavnik.html); a new one shows a blank until drawn.
     sprite = (HERE / "static" / "icons.svg").read_text(encoding="utf-8")
+    ElementTree.fromstring(sprite)  # one bad tag blanks every icon on the site
     for k in sorted({t["katedra"] for t in teachers if t["katedra"]}):
         if f'id="i-{slug(k)}"' not in sprite:
             print(f"[warn] no icon for {k}: add <symbol id=\"i-{slug(k)}\"> to static/icons.svg", file=sys.stderr)
@@ -1694,6 +1711,12 @@ if __name__ == "__main__":
     assert _a("viewtopic.php?p=1&hilit=%D1%81#p1") == f"{BASE}viewtopic.php?p=1#p1"
     assert _a("viewtopic.php?f=2&sid=0af3&t=9") == f"{BASE}viewtopic.php?f=2&t=9" and _a("viewtopic.php?sid=0af3") == f"{BASE}viewtopic.php"
     assert env.filters["slug"]("Катедра за математику") == "katedra-za-matematiku" and env.filters["slug"](None) == ""
+    _t = lambda k: dict(katedra=k)
+    _post = lambda k: dict(posts=[dict(teacher=_t(k)), dict(teacher=None)])
+    assert row_katedra(dict(name="катедра за моторе", smer=dict(key="katedre")), []) == "катедра за моторе"
+    assert row_katedra(dict(smer=dict(key="x"), info=dict(katedra=None, holder_t=_t("Б"), teachers=[])), []) == "Б"
+    assert row_katedra(dict(smer=dict(key="moduli")), [_post("А"), _post("В"), _post("В")]) == "В"
+    assert row_katedra(dict(smer=dict(key="x")), []) is None
     _m, _k = dict(name="основне академске студије - МИ"), dict(name="катедре")
     assert smer_label(_m["name"]) == "Основне академске студије - Машинско инжењерство" and smer_label("катедре") == "Катедре"
     _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, live=True, smer=m) for i, n, m in
