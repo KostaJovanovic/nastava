@@ -862,7 +862,7 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .gone { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent-t); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
 .post__meta .gone { margin-left: 0; }
 /* The mark of what comes from a department's site, not the board (build.py load_cent): a row's author, a page. */
-.src { display: inline-block; padding: 0 6px; border-radius: 9px; background: var(--accent); color: var(--accent-fg); font: 700 11px/18px var(--sans); vertical-align: 1px; }
+.src { display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--accent); color: var(--accent-fg); font: 700 11px/18px var(--sans); vertical-align: 1px; }
 /* Where a subject's material is besides the board, from its posts' links (build.py mark_elsewhere): Teams, Drive, … */
 .ext { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--dim); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; text-decoration: none; }
 .mh__sub .ext { margin: 0 0 0 4px; }
