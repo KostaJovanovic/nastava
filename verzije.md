@@ -15,31 +15,97 @@ above the first `## ` is this note and is not shown.
 - Write for someone who uses the site, in plain Serbian: what is different for them. Internal work (plans, CI,
   tests, tools) goes into one `Održavanje` entry a day, not a line each.
 
-## 10. novembra 2026.
-Sitnice po stranama nastavnika i predmeta, i ova strana.
+## 11. novembra 2026.
+Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
 
+- 243–244 [novo] **Sajtovi katedri** (ie, etc, motori, meh, bmi, pt, ppm, fluidi, hidro i ciah) se čuvaju ovde,
+  strana po strana, sa ranijim verzijama, kao sajt cent. Spisak strana svakog sajta je na strani Linkovi, u delu
+  `Arhiva sajtova katedri`. Strana koja pripada predmetu je i na strani predmeta, označena imenom sajta.
+- 242, 245–246 **Sajtovi katedri se proveravaju pri svakom osvežavanju sajta,** kao cent, pa materijal predmeta
+  prati njegove objave. Strane se čitaju jedna po jedna, da server fakulteta ne bude opterećen. Strane iza
+  prijave (studentski wiki katedre pt) se ne čuvaju.
+- 235 [ispravka] **Strane sa cent-a zadržavaju svoj izgled,** u stilu ovog sajta: delovi po nedeljama se sklapaju,
+  dugmad su dugmad, a link na fajl pokazuje vrstu fajla. Dugme koje ni na cent-u nikud ne vodi je isprekidano.
+  Kopije jednog starog šablona koje cent drži na stranama mnogih predmeta su sklonjene, pa ti predmeti više ne
+  pokazuju tuđi sadržaj.
+- 236–237, 239 [novo] **Svaki predmet ima svoju stranu,** i kad nema objava: umesto praznog spiska tu je kartica
+  sa jednom rečenicom (`Tih kao miš...`). Na strani smera su predmeti bez objava na dnu, u svom spisku.
+- 240 [ispravka] **Filter na strani smera** pretražuje i opšta obaveštenja smera, a spisak u kome ništa ne
+  odgovara se skloni zajedno sa naslovom.
+- 241 [novo] **Svetozar Zorić, Vladimir Farmakovski i Nikola Obradović** imaju i istorijat katedre hidro među
+  izvorima.
+- 238, 248 **Ikonica objave sa odgovorima** više nije tamni krug, a oznaka sa kog je sajta nešto (`cent`) ima
+  oštrije uglove.
+- 247 **Održavanje:** plan za Android aplikaciju.
+
+## 10. novembra 2026.
+Strana Linkovi, novi font, oblak reči i broj posetilaca na statistici, strana Verzije i dosta popravki za
+  telefon, iPhone i Safari.
+
+### Novo na sajtu
 - 189 [novo] **Strana Verzije.** Šta se menjalo na sajtu, po danima i po verzijama, od najnovijeg.
-- 187–188 [novo] **Oblak reči na statistici:** 60 reči koje se najčešće javljaju u postovima, a svaka vodi na
-  pretragu te reči. Broje se iz celog teksta, bez linkova, adresa i imena fajlova.
+- 211, 213–214, 218, 221 [novo] **Strana Linkovi** (/link/): sajtovi fakulteta, katedri i studenata na jednom
+  mestu, kao kartice sa ikonicom svakog sajta. Sajt koji ne radi ima oznaku `ne radi`. Na telefonu su Linkovi u
+  donjoj traci, na mestu Predmeta.
+- 227 [novo] **Novi font na celom sajtu:** `IBM Plex Sans`, a za korisnička imena i tastere `IBM Plex Mono`.
+- 187–188, 191, 197–198 [novo] **Oblak reči na statistici:** 60 reči koje se najčešće javljaju u postovima, a
+  svaka vodi na pretragu te reči. Najčešća je u sredini i najveća, a ostale su oko nje. Padeži iste reči se broje
+  zajedno (ispit, ispita, ispitu). Broje se iz celog teksta, bez linkova, adresa i imena fajlova.
+- 193–194 [novo] **Broj posetilaca na statistici.** Sajt zato pamti IP adresu tri dana, da istog posetioca ne
+  broji dvaput, pa je briše; to piše i na strani O sajtu.
+- 203–205, 207 **Sajt se osvežava pet puta dnevno** u upisu ispita i ispitnim rokovima, na pet sati od 6:52 do
+  2:52, a ostalih dana tri puta: u 11:52, 16:52 i 21:52 (leti sat kasnije).
+- 202 **`Provereno` u podnožju** je vreme kada je forum poslednji put pročitan, i kad nije bilo novih objava.
+- 185 [novo] **Svaki deo sajta ima svoju sliku** kad se link podeli: forum, raspored, nastavnici, arhiva, predmeti
+  i vesti. Slika je centrirana, pa se vidi i kad je Viber ili WhatsApp iseku na kvadrat.
+- 212 [novo] **Sajt se čita i bez JavaScript-a:** ono što bez njega ne radi (pretraga, filteri, dugmad za pismo i
+  temu) se ne pokazuje, a sklopljeni delovi su otvoreni.
+
+### Predmeti
 - 183–184 [novo] **Nastavni planovi na strani Predmeti su pregledniji.** Svaki program se sklapa (prvi je otvoren),
   semestar je jedan blok, a izborni predmeti su u obojenim trakama. Dugačak izborni blok pokazuje prvih pet, a
   ostale posle `Prikaži još`.
-- 185 [novo] **Svaki deo sajta ima svoju sliku** kad se link podeli: forum, raspored, nastavnici, arhiva, predmeti
-  i vesti. Slika je centrirana, pa se vidi i kad je Viber ili WhatsApp iseku na kvadrat.
+- 201 [novo] **Strana predmeta iz Knjige predmeta je u karticama:** cilj, ishod, sadržaj predavanja i vežbi kao
+  spisak po lekcijama, fond časova i poeni kao trake, a literatura knjiga po knjiga.
+- 195 [novo] **Predmet se nalazi i po skraćenici** (`OOK`, `ME1`, `BMIO`): u pretrazi, u izboru predmeta i na
+  spiskovima. Skraćenice se uzimaju i iz naslova objava.
+- 196 [novo] **Enter na filtriranom spisku** otvara predmet kad je na spisku ostao samo on.
+- 229, 232 [novo] **Svaki predmet na forumu ima ikonicu svoje katedre,** i kad je Knjiga predmeta ne navodi: po
+  nosiocu ili nastavnicima predmeta. Katedre i moduli imaju svoje ikonice.
+- 210 **Smerovi na početnoj su poređani** po nivou studija: osnovne, master i doktorske, pa katedre i moduli.
+
+### Nastavnici
 - 179 **Na strani nastavnika je deset najnovijih postova,** a ostali su ispod dugmeta `Prikaži još`.
-- 180 **Filteri na spiskovima nastavnika i predmeta** su u jednom redu, kao zaobljena dugmad, a broj rezultata je
+- 180, 225 **Filteri na spiskovima nastavnika i predmeta** su u jednom redu, kao dugmad, a broj rezultata je
   desno.
 - 181–182 **Arhiva nastavnika je plavo dugme sa brojem.** Kartica nastavnika uvek pokazuje kabinet, a broj
   postova samo kad je spisak poređan po njemu.
 - 178 **Kod bivših nastavnika piše samo godina odlaska,** jer je tačan datum samo datum kopije sa Wayback Machine-a.
-- 177 **Potpis u podnožju prati pismo:** latinicom `valjdakosta`, ćirilicom `Временска Прогноза`.
+- 192 [ispravka] **Nastavnik koga nema na spisku nastavnika, a ima ga na spisku katedre** (asistent koji je sada
+  istraživač) više nije među bivšima.
+
+### Telefon, iPhone i Safari
+- 200 [ispravka] **Safari i iPhone:** filteri i pretraga rade i u starijem Safariju, sajt radi na iOS 16 (u svetloj
+  temi), na iPhone-u okrenutom bočno ništa nije ispod izreza ekrana, a otvaranje grupe ne seče ivice kartica.
+- 222, 228 [ispravka] **Menjanje teme na iPhone-u** prelazi krugom preko strane, umesto da strana odmah potamni.
+- 206, 208 **Na telefonu su imena smerova kraća** (`Основне академске студије - МИ`), pa su i redovi niži.
+- 219, 223–224, 230 **Pretraga na telefonu:** tekst u polju je manji, pa staje, iPhone ne uvećava stranu kad
+  dodirneš polje, a izbor šta pretražuješ piše celo ime i ima veće redove za prst.
+- 231, 233 [ispravka] **Moji predmeti na telefonu:** naslov i dugme su u jednom redu, i u Safariju.
+- 234 **Na telefonu objava bez odgovora** ne piše `0 odgovora`, a objava sa cent-a ima oznaku `cent`.
+
+### Izgled
+- 177, 199, 209 **Potpis u podnožju prati pismo:** latinicom `valjdakosta`, ćirilicom `Временска Прогноза`. Talas
+  ide ravnomerno preko razmaka i ne preskače kad promeniš pismo.
 - 174 [ispravka] **Posle izmene sajta pregledač odmah uzima nove stilove i skripte**, umesto stare verzije iz keša.
 - 176 [ispravka] **Animacije:** na telefonu kartica više ne ostaje podignuta posle dodira, kvačica u izboru
   predmeta iskače samo na kartici koju si izabrao, a brzo menjanje teme se više ne zaglavi. Pozadina prozora se
   pojavljuje postepeno, a više dugmadi reaguje na pritisak.
 - 173 [ispravka] **Strana sa sajta predmeta koja nestane pa se vrati** više nije označena kao uklonjena.
 - 186 [ispravka] **Tekst u izboru pretrage** je centriran po visini.
-- 175, 190 **Održavanje:** beleške u planu, a ova strana je prepravljena prema stvarnim izmenama u kodu.
+
+- 175, 190, 215–217, 220, 226 **Održavanje:** beleške u planu, ova strana prepravljena prema stvarnim izmenama u
+  kodu, i skriveni meni za probu fontova, u kom je izabran novi font.
 
 ## 9. novembra 2026.
 Najveći dan do sad: obaveštenja na telefon, vesti fakulteta, sajtovi predmeta, strana O sajtu i arhiva bivših
@@ -120,7 +186,7 @@ Najveći dan do sad: obaveštenja na telefon, vesti fakulteta, sajtovi predmeta,
 Prvi dan: arhiva foruma je na internetu, sa novim izgledom, stranama nastavnika, Knjigom predmeta i rasporedom.
 
 - 1 [novo] **Arhiva foruma nastave.** Sve objave sa foruma od 2014, sa pretragom ćirilicom i latinicom.
-- 2–5 [novo] **Novi izgled:** plavo zaglavlje sa talasom u logu, svetla i tamna tema na jedno dugme, nova slova i
+- 2–5 [novo] **Novi izgled:** plavo zaglavlje sa talasom u logu, svetla i tamna tema na jedno dugme, novi font i
   mekša crvena. Forum i predmeti su tabele kao na forumu, objava ima dugmad `Preuzmi` i `Cela tema`, a filteri
   pretrage u bočnom meniju deluju čim ih promeniš.
 - 10–11 **Sve je gušće, složeno kao na forumu:** manja slova, tešnji redovi, oštriji uglovi. Početna nema uvodni
