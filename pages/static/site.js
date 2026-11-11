@@ -263,6 +263,37 @@
     window.addEventListener('hashchange', function () { pick(decodeURIComponent(location.hash.slice(1)), true); });
   }
 
+  /* The word cloud (/statistika/, stats.html): the biggest word in the middle, each next one at the first place on a
+     spiral out of it that overlaps none placed before. Laid out again when a word's size changes (the font loads, the
+     page turns Cyrillic) or the card's width does. Without this, a centred list (style.css .wc). */
+  var wc = d.querySelector('.wc');
+  if (wc && window.ResizeObserver) {
+    var wcLis = [].slice.call(wc.children), wcRaf;
+    var wcS = function (li) { return +li.firstChild.style.getPropertyValue('--s'); };
+    wcLis.sort(function (a, b) { return wcS(b) - wcS(a); });
+    var wcLay = function () {
+      var W = wc.clientWidth, put = [], lo = Infinity, hi = -Infinity;
+      wcLis.forEach(function (li) {
+        var w = li.offsetWidth + 8, h = li.offsetHeight, t = 0, r = 0, x, y;
+        var hits = function (p) { return x < p.x + p.w && p.x < x + w && y < p.y + p.h && p.y < y + h; };
+        // An ellipse twice as wide as high: the card is wide. Steps of ~5px along the spiral; r grows 2px a radian.
+        for (; r < 2000; t += Math.min(0.3, 5 / (2 * r + 1)), r = 2 * t) {
+          x = W / 2 + 2 * r * Math.cos(t) - w / 2;
+          y = r * Math.sin(t) - h / 2;
+          if (x >= 0 && x + w <= W && !put.some(hits)) break;
+        }
+        put.push({ x: x, y: y, w: w, h: h });
+        lo = Math.min(lo, y); hi = Math.max(hi, y + h);
+      });
+      wcLis.forEach(function (li, i) { li.style.left = put[i].x + 4 + 'px'; li.style.top = put[i].y - lo + 'px'; });
+      wc.style.height = hi - lo + 'px';
+    };
+    wc.classList.add('wc--cloud');
+    var wcRo = new ResizeObserver(function () { cancelAnimationFrame(wcRaf); wcRaf = requestAnimationFrame(wcLay); });
+    wcRo.observe(wc);
+    wcLis.forEach(function (li) { wcRo.observe(li); });
+  }
+
   /* The side panel's switch "Samo moji predmeti": on, the site shows only the followed subjects (head.js) and
      searches only them (search.js); off ("sve" = '1' in localStorage), all. 'moji' redraws what depends on it;
      registered first, so the others see the new state. */

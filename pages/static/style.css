@@ -634,6 +634,9 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 }
 .wc a:hover { text-decoration: underline; }
 @container main (max-width: 599px) { .wc a { font-size: calc(12px + var(--s) * 22px); } }
+/* site.js lays the words out as a cloud: each where the script puts it. */
+.wc--cloud { display: block; position: relative; padding: 0; }
+.wc--cloud li { position: absolute; white-space: nowrap; }
 /* A ranked list: the bar behind a row is its share of the first row. */
 .rk { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; counter-reset: rk; }
 .rk li {
