@@ -17,7 +17,7 @@ import subprocess
 import sys
 import unicodedata
 from collections import Counter, defaultdict
-from datetime import date, datetime, timezone
+from datetime import date
 from html import unescape
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlsplit
@@ -55,7 +55,7 @@ FORMS = {"objava": ("objava", "objave", "objava"), "post": ("post", "posta", "po
          "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
          "nastavnik": ("nastavnik", "nastavnika", "nastavnika"), "autor": ("autor", "autora", "autora"),
          "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja"),
-         "verzija": ("verzija", "verzije", "verzija")}
+         "verzija": ("verzija", "verzije", "verzija"), "čas": ("čas", "časa", "časova"), "poen": ("poen", "poena", "poena")}
 
 
 def plural(n, word):
@@ -1196,21 +1196,48 @@ def plan_groups(book):
     return out
 
 
+NUMBERED = re.compile(r"(?:\w+\s+)?(\d+)[.:)]\s+")
+
+
+def book_page(html):
+    """The faculty's page of a subject -> its parts as predmet_opis.html shows them: {heading: (lines, numbered)} of the
+    text sections; the hours (total, groups of (label, hours)) and the points ((label, points), the minimum for the exam),
+    both without the zero rows; the literature, one book a row. Every page has the same sections (predmeti.py); the
+    head (ID, ECTS, teachers) and 'Извођења' (the plans) are the page's head, from the same fields."""
+    sec = {}
+    for head, body in re.findall(r"<h[24][^>]*>(.*?)</h[24]>\s*<div[^>]*>(.*?)</div>", html or "", re.S):
+        sec[strip_tags(head)] = [" ".join(l.split()) for l in unescape(re.sub(r"<[^>]+>", "\n", body)).splitlines() if l.strip()]
+    pairs = lambda lines: [(m[1], int(m[2])) for l in lines if (m := re.fullmatch(r"(.+?):\s*(\d+)", l))]
+    total = pairs(sec.get("Фонд часова", []))
+    points = pairs(sec.get("Провера знања (укупно 100 поена)", []))
+
+    def text(h):
+        """(lines, numbered): numbered when the lines go 1, 2, 3 ('1. Увод', 'Лекција 2: …'), the numbers taken off
+        (the list shows them); else a bullet ('- ') off each line."""
+        lines = sec.get(h, [])
+        nums = [int(m[1]) if (m := NUMBERED.match(l)) else 0 for l in lines]
+        if len(lines) > 1 and nums == list(range(1, len(lines) + 1)):
+            return [NUMBERED.sub("", l, count=1) for l in lines], True
+        return [re.sub(r"^[-–•]\s*", "", l) for l in lines], False
+    return dict(
+        text={h: text(h) for h in ("Циљ", "Исход", "Садржај теоријске наставе", "Садржај практичне наставе",
+                                   "Услов похађања", "Ресурси")},
+        hours=dict(total=total[0][1] if total else None,
+                   groups=[(g, rows) for g in ("Активна настава (теоријска)", "Активна настава (практична)", "Провера знања")
+                           if (rows := [(l, n) for l, n in pairs(sec.get(g, [])) if n])]),
+        points=[(l, n) for l, n in points if n and not l.startswith("Услов")],
+        pass_min=next((n for l, n in points if l.startswith("Услов")), None),
+        books=[b.strip() for b in " ".join(sec.get("Литература", [])).split(";") if b.strip()])
+
+
 def render_book(site, book):
     """A list of all subjects with a filter, grouping and sorting, and one page per subject: the faculty's page."""
-    pages = {f"/studije/predmeti/{s['id']}": s["href"] for s in book}
     for s in book:
         if s["forum"] and not s["forum"].get("live"):
             s["forum"] = None
     for s in book:
-        source = f"{STUDY_SITE}studije/predmeti/{s['id']}"
-        # The page's name and head (ID, ECTS, teachers, katedra) are above it, from the same fields.
-        html = re.sub(r"<h1[^>]*>.*?</h1>", "", s["html"] or "", count=1, flags=re.S)
-        html = re.sub(r'<div class="wrap_box[^"]*">.*?</div>', "", html, count=1, flags=re.S)
-        # 'Извођења' (semester, position) is the 'U planu' line above.
-        html = re.sub(r'<h2[^>]*id="извођења".*?</h2>\s*<div class="level2">.*?</div>', "", html, count=1, flags=re.S)
         write(site / s["href"].strip("/") / "index.html", env.get_template("predmet_opis.html").render(
-            s=s, html=clean_html(html, source, lambda v: pages.get(v.split("?")[0])), source_url=source))
+            s=s, page=book_page(s["html"]), source_url=f"{STUDY_SITE}studije/predmeti/{s['id']}"))
     listed = [s for s in book if not s["gone"]]
     write(site / "predmeti" / "index.html", env.get_template("predmeti.html").render(
         plans=plan_groups(book), n=len(listed), katedre=sorted({s["katedra"] for s in listed if s["katedra"]}),
@@ -1729,6 +1756,16 @@ if __name__ == "__main__":
     assert post_words(dict(title="Rezultati ispita", files=[(1, "OPK 3. predavanje.pdf", 9)], body="Видети http://x.rs/a, "
                            "www.mas.bg.ac.rs, a@b.rs i Moodle_2015.pdf\nOPK 3. predavanje.pdf\n(4.29 MiB) preuzeto 1021 puta")) == [
         "rezultati", "ispita", "videti"]
+    _bp = book_page('<h1>X</h1><h2 id="циљ">Циљ</h2>\n<div class="level2"><p>\n\nA &amp; b.\n\n</p></div>'
+                    '<h2>Фонд часова</h2><div><p>Укупан фонд часова: 30<br></p></div>'
+                    '<h4>Провера знања</h4><div><p>Тест: 0<br>\nЗавршни испит: 4<br></p></div>'
+                    '<h2>Провера знања (укупно 100 поена)</h2><div><p>Пројекат: 40<br>Рачунски задаци: 0<br>'
+                    'Услов за излазак на испит (потребан број поена): 30<br></p></div>'
+                    '<h2>Литература</h2><div><p>\n\nA, 1992.; B, 2010.\n</p></div>')
+    assert book_page('<h2>Ресурси</h2><div><p>Лекција 1: А\n2. Б</p></div>')["text"]["Ресурси"] == (["А", "Б"], True)
+    assert book_page('<h2>Ресурси</h2><div><p>- А\n2. Б</p></div>')["text"]["Ресурси"] == (["А", "2. Б"], False)
+    assert (_bp["text"]["Циљ"][0], _bp["hours"], _bp["points"], _bp["pass_min"], _bp["books"]) == (
+        ["A & b."], dict(total=30, groups=[("Провера знања", [("Завршни испит", 4)])]), [("Пројекат", 40)], 30, ["A, 1992.", "B, 2010."]), _bp
     assert same_words(Counter(ispit=2, ispita=5, ispitu=1, ispitni=1, studenti=3, studenata=2, smene=5, smena=1, smen=1,
                               kandidata=1)) == Counter(ispit=8, ispitni=1, studenti=5, smene=7, kandidata=1)
     import xml.etree.ElementTree as ET
