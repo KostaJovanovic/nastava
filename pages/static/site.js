@@ -717,7 +717,9 @@
   var fillMine = function () {
     var sec = d.getElementById('moji'), list = mine();
     if (!sec) return;
-    sec.hidden = !list.length;
+    // Only while "Samo moji predmeti" is on (head.js): off, the home page is as without followed subjects.
+    sec.hidden = !(window.mojiNow && window.mojiNow.only);
+    if (sec.hidden) return;
     // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
     Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })

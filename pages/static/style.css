@@ -660,7 +660,7 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 .mp__card--t .mp__check { order: 1; }
 .mp__ph { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 50% 20%; background: var(--icon-bg); color: var(--slate); font: 800 15px var(--sans); }
 .mp__card[aria-pressed="true"] .mp__ph { box-shadow: 0 0 0 2px var(--accent); }
-/* The foot stays at the bottom of the screen (on a phone, over the tab bar). */
+/* The foot stays at the bottom of the screen (on a phone, at the end of the page). */
 .mp__foot {
   position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; justify-content: flex-end; gap: 10px;
   margin-top: 8px; padding: 12px 0; border-top: 1px solid var(--line); background: var(--paper); color: var(--dim); font-size: 13.5px;
@@ -668,7 +668,8 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 .mp__foot span { margin-right: auto; }
 .mp__foot[hidden], .mp__foot [hidden] { display: none; }
 @media (max-width: 899px) {
-  .mp__foot { bottom: calc(60px + env(safe-area-inset-bottom)); }
+  /* Not fixed on a phone: with the header and the tab bar, it left the list half the screen. The steps above go on. */
+  .mp__foot { position: static; }
   /* The page's own: no statistics card under it, no subtitle (the steps say it). */
   body:has(.mp) .filters--years, .mp .mh__sub { display: none; }
   /* The home page's followed subjects: the newest five, so the board's index is not far below. */
