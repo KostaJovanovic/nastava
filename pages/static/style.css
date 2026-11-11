@@ -1501,7 +1501,11 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 @media (pointer: coarse) { .field, .pick select { font-size: 16px; } }
 /* Phone: the header search's text as small as a forum row's date line, so its words fit (base.html maximum-scale
    keeps an iPhone from zooming in on it). */
-@media (max-width: 759px) { .cmd input, .cmd select { font-size: 12.5px; } }
+@media (max-width: 759px) {
+  .cmd input, .cmd select { font-size: 12.5px; }
+  /* The scope's name in full (Nastavnici, Dokumenti): the text box gives way, not the select. */
+  .cmd select { max-width: none; padding: 0 8px; }
+}
 @media print {
   .hd, .side, .status, .acts, .skip, .crumbs, .fbar { display: none !important; }
   .frame { display: block; padding: 0; }
