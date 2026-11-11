@@ -78,9 +78,9 @@ pipeline and site, with new scrapers for phpBB.
   and a page per post (`/item/`, what search finds). The header stays at the top; the side panel (page links,
   filters by smer and year) fits the screen beside it. A teacher's page links a search of their posts (`/?autor=`).
   Atom feeds for a feed reader: `/feed.xml` (the board's newest posts) and `feed.xml` on each subject page.
-  The side panel's "Obaveštenja" gives the followed subjects' feeds as one OPML file, and notifications; its link opens
-  `/mojipredmeti/`, which picks the subjects, then per subject the teachers whose posts notify (none: all).
-- Notifications (web push): the switch in "Obaveštenja" subscribes the browser (`pages/static/sw.js` shows them; an
+  The side panel's "Obaveštenja" links `/mojipredmeti/`: step 1 picks the subjects; step 2 has the notifications'
+  switch, per subject the teachers whose posts notify (none: all), and the subjects' feeds as one OPML file.
+- Notifications (web push): the switch on `/mojipredmeti/` subscribes the browser (`pages/static/sw.js` shows them; an
   iPhone only from the home screen). The Worker keeps each subscription with its subjects and picked teachers in KV,
   and it goes with the switch off. Besides it the site keeps only a visitor's IP, three days, for the visitor counter on
   `/statistika/` (D1, `pages/schema.sql`; counted like valjdakosta.com's, each IP once per three days). After a deploy with a scrape, `ci/deploy.sh`
