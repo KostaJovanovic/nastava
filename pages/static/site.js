@@ -167,6 +167,13 @@
       e.preventDefault();
       if (hits.length === 1) location.href = hits[0].href;
       else if (v && u === pageU && scope.dataset.enter) location.href = scope.dataset.enter + 'q=' + encodeURIComponent(fold(v));
+      else if (v && q.dataset.f) {
+        // The page's own list filtered down to one row (a subject in two plans is two): Enter opens it, a subject on
+        // the forum (data-pid: its board page, or its book page when it has no topics).
+        var one = [].filter.call(d.querySelectorAll('[data-rows] > li:not([hidden]):not([data-sep])'), function (r) { return r.offsetParent; })
+          .map(function (r) { return r.dataset.pid || (r.querySelector('a') || {}).href; }).filter(Boolean);
+        if (one.length && one.every(function (h) { return h === one[0]; })) location.href = one[0];
+      }
       else if (v && !q.dataset.f && ENTER[u]) location.href = ENTER[u] + 'q=' + encodeURIComponent(v);
     });
     if (izbor) izbor.then(function (j) {
