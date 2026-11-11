@@ -1350,6 +1350,25 @@ def post_words(it):
     return [w for w in re.findall(r"[^\W\d_]{4,}", lat(NOT_WORDS.sub(" ", text)).lower()) if w not in CLOUD_STOP]
 
 
+CASE_END = re.compile(r"(?:ima|ama|omu|ega|emu|om|em|og|oj|im|ih|a|e|i|u|o)$")
+
+
+def same_words(counts):
+    """{word: count} -> {word: count} with a word's cases as one (ispit, ispita, ispitu): the forms whose stem (the
+    word without its case ending) is the same; each shown as its stem when that is a common form (ispit; not a typo or
+    an abbreviation, smen.), else its most frequent.
+    shortcut: endings only, no dictionary: a sound change (zadatak, zadaci) stays apart; a stemmer if that matters."""
+    stems = defaultdict(Counter)
+    for w, n in counts.items():
+        s = CASE_END.sub("", w)
+        stems[s if len(s) >= 3 else w][w] += n
+    # The "a" a word has only in some cases (studenata, petak) goes when the stem without it is there (student, petk).
+    for s in list(stems):
+        if (t := re.sub(r"a(\w)$", r"\1", s)) != s and t in stems:
+            stems[t].update(stems.pop(s))
+    return Counter({max(c, key=lambda w: (w == s and c[w] * 4 >= max(c.values()), c[w])): c.total() for s, c in stems.items()})
+
+
 def archive_stats(items, topics, teachers):
     """The numbers of /statistika/: the board by time, who posts, what is downloaded, the teachers."""
     posts = [it for it in items if it["kind"] == "post"]
@@ -1392,7 +1411,7 @@ def archive_stats(items, topics, teachers):
     days = Counter(date.fromisoformat(it["date"][:10]).weekday() for it in dated)
     busiest = Counter(it["date"][:10] for it in dated).most_common(1)
     topic = {t["href"]: t for t in topics}
-    words = Counter(w for it in posts for w in post_words(it))
+    words = same_words(Counter(w for it in posts for w in post_words(it)))
 
     listed = [t for t in teachers if not t["gone"]]
     posting = {t["username"] for t in listed if t["username"] and t["username"] in tally["authors"]}
@@ -1710,6 +1729,8 @@ if __name__ == "__main__":
     assert post_words(dict(title="Rezultati ispita", files=[(1, "OPK 3. predavanje.pdf", 9)], body="Видети http://x.rs/a, "
                            "www.mas.bg.ac.rs, a@b.rs i Moodle_2015.pdf\nOPK 3. predavanje.pdf\n(4.29 MiB) preuzeto 1021 puta")) == [
         "rezultati", "ispita", "videti"]
+    assert same_words(Counter(ispit=2, ispita=5, ispitu=1, ispitni=1, studenti=3, studenata=2, smene=5, smena=1, smen=1,
+                              kandidata=1)) == Counter(ispit=8, ispitni=1, studenti=5, smene=7, kandidata=1)
     import xml.etree.ElementTree as ET
     _it = dict(id="p5", num=5, title="A & <b>", posted="2026-11-08T14:39:57+00:00", who="Ђ", html="<p>x &amp; y</p>", body="",
                subj=dict(name="Мата 1"), smer=None, thread=dict(href="/tema/3/", posts=[1, 2]))
