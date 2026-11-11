@@ -1471,16 +1471,12 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 .code li { counter-increment: ln; display: grid; grid-template-columns: 3.2em minmax(0, 1fr); gap: 12px; padding-right: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .code li::before { content: counter(ln); text-align: right; color: var(--dim); opacity: .7; user-select: none; }
 
-/* ---- Pager, keys --------------------------------------------------------- */
+/* ---- Pager -------------------------------------------------------------- */
 .status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; color: var(--dim); font-size: 13px; }
 .status b { color: var(--fg); }
 .status .pg { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .status .btn { min-height: 34px; font-size: 13px; }
 .status .btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
-.status .keys { display: none; }
-.keys > span { display: inline-flex; align-items: center; gap: 4px; }
-.keys kbd .i { display: block; width: 11px; height: 16px; }
-@media (min-width: 900px) { .status .keys { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; } }
 
 /* ---- Empty, error --------------------------------------------------------- */
 .empty { padding: 24px 16px; color: var(--dim); font-size: 14px; }
@@ -1513,10 +1509,10 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 
 /* ---- Without JavaScript --------------------------------------------------- */
 /* Scripts off (scripting: none; a script still loading counts as on, so none of this shows then): what needs a script
-   is not shown (the search and the links into it, the script and theme buttons, the list filters, the keys), and the
+   is not shown (the search and the links into it, the script and theme buttons, the list filters), and the
    folded sections are open. */
 @media (scripting: none) {
-  .cmd, .hd__ctl, form[data-filter], .status .keys, .tp__h a[href^="/?"], .err li:has(a[href^="/?"]) { display: none; }
+  .cmd, .hd__ctl, form[data-filter], .tp__h a[href^="/?"], .err li:has(a[href^="/?"]) { display: none; }
   /* The statistics' years and words open a search: kept as figures, not links. */
   .ch__c[href^="/?"], .wc a { pointer-events: none; text-decoration: none; }
   /* A phone's header has room for the name, with no search beside it. */
