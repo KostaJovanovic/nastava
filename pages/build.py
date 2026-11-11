@@ -672,18 +672,17 @@ def render_cent(site, subjects):
 
 
 def render_sites(site, sites):
-    """The departments' sites (load_sites): the list of them, each site's pages, each page's versions as cent's are
-    (cent.html). Their links go to the department's site (the files are not hosted here)."""
+    """The departments' sites (load_sites): each site's pages (the sites themselves are on the Linkovi page), each
+    page's versions as cent's are (cent.html). Their links go to the department's site (the files are not hosted here)."""
     lists, page = env.get_template("sajtovi.html"), env.get_template("cent.html")
-    write(site / "sajtovi-katedri" / "index.html", lists.render(sites=sites, s=None))
     for x in sites:
-        write(site / x["href"].strip("/") / "index.html", lists.render(sites=sites, s=x))
+        write(site / x["href"].strip("/") / "index.html", lists.render(s=x))
         for p in x["pages"]:
             for v in p["versions"]:
                 # Not indexed: results and lists of students, as on cent.
                 write(site / v["href"].strip("/") / "index.html", page.render(
                     page=p, v=v, mark=x["key"], host=x["host"],
-                    trail=[("/sajtovi-katedri/", "Sajtovi katedri"), (x["href"], x["name"])]), index=False)
+                    trail=[("/link/", "Linkovi"), (x["href"], x["name"])]), index=False)
 
 
 def pagefind_tags(it):
@@ -1803,7 +1802,7 @@ def main(db_path, out):
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
     # icons: {host: file} of the sites' own icons in static/link (saved by hand), for link.html's cards.
     write(site / "link" / "index.html", env.get_template("link.html").render(
-        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}))
+        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}, sites=sites))
     days = load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     write(site / "verzije" / "index.html", env.get_template("verzije.html").render(days=days))
     vesti = load_vesti(db)

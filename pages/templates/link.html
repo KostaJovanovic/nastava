@@ -48,7 +48,6 @@
   ]),
   ('Ovaj sajt', [
     ('Predmeti', '/predmeti/', 'book', none),
-    ('Arhiva sajtova katedri', '/sajtovi-katedri/', 'folder', none),
     ('O sajtu', '/o-sajtu/', 'file', none),
     ('Statistika', '/statistika/', 'file', none),
     ('Verzije', '/verzije/', 'file', none),
@@ -87,4 +86,15 @@
   </ul>
 </section>
 {%- endfor %}
+{%- if sites %}
+{#- The departments' sites as this archive keeps them (build.py load_sites): each card to its list of pages. -#}
+<section class="lk" aria-labelledby="lk-arhiva">
+  <h2 class="lk__h" id="lk-arhiva">Arhiva sajtova katedri</h2>
+  <ul class="lk__grid">
+    {%- for x in sites %}
+    <li><a class="lk__a" href="{{ x.href }}"><span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-folder"></use></svg></span><span class="lk__t"><b>{{ x.name }}</b><small data-notx>{{ x.host }} · {{ x.pages | length }} stranica</small></span></a></li>
+    {%- endfor %}
+  </ul>
+</section>
+{%- endif %}
 {% endblock %}

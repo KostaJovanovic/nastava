@@ -1,34 +1,27 @@
 {% extends "base.html" %}
 {% from "rows.html" import crumb %}
 
-{#- The departments' own sites (build.py load_sites, render_sites): the list of them (s none), or one site's pages, by
-    address; each date: the page's last change. Copies as katedre.py last read them, once a week: the files stay on
-    the department's site. -#}
-{% block title %}{{ s.name if s else 'Sajtovi katedri' }}{% endblock %}
-{% block description %}{% if s %}Arhiva sajta {{ s.host }} ({{ s.name }}): {{ s.pages | length }} stranica, svaka sa svojim verzijama.{% else %}Arhiva sajtova katedri Mašinskog fakulteta u Beogradu: stranice predmeta, rezultati i obaveštenja, svaka sa svojim verzijama.{% endif %}{% endblock %}
+{#- One department site's pages (build.py load_sites, render_sites), by address; each date: the page's last change. The
+    sites themselves are on the Linkovi page. Copies as katedre.py last read them, once a week: the files stay on the
+    department's site. -#}
+{% block title %}{{ s.name }}{% endblock %}
+{% block description %}Arhiva sajta {{ s.host }} ({{ s.name }}): {{ s.pages | length }} stranica, svaka sa svojim verzijama.{% endblock %}
 {% block og %}-predmeti{% endblock %}
-{% block crumbs %}{% if s %}{{ crumb('/sajtovi-katedri/', 'Sajtovi katedri') }}{% endif %}{% endblock %}
+{% block crumbs %}{{ crumb('/link/', 'Linkovi') }}{% endblock %}
 
 {% block main %}
 <div class="mh">
-  <h1 id="title">{{ s.name if s else 'Sajtovi katedri' }}</h1>
-  <p class="mh__sub">
-    {%- if s %}<span class="src">{{ s.key }}</span> {{ s.pages | length }} stranica sa <a href="https://{{ s.host }}/" rel="noopener" target="_blank">{{ s.host }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>
-    {%- else %}Stranice sa sajtova katedri, kako su izgledale pri poslednjem čitanju (jednom nedeljno), svaka sa ranijim verzijama. Fajlovi ostaju na sajtu katedre. Stranice predmeta su i na stranama tih predmeta; Katedra za proizvodno mašinstvo (cent) je samo tamo.{% endif %}</p>
+  <h1 id="title">{{ s.name }}</h1>
+  <p class="mh__sub"><span class="src">{{ s.key }}</span> {{ s.pages | length }} stranica sa <a href="https://{{ s.host }}/" rel="noopener" target="_blank">{{ s.host }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>, kako su izgledale pri poslednjem čitanju (jednom nedeljno). Fajlovi ostaju na sajtu katedre.</p>
 </div>
 <section class="fb fb--posts">
-  <div class="fb__h"><h2>{{ 'Stranice' if s else 'Sajtovi' }}</h2><span>{{ 'Izmenjeno' if s else 'Stranica' }}</span></div>
+  <div class="fb__h"><h2>Stranice</h2><span>Izmenjeno</span></div>
   <ol class="fb__rows">
-    {%- for x in (s.pages if s else sites) %}
+    {%- for p in s.pages %}
     <li class="fr">
-      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'file' if s else 'folder' }}"></use></svg></span>
-      {%- if s %}
-      <div class="fr__t"><a class="fr__a" href="{{ x.href }}">{{ x.title }}</a>{% if x.gone %}<span class="gone">uklonjeno sa sajta katedre</span>{% endif %}</div>
-      <div class="fr__more"><time class="fr__d" datetime="{{ x.versions[0].first_seen }}">{{ x.versions[0].first_seen | dmy }}</time></div>
-      {%- else %}
-      <div class="fr__t"><a class="fr__a" href="{{ x.href }}">{{ x.name }}</a> <span class="src">{{ x.key }}</span></div>
-      <div class="fr__more"><span class="fr__d">{{ x.pages | length }}</span></div>
-      {%- endif %}
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-file"></use></svg></span>
+      <div class="fr__t"><a class="fr__a" href="{{ p.href }}">{{ p.title }}</a>{% if p.gone %}<span class="gone">uklonjeno sa sajta katedre</span>{% endif %}</div>
+      <div class="fr__more"><time class="fr__d" datetime="{{ p.versions[0].first_seen }}">{{ p.versions[0].first_seen | dmy }}</time></div>
     </li>
     {%- endfor %}
   </ol>
