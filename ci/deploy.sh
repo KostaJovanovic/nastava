@@ -23,11 +23,12 @@ export RUN_DIR
 RUN_DIR=$(mktemp -d)
 tmp=
 step() {  # step NAME CMD...: run CMD, its time and exit into the log
-	local name=$1 t0 rc=0
+	# Not "name": CMD sees step's locals, and upload reads the global $name (the site's tar).
+	local step_name=$1 t0 rc=0
 	shift
 	t0=$(date +%s.%N)
 	"$@" || rc=$?
-	printf '%s\t%s\t%s\t%s\n' "$name" "$t0" "$(date +%s.%N)" "$rc" >> "$RUN_DIR/steps.tsv"
+	printf '%s\t%s\t%s\t%s\n' "$step_name" "$t0" "$(date +%s.%N)" "$rc" >> "$RUN_DIR/steps.tsv"
 	return "$rc"
 }
 log_run() {
@@ -115,7 +116,7 @@ echo "uploaded $name ($(du -h "$tmp/$name" | cut -f1)); deploy started: gh run l
 # It waits until the new posts are on the site. Without the keys (push-secret.json; on Actions the secret PUSH_SECRET)
 # there is no push.
 if [[ -n ${before:-} && -f push-secret.json ]]; then
-	# Unquoted: three numbers (post, cent notice, cent page version).
+	# Unquoted: four numbers (post, cent notice, cent page version, department notice).
 	step push uv run -q ci/push.py send $before || failed+=(push)
 fi
 finish
