@@ -910,7 +910,6 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   background: var(--icon-bg); color: var(--slate);
 }
 .fr__i .i { width: 24px; height: 24px; }
-.fr__i--many { background: var(--fg); color: var(--paper); }
 .fr__t { min-width: 0; }
 .fr__a { color: var(--link); font-size: 14.5px; line-height: 1.3; text-decoration: none; overflow-wrap: anywhere; }
 .fr__a:hover { color: var(--accent-t); text-decoration: underline; }
