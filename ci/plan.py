@@ -8,7 +8,7 @@ Usage: plan.py morning|noon|afternoon|evening|night | check | fingerprint
   morning … night  the run's slot: print the parts for ci/deploy.sh ("forum", "forum studije", ...) or "skip"
   check            exit 1 when the calendar of this school year is missing or unreadable (after 15 October)
   fingerprint      a hash of what the scrapers store: equal before and after a scrape means nothing changed
-Today is the UTC date (the runs are 5–20 UTC, the same day in Belgrade; the night run, 1 UTC, is after midnight in
+Today is the UTC date (the runs are 5–20 UTC, the same day in Belgrade; the night run, 1:52 UTC, is after midnight in
 both, so it plans with the new day); TODAY=2027-01-11 overrides it for a test.
 """
 import datetime as dt

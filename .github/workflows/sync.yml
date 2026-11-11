@@ -5,16 +5,16 @@ name: sync
 # smaller block) all five scrape the board and the news, on another day three (noon, afternoon, evening); morning and
 # night stop at "skip". The schedule pages also on the 1st of the month and on the first day of a registration or an
 # exam period; the teachers and the subjects on 1 October.
-# GitHub's cron is UTC: 6:00, 11:00, 16:00, 21:00 and 2:00 in Belgrade in winter, an hour later in summer. GitHub may
-# start a scheduled run late (on the hour most of all, its busiest minute), and turns the schedule off after 60 days
-# without a commit (the first step below prevents that).
+# GitHub's cron is UTC: 6:52, 11:52, 16:52, 21:52 and 2:52 in Belgrade in winter, an hour later in summer. GitHub may
+# start a scheduled run late (on the hour most of all, its busiest minute: so :52), and turns the schedule off after
+# 60 days without a commit (the first step below prevents that).
 on:
   schedule:
-    - cron: "0 5 * * *"   # morning
-    - cron: "0 10 * * *"  # noon
-    - cron: "0 15 * * *"  # afternoon
-    - cron: "0 20 * * *"  # evening
-    - cron: "0 1 * * *"   # night
+    - cron: "52 5 * * *"   # morning
+    - cron: "52 10 * * *"  # noon
+    - cron: "52 15 * * *"  # afternoon
+    - cron: "52 20 * * *"  # evening
+    - cron: "52 1 * * *"   # night
   workflow_dispatch:
     inputs:
       what:
@@ -39,10 +39,10 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       WHAT: >-
         ${{ github.event_name != 'schedule' && inputs.what
-        || github.event.schedule == '0 5 * * *' && 'auto morning'
-        || github.event.schedule == '0 10 * * *' && 'auto noon'
-        || github.event.schedule == '0 15 * * *' && 'auto afternoon'
-        || github.event.schedule == '0 20 * * *' && 'auto evening'
+        || github.event.schedule == '52 5 * * *' && 'auto morning'
+        || github.event.schedule == '52 10 * * *' && 'auto noon'
+        || github.event.schedule == '52 15 * * *' && 'auto afternoon'
+        || github.event.schedule == '52 20 * * *' && 'auto evening'
         || 'auto night' }}
     steps:
       # The runs commit nothing (the state and the site are release assets): enabling the workflow again through the
