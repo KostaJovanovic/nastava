@@ -1275,6 +1275,7 @@ def render_teachers(site, teachers, items, book):
     # Each katedra's icon is a symbol in icons.svg (the cards, nastavnik.html); a new one shows a blank until drawn.
     sprite = (HERE / "static" / "icons.svg").read_text(encoding="utf-8")
     ElementTree.fromstring(sprite)  # one bad tag blanks every icon on the site
+    assert all(f'id="i-{k}"' in sprite for k in HOME_ORDER), "icons.svg: a smer of HOME_ORDER has no icon"
     for k in sorted({t["katedra"] for t in teachers if t["katedra"]}):
         if f'id="i-{slug(k)}"' not in sprite:
             print(f"[warn] no icon for {k}: add <symbol id=\"i-{slug(k)}\"> to static/icons.svg", file=sys.stderr)
@@ -1673,8 +1674,10 @@ def render_vesti(site, vesti):
     (site / "vesti" / "feed.xml").write_text(atom("Vesti · Mašinski fakultet", "/vesti/", vesti[:FEED_ALL]), encoding="utf-8")
 
 
-# The home page's smerovi, by level then program (their URL slugs); any other after them, in the board's order.
+# The home page's smerovi, by level then program (their URL slugs); any other after them, in the board's order. Each
+# has its icon in icons.svg, i-<key> (rows.html, smer.html); another smer has the folder.
 HOME_ORDER = ["oas-mi", "oas-itm", "mas-mi", "mas-industrija-4-0", "doktorske-studije-mi", "katedre", "moduli"]
+env.globals["smer_icons"] = HOME_ORDER
 
 
 def render_home(topics, smerovi, side, n_teachers, vesti):
