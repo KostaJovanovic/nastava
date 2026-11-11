@@ -1620,6 +1620,7 @@ def main(db_path, out):
     about = env.get_template("o_sajtu.html").render()
     write(site / "o-sajtu" / "index.html", about)
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
+    write(site / "link" / "index.html", env.get_template("link.html").render())
     days = load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     write(site / "verzije" / "index.html", env.get_template("verzije.html").render(days=days))
     vesti = load_vesti(db)
