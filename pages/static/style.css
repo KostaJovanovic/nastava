@@ -577,6 +577,8 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 @media (max-width: 899px) {
   .fgroup[data-izbor]:not([hidden]) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 12px; margin: 0; }
   .fgroup[data-izbor] > .sec { width: auto; margin: 0; padding-right: 0; }
+  /* The card as much under the row as over it (.filters__body has 2px less at the bottom). */
+  .filters__body:has(> [data-izbor]) { padding-bottom: 12px; }
   .fgroup[data-izbor] > .moji__open { grid-area: 1 / 2; padding-left: 0; }
   .fgroup[data-izbor] > [data-moji-scope] { grid-area: 2 / 1 / 3 / -1; }
   [data-moji-scope] > :last-child { margin-bottom: 0; }
