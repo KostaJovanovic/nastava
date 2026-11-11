@@ -857,11 +857,12 @@
   }
 
   /* Font menu: the Konami code (↑↑↓↓←→←→BA) opens it at the bottom right. While it is open, localStorage 'font' holds
-     the font picked (its --sans; '' for Geist): head.js sets it before the first paint and each page opens the menu
-     again. Closing it (×, or the code again) removes 'font': the site is back to Geist. */
+     the font picked (its --sans; '' for the site's own, IBM Plex Sans, the first): head.js sets it before the first
+     paint and each page opens the menu again. Closing it (×, or the code again) removes 'font': back to Plex Sans. */
   var KONAMI = 'arrowup,arrowup,arrowdown,arrowdown,arrowleft,arrowright,arrowleft,arrowright,b,a', keys = [], fl = null;
   var FONTS = [
     'Sans',
+    ['IBM Plex Sans', '"IBM Plex Sans", system-ui, sans-serif'],
     ['Geist', '"Geist", system-ui, sans-serif'],
     ['Golos Text', '"Golos Text", system-ui, sans-serif'],
     ['Onest', '"Onest", system-ui, sans-serif'],
@@ -876,7 +877,6 @@
     ['Mint Spirit No2', '"Mint Spirit No2", system-ui, sans-serif'],
     ['Unbounded', '"Unbounded", system-ui, sans-serif'],
     'IBM',
-    ['IBM Plex Sans', '"IBM Plex Sans", system-ui, sans-serif'],
     ['IBM Plex Mono', '"IBM Plex Mono", ui-monospace, monospace'],
     ['IBM Plex Math', '"IBM Plex Math", Georgia, serif'],
     ['3270', '"3270", ui-monospace, monospace'],
@@ -886,25 +886,25 @@
     ['Literata', '"Literata", Georgia, serif'],
     ['Source Serif 4', '"Source Serif 4", Georgia, serif'],
     ['LT Remark', '"LT Remark", Georgia, serif'],
-    // Latin only: Cyrillic in Geist.
+    // Latin only: Cyrillic in Plex Sans.
     'Latinica, sans',
-    ['Satoshi', '"Satoshi", "Geist", system-ui, sans-serif'],
-    ['Space Grotesk', '"Space Grotesk", "Geist", system-ui, sans-serif'],
-    ['Bricolage Grotesque', '"Bricolage Grotesque", "Geist", system-ui, sans-serif'],
-    ['DM Sans', '"DM Sans", "Geist", system-ui, sans-serif'],
-    ['Plus Jakarta Sans', '"Plus Jakarta Sans", "Geist", system-ui, sans-serif'],
-    ['Figtree', '"Figtree", "Geist", system-ui, sans-serif'],
-    ['Outfit', '"Outfit", "Geist", system-ui, sans-serif'],
-    ['Instrument Sans', '"Instrument Sans", "Geist", system-ui, sans-serif'],
-    ['Barlow', '"Barlow", "Geist", system-ui, sans-serif'],
-    ['Human Sans', '"Human Sans", "Geist", system-ui, sans-serif'],
-    ['Claris Sans', '"Claris Sans", "Geist", system-ui, sans-serif'],
+    ['Satoshi', '"Satoshi", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Space Grotesk', '"Space Grotesk", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Bricolage Grotesque', '"Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif'],
+    ['DM Sans', '"DM Sans", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Plus Jakarta Sans', '"Plus Jakarta Sans", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Figtree', '"Figtree", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Outfit', '"Outfit", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Instrument Sans', '"Instrument Sans", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Barlow', '"Barlow", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Human Sans', '"Human Sans", "IBM Plex Sans", system-ui, sans-serif'],
+    ['Claris Sans', '"Claris Sans", "IBM Plex Sans", system-ui, sans-serif'],
     'Latinica, serif',
-    ['Fraunces', '"Fraunces", "Geist", Georgia, serif'],
-    ['Wittgenstein', '"Wittgenstein", "Geist", Georgia, serif'],
-    ['Faustina', '"Faustina", "Geist", Georgia, serif'],
-    ['Redaction', '"Redaction", "Geist", Georgia, serif'],
-    ['Zina', '"Zina", "Geist", Georgia, serif']
+    ['Fraunces', '"Fraunces", "IBM Plex Sans", Georgia, serif'],
+    ['Wittgenstein', '"Wittgenstein", "IBM Plex Sans", Georgia, serif'],
+    ['Faustina', '"Faustina", "IBM Plex Sans", Georgia, serif'],
+    ['Redaction', '"Redaction", "IBM Plex Sans", Georgia, serif'],
+    ['Zina', '"Zina", "IBM Plex Sans", Georgia, serif']
   ];
   var saveFont = function (s) {
     try { if (s === null) localStorage.removeItem('font'); else localStorage.setItem('font', s); } catch (e) {}
@@ -921,12 +921,12 @@
     var list = fl.lastChild, on = null;
     FONTS.forEach(function (f) {
       if (typeof f === 'string') return list.insertAdjacentHTML('beforeend', '<div class="fl__g">' + f + '</div>');
-      var l = d.createElement('label'), r = d.createElement('input'), geist = f[0] === 'Geist';
-      r.type = 'radio'; r.name = 'fl'; r.checked = geist ? !now : f[1] === now;
+      var l = d.createElement('label'), r = d.createElement('input'), own = f === FONTS[1];
+      r.type = 'radio'; r.name = 'fl'; r.checked = own ? !now : f[1] === now;
       if (r.checked) on = l;
       r.addEventListener('change', function () {
-        if (geist) root.style.removeProperty('--sans'); else root.style.setProperty('--sans', f[1]);
-        saveFont(geist ? '' : f[1]);
+        if (own) root.style.removeProperty('--sans'); else root.style.setProperty('--sans', f[1]);
+        saveFont(own ? '' : f[1]);
       });
       l.style.fontFamily = f[1];
       l.append(r, f[0]);

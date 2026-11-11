@@ -3,15 +3,18 @@
    The board's layout (nastava.mas.bg.ac.rs: tables of forums, topics and posts) in the colours of Mašinci:
    light: the board's prosilver blues with its red; dark: ink blue with a bordeaux accent.
    Mobile first. The tables change layout with a container query on .main.
-   Fonts (self-hosted, OFL / Apache): Geist for text, numbers and dates (tabular figures); Roboto Mono only for
-   usernames, keys and the board's column heads. Both have Serbian Latin and Cyrillic.
+   Fonts (self-hosted, OFL): IBM Plex Sans for text, numbers and dates (tabular figures); IBM Plex Mono only for
+   usernames, keys and the board's column heads. Both have Serbian Latin and Cyrillic. Plex Sans goes up to 700: the
+   800s show as 700.
    ========================================================================== */
 
+@font-face { font-family: "IBM Plex Sans"; src: url("/static/fonts/IBMPlexSans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/IBMPlexMono-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+/* Fonts to try in place of Plex Sans (site.js, the font menu): each downloads only once something uses it. Latin,
+   Latin Extended and Cyrillic only; variable ones cut to 400–800. "Roboto Lab": not the system's Roboto in --sans. */
 @font-face { font-family: "Geist"; src: url("/static/fonts/Geist-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Geist"; src: url("/static/fonts/Geist-ExtraBold.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "Roboto Mono"; src: url("/static/fonts/RobotoMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-/* Fonts to try in place of Geist (site.js, the font menu): each downloads only once something uses it. Latin,
-   Latin Extended and Cyrillic only; variable ones cut to 400–800. "Roboto Lab": not the system's Roboto in --sans. */
 @font-face { font-family: "Golos Text"; src: url("/static/fonts/lab/GolosText.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Roboto Lab"; src: url("/static/fonts/lab/Roboto.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Inter"; src: url("/static/fonts/lab/Inter.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
@@ -31,7 +34,6 @@
 @font-face { font-family: "Geologica"; src: url("/static/fonts/lab/Geologica.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Wix Madefor Text"; src: url("/static/fonts/lab/WixMadeforText.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Rubik"; src: url("/static/fonts/lab/Rubik.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "IBM Plex Sans"; src: url("/static/fonts/lab/IBMPlexSans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 @font-face { font-family: "Unbounded"; src: url("/static/fonts/lab/Unbounded.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Space Grotesk"; src: url("/static/fonts/lab/SpaceGrotesk.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 @font-face { font-family: "Bricolage Grotesque"; src: url("/static/fonts/lab/BricolageGrotesque.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
@@ -40,15 +42,13 @@
 @font-face { font-family: "Figtree"; src: url("/static/fonts/lab/Figtree.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Outfit"; src: url("/static/fonts/lab/Outfit.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Instrument Sans"; src: url("/static/fonts/lab/InstrumentSans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/lab/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/lab/IBMPlexMono-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 @font-face { font-family: "IBM Plex Math"; src: url("/static/fonts/lab/IBMPlexMath.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "3270"; src: url("/static/fonts/lab/3270.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 125%; }
 /* The PC's screen fonts: PxPlus IBM VGA 8x16 and IBM BIOS from the Ultimate Oldschool PC Font Pack by VileR
    (int10h.org/oldschool-pc-fonts), CC BY-SA 4.0. Sized up so the 14px text is 16px: a whole screen pixel to each. */
 @font-face { font-family: "IBM VGA 8x16"; src: url("/static/fonts/lab/IBM-VGA-8x16.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 114.29%; }
 @font-face { font-family: "IBM BIOS"; src: url("/static/fonts/lab/IBM-BIOS.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 114.29%; }
-/* Latin only: Cyrillic falls back to Geist (site.js's stacks). Satoshi and Zina (Fontshare) as their vendor ships them. */
+/* Latin only: Cyrillic falls back to Plex Sans (site.js's stacks). Satoshi and Zina (Fontshare) as their vendor ships them. */
 @font-face { font-family: "Satoshi"; src: url("/static/fonts/lab/Satoshi.woff2") format("woff2"); font-weight: 300 900; font-display: swap; }
 @font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
@@ -70,8 +70,8 @@
 [hidden] { display: none !important; }
 
 :root {
-  --sans: "Geist", system-ui, "Segoe UI", Roboto, sans-serif;
-  --mono: "Roboto Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --sans: "IBM Plex Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --r: 6px;
   --slate: #5a7a93;
 }
@@ -161,7 +161,7 @@ kbd {
 }
 
 /* Icons: one file for all pages (icons.svg), used with <svg class="i"><use href="/static/icons.svg#i-..."></svg>. */
-/* The first vertical-align: for Safari before 17.2, which has no cap unit (Geist's cap height is ~0.7em). */
+/* The first vertical-align: for Safari before 17.2, which has no cap unit (Plex Sans's cap height is ~0.7em). */
 .i { width: 1em; height: 1em; flex: none; vertical-align: -0.17em; vertical-align: calc(0.5cap - 0.5em - 0.02em); }
 /* The folded copy of the text that Pagefind indexes (build.py mark_for_pagefind). */
 .pf { display: none; }
