@@ -487,15 +487,38 @@
   }
 
 
-  /* "Moji predmeti": the side panel lists the followed subjects, and its button opens a dialog to pick them
-     (sidebar.html; /izbor.json from build.py picker). The dialog has a tab per program, a row of chips per level under
-     it (a master's module, a year), and the year's subjects as cards: the required ones, then each elective block.
-     Each tab and chip counts the followed subjects under it. Text in its box shows the matching teachers and subjects
-     instead. A card follows its subject; a teacher's card follows all their subjects (pressed: all, mixed: some). */
+  /* The side panel's "Obaveštenja": how many subjects are followed, the switches, and the link to the picker. */
   var iz = d.querySelector('[data-izbor]'), mp = d.querySelector('[data-mp]');
-  if (iz && mp && mp.showModal && izbor) izbor.then(function (data) {
+  var syncSide = function () {
+    var n = mine().length;
+    iz.querySelector('[data-moji-n]').textContent = n || '';
+    iz.querySelector('[data-moji-scope]').hidden = !n;
+    // The followed subjects are not listed here: the link says that some are, and opens them.
+    var open = iz.querySelector('[data-moji-open]');
+    open.classList.toggle('is-set', n > 0);
+    open.querySelector('span').textContent = n ? 'Izmeni predmete' : 'Izaberi predmete';
+  };
+  if (iz) {
+    iz.hidden = false;
+    syncSide();
+    d.addEventListener('moji', syncSide);
+  }
+
+  /* The picker, /mojipredmeti/ (mojipredmeti.html; /izbor.json from build.py picker), in two steps.
+     1, the subjects: a tab per program, a row of chips per level under it (a master's module, a year), and the year's
+     subjects as cards: the required ones, then each elective block. Each tab and chip counts the followed subjects
+     under it. Text in its box shows the matching teachers and subjects instead. A card follows its subject; a
+     teacher's card follows all their subjects (pressed: all, mixed: some).
+     2 (#nastavnici), the teachers: each followed subject with the teachers who posted in it, as cards with their
+     photos; the picked ones are the subject's t (slugs of their pages), whose posts alone notify (ci/push.py). None
+     picked ("Svi nastavnici"): every post. A subject no teacher posted in is only named. */
+  if (mp && izbor) izbor.then(function (data) {
     var subj = data.subjects, path = [], badges = [];
     var nav = mp.querySelector('[data-mp-nav]'), body = mp.querySelector('[data-mp-body]'), mq = mp.querySelector('[data-mp-q]');
+    var tbox = mp.querySelector('[data-mp-teachers]'), at = {};
+    subj.forEach(function (s, i) { at[s[0]] = i; });
+    var posters = function (href) { return at[href] === undefined ? [] : data.posters[at[href]] || []; };
+    var slugOf = function (p) { return p[1].split('/')[2]; };
     var followed = function () { var o = {}; mine().forEach(function (s) { o[s.href] = 1; }); return o; };
     // The followed subjects under a node, each once (a subject can be in several of its groups).
     var count = function (node, o) {
@@ -597,39 +620,93 @@
       }
       sync();
     };
+    // Step 2: a section per followed subject that teachers posted in, a card per teacher (posts, most first).
+    var renderTeachers = function () {
+      var list = mine(), none = [];
+      tbox.textContent = '';
+      list.forEach(function (m) {
+        var ps = posters(m.href);
+        if (!ps.length) { none.push(m.name); return; }
+        var sec = tbox.appendChild(el('section', 'mp__group')), grid = el('div', 'mp__cards');
+        sec.dataset.href = m.href;
+        sec.appendChild(el('h3', null, m.name)).appendChild(el('span', null, ''));
+        var all = grid.appendChild(card([], 'Svi nastavnici', 'sva obaveštenja predmeta'));
+        all.dataset.t = '';
+        ps.forEach(function (x) {
+          var p = data.people[x[0]], w = p[0].split(' ');
+          var few = x[1] % 10 >= 2 && x[1] % 10 <= 4 && (x[1] % 100 < 12 || x[1] % 100 > 14);
+          var b = grid.appendChild(card([], p[0], [p[3], x[1] + (few ? ' objave' : ' objava')].filter(Boolean).join(' · ')));
+          var img = p[2] ? el('img', 'mp__ph') : el('span', 'mp__ph', w[0][0] + w[w.length - 1][0]);
+          if (p[2]) { img.src = p[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
+          b.classList.add('mp__card--t');
+          b.insertBefore(img, b.querySelector('.mp__name'));
+          b.dataset.t = slugOf(p);
+        });
+        sec.appendChild(grid);
+      });
+      if (none.length) tbox.appendChild(el('p', 'mp__none', 'Nijedan nastavnik još nije pisao u: ' + none.join(', ') + '. Za njih stižu sva obaveštenja.'));
+      if (!list.length) tbox.appendChild(el('p', 'mp__none', 'Prvo izaberi predmete.'));
+      sync();
+    };
     var sync = function () {
-      var o = followed(), n = mine().length;
-      [].forEach.call(mp.querySelectorAll('[data-ids]'), function (b) {
-        var ids = b.dataset.ids.split(','), k = ids.filter(function (i) { return o[subj[i][0]]; }).length;
-        b.setAttribute('aria-pressed', k === ids.length ? 'true' : k ? 'mixed' : 'false');
+      var o = followed(), list = mine(), n = list.length, by = {};
+      list.forEach(function (m) { by[m.href] = m.t || []; });
+      [].forEach.call(mp.querySelectorAll('[data-ids]:not([data-t])'), function (b) {
+        var ids = b.dataset.ids ? b.dataset.ids.split(',') : [], k = ids.filter(function (i) { return o[subj[i][0]]; }).length;
+        b.setAttribute('aria-pressed', ids.length && k === ids.length ? 'true' : k ? 'mixed' : 'false');
+      });
+      [].forEach.call(tbox.querySelectorAll('[data-href]'), function (sec) {
+        var t = by[sec.dataset.href] || [];
+        [].forEach.call(sec.querySelectorAll('[data-t]'), function (b) {
+          b.setAttribute('aria-pressed', b.dataset.t ? t.indexOf(b.dataset.t) > -1 : !t.length);
+        });
+        sec.querySelector('h3 span').textContent = t.length ? ' · ' + t.length + (t.length === 1 ? ' nastavnik' : ' nastavnika') : ' · svi';
       });
       badges.forEach(function (x) { x[0].textContent = count(x[1], o) || ''; });
       mp.querySelector('[data-mp-n]').textContent = n || '';
-      iz.querySelector('[data-moji-n]').textContent = n || '';
-      iz.querySelector('[data-moji-scope]').hidden = !n;
-      // The followed subjects are not listed here: the button says that some are, and opens them.
-      var open = iz.querySelector('[data-moji-open]');
-      open.classList.toggle('is-set', n > 0);
-      open.querySelector('span').textContent = n ? 'Izmeni predmete' : 'Izaberi predmete';
+      // The foot: "Dalje" to the teachers when a followed subject has some, else "Gotovo" at once.
+      var two = location.hash === '#nastavnici', more = list.some(function (m) { return posters(m.href).length; });
+      mp.querySelector('[data-mp-sum]').textContent = two ? '' : n ? 'Izabrano: ' + n : 'Klikni predmete koje pratiš.';
+      mp.querySelector('[data-mp-back]').hidden = !two;
+      mp.querySelector('[data-mp-next]').hidden = two || !more;
+      mp.querySelector('[data-mp-done]').hidden = !two && more;
+    };
+    // A step is the address's hash, so the back button goes from the teachers to the subjects.
+    var step = function () {
+      var two = location.hash === '#nastavnici';
+      mp.querySelector('[data-mp-1]').hidden = two;
+      mp.querySelector('[data-mp-2]').hidden = !two;
+      [].forEach.call(mp.querySelectorAll('[data-step]'), function (a) {
+        if ((a.dataset.step === '2') === two) a.setAttribute('aria-current', 'step'); else a.removeAttribute('aria-current');
+      });
+      if (two) renderTeachers(); else render();
+      window.scrollTo(0, 0);
     };
     mp.addEventListener('click', function (e) {
       var b = e.target.closest('[data-ids]');
-      // The dialog itself is the target only on its backdrop: its parts cover all of it.
-      if (!b) { if (e.target === mp || e.target.closest('[data-mp-close]')) mp.close(); return; }
-      var ids = b.dataset.ids.split(','), hrefs = ids.map(function (i) { return subj[i][0]; });
-      var list = mine().filter(function (s) { return hrefs.indexOf(s.href) < 0; });
-      keepMine(b.getAttribute('aria-pressed') === 'true' ? list
-        : list.concat(ids.map(function (i) { return { href: subj[i][0], name: subj[i][1] }; })));
+      if (!b) return;
+      if (b.dataset.t !== undefined) {
+        // A teacher's card adds them to the subject's or takes them out; "Svi nastavnici" empties it.
+        var href = b.closest('[data-href]').dataset.href, slug = b.dataset.t;
+        keepMine(mine().map(function (m) {
+          if (m.href !== href) return m;
+          var t = slug ? (m.t || []).filter(function (x) { return x !== slug; }) : [];
+          if (slug && t.length === (m.t || []).length) t.push(slug);
+          return t.length ? { href: m.href, name: m.name, t: t } : { href: m.href, name: m.name };
+        }));
+      } else {
+        var ids = b.dataset.ids.split(','), hrefs = ids.map(function (i) { return subj[i][0]; });
+        var list = mine().filter(function (s) { return hrefs.indexOf(s.href) < 0; });
+        keepMine(b.getAttribute('aria-pressed') === 'true' ? list
+          : list.concat(ids.map(function (i) { return { href: subj[i][0], name: subj[i][1] }; })));
+      }
       // keepMine's 'moji' event has run sync(): the card is marked; only a click pops its check (style.css).
       b.classList.toggle('mp__card--pop', b.getAttribute('aria-pressed') !== 'false');
     });
     mq.addEventListener('input', render);
-    iz.querySelector('[data-moji-open]').addEventListener('click', function () {
-      render();
-      mp.showModal();
-    });
-    iz.hidden = false;
-    sync();
+    window.addEventListener('hashchange', step);
+    mp.querySelector('[data-mp-foot]').hidden = false;
+    step();
     d.addEventListener('moji', sync);
   }).catch(function () {});
   var fillMine = function () {
@@ -660,14 +737,18 @@
   var pushBox = d.querySelector('[data-push]'), pushMsg = d.querySelector('[data-push-msg]');
   var said = function (text) { pushMsg.textContent = text; pushMsg.hidden = !text; };
   var withPosts = function () {
-    return mine().map(function (s) { return s.href; }).filter(function (h) { return h.indexOf('/predmet/') === 0; });
+    return mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; });
   };
   if (pushBox && window.PushManager && window.Notification && navigator.serviceWorker) {
     var reg = navigator.serviceWorker.register('/static/sw.js'), pushOn = pushBox.querySelector('input');
     var current = function () { return reg.then(function (r) { return r.pushManager.getSubscription(); }); };
     // What the Worker has, kept here so an unchanged list is not written again (KV has a daily write limit).
-    var save = function (sub, s) {
-      var j = sub.toJSON(), body = JSON.stringify({ endpoint: j.endpoint, keys: j.keys, s: s }), was = null;
+    // list: the followed subjects with posts; t, only when some subject has teachers picked: {href: [their slugs]}.
+    var save = function (sub, list) {
+      var j = sub.toJSON(), o = { endpoint: j.endpoint, keys: j.keys, s: list.map(function (m) { return m.href; }) }, t = {}, was = null;
+      list.forEach(function (m) { if (m.t && m.t.length) t[m.href] = m.t; });
+      if (Object.keys(t).length) o.t = t;
+      var body = JSON.stringify(o);
       try { was = localStorage.getItem('push'); } catch (e) {}
       if (body === was) return Promise.resolve();
       return fetch('/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).then(function (r) {

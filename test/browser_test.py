@@ -55,9 +55,10 @@ with sync_playwright() as p:
 	page.click('.chip')  # removing the chip clears the filter: the board index again
 	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('Arhiva')")
 	assert 'autor' not in page.url, page.url
-	# The subject picker: open it, follow the first subject of the first program's year; a search then covers only
-	# that subject, until "all subjects" is picked.
+	# The subject picker (/mojipredmeti/): open it, follow the first subject of the first program's year; a search then
+	# covers only that subject, until "all subjects" is picked.
 	page.click('[data-moji-open]')
+	page.wait_for_selector('.mp__card')
 	# Nothing is picked at first and every subject shows; a pick narrows them, and on a phone hides the rest of its row.
 	assert page.locator('.mp__tab[aria-pressed="true"]').count() == 0
 	n_all = page.locator('.mp__card').count()
@@ -79,7 +80,18 @@ with sync_playwright() as p:
 	page.fill('[data-mp-q]', 'mladenovic')
 	print('picker search:', page.locator('.mp__card .mp__name').all_inner_texts()[:4])
 	page.fill('[data-mp-q]', '')
-	page.click('.mp__foot [data-mp-close]')
+	# Step 2, when a teacher posted in the subject: a teacher's card picks them (t), "Svi nastavnici" undoes it.
+	if page.locator('[data-mp-next]').is_visible():
+		page.click('[data-mp-next]')
+		teacher = page.locator('.mp__card--t').first
+		print('picker, teachers:', page.locator('.mp__card--t .mp__name').all_inner_texts()[:4])
+		teacher.click()
+		assert teacher.get_attribute('aria-pressed') == 'true'
+		assert len(page.evaluate("JSON.parse(localStorage.moji)[0].t")) == 1
+		page.locator('.mp__card', has_text='Svi nastavnici').first.click()
+		assert page.evaluate("JSON.parse(localStorage.moji)[0].t") is None
+	page.click('[data-mp-done]')
+	page.wait_for_url(f'{base}/')
 	assert page.inner_text('[data-moji-n]') == '1'
 	page.goto(f'{base}/?from=2014')  # the year field's min: an invalid form is not submitted
 	page.wait_for_function(done)

@@ -51,6 +51,13 @@ def message(posts):
     return dict(title=nove(len(posts)), body=", ".join(names), url=SITE + "/")
 
 
+def wanted(sub, post):
+    """A post of a followed subject notifies unless the browser picked teachers for that subject (t, site.js) and a
+    teacher not among them wrote it; one with no known teacher (a cent notice or page, a student) always does."""
+    picked = sub.get("t", {}).get(post["s"])
+    return not picked or "a" not in post or post["a"] in picked
+
+
 def keys():
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import ec
@@ -136,7 +143,7 @@ def send(*before):
     sent = gone = failed = 0
     subs = subscriptions(secret["key"])
     for sub in subs:
-        posts = [p for s in dict.fromkeys(sub.get("s", [])) for p in by_subject.get(s, [])]
+        posts = [p for s in dict.fromkeys(sub.get("s", [])) for p in by_subject.get(s, []) if wanted(sub, p)]
         if not posts or not PUSH_HOST.match(sub["endpoint"]):
             continue
         try:
@@ -168,6 +175,9 @@ if __name__ == "__main__":
     assert message(_p) == dict(title="2 nove objave", body="Биофизика", url=SITE + "/")
     assert wait_url([dict(k="s", id=3, u="/predmet/a/b/cent/x/"), dict(id=9, u="/tema/3/#p9")]) == SITE + "/item/p9/"
     assert wait_url([dict(k="c", id=4, u="/item/c4/")]) == SITE + "/item/c4/" and wait_url([dict(k="s", id=3, u="/x/")]) is None
+    _s = dict(s=["/predmet/a/b/"], t={"/predmet/a/b/": ["pera"]})
+    assert wanted(_s, dict(s="/predmet/a/b/", a="pera")) and not wanted(_s, dict(s="/predmet/a/b/", a="mika"))
+    assert wanted(_s, dict(s="/predmet/a/b/")) and wanted(dict(s=_s["s"]), dict(s="/predmet/a/b/", a="mika"))
     assert PUSH_HOST.match("https://fcm.googleapis.com/fcm/send/x") and not PUSH_HOST.match("https://evil.com/fcm.googleapis.com/")
     match sys.argv[1:]:
         case ["keys"]:

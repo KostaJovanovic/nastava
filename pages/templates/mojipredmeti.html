@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Moji predmeti{% endblock %}
+
+{#- The subjects this browser follows, in two steps (site.js fills both from /izbor.json, build.py picker): the
+    subjects, then for each one the teachers whose posts notify (none picked: all of them). #nastavnici is the
+    second step, so the back button returns to the first. Kept in this browser only (localStorage). -#}
+{% block main %}
+<div class="mp" data-mp>
+  <div class="mh">
+    <h1 id="title">Moji predmeti <span class="mp__n" data-mp-n></span></h1>
+    <p class="mh__sub">Izaberi predmete koje pratiš, pa od kojih nastavnika želiš obaveštenja.</p>
+  </div>
+  <nav class="mp__steps" aria-label="Koraci">
+    <a href="#" data-step="1"><b>1</b> Predmeti</a>
+    <a href="#nastavnici" data-step="2"><b>2</b> Nastavnici</a>
+  </nav>
+  <noscript><p class="mp__none">Za izbor predmeta potreban je JavaScript.</p></noscript>
+  <div data-mp-1 hidden>
+    <div class="mp__search"><input class="field" type="search" placeholder="Nađi predmet ili nastavnika…" aria-label="Nađi predmet ili nastavnika" autocomplete="off" data-mp-q></div>
+    <div class="mp__nav" data-mp-nav></div>
+    <div class="mp__body" data-mp-body></div>
+  </div>
+  <div data-mp-2 hidden>
+    <p class="mp__hint">Obaveštenja stižu samo za objave izabranih nastavnika. Bez izbora stižu sve objave predmeta,
+      a objave bez poznatog autora (sajtovi predmeta, saradnici) stižu uvek.</p>
+    <div class="mp__body" data-mp-teachers></div>
+  </div>
+  <div class="mp__foot" data-mp-foot hidden>
+    <span data-mp-sum></span>
+    <a class="btn" href="#" data-mp-back hidden>Nazad</a>
+    <a class="btn btn--pri" href="#nastavnici" data-mp-next>Dalje: nastavnici</a>
+    <a class="btn btn--pri" href="/" data-mp-done>Gotovo</a>
+  </div>
+</div>
+{% endblock %}

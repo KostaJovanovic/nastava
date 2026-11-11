@@ -589,25 +589,21 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 /* A very narrow phone: the label fits on its line without the star. */
 @media (max-width: 359px) { .fgroup[data-izbor] .moji__open .i { display: none; } }
 
-/* The picker dialog (site.js): program tabs, then chips for the module and the year, then the subjects as cards.
-   Its parts cover the whole dialog, so a click on the dialog itself is a click on the backdrop (it closes). */
-.mp {
-  width: min(940px, 100vw - 32px); height: min(760px, 100dvh - 48px); max-width: none; max-height: none;
-  padding: 0; border: 1px solid var(--line); border-radius: 14px;
-  background: var(--paper); color: var(--text);
-}
-.mp[open] { display: flex; flex-direction: column; animation: mp-in .18s ease-out; }
-.mp::backdrop { background: rgba(1, 19, 33, .5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
-@keyframes mp-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
-.mp__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 10px; }
-.mp__top h2 { display: flex; align-items: center; gap: 8px; color: var(--fg); font: 800 19px/1.2 var(--sans); }
-.mp__n { min-width: 24px; padding: 0 7px; border-radius: 12px; background: var(--accent); color: var(--accent-fg); font-size: 13px; line-height: 24px; text-align: center; }
+/* The picker's page, /mojipredmeti/ (site.js). Step 1: program tabs, then chips for the module and the year, then the
+   subjects as cards. Step 2: each followed subject's teachers as cards with their photos. */
+.mp h1 { display: flex; align-items: center; gap: 10px; }
+.mp__n { min-width: 26px; padding: 0 8px; border-radius: 13px; background: var(--accent); color: var(--accent-fg); font: 800 14px/26px var(--sans); text-align: center; }
 .mp__n:empty { display: none; }
-.mp__x { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: var(--card); color: var(--fg); cursor: pointer; }
-.mp__x:hover { border-color: var(--accent); color: var(--accent-t); }
-.mp__x .i { width: 16px; height: 16px; }
-.mp__search { padding: 0 20px 12px; }
-.mp__nav { display: grid; gap: 10px; padding: 0 20px 12px; border-bottom: 1px solid var(--line); }
+/* The two steps as one segmented bar; the current one in the accent. */
+.mp__steps { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 16px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.mp__steps a { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 9px; color: var(--dim); font: 800 14px var(--sans); text-decoration: none; }
+.mp__steps a:hover { color: var(--fg); background: var(--hover); }
+.mp__steps b { display: grid; place-items: center; width: 22px; height: 22px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 12px; }
+.mp__steps a[aria-current] { background: var(--accent); color: var(--accent-fg); }
+.mp__steps a[aria-current] b { border-color: transparent; background: var(--accent-fg); color: var(--accent); }
+.mp__search { padding-bottom: 12px; }
+.mp__nav { display: grid; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.mp__hint { margin: 0 0 4px; color: var(--dim); font-size: 13.5px; }
 .mp__tabs, .mp__chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .mp__tab {
   position: relative; display: grid; text-align: left;
@@ -630,7 +626,7 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 }
 .mp__badge:empty { display: none; }
 .mp__tab[aria-pressed="true"] .mp__badge { background: var(--fg); color: var(--card); }
-.mp__body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 20px 20px; }
+.mp__body { padding: 4px 0 20px; }
 .mp__group h3 { margin: 16px 0 8px; color: var(--fg); font: 800 14.5px var(--sans); }
 .mp__group h3 span { color: var(--dim); font-weight: 400; }
 .mp__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
@@ -656,30 +652,39 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 .mp__card--none:not([aria-pressed="true"]) { border-style: dashed; color: var(--dim); background: transparent; }
 .mp__name small { display: block; margin-top: 2px; color: var(--dim); font-size: 12px; }
 .mp__none { margin: 16px 0; color: var(--dim); }
+/* A teacher's card: the photo (or the initials), the name, the check at the end. */
+.mp__card--t { align-items: center; }
+.mp__card--t .mp__name { flex: 1; }
+.mp__card--t .mp__check { order: 1; }
+.mp__ph { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 50% 20%; background: var(--icon-bg); color: var(--slate); font: 800 15px var(--sans); }
+.mp__card[aria-pressed="true"] .mp__ph { box-shadow: 0 0 0 2px var(--accent); }
+/* The foot stays at the bottom of the screen (on a phone, over the tab bar). */
+.mp__foot {
+  position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  margin-top: 8px; padding: 12px 0; border-top: 1px solid var(--line); background: var(--paper); color: var(--dim); font-size: 13.5px;
+}
 .mp__foot span { margin-right: auto; }
-.mp__foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--dim); font-size: 13px; }
+.mp__foot[hidden], .mp__foot [hidden] { display: none; }
+@media (max-width: 899px) { .mp__foot { bottom: calc(60px + env(safe-area-inset-bottom)); } }
 @media (max-width: 600px) {
-  .mp { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
   .mp__cards { grid-template-columns: 1fr; }
-  .mp__foot span { display: none; }
   /* A picked program or year hides the rest of its row; pressing it again brings them back. */
   :is(.mp__tabs, .mp__chips):has([aria-pressed="true"]) > [aria-pressed="false"] { display: none; }
 }
-/* Closing: the dialogs leave as they came, faster; the top layer keeps them (overlay) until the fade ends. Where a
-   browser cannot (no transition of overlay), they close at once as before. */
-.mp, .leave {
+/* Closing: the dialog leaves as it came, faster; the top layer keeps it (overlay) until the fade ends. Where a
+   browser cannot (no transition of overlay), it closes at once as before. */
+.leave {
   transition: opacity 150ms ease-in, transform 150ms ease-in, overlay 150ms ease-in allow-discrete, display 150ms ease-in allow-discrete;
 }
-.mp:not([open]), .leave:not([open]) { opacity: 0; transform: translateY(6px) scale(.98); }
-.mp::backdrop, .leave::backdrop { transition: opacity 150ms ease-in, overlay 150ms allow-discrete, display 150ms allow-discrete; }
-.mp:not([open])::backdrop, .leave:not([open])::backdrop { opacity: 0; }
+.leave:not([open]) { opacity: 0; transform: translateY(6px) scale(.98); }
+.leave::backdrop { transition: opacity 150ms ease-in, overlay 150ms allow-discrete, display 150ms allow-discrete; }
+.leave:not([open])::backdrop { opacity: 0; }
 /* Opening, the backdrop fades in with its dialog, as it fades out on closing. */
-.mp[open]::backdrop { animation: mp-fade .18s ease-out; }
 .leave[open]::backdrop { animation: mp-fade .15s ease-out; }
 @keyframes mp-fade { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .mp[open], .mp__check, .leave[open], .star--pop .i, .mp[open]::backdrop, .leave[open]::backdrop { animation: none !important; }
-  .mp::backdrop, .leave::backdrop { transition: none; }
+  .mp__check, .leave[open], .star--pop .i, .leave[open]::backdrop { animation: none !important; }
+  .leave::backdrop { transition: none; }
 }
 
 /* The side panel's statistics card: posts per year, the link to /statistika/. */

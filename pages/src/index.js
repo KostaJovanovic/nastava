@@ -48,12 +48,14 @@ export function join(shell, fragment) {
 }
 
 // Web push: a browser's subscription with its followed subjects (site.js), in KV (binding PUSH): the key is the
-// push service's endpoint, the value {k, a, s} its keys and the subjects' hrefs. ci/push.py reads them all with the
+// push service's endpoint, the value {k, a, s, t} its keys, the subjects' hrefs and (optional) the picked teachers. ci/push.py reads them all with the
 // secret PUSH_KEY and sends; an endpoint the service no longer knows it drops with s = [] as a browser does.
 // Only the browsers' push services: ci/push.py posts to these URLs.
 const PUSH_HOST = /^https:\/\/([a-z0-9-]+\.)*(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)\//;
 const SUBJECT = /^\/predmet\/[a-z0-9-]+\/[a-z0-9-]+\/$/;
 const B64URL = /^[A-Za-z0-9_-]{1,200}$/;
+// A teacher page's slug (build.py set_hrefs): URL-safe characters.
+const TEACHER = /^[A-Za-z0-9._~-]{1,80}$/;
 
 async function push(request, env, url) {
 	const status = (code) => new Response(null, { status: code });
@@ -72,14 +74,18 @@ async function push(request, env, url) {
 	} catch (e) {
 		return status(400);
 	}
-	const { endpoint, keys, s } = body || {};
+	const { endpoint, keys, s, t } = body || {};
 	if (typeof endpoint !== "string" || endpoint.length > 500 || !PUSH_HOST.test(endpoint) || !Array.isArray(s)) return status(400);
 	if (!s.length) {
 		await env.PUSH.delete(endpoint);
 		return status(204);
 	}
 	if (!B64URL.test(keys?.p256dh) || !B64URL.test(keys?.auth) || s.length > 300 || !s.every((h) => SUBJECT.test(h))) return status(400);
-	await env.PUSH.put(endpoint, JSON.stringify({ k: keys.p256dh, a: keys.auth, s }));
+	// t (optional): per followed subject, the teachers (their pages' slugs) whose posts alone notify.
+	const picked = t === undefined || (t && typeof t === "object" && !Array.isArray(t) && Object.entries(t).every(([h, ts]) =>
+		s.includes(h) && Array.isArray(ts) && ts.length && ts.length <= 50 && ts.every((x) => typeof x === "string" && TEACHER.test(x))));
+	if (!picked) return status(400);
+	await env.PUSH.put(endpoint, JSON.stringify(t ? { k: keys.p256dh, a: keys.auth, s, t } : { k: keys.p256dh, a: keys.auth, s }));
 	return status(204);
 }
 

@@ -923,9 +923,11 @@ def write_feeds(site, items, subjects, pushed=()):
                                                                   encoding="utf-8")
     # The subjects' newest posts, next to the site (not on it), for ci/push.py: it notifies those newer than a post id.
     # k: "p" a board post, "c" a cent notice, "s" a cent page version; ci/push.py keeps one "before" per kind.
+    # a: the teacher who wrote it (their page's slug), for a browser that wants only some teachers' posts of a subject.
     # shortcut: the newest 1000 posts and notices only; a scrape that brings more new posts notifies only these.
     (site.parent / "push.json").write_text(json.dumps(
-        [dict(k=it["id"][0], id=it["num"], s=it["subj"]["href"], n=it["subj"]["name"], t=it["title"] or "", u=post_href(it))
+        [dict(k=it["id"][0], id=it["num"], s=it["subj"]["href"], n=it["subj"]["name"], t=it["title"] or "", u=post_href(it),
+              **({"a": it["teacher"]["href"].split("/")[2]} if it.get("teacher") else {}))
          for it in posts if it["subj"]][:1000] + list(pushed), ensure_ascii=False), encoding="utf-8")
 
 
@@ -1426,15 +1428,16 @@ def render_book(site, book):
         programs=[p for p in PROGRAMS if any(s["program"] == p for s in listed)]))
 
 
-def picker(subjects, book, teachers):
-    """The subject picker ("Moji predmeti", site.js): the subjects with topics, as [href, name]; a tree of them by the
+def picker(subjects, book, teachers, items=()):
+    """The subject picker (/mojipredmeti/, site.js): the subjects with topics, as [href, name]; a tree of them by the
     plans, program > (module >) year of study > group: '' for the required subjects, else the elective block
     ('Изборни предмет 5.4'). Every subject of the plans is in it: one with topics as its board subject, one without
     as its page in the subject book, [href, name, 0]. A board subject in no plan (a subject the faculty no longer
     has) is under its program's 'Stari predmeti'; the board's other forums (katedre, moduli) are programs with one
     group. A group has its subjects in s, any other node its children in c.
     teachers: each teacher with the board subjects they teach (into the list); people: every listed teacher's
-    [name, page], for the header search on a teacher's page.
+    [name, page], for the header search on a teacher's page. posters: per subject (as subjects), the teachers who
+    posted in it as [index in people, posts], most first: the picker's second step, whose notifications to get.
     After render_places (the counts) and render_teachers (the courses)."""
     live = [s for s in subjects.values() if s.get("live")]
     entries = [[s["href"], s["name"]] for s in live]
@@ -1489,12 +1492,19 @@ def picker(subjects, book, teachers):
         return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
 
     listed = Counter(t["katedra"] for t in teachers if not t["gone"] and t["katedra"])
+    people = sorted(teachers, key=lambda t: t["gone"])
+    who = {t["href"]: i for i, t in enumerate(people)}
+    posts = Counter((it["subj"]["id"], it["teacher"]["href"]) for it in items if it["subj"] and it["teacher"])
+    posters = [[] for _ in entries]
+    for (s, t), n in sorted(posts.items(), key=lambda x: -x[1]):
+        if ("f", s) in at:
+            posters[at[("f", s)]].append([who[t], n])
     # acr: each subject's acronyms (acronyms), for the searches.
-    return dict(subjects=entries, acr=acr, tree=nodes(tree),
+    return dict(subjects=entries, acr=acr, tree=nodes(tree), posters=posters,
                 teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
                 # The listed teachers first, then the ones who left (the header search shows them where there is room).
-                people=[person(t) for t in sorted(teachers, key=lambda t: t["gone"])],
+                people=[person(t) for t in people],
                 # [full name, short name, ?katedra= slug, listed teachers]: a katedra has no page, its teachers' list is it.
                 katedre=[[k, katedra(k).capitalize(), slug(k), n] for k, n in sorted(listed.items(), key=lambda x: azbuka(x[0]))])
 
@@ -1797,9 +1807,10 @@ def main(db_path, out):
     render_teachers(site, teachers, items, book)
     render_book(site, book)
     raspored = render_study_pages(site, db)
-    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers), raspored=raspored),
+    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
+    write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
     about = env.get_template("o_sajtu.html").render()
     write(site / "o-sajtu" / "index.html", about)
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
@@ -1897,7 +1908,10 @@ if __name__ == "__main__":
                  dict(shown="Н", href="/n/", gone=0, courses=[dict(subj=_b), dict(subj=None)], thumb="/foto/n.jpg",
                       title="доцент", katedra="Катедра за математику"),
                  dict(shown="Ж", href="/z/", gone=1, courses=[], thumb=None, title=None, katedra=None,
-                      span={"to": 1990}, last_seen="0000", age=0)])
+                      span={"to": 1990}, last_seen="0000", age=0)],
+                [dict(subj=_b, teacher=dict(href="/n/"))] * 2 + [dict(subj=_a, teacher=dict(href="/g/")),
+                 dict(subj=_b, teacher=None), dict(subj=None, teacher=dict(href="/n/"))])
+    assert _p["posters"] == [[[1, 1]], [[0, 2]], [], [], []], _p["posters"]
     _g = lambda n, s: dict(n=n, c=[], s=s)
     assert _p["tree"] == [dict(n=PROGRAMS[0], s=[], c=[
         dict(n="2. godina", s=[], c=[_g("", [0, 2]), _g("Изборни предмет 4.4", [0])]),
