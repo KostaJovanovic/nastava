@@ -1445,6 +1445,12 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 :root[data-vt="light"]::view-transition-old(root) { z-index: 1; }
 /* Going dark, the dark page is hidden until its circle starts moving, so it never shows whole for a frame. */
 :root[data-vt="dark"]::view-transition-new(root) { clip-path: circle(0 at 0 0); }
+/* iOS Safari leaves the page's background (body's, on the canvas) out of the pictures: the live one turned dark at
+   once and the circle only brought the text. So each picture has its own theme's paper behind it (--paper is a
+   light-dark(), resolved by the color-scheme here). */
+:root[data-vt]::view-transition-old(root), :root[data-vt]::view-transition-new(root) { background: var(--paper); }
+:root[data-vt="dark"]::view-transition-old(root), :root[data-vt="light"]::view-transition-new(root) { color-scheme: light; }
+:root[data-vt="light"]::view-transition-old(root), :root[data-vt="dark"]::view-transition-new(root) { color-scheme: dark; }
 
 /* ---- Without JavaScript --------------------------------------------------- */
 /* Scripts off (scripting: none; a script still loading counts as on, so none of this shows then): what needs a script
