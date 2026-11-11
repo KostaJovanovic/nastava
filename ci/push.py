@@ -132,13 +132,13 @@ def send(*before):
         time.sleep(300)  # only cent page versions: no new page to wait for; a deploy takes a few minutes
     else:
         for _ in range(40):
-            if requests.head(newest, timeout=30).status_code == 200:
+            if (code := requests.head(newest, timeout=30).status_code) == 200:
                 # When the new posts were on the site (the run log's "live"; within the 30 s of a check).
                 run_log(live=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
                 break
             time.sleep(30)
         else:
-            sys.exit(f"push: {newest} is not on the site after 20 minutes")
+            sys.exit(f"push: {newest} is not on the site after 20 minutes (last status {code})")
     by_subject = defaultdict(list)
     for p in sorted(new, key=lambda p: p["id"]):
         by_subject[p["s"]].append(p)
