@@ -25,11 +25,6 @@
         <p class="sec" id="moji-h">Obaveštenja <span data-moji-n></span></p>
         <div data-moji-scope hidden>
           <label class="tgl"><span>Samo moji predmeti</span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
-          {#- Notifications of the followed subjects' new posts (site.js, static/sw.js, ci/push.py), where the browser
-              has web push; and their feeds as one file for a feed reader. -#}
-          <label class="tgl" data-push hidden><span>Obaveštenja o novim objavama</span><input type="checkbox" role="switch" data-push-on><i class="tgl__s" aria-hidden="true"></i></label>
-          <p class="moji__more" data-push-msg hidden></p>
-          <p class="moji__more"><a href="/feed.xml" download="moji-predmeti.opml" data-opml>RSS za čitač (OPML)</a></p>
         </div>
         {#- The picker's page (mojipredmeti.html). With subjects followed, it reads "Izmeni predmete", in the accent
             colour (site.js). -#}

@@ -604,6 +604,8 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 .mp__search { padding-bottom: 12px; }
 .mp__nav { display: grid; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .mp__hint { margin: 0 0 4px; color: var(--dim); font-size: 13.5px; }
+.mp .tgl { max-width: 440px; margin: 0 0 8px; }
+.mp .moji__more { margin: 0 0 12px; }
 .mp__tabs, .mp__chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .mp__tab {
   position: relative; display: grid; text-align: left;
@@ -665,11 +667,25 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 }
 .mp__foot span { margin-right: auto; }
 .mp__foot[hidden], .mp__foot [hidden] { display: none; }
-@media (max-width: 899px) { .mp__foot { bottom: calc(60px + env(safe-area-inset-bottom)); } }
+@media (max-width: 899px) {
+  .mp__foot { bottom: calc(60px + env(safe-area-inset-bottom)); }
+  /* The page's own: no statistics card under it, no subtitle (the steps say it). */
+  body:has(.mp) .filters--years, .mp .mh__sub { display: none; }
+  /* The home page's followed subjects: the newest five, so the board's index is not far below. */
+  #moji .fr:nth-child(n+6) { display: none; }
+}
 @media (max-width: 600px) {
-  .mp__cards { grid-template-columns: 1fr; }
+  .mp__cards { grid-template-columns: 1fr; gap: 6px; }
   /* A picked program hides the other programs; pressing it again brings them back. The years stay. */
   .mp__tabs:has([aria-pressed="true"]) > [aria-pressed="false"] { display: none; }
+  /* The programs and the years each one row that scrolls sideways (top room for the badges). */
+  .mp__tabs, .mp__chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 8px 8px 2px 0; margin-top: -8px; }
+  .mp__tabs::-webkit-scrollbar, .mp__chips::-webkit-scrollbar { display: none; }
+  .mp__tab { flex: none; white-space: nowrap; }
+  /* Smaller cards: "Svi nastavnici" one line, the photos smaller. */
+  .mp__card { padding: 8px 12px; }
+  .mp__card:not(.mp__card--t)[data-t] small { display: none; }
+  .mp__ph { width: 36px; height: 36px; font-size: 13px; }
 }
 /* Closing: the dialog leaves as it came, faster; the top layer keeps it (overlay) until the fade ends. Where a
    browser cannot (no transition of overlay), it closes at once as before. */
@@ -1126,6 +1142,13 @@ div.cent-head::before { content: ""; flex: none; width: 11px; }
 .cent-head > .cent-file { margin: 0; }
 .cent-file .att__t { width: auto; height: 18px; padding: 0 5px; border-radius: 4px; font-size: 10px; }
 .att__t--video { background: var(--slate); }
+/* A subject's material on its department's site (predmet.html .lit): its files as a post's, in columns; the sixth on
+   after a tap (as .fb--short). */
+.lit > .prose { max-width: none; padding: 12px 14px 14px; }
+.lit .prose--html dl:has(> dd > .att) { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin: 0; }
+.lit .prose--html dl > dt { display: none; }
+.lit .prose--html .att { max-width: none; height: 100%; }
+:root:not(.moji-only) .lit--short:not(:has(.fb__more input:checked)) dd:nth-of-type(n+6) { display: none; }
 
 /* A page of text (a profile, a schedule page). */
 .panel { min-width: 0; padding: 12px 14px 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }

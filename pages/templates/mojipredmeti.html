@@ -13,7 +13,7 @@
   </div>
   <nav class="mp__steps" aria-label="Koraci">
     <a href="#" data-step="1"><b>1</b> Predmeti</a>
-    <a href="#nastavnici" data-step="2"><b>2</b> Nastavnici</a>
+    <a href="#nastavnici" data-step="2"><b>2</b> Obaveštenja</a>
   </nav>
   <noscript><p class="mp__none">Za izbor predmeta potreban je JavaScript.</p></noscript>
   <div data-mp-1 hidden>
@@ -22,14 +22,18 @@
     <div class="mp__body" data-mp-body></div>
   </div>
   <div data-mp-2 hidden>
-    <p class="mp__hint">Obaveštenja stižu samo za objave izabranih nastavnika. Bez izbora stižu sve objave predmeta,
-      a objave bez poznatog autora (sajtovi predmeta, saradnici) stižu uvek.</p>
+    {#- Notifications of the followed subjects' new posts (site.js, static/sw.js, ci/push.py), where the browser has web
+        push; then whose posts, per subject; and the subjects' feeds as one file for a feed reader. -#}
+    <label class="tgl" data-push hidden><span>Obaveštenja o novim objavama</span><input type="checkbox" role="switch" data-push-on><i class="tgl__s" aria-hidden="true"></i></label>
+    <p class="moji__more" data-push-msg hidden></p>
+    <p class="mp__hint" data-mp-hint>Od kojih nastavnika? Bez izbora stižu sve objave predmeta.</p>
     <div class="mp__body" data-mp-teachers></div>
+    <p class="moji__more"><a href="/feed.xml" download="moji-predmeti.opml" data-opml>RSS izabranih predmeta za čitač (OPML)</a></p>
   </div>
   <div class="mp__foot" data-mp-foot hidden>
     <span data-mp-sum></span>
     <a class="btn" href="#" data-mp-back hidden>Nazad</a>
-    <a class="btn btn--pri" href="#nastavnici" data-mp-next>Dalje: nastavnici</a>
+    <a class="btn btn--pri" href="#nastavnici" data-mp-next>Dalje: obaveštenja</a>
     <a class="btn btn--pri" href="/" data-mp-done>Gotovo</a>
   </div>
 </div>

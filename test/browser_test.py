@@ -80,9 +80,9 @@ with sync_playwright() as p:
 	page.fill('[data-mp-q]', 'mladenovic')
 	print('picker search:', page.locator('.mp__card .mp__name').all_inner_texts()[:4])
 	page.fill('[data-mp-q]', '')
-	# Step 2, when a teacher posted in the subject: a teacher's card picks them (t), "Svi nastavnici" undoes it.
-	if page.locator('[data-mp-next]').is_visible():
-		page.click('[data-mp-next]')
+	# Step 2, the notifications: when a teacher posted in the subject, their card picks them (t), "Svi nastavnici" undoes it.
+	page.click('[data-mp-next]')
+	if page.locator('.mp__card--t').count():
 		teacher = page.locator('.mp__card--t').first
 		print('picker, teachers:', page.locator('.mp__card--t .mp__name').all_inner_texts()[:4])
 		teacher.click()

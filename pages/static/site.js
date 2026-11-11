@@ -510,7 +510,7 @@
      under it. Text in its box narrows the subjects shown to those whose name, acronym or teacher matches; with
      nothing picked it searches all of them, and the teachers as cards too. A card follows its subject; a
      teacher's card follows all their subjects (pressed: all, mixed: some).
-     2 (#nastavnici), the teachers: each followed subject with the teachers who posted in it, as cards with their
+     2 (#nastavnici), the notifications: their switch, then each followed subject with the teachers who posted in it, as cards with their
      photos; the picked ones are the subject's t (slugs of their pages), whose posts alone notify (ci/push.py). None
      picked ("Svi nastavnici"): every post. A subject no teacher posted in is only named. */
   if (mp && izbor) izbor.then(function (data) {
@@ -638,7 +638,8 @@
         ps.forEach(function (x) {
           var p = data.people[x[0]], w = p[0].split(' ');
           var few = x[1] % 10 >= 2 && x[1] % 10 <= 4 && (x[1] % 100 < 12 || x[1] % 100 > 14);
-          var b = grid.appendChild(card([], p[0], [p[3], x[1] + (few ? ' objave' : ' objava')].filter(Boolean).join(' · ')));
+          // The title without the katedra (people's "title · katedra"): the subject says where they teach.
+          var b = grid.appendChild(card([], p[0], [(p[3] || '').split(' · ')[0], x[1] + (few ? ' objave' : ' objava')].filter(Boolean).join(' · ')));
           var img = p[2] ? el('img', 'mp__ph') : el('span', 'mp__ph', w[0][0] + w[w.length - 1][0]);
           if (p[2]) { img.src = p[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
           b.classList.add('mp__card--t');
@@ -649,6 +650,7 @@
       });
       if (none.length) tbox.appendChild(el('p', 'mp__none', 'Nijedan nastavnik još nije pisao u: ' + none.join(', ') + '. Za njih stižu sva obaveštenja.'));
       if (!list.length) tbox.appendChild(el('p', 'mp__none', 'Prvo izaberi predmete.'));
+      mp.querySelector('[data-mp-hint]').hidden = !tbox.querySelector('[data-href]');
       sync();
     };
     var sync = function () {
@@ -667,12 +669,12 @@
       });
       badges.forEach(function (x) { x[0].textContent = count(x[1], o) || ''; });
       mp.querySelector('[data-mp-n]').textContent = n || '';
-      // The foot: "Dalje" to the teachers when a followed subject has some, else "Gotovo" at once.
-      var two = location.hash === '#nastavnici', more = list.some(function (m) { return posters(m.href).length; });
+      // The foot: "Dalje" to the notifications once a subject is followed.
+      var two = location.hash === '#nastavnici';
       mp.querySelector('[data-mp-sum]').textContent = two ? '' : n ? 'Izabrano: ' + n : 'Klikni predmete koje pratiš.';
       mp.querySelector('[data-mp-back]').hidden = !two;
-      mp.querySelector('[data-mp-next]').hidden = two || !more;
-      mp.querySelector('[data-mp-done]').hidden = !two && more;
+      mp.querySelector('[data-mp-next]').hidden = two || !n;
+      mp.querySelector('[data-mp-done]').hidden = !two && n > 0;
     };
     // A step is the address's hash, so the back button goes from the teachers to the subjects.
     var step = function () {
@@ -737,13 +739,15 @@
      browser's subscription with the subjects' pages, and ci/push.py sends after each deploy. Only a subject with topics
      (/predmet/) gets posts. An iPhone has web push only for the site opened from the home screen. */
   var PUSH_PUBLIC = 'BPumbbNmB0El3blUr_wKj4PWrpCq0b6pSakijI6H3gtrlgxAqz4abQ63IIwe9EEq50gJNhGDay-Mdb28hsUCSqE';
+  // The switch is on /mojipredmeti/ (mojipredmeti.html); every page keeps the subscription's subjects up to date (a
+  // subject page's star changes them too).
   var pushBox = d.querySelector('[data-push]'), pushMsg = d.querySelector('[data-push-msg]');
   var said = function (text) { pushMsg.textContent = text; pushMsg.hidden = !text; };
   var withPosts = function () {
     return mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; });
   };
-  if (pushBox && window.PushManager && window.Notification && navigator.serviceWorker) {
-    var reg = navigator.serviceWorker.register('/static/sw.js'), pushOn = pushBox.querySelector('input');
+  if (window.PushManager && window.Notification && navigator.serviceWorker) {
+    var reg = navigator.serviceWorker.register('/static/sw.js');
     var current = function () { return reg.then(function (r) { return r.pushManager.getSubscription(); }); };
     // What the Worker has, kept here so an unchanged list is not written again (KV has a daily write limit).
     // list: the followed subjects with posts; t, only when some subject has teachers picked: {href: [their slugs]}.
@@ -761,18 +765,19 @@
     };
     // Also a change made just before leaving a page: the next page sends it.
     var resave = function () { return current().then(function (sub) { if (sub) return save(sub, withPosts()); }).catch(function () {}); };
-    current().then(function (sub) {
-      pushOn.checked = !!sub && Notification.permission === 'granted';
-      pushBox.hidden = false;
-      resave();
-    }).catch(function () {});
+    resave();
     var timer;
     d.addEventListener('moji', function () {
       // Picking subjects is many clicks: one write a few seconds after the last.
       clearTimeout(timer);
       timer = setTimeout(resave, 3000);
     });
-    pushOn.addEventListener('change', function () {
+    var pushOn = pushBox && pushBox.querySelector('input');
+    if (pushOn) current().then(function (sub) {
+      pushOn.checked = !!sub && Notification.permission === 'granted';
+      pushBox.hidden = false;
+    }).catch(function () {});
+    if (pushOn) pushOn.addEventListener('change', function () {
       var on = pushOn.checked;
       said('');
       (on ? Notification.requestPermission().then(function (p) {
