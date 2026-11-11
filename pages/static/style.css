@@ -1193,7 +1193,7 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 /* ---- The teachers ---------------------------------------------------------- */
 /* A list's bar: one wrapping row of pills, the filters outlined, grouping and order (.arrange) tinted; the count last. */
 .people__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.people__bar > .field { flex: 1 1 160px; max-width: 250px; height: 34px; padding: 0 12px; border-radius: 17px; text-overflow: ellipsis; cursor: pointer; }
+.people__bar > .field { flex: 1 1 160px; max-width: 250px; height: 34px; padding: 0 12px; border-radius: 8px; text-overflow: ellipsis; cursor: pointer; }
 .people__bar .fbar__n { order: 1; margin-left: auto; padding: 0 4px; }
 /* The way to the archive: top right by the heading (short on a phone) and full width under the list. */
 /* The top one filled in the header's blue, with the count, so it reads as a way in, not a footnote. */
@@ -1262,7 +1262,7 @@ body:not(:has([data-sort] option[value="-c"]:checked)) .pc__p { display: none; }
 
 /* Grouping and order of a list (site.js): a pill each, its name inside it before the chosen option. */
 .arrange { display: flex; flex-wrap: wrap; gap: 6px; }
-.pick { display: inline-flex; align-items: center; height: 34px; padding-left: 12px; border-radius: 17px; background: var(--icon-bg); color: var(--dim); font-size: 13px; cursor: pointer; }
+.pick { display: inline-flex; align-items: center; height: 34px; padding-left: 12px; border-radius: 8px; background: var(--icon-bg); color: var(--dim); font-size: 13px; cursor: pointer; }
 .pick:hover { background: var(--hover); }
 .pick:has(select:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 /* 16px on a phone, as .field: smaller and iOS zooms in on it. */
