@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6", "nh3==0.3.2"]
+# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0"]
 # ///
 """Render nastava.db as a static site for GitHub Pages, with its Pagefind search index.
 
@@ -20,10 +20,11 @@ from collections import Counter, defaultdict
 from datetime import date
 from html import unescape
 from pathlib import Path
-from urllib.parse import quote, urljoin, urlsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit
 from xml.etree import ElementTree
 
 import nh3
+from bs4 import BeautifulSoup
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from jinja2.utils import htmlsafe_json_dumps
 from markupsafe import Markup, escape
@@ -189,8 +190,9 @@ def preuzeto(text):
     return re.sub(r"Downloaded (\d+) times?", r"preuzeto \1 puta", text or "")
 
 
-def clean_html(html, base=BASE, local=lambda value: None):
-    """Sanitize; a link that local() maps goes to this site, every other relative link to the faculty's page."""
+def clean_html(html, base=BASE, local=lambda value: None, classes=None):
+    """Sanitize; a link that local() maps goes to this site, every other relative link to the faculty's page.
+    classes: the classes to keep ({tag: {class}}, cent's CENT_CLASSES); none by default."""
     def attribute(tag, attr, value):
         if attr not in ("href", "src"):
             return value
@@ -204,8 +206,86 @@ def clean_html(html, base=BASE, local=lambda value: None):
 
     # The board's attachment box is in English; in Serbian it reads right in both scripts.
     html = preuzeto(re.sub(r">\s*Attachments\s*<", ">Prilozi<", html or ""))
-    return nh3.clean(html, tags=nh3.ALLOWED_TAGS | {"tfoot"}, attribute_filter=attribute,
-                     url_schemes=nh3.ALLOWED_URL_SCHEMES | {"data"}, link_rel="noopener noreferrer") or None
+    html = nh3.clean(html, tags=nh3.ALLOWED_TAGS | {"tfoot"}, attribute_filter=attribute, allowed_classes=classes,
+                     url_schemes=nh3.ALLOWED_URL_SCHEMES | {"data"}, link_rel="noopener noreferrer")
+    # Kept classes leave the others' attribute empty.
+    return (html.replace(' class=""', "") if classes else html) or None
+
+
+# The classes cent_tidy gives cent's pages (style.css .cent-…): the only ones clean_html keeps.
+CENT_CLASSES = {"details": {"cent-acc"}, "summary": {"cent-head"}, "div": {"cent-head", "cent-btns", "cent-c"},
+                "b": {"cent-code"}, "a": {"cent-btn", "cent-file"},
+                # A file's type as on a post's attachments (FILE_KINDS).
+                "span": {"cent-t", "cent-wk", "cent-btn", "att__t"} | {f"att__t--{k}" for k in
+                                                                       ("pdf doc xls ppt zip img file video".split())}}
+
+
+def cent_tidy(html):
+    """cent's Divi layout (cent.py keeps a page as shown) in this site's own classes, before clean_html drops Divi's:
+    an accordion item is a <details>, closed as on cent; a lab row (code, title, file, week) a line like an accordion's
+    head; a clickable block a button (one cent links nowhere, "#", stays a greyed one); a file link a chip with its
+    type; a centred text stays centred."""
+    soup = BeautifulSoup(html, "html.parser")
+
+    def txt(el):
+        return el.get_text(" ", strip=True) if el else ""
+
+    def head(name, code, title, links, week):
+        h = soup.new_tag(name, attrs={"class": "cent-head"})
+        for tag, cls, text in (("b", "cent-code", code), ("span", "cent-t", title)):
+            if text:
+                h.append(soup.new_tag(tag, attrs={"class": cls}, string=text))
+        for a in links:
+            h.append(a.extract())
+        if week:
+            h.append(soup.new_tag("span", attrs={"class": "cent-wk"}, string=week))
+        return h
+
+    for t in soup.select(".et_pb_toggle"):
+        h = t.select_one(".et_pb_toggle_title")
+        links = [a.extract() for a in h.select("a[href]")] if h else []
+        mark, title = (h.select_one(".accordion_mark"), h.select_one(".accordion_title")) if h else (None, None)
+        d = soup.new_tag("details", attrs={"class": "cent-acc"})
+        d.append(head("summary", txt(mark), txt(title) if title or mark else txt(h), links,
+                      txt(h and h.select_one(".accordion-nedelja"))))
+        if body := t.select_one(".et_pb_toggle_content"):
+            d.append(body.extract())
+        t.replace_with(d)
+    for row in soup.select(".et_pb_row:has(> #at-col-head)"):
+        title = next((txt(c) for c in row.select(":scope > #at-col") if txt(c)), "")
+        row.replace_with(head("div", txt(row.select_one("#at-col-head")), title, row.select("#at-col-attach a[href]"),
+                              txt(row.select_one("#at-col-nedelja"))))
+    for el in soup.select(".et_clickable"):
+        # The innermost: a clickable row holds clickable columns, each its own button.
+        if el.select_one(".et_clickable") or el.find_parent(class_="cent-btn"):
+            continue
+        if not txt(el):
+            el.decompose()
+            continue
+        a = el.find("a", href=True)
+        b = soup.new_tag("a", attrs={"class": "cent-btn", "href": a["href"]}, string=txt(el)) if a else soup.new_tag(
+            "span", attrs={"class": "cent-btn", "title": "bez linka na sajtu katedre"}, string=txt(el))
+        row = el.find_parent(class_="et_pb_row")
+        if row:
+            row["class"] = "cent-btns"
+        el.replace_with(b)
+    for a in soup.select("a[href]"):
+        path = unquote(urlsplit(a["href"]).path)
+        ext = re.search(r"\.(\w{1,4})$", path.lower())
+        # A file icon cent.py named by its file, or a video's.
+        if "cent-btn" in a.get("class", []):
+            continue
+        if txt(a) == "video":
+            kind, badge = "video", "▶"
+        elif ext and txt(a) == path.rsplit("/", 1)[-1]:
+            kind, badge = FILE_KINDS.get(ext[1], "file"), ext[1].upper()
+        else:
+            continue
+        a["class"] = "cent-file"
+        a.insert(0, soup.new_tag("span", attrs={"class": f"att__t att__t--{kind}"}, string=badge))
+    for el in soup.select(".et_pb_text_align_center"):
+        el["class"] = "cent-c"
+    return str(soup)
 
 
 # A board attachment after clean_html: <dl><dt><span></span> <a href>name</a></dt>[<dd>comment</dd>]<dd>(size)
@@ -356,6 +436,9 @@ def load_cent(db, smerovi, subjects):
         versions[r["id"]].append(dict(r))
     pages = {i: v[0] for i, v in versions.items()}
     kids = Counter(p["parent"] for p in pages.values())
+    # A content on five pages or more is cent's template, copied unchanged into the subjects nobody filled in (an old
+    # TMO page, with TMO's files): not the subject's. A page has a content once (the key is id, sha).
+    copies = Counter(v["sha"] for vs in versions.values() for v in vs)
 
     def top(p):
         found = None
@@ -416,7 +499,7 @@ def load_cent(db, smerovi, subjects):
             day = n["date"] or n["first_seen"][:10]
             # Its date is the notice's; its time the one it was first seen, when that was the same day.
             posted = n["first_seen"] if n["first_seen"][:10] == day else f"{day}T10:00:00+00:00"
-            html = clean_html(n["html"], p["link"])
+            html = clean_html(cent_tidy(n["html"]), p["link"], classes=CENT_CLASSES)
             items.append(dict(id=f"c{n['nid']}", kind="cent", title=n["title"], smer=s["smer"], subj=s, subject=s["name"],
                               date=day, year=int(day[:4]), topic=f"c{n['nid']}", num=n["nid"],
                               when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.", posted=posted, author="cent",
@@ -424,13 +507,15 @@ def load_cent(db, smerovi, subjects):
         shown, emptied = [], False
         main = f"{s['href']}cent/{p['slug']}/"
         for i, v in enumerate(versions[p["id"]]):
-            html = clean_html(v["html"], p["link"]) or ""
+            html = clean_html(cent_tidy(v["html"]), p["link"], classes=CENT_CLASSES) or ""
             # The page's first heading is its name ("Резултати испита"): the title, not repeated under it.
             m = re.search(r"<h2[^>]*>(.*?)</h2>", html, re.S)
             title = strip_tags(m[1]) if m else v["title"]
             html = html[:m.start()] + html[m.end():] if m else html
             if not strip_tags(html) and "<a " not in html:
                 emptied = emptied or not shown
+                continue
+            if copies[v["sha"]] >= 5:
                 continue
             # The newest version with content is the page's: a page cent emptied keeps its last content.
             href = main if not shown else f"{main}{v['first_seen'][:10]}-{v['sha'][:6]}/"
@@ -1783,6 +1868,27 @@ if __name__ == "__main__":
     _at = attachments('<dl>\n<dt><span></span> <a href="/f?id=1" rel="x">a.docx</a></dt>\n<dd><em>Ocene</em></dd> <dd>(1 KiB) preuzeto 2 puta</dd>\n</dl>')
     assert _at == ('<a class="att" href="/f?id=1" rel="noopener noreferrer"><span class="att__t att__t--doc">DOCX</span><span class="att__n">'
                    'a.docx<span class="att__c"><em>Ocene</em></span><small>1 KiB · preuzeto 2 puta</small></span></a>'), _at
+    _ct = clean_html(cent_tidy(
+        '<div class="et_pb_row responsive-buttons"><div class="et_pb_column et_clickable"><a href="https://c/s1.pdf"><div class="x">'
+        '<p>Смена 1</p></div></a></div><div class="et_pb_column et_clickable"><p>Смена 2</p></div></div>'
+        '<div class="et_pb_row"><div id="at-col-arrow"><img src="https://c/a.webp"></div><div id="at-col-head"><p>ПЛ-1</p></div>'
+        '<div id="at-col"><p>Лаб 1</p></div><div id="at-col-attach"><a href="https://c/u/lab1.pdf">lab1.pdf</a></div>'
+        '<div id="at-col"></div><div id="at-col-nedelja">I недеља</div></div>'
+        '<div class="et_pb_toggle et_pb_toggle_open"><h4 class="et_pb_toggle_title"><span class="accordion_mark">ПЛ-3</span>'
+        '<p class="accordion_title">Лаб 3</p><a href="https://c/u/lab3.PDF">lab3.PDF</a><span class="accordion-nedelja"></span></h4>'
+        '<div class="et_pb_toggle_content"><ul><li>Упутство <a href="https://drive.google.com/x">video</a></li></ul></div></div>'
+        '<div class="et_pb_text et_pb_text_align_center"><p>c</p></div>'), "https://c/", classes=CENT_CLASSES)
+    assert _ct == (
+        '<div class="cent-btns"><a class="cent-btn" href="https://c/s1.pdf" rel="noopener noreferrer">Смена 1</a>'
+        '<span class="cent-btn" title="bez linka na sajtu katedre">Смена 2</span></div>'
+        '<div class="cent-head"><b class="cent-code">ПЛ-1</b><span class="cent-t">Лаб 1</span><a class="cent-file" '
+        'href="https://c/u/lab1.pdf" rel="noopener noreferrer"><span class="att__t att__t--pdf">PDF</span>lab1.pdf</a>'
+        '<span class="cent-wk">I недеља</span></div>'
+        '<details class="cent-acc"><summary class="cent-head"><b class="cent-code">ПЛ-3</b><span class="cent-t">Лаб 3</span>'
+        '<a class="cent-file" href="https://c/u/lab3.PDF" rel="noopener noreferrer"><span class="att__t att__t--pdf">PDF</span>'
+        'lab3.PDF</a></summary><div><ul><li>Упутство <a class="cent-file" href="https://drive.google.com/x" '
+        'rel="noopener noreferrer"><span class="att__t att__t--video">▶</span>video</a></li></ul></div></details>'
+        '<div class="cent-c"><p>c</p></div>'), _ct
     _s, _f = split_page(f"<html><title>T</title><meta>{HEAD_END}<x>{MAIN}a</main><p></main></html>")
     assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>",
                         f'<html lang="sr"><title>T</title><meta>{HEAD_END}a</main><p></html>'), (_s, _f)
