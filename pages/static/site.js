@@ -743,8 +743,14 @@
       var frag = d.createDocumentFragment();
       t.data.split(/(\s+)/).forEach(function (word) {
         if (!word) return;
-        // A space is a step of the wave too (nothing to lift), so the hump doesn't skip between words.
-        if (/^\s+$/.test(word)) { frag.appendChild(d.createTextNode(word)); waveI++; return; }
+        // A space is a step of the wave too, so the hump doesn't skip between words. In the link it is lifted as well:
+        // its underline would be the link's own, flat under the letters' waving ones.
+        if (/^\s+$/.test(word)) {
+          if (t.parentNode.closest('a')) frag.appendChild(el('span', 'wave wave--sp', word)).style.animationDelay = -((waveN - 1 - waveI) * 0.15) + 's';
+          else frag.appendChild(d.createTextNode(word));
+          waveI++;
+          return;
+        }
         var w = frag.appendChild(el('span'));
         w.style.whiteSpace = 'nowrap';
         word.match(/.️?/g).forEach(function (ch) {
