@@ -40,6 +40,10 @@
   </ol>
 </section>
 {%- endif %}
+{%- if not topics %}
+{#- No posts on the board: a card with one of build.py QUIET, in place of an empty list and its filter. -#}
+<p class="quiet">{{ quiet }}</p>
+{%- else %}
 {% call topic_rows('Objave', topics, filter=true) %}
 {#- data-scope: the header search filters the topics (site.js); Enter searches the text of this subject's posts. -#}
 <form class="fbar" data-filter data-scope="Objave predmeta" data-ph="Naslov ili autor; Enter: u tekstu" data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
@@ -52,4 +56,5 @@
   <span class="fbar__n">prikazano <b data-shown>{{ topics | length }}</b></span>
 </form>
 {% endcall %}
+{%- endif %}
 {% endblock %}

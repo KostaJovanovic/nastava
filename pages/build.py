@@ -770,6 +770,11 @@ def load_topics(db, items):
     return sorted(topics, key=lambda t: t["last"]["posted"], reverse=True)
 
 
+# A subject page without posts (predmet.html): one of these, in place of the empty list.
+QUIET = ["Ćuti kao zaliven...", "Tih kao miš...", "Mačka mu pojela jezik?", "Ni muk da se čuje...", "Nema žive duše.",
+         "Ni traga, ni glasa...", "Niko ni da pisne", "Ćuti kao kamen."]
+
+
 def render_places(site, topics, smerovi, subjects):
     """One page per smer (its subjects and its own topics) and one per subject (its topics), as the board's forum pages.
     Empty subjects get none."""
@@ -786,8 +791,10 @@ def render_places(site, topics, smerovi, subjects):
         s["live"] = bool(rows or s.get("cent") or s.get("site"))
         if s["live"]:
             authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
+            # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
+            quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
             write(site / s["href"].strip("/") / "index.html",
-                  env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors))
+                  env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet))
             # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
             (site / s["href"].strip("/") / "novo.json").write_text(json.dumps(
                 {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},

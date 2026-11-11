@@ -1410,6 +1410,12 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 .po__books { gap: 8px; font-size: 14px; }
 .po__sub { margin: 12px 0 4px; color: var(--dim); font: 800 11.5px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
 .st__h + .po__sub { margin-top: 0; }
+/* A subject without posts (predmet.html): a 4:5 card, its line in the middle, faint. */
+.quiet {
+  display: grid; place-items: center; width: min(100%, 360px); aspect-ratio: 4 / 5; margin: 0; padding: 24px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  color: var(--dim); color: color-mix(in srgb, var(--dim) 55%, transparent); font: 400 22px/1.35 var(--sans); text-align: center;
+}
 /* Linkovi (link.html): sections of link cards, as masinci.org/link. The icon: a board row's (.fr__i). */
 .lk { margin-top: 16px; }
 .lk__h { margin: 0 0 8px; color: var(--dim); font: 800 11.5px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
