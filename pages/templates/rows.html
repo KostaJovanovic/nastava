@@ -40,7 +40,8 @@
       {%- set k = s.info.katedra if s.info is defined and s.info else None %}
       <span class="fr__i" aria-hidden="true"{% if k %} title="{{ k }}"{% endif %}><svg class="i"><use href="/static/icons.svg#i-{{ k | slug if k else icon }}"></use></svg></span>
       <div class="fr__t">
-        <a class="fr__a" href="{{ s.href }}">{{ s.label or s.name }}</a>
+        {#- A smer's program in full, or on a phone its abbreviation (style.css). -#}
+        <a class="fr__a" href="{{ s.href }}">{% if s.abbr and s.abbr != s.label %}<span class="fr__long">{{ s.label }}</span><span class="fr__abbr">{{ s.abbr }}</span>{% else %}{{ s.label or s.name }}{% endif %}</a>
         {%- if s.elsewhere %}{% for e in s.elsewhere.values() | sort(attribute='last.posted', reverse=true) %}<span class="ext" title="{{ e.name }}: {{ e.who | join(', ') }}">{{ e.name }}</span>{% endfor %}{% endif %}
         {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
         {%- elif s.subjects is number %}<p class="fr__sub">{{ s.subjects }} {{ s.subjects | pl('predmet') }}</p>{% endif %}

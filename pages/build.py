@@ -252,9 +252,11 @@ def load_places(db):
         top = f
         while top["parent"] is not None:
             top = forums[top["parent"]]
-        # label: the name as shown ('Основне академске студије - МИ'); short: its abbreviation, for URLs and matching.
+        # label: the name as shown ('Основне академске студије - Машинско инжењерство'); short: its abbreviation, for
+        # URLs and matching; abbr: the name on a phone's home page ('Основне академске студије - МИ', rows.html).
         smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"], "short": short_smer(top["name"]),
-                                              "label": smer_label(top["name"])})
+                                              "label": smer_label(top["name"]),
+                                              "abbr": top["name"][:1].upper() + top["name"][1:]})
         if f is top:
             place[f["id"]] = (smer, None)
             continue
