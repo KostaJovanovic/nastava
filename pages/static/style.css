@@ -946,6 +946,12 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 @container main (max-width: 759.98px) {
   /* shortcut: measured in Edge (6 + 40.6 two title lines + 2 + 18.1 date + 6 + 1 border); redo after a font size change. */
   .fb--forums .fr:not([data-pids]) { min-height: 74px; align-content: center; }
+  /* A topic without replies: no "0 odgovora" (wide screens keep the 0 in the column). */
+  .fr__n--0 { display: none; }
+  /* Of the last post's author, the cent mark only: where it came from, without "od". Not on the home page (#res). */
+  .fr__last > span:has(> .src) { display: inline; font-size: 0; }
+  #res .fr__last > span:has(> .src) { display: none; }
+  .fr__last .src { margin-right: 6px; }
 }
 .fr__s { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
 .fr__s .s2 { color: var(--dim); }

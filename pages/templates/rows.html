@@ -72,7 +72,7 @@
           {%- if place and t.subj %} · <a href="{{ t.subj.href }}">{{ t.subj.name }}</a>{% elif place and t.smer %} · <a href="{{ t.smer.href }}">{{ t.smer.label }}</a>{% endif %}</p>
       </div>
       {%- set n = t.posts | length - 1 %}
-      <div class="fr__more"><span class="fr__n" data-l="{{ n | pl('odgovor') }}">{{ n }}</span>{{ last(t.last, title=false, same=not many) }}</div>
+      <div class="fr__more"><span class="fr__n{% if not n %} fr__n--0{% endif %}" data-l="{{ n | pl('odgovor') }}">{{ n }}</span>{{ last(t.last, title=false, same=not many) }}</div>
     </li>
 {%- endmacro -%}
 
