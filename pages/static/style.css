@@ -668,8 +668,8 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 @media (max-width: 899px) { .mp__foot { bottom: calc(60px + env(safe-area-inset-bottom)); } }
 @media (max-width: 600px) {
   .mp__cards { grid-template-columns: 1fr; }
-  /* A picked program or year hides the rest of its row; pressing it again brings them back. */
-  :is(.mp__tabs, .mp__chips):has([aria-pressed="true"]) > [aria-pressed="false"] { display: none; }
+  /* A picked program hides the other programs; pressing it again brings them back. The years stay. */
+  .mp__tabs:has([aria-pressed="true"]) > [aria-pressed="false"] { display: none; }
 }
 /* Closing: the dialog leaves as it came, faster; the top layer keeps it (overlay) until the fade ends. Where a
    browser cannot (no transition of overlay), it closes at once as before. */

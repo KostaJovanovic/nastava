@@ -59,7 +59,7 @@ with sync_playwright() as p:
 	# covers only that subject, until "all subjects" is picked.
 	page.click('[data-moji-open]')
 	page.wait_for_selector('.mp__card')
-	# Nothing is picked at first and every subject shows; a pick narrows them, and on a phone hides the rest of its row.
+	# Nothing is picked at first and every subject shows; a pick narrows them, and on a phone a program hides the others.
 	assert page.locator('.mp__tab[aria-pressed="true"]').count() == 0
 	n_all = page.locator('.mp__card').count()
 	page.locator('.mp__tabs .mp__tab').first.click()
@@ -67,7 +67,7 @@ with sync_playwright() as p:
 	assert page.locator('.mp__tabs .mp__tab:visible').count() > 1
 	assert 0 < page.locator('.mp__card').count() < n_all, n_all
 	page.set_viewport_size({'width': 400, 'height': 800})
-	assert page.locator('.mp__tabs .mp__tab:visible').count() == 1 and page.locator('.mp__chips .mp__tab:visible').count() == 1
+	assert page.locator('.mp__tabs .mp__tab:visible').count() == 1 and page.locator('.mp__chips .mp__tab:visible').count() > 1
 	page.set_viewport_size({'width': 1366, 'height': 900})
 	card = page.locator('.mp__card').first
 	name = card.inner_text()
