@@ -15,6 +15,11 @@
     </div>
   </div>
 </div>
-{% if subjects %}{{ forum_rows('Predmeti', subjects, 'book', filter=true) }}{% endif %}
+{#- The subjects without posts at the bottom, after the smer's own notices; the bar filters them too (site.js filters
+    every [data-rows] list). -#}
+{%- set used = subjects | selectattr('topics') | list %}
+{%- set empty = subjects | rejectattr('topics') | list %}
+{% if used %}{{ forum_rows('Predmeti', used, 'book', filter=true) }}{% endif %}
 {% if topics %}{{ topic_rows('Opšta obaveštenja smera', topics) }}{% endif %}
+{% if empty %}{{ forum_rows('Predmeti bez objava', empty, 'book', filter=true) }}{% endif %}
 {% endblock %}

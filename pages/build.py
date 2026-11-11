@@ -776,8 +776,7 @@ QUIET = ["Ćuti kao zaliven...", "Tih kao miš...", "Mačka mu pojela jezik?", "
 
 
 def render_places(site, topics, smerovi, subjects):
-    """One page per smer (its subjects and its own topics) and one per subject (its topics), as the board's forum pages.
-    Empty subjects get none."""
+    """One page per smer (its subjects and its own topics) and one per subject (its topics), as the board's forum pages."""
     topic_row = env.get_template("rows.html").module.topic_row
     in_subject, in_smer = defaultdict(list), defaultdict(list)
     for t in topics:
@@ -788,7 +787,8 @@ def render_places(site, topics, smerovi, subjects):
     for s in subjects.values():
         rows = in_subject[s["id"]]
         s["topics"], s["count"], s["last"] = len(rows), sum(len(t["posts"]) for t in rows), rows[0]["last"] if rows else None
-        s["live"] = bool(rows or s.get("cent") or s.get("site"))
+        # Every subject has a page, an empty one too (predmet.html quiet); live: it has one.
+        s["live"] = True
         if s["live"]:
             authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
             # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
