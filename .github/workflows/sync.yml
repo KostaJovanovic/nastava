@@ -1,15 +1,18 @@
 name: sync
 
-# The automatic update. Three scheduled runs a day; ci/plan.py (through ci/deploy.sh auto) decides from the faculty's
+# The automatic update. Five scheduled runs a day; ci/plan.py (through ci/deploy.sh auto) decides from the faculty's
 # teaching calendar what each one does: on a hot day (registration, an exam period and the 7 days after it; not the
-# smaller block) all three
-# scrape the board and the news, on another day only the night run. The schedule pages also on the 1st of the month
-# and on the first day of a registration or an exam period; the teachers and the subjects on 1 October.
-# GitHub's cron is UTC: 12:23, 17:23 and 21:23 in Belgrade in winter, an hour later in summer. GitHub may start a
-# scheduled run late, and turns the schedule off after 60 days without a commit (the first step below prevents that).
+# smaller block) all five scrape the board and the news, on another day three (noon, evening, night); morning and
+# afternoon stop at "skip". The schedule pages also on the 1st of the month and on the first day of a registration or
+# an exam period; the teachers and the subjects on 1 October.
+# GitHub's cron is UTC: 8:23, 12:23, 14:23, 17:23 and 21:23 in Belgrade in winter, an hour later in summer. GitHub may
+# start a scheduled run late, and turns the schedule off after 60 days without a commit (the first step below prevents
+# that).
 on:
   schedule:
+    - cron: "23 7 * * *"   # morning
     - cron: "23 11 * * *"  # noon
+    - cron: "23 13 * * *"  # afternoon
     - cron: "23 16 * * *"  # evening
     - cron: "23 20 * * *"  # night
   workflow_dispatch:
@@ -17,7 +20,7 @@ on:
       what:
         description: "forum: the board and the news; sync: every scraper; auto: as a scheduled run"
         type: choice
-        options: ["forum", "forum studije", "sync", "auto noon", "auto evening", "auto night"]
+        options: ["forum", "forum studije", "sync", "auto morning", "auto noon", "auto afternoon", "auto evening", "auto night"]
         default: forum
 
 permissions:
@@ -36,7 +39,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       WHAT: >-
         ${{ github.event_name != 'schedule' && inputs.what
+        || github.event.schedule == '23 7 * * *' && 'auto morning'
         || github.event.schedule == '23 11 * * *' && 'auto noon'
+        || github.event.schedule == '23 13 * * *' && 'auto afternoon'
         || github.event.schedule == '23 16 * * *' && 'auto evening'
         || 'auto night' }}
     steps:

@@ -4,11 +4,11 @@
 # ///
 """What a scheduled run (sync.yml) does, from the faculty's teaching calendar; and the database's fingerprint.
 
-Usage: plan.py noon|evening|night | check | fingerprint
-  noon, evening, night  the run's slot: print the parts for ci/deploy.sh ("forum", "forum studije", ...) or "skip"
-  check                 exit 1 when the calendar of this school year is missing or unreadable (after 15 October)
-  fingerprint           a hash of what the scrapers store: equal before and after a scrape means nothing changed
-Today is the UTC date (the runs are 11–21 UTC: the same day in Belgrade); TODAY=2027-01-11 overrides it for a test.
+Usage: plan.py morning|noon|afternoon|evening|night | check | fingerprint
+  morning … night  the run's slot: print the parts for ci/deploy.sh ("forum", "forum studije", ...) or "skip"
+  check            exit 1 when the calendar of this school year is missing or unreadable (after 15 October)
+  fingerprint      a hash of what the scrapers store: equal before and after a scrape means nothing changed
+Today is the UTC date (the runs are 7–21 UTC: the same day in Belgrade); TODAY=2027-01-11 overrides it for a test.
 """
 import datetime as dt
 import hashlib
@@ -82,14 +82,14 @@ def hot(d, wins):
 
 
 def parts(slot, d, wins):
-    """The scrapers for a run: "forum" (the board and the news) and those due today, or "skip". A hot day has three
-    runs (noon, evening, night), another day one (night); the day's first run takes the schedule pages (studije) on the
-    1st of the month and on the first day of a registration or an exam period, and on 1 October the teachers and the
-    subjects."""
+    """The scrapers for a run: "forum" (the board and the news) and those due today, or "skip". A hot day has five
+    runs (morning, noon, afternoon, evening, night), another day three (noon, evening, night); the day's first run
+    takes the schedule pages (studije) on the 1st of the month and on the first day of a registration or an exam
+    period, and on 1 October the teachers and the subjects."""
     h = hot(d, wins)
-    if slot != "night" and not h:
+    if slot in ("morning", "afternoon") and not h:
         return "skip"
-    first = slot == ("noon" if h else "night")
+    first = slot == ("morning" if h else "noon")
     p = ["forum"]
     if first and (d.day == 1 or any(d == a for _, a, _ in wins)):
         p.append("studije")
@@ -147,15 +147,17 @@ if __name__ == "__main__":
         ("prijave", D(2027, 8, 16), D(2027, 8, 18)), ("rok", D(2027, 8, 23), D(2027, 9, 5)),
         ("prijave", D(2027, 9, 8), D(2027, 9, 9)), ("rok", D(2027, 9, 13), D(2027, 9, 26))], _w
     _p = lambda slot, *ymd: parts(slot, D(*ymd), _w)
-    assert _p("noon", 2027, 1, 18) == "forum studije" and _p("night", 2027, 1, 18) == "forum"  # an exam period starts
-    assert _p("evening", 2027, 2, 28) == "forum" and _p("noon", 2027, 3, 1) == "skip"          # 7 days after it, then not
-    assert _p("noon", 2026, 11, 10) == "skip" and _p("noon", 2027, 3, 30) == "skip"            # the smaller block: quiet
-    assert _p("night", 2026, 12, 1) == "forum studije" and _p("noon", 2026, 12, 1) == "skip"   # the 1st of a quiet month
-    assert _p("night", 2026, 12, 5) == "forum" and _p("evening", 2026, 12, 5) == "skip"
-    assert _p("noon", 2027, 1, 11) == "forum studije" and _p("evening", 2027, 1, 11) == "forum"  # registration opens
-    assert _p("noon", 2027, 2, 2) == "forum" and _p("noon", 2027, 2, 1) == "forum studije"     # after January's; the 1st
-    assert _p("noon", 2027, 10, 1) == "forum studije nastavnici predmeti"  # hot (after October's), the 1st, 1 October
-    assert _p("night", 2026, 10, 1) == "forum studije nastavnici predmeti"
+    assert _p("morning", 2027, 1, 18) == "forum studije" and _p("afternoon", 2027, 1, 18) == "forum"  # an exam period starts
+    assert _p("afternoon", 2027, 2, 28) == "forum" and _p("morning", 2027, 3, 1) == "skip"  # 7 days after it, then not
+    assert _p("noon", 2027, 3, 1) == "forum studije"                                        # a quiet day's first: noon
+    assert _p("morning", 2026, 11, 10) == "skip" and _p("afternoon", 2027, 3, 30) == "skip"  # the smaller block: quiet
+    assert _p("noon", 2026, 11, 10) == "forum" and _p("night", 2027, 3, 30) == "forum"      # but its three runs
+    assert _p("noon", 2026, 12, 1) == "forum studije" and _p("night", 2026, 12, 1) == "forum"  # the 1st of a quiet month
+    assert _p("evening", 2026, 12, 5) == "forum" and _p("afternoon", 2026, 12, 5) == "skip"
+    assert _p("morning", 2027, 1, 11) == "forum studije" and _p("noon", 2027, 1, 11) == "forum"  # registration opens
+    assert _p("noon", 2027, 2, 2) == "forum" and _p("morning", 2027, 2, 1) == "forum studije"  # after January's; the 1st
+    assert _p("morning", 2027, 10, 1) == "forum studije nastavnici predmeti"  # hot (after October's), the 1st, 1 October
+    assert _p("noon", 2026, 10, 1) == "forum studije nastavnici predmeti"
     assert hot(D(2026, 10, 3), [("rok", D(2026, 9, 13), D(2026, 9, 26))]) and not hot(D(2026, 10, 4), [("rok", D(2026, 9, 13), D(2026, 9, 26))])
     _c = {2026: _w}
     assert for_year(_c, 2027)[0] == ("prijave", D(2028, 1, 11), D(2028, 1, 13)) and for_year(_c, 2026) == _w and for_year({}, 2026) == []
@@ -172,7 +174,7 @@ if __name__ == "__main__":
             # The faculty may publish it late: no alarm before 15 October.
             if n < 12 and today >= D(y, 10, 15):
                 sys.exit(f"no readable calendar for {y}/{y + 1} on www.mas.bg.ac.rs (kalendar nastave): the extra runs use the nearest year's dates")
-        case [("noon" | "evening" | "night") as slot]:
+        case [("morning" | "noon" | "afternoon" | "evening" | "night") as slot]:
             cals = calendars(sqlite3.connect(f"file:{DB}?mode=ro", uri=True))
             print(parts(slot, today, for_year(cals, school_year(today))))
         case _:
