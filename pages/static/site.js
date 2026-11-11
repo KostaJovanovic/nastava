@@ -870,7 +870,19 @@
     'Serif',
     ['Literata', '"Literata", Georgia, serif'],
     ['Source Serif 4', '"Source Serif 4", Georgia, serif'],
-    ['LT Remark', '"LT Remark", Georgia, serif']
+    ['LT Remark', '"LT Remark", Georgia, serif'],
+    // Latin only: Cyrillic in Geist.
+    'Latinica, sans',
+    ['Satoshi', '"Satoshi", "Geist", system-ui, sans-serif'],
+    ['Barlow', '"Barlow", "Geist", system-ui, sans-serif'],
+    ['Human Sans', '"Human Sans", "Geist", system-ui, sans-serif'],
+    ['Claris Sans', '"Claris Sans", "Geist", system-ui, sans-serif'],
+    'Latinica, serif',
+    ['Fraunces', '"Fraunces", "Geist", Georgia, serif'],
+    ['Wittgenstein', '"Wittgenstein", "Geist", Georgia, serif'],
+    ['Faustina', '"Faustina", "Geist", Georgia, serif'],
+    ['Redaction', '"Redaction", "Geist", Georgia, serif'],
+    ['Zina', '"Zina", "Geist", Georgia, serif']
   ];
   var openFonts = function () {
     var now = '';

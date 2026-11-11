@@ -26,6 +26,23 @@
 @font-face { font-family: "LT Remark"; src: url("/static/fonts/lab/LTRemark-Black.woff2") format("woff2"); font-weight: 800; font-display: swap; }
 @font-face { font-family: "Mint Spirit No2"; src: url("/static/fonts/lab/MintSpiritNo2-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Mint Spirit No2"; src: url("/static/fonts/lab/MintSpiritNo2-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+/* Latin only: Cyrillic falls back to Geist (site.js's stacks). Satoshi and Zina (Fontshare) as their vendor ships them. */
+@font-face { font-family: "Satoshi"; src: url("/static/fonts/lab/Satoshi.woff2") format("woff2"); font-weight: 300 900; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-ExtraBold.woff2") format("woff2"); font-weight: 800; font-display: swap; }
+@font-face { font-family: "Human Sans"; src: url("/static/fonts/lab/HumanSans-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Human Sans"; src: url("/static/fonts/lab/HumanSans-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Human Sans"; src: url("/static/fonts/lab/HumanSans-Black.woff2") format("woff2"); font-weight: 800; font-display: swap; }
+@font-face { font-family: "Claris Sans"; src: url("/static/fonts/lab/ClarisSans.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Zina"; src: url("/static/fonts/lab/Zina.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("/static/fonts/lab/Fraunces.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: "Wittgenstein"; src: url("/static/fonts/lab/Wittgenstein.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: "Faustina"; src: url("/static/fonts/lab/Faustina-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Faustina"; src: url("/static/fonts/lab/Faustina-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Faustina"; src: url("/static/fonts/lab/Faustina-ExtraBold.woff2") format("woff2"); font-weight: 800; font-display: swap; }
+@font-face { font-family: "Redaction"; src: url("/static/fonts/lab/Redaction-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Redaction"; src: url("/static/fonts/lab/Redaction-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
 /* The scripts hide with the hidden attribute; a display rule (.opt, .fr) must not show it again. */
 [hidden] { display: none !important; }
