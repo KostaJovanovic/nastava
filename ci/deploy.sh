@@ -9,8 +9,8 @@
 #   forum ...  the board and the news, and the scrapers named after it
 #   (none)     build and publish this copy's nastava.db, nothing scraped
 # A scrape first gets the saved state (ci/state.sh pull), so this PC goes on from the last scheduled run. When the
-# scrapers changed nothing (ci/plan.py fingerprint), nothing is saved, built or published. Otherwise: save the state,
-# build, publish, then the web push of the new posts. Missing posts, a failed scraper, a failed push or an unreadable
+# scrapers changed nothing (ci/plan.py fingerprint), the state is not saved. Then: build, publish (the footer shows
+# when the board was read), then the web push of the new posts. Missing posts, a failed scraper, a failed push or an unreadable
 # calendar do not stop the rest, but the script exits 1 at the end (a red run: GitHub's e-mail).
 set -euo pipefail
 repo=KostaJovanovic/nastava
@@ -60,11 +60,12 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	for p in "${parts[@]:1}"; do
 		uv run "$p.py" sync || failed+=("$p")
 	done
+	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time.
 	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" ]]; then
-		echo "nothing changed: no save, build or publish"
-		finish
+		echo "nothing changed: no save; build and publish for the time checked"
+	else
+		bash ci/state.sh push
 	fi
-	bash ci/state.sh push
 fi
 
 uv run pages/build.py nastava.db pages/.build

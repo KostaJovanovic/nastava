@@ -72,6 +72,7 @@ create table if not exists documents (
 	filename text, path text, size integer, mime text, uploaded_at text,
 	text text, fetched integer not null default 0, error text
 );
+create table if not exists meta (key text primary key, value text);
 '''
 
 
@@ -341,6 +342,9 @@ def main():
 	elif command == 'sync':
 		crawl_tree(db)
 		fetch_topics(db, recent=True)
+		# The footer's "Provereno" (pages/build.py): when the board was last read, whether or not it had new posts.
+		db.execute("insert or replace into meta values ('forum_synced', strftime('%Y-%m-%dT%H:%MZ', 'now'))")
+		db.commit()
 	else:
 		sys.exit(__doc__)
 

@@ -1560,8 +1560,13 @@ def main(db_path, out):
     topics = load_topics(db, items)
     mark_elsewhere(items)
     env.globals["side"] = side = side_panel(items)
-    # The footer's "Ažurirano" (base.html): the build follows the sync (ci/deploy.sh). UTC; site.js shows local time.
-    env.globals["built"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    # The footer's "Provereno" (base.html): when nastava.py last read the board, not when this ran. UTC; site.js shows
+    # local time. None (no line in the footer): a database from before the meta table.
+    # Not "checked": raspored.html has its own (the schedule pages' last read), which would change the footer there.
+    try:
+        env.globals["forum_checked"] = (db.execute("SELECT value FROM meta WHERE key = 'forum_synced'").fetchone() or [None])[0]
+    except sqlite3.OperationalError:
+        env.globals["forum_checked"] = None
     global shell, site_dir
     shell, site_dir = split_page(env.get_template("base.html").render())[0], site
     (site / "shell.html").write_text(versioned(shell), encoding="utf-8")
