@@ -730,36 +730,40 @@
     built.textContent = 'u ' + p2(bt.getHours()) + ':' + p2(bt.getMinutes()) + ', ' + p2(bt.getDate()) + '.' + p2(bt.getMonth() + 1) + '.' + bt.getFullYear() + '.';
   }
   /* The credit's wave (as valjdakosta.com's header): each letter a span, its delay one step behind the one before;
-     the words stay whole (nowrap), an emoji with its variation selector one letter. */
+     the words stay whole (nowrap), an emoji with its variation selector one letter. The name is there in both scripts
+     (base.html), one shown: the steps are counted along the shown one, again when pismo.js switches (html lang), so
+     the hump runs on through the name and past it. The hidden one keeps animating (style.css), so a switch shows
+     letters already in step. */
   var wave = d.querySelector('[data-wave]');
   if (wave) {
     var waveText = [], walker = d.createTreeWalker(wave, NodeFilter.SHOW_TEXT), tn;
     while ((tn = walker.nextNode())) waveText.push(tn);
-    var waveN = waveText.reduce(function (n, t) { return n + (t.data.match(/\s+|\S️?/g) || []).length; }, 0), waveI = 0;
-    var altI;
+    var waveSteps = []; // [letter span or null (a plain space), script: 'cyr', 'lat' or '' (shown in both)]
     waveText.forEach(function (t) {
-      // The name's two scripts (only one shows) start on the same step, so the hump doesn't skip the hidden one.
-      if (t.parentNode.hasAttribute('data-cyr')) altI = waveI;
-      else if (t.parentNode.hasAttribute('data-lat')) waveI = altI;
+      var p = t.parentNode, s = p.hasAttribute('data-cyr') ? 'cyr' : p.hasAttribute('data-lat') ? 'lat' : '';
       var frag = d.createDocumentFragment();
       t.data.split(/(\s+)/).forEach(function (word) {
         if (!word) return;
         // A space is a step of the wave too, so the hump doesn't skip between words. In the link it is lifted as well:
         // its underline would be the link's own, flat under the letters' waving ones.
         if (/^\s+$/.test(word)) {
-          if (t.parentNode.closest('a')) frag.appendChild(el('span', 'wave wave--sp', word)).style.animationDelay = -((waveN - 1 - waveI) * 0.15) + 's';
-          else frag.appendChild(d.createTextNode(word));
-          waveI++;
+          waveSteps.push([p.closest('a') ? frag.appendChild(el('span', 'wave wave--sp', word)) : null, s]);
+          if (!p.closest('a')) frag.appendChild(d.createTextNode(word));
           return;
         }
         var w = frag.appendChild(el('span'));
         w.style.whiteSpace = 'nowrap';
-        word.match(/.️?/g).forEach(function (ch) {
-          w.appendChild(el('span', 'wave', ch)).style.animationDelay = -((waveN - 1 - waveI++) * 0.15) + 's';
-        });
+        word.match(/.️?/g).forEach(function (ch) { waveSteps.push([w.appendChild(el('span', 'wave', ch)), s]); });
       });
-      t.parentNode.replaceChild(frag, t);
+      p.replaceChild(frag, t);
     });
+    var waveSync = function () {
+      var hidden = d.documentElement.lang === 'sr-Cyrl' ? 'lat' : 'cyr'; // as style.css hides the name
+      var steps = waveSteps.filter(function (x) { return x[1] !== hidden; });
+      steps.forEach(function (x, i) { if (x[0]) x[0].style.animationDelay = -((steps.length - 1 - i) * 0.15) + 's'; });
+    };
+    waveSync();
+    new MutationObserver(waveSync).observe(d.documentElement, { attributes: true, attributeFilter: ['lang'] });
   }
 
   var leave = null;
