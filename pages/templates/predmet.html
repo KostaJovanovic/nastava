@@ -59,10 +59,10 @@
 {% endcall %}
 {%- endif %}
 {%- if subj.lit %}
-{#- The subject's material on its department's site (build.py load_katedre: ie's "Literatura"), as a post's files;
-    more than five open on a tap (style.css .lit). -#}
+{#- The subject's material on its department's site (build.py load_katedre: ie's "Literatura") or in its Teams
+    classes (load_mail), as a post's files; more than five open on a tap (style.css .lit). -#}
 <section class="fb lit{% if subj.lit.n > 5 %} lit--short{% endif %}">
-  <div class="fb__h"><h2>Materijal sa sajta katedre <span class="src">{{ subj.lit.mark }}</span></h2></div>
+  <div class="fb__h"><h2>{{ subj.lit.title or 'Materijal sa sajta katedre' }} <span class="src">{{ subj.lit.mark }}</span></h2></div>
   <div class="prose prose--html">{{ subj.lit.html | safe }}</div>
   {%- if subj.lit.n > 5 %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ subj.lit.n - 5 }}</span></label>{% endif %}
 </section>

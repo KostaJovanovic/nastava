@@ -760,6 +760,20 @@ def load_mail(subjects, folder=MAIL):
                           date=day, year=int(day[:4]), topic=f"m{key[root]}", num=int(datetime.fromisoformat(m["posted"]).timestamp()),
                           when=m["when"], posted=m["posted"], author=m["author"], body=strip_tags(html), html=html,
                           files=[], gone=0, source_url=None))
+    # teams.py's material: a Teams class's library, beyond its posts' files, in one box on the subject's page; each
+    # file with its class's school year and folder. shortcut: a subject with ie's "Literatura" too gets only this box.
+    material = defaultdict(list)
+    for p in sorted(folder.glob("*/material.json")):
+        m = json.loads(p.read_text(encoding="utf-8"))
+        s = by_href.get(m["page"])
+        if not s:
+            print(f"mail: no subject page {m['page']} ({p.parent.name})", file=sys.stderr)
+            continue
+        year = (re.search(r"20\d\d/\d+", m["name"]) or [None])[0]
+        material[s["href"]] += [(f"/mail/{p.parent.name}/{quote(f)}", f.rsplit("/", 1)[-1],
+                                 " · ".join(filter(None, [year, f.rsplit("/", 1)[0] if "/" in f else None]))) for f in m["files"]]
+    for href, files in material.items():
+        by_href[href]["lit"] = dict(mark="teams", title="Materijal sa Teams-a", n=len(files), html=file_rows(files, "Teams"))
     return items
 
 
@@ -1846,7 +1860,7 @@ def main(db_path, out):
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
     items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + load_mail(subjects)
     if MAIL.is_dir():
-        shutil.copytree(MAIL, site / "mail", ignore=shutil.ignore_patterns("post.json"))
+        shutil.copytree(MAIL, site / "mail", ignore=shutil.ignore_patterns("post.json", "material.json"))
     teachers = load_teachers(db, subjects)
     if teachers:
         write_photos(db, site)
@@ -2063,7 +2077,13 @@ if __name__ == "__main__":
             (Path(_t) / _d / "post.json").write_text(json.dumps(dict(
                 id=_id, refs=_refs, page="/1/", author="llecic", posted=f"{_d[:10]}T{_at}:00+00:00", when="", title=_ti,
                 html='<div style="x">Hi <script>x</script></div>', files=["r.pdf"] if _id == "<a>" else [])), encoding="utf-8")
-        _m = load_mail({1: dict(id=1, name="S", smer=_sm, href="/1/")}, Path(_t))
+        (Path(_t) / "teams-x").mkdir()
+        (Path(_t) / "teams-x" / "material.json").write_text(json.dumps(dict(page="/1/", name="T 2025/2026. godina",
+                                                                             files=["Predavanja/P 1.pdf", "a.docx"])), encoding="utf-8")
+        _ms = dict(id=1, name="S", smer=_sm, href="/1/")
+        _m = load_mail({1: _ms}, Path(_t))
+    assert _ms["lit"]["n"] == 2 and 'href="/mail/teams-x/Predavanja/P%201.pdf"' in _ms["lit"]["html"], _ms["lit"]
+    assert "P 1.pdf<small>2025/2026 · Predavanja</small>" in _ms["lit"]["html"] and "a.docx<small>2025/2026</small>" in _ms["lit"]["html"]
     assert [(i["id"], i["topic"]) for i in _m] == [("maaaaaaaa", "maaaaaaaa"), ("mbbbbbbbb", "maaaaaaaa"), ("mcccccccc", "maaaaaaaa"),
                                                    ("mdddddddd", "mdddddddd"), ("meeeeeeee", "meeeeeeee")], _m
     assert _m[0]["num"] < _m[1]["num"] < _m[2]["num"] and "script" not in _m[0]["html"] and 'style=' not in _m[0]["html"]

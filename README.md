@@ -72,6 +72,10 @@ pipeline and site, with new scrapers for phpBB.
   mail with `post.json` (sender, date, subject line, the text without the quoted mail) and its attachments. To and Cc
   are never read. The site shows them as that subject's board posts (a "Re:" in its mail's topic) and hosts their files
   under `/mail/`. Done by hand, not in the Action.
+- `teams.py`: the posts of the faculty's Teams classes into `mail/`, in the same form: each thread a teacher started,
+  with its replies (a student's is "Student #N", numbered per thread, with no name, index, e-mail or file of theirs),
+  and the rest of each class's SharePoint library as the subject's "Materijal sa Teams-a". `teams-export.js` reads
+  the posts in the browser.
 - `nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
@@ -135,6 +139,14 @@ When the attachments are wanted: `uv run documents.py sync`. Old .doc/.xls/.ppt 
 To add mails: in webmail (RainLoop) open each mail, ▾ next to Reply → "Download as .eml", into one folder; then
 `uv run mail.py add <folder> /predmet/<smer>/<subject>/` (the subject page's URL; in Git Bash prefix
 `MSYS_NO_PATHCONV=1`) and commit `mail/`. A mail already there is skipped.
+
+To add Teams posts: open teams.microsoft.com in a browser, paste `teams-export.js` into the DevTools console (Firefox:
+Ctrl+B for the multi-line editor) and run it: it saves `teams-export.json` (every channel's messages, read with the
+page's own sign-in; Graph needs an admin's consent for them). For each class: Files → Open in SharePoint → select all
+→ Download, the zips into one folder. A new class goes in `CLASSES` (its group id → subject page), a new teacher in
+`TEACHERS` (their Teams account → board username), a student's name written in a reply with no index next to it in
+`NAMED`; then `uv run teams.py add <teams-export.json> <zip folder>`, read the students' replies in `mail/` for names
+it missed, and commit `mail/`.
 
 ## License
 
