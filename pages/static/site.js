@@ -856,6 +856,53 @@
     showTheme();
   }
 
+  /* Font menu: the Konami code (↑↑↓↓←→←→BA) opens it at the bottom right, again closes it. A font picked stays in
+     localStorage ('font', its --sans) and head.js sets it before the first paint; Geist removes it. */
+  var KONAMI = 'arrowup,arrowup,arrowdown,arrowdown,arrowleft,arrowright,arrowleft,arrowright,b,a', keys = [], fl = null;
+  var FONTS = [
+    ['Geist', '"Geist", system-ui, sans-serif'],
+    ['Golos Text', '"Golos Text", system-ui, sans-serif'],
+    ['Roboto', '"Roboto Lab", system-ui, sans-serif'],
+    ['Inter', '"Inter", system-ui, sans-serif'],
+    ['Montserrat', '"Montserrat", system-ui, sans-serif'],
+    ['LT Wave Text', '"LT Wave Text", system-ui, sans-serif'],
+    ['Mint Spirit No2', '"Mint Spirit No2", system-ui, sans-serif'],
+    'Serif',
+    ['Literata', '"Literata", Georgia, serif'],
+    ['Source Serif 4', '"Source Serif 4", Georgia, serif'],
+    ['LT Remark', '"LT Remark", Georgia, serif']
+  ];
+  var openFonts = function () {
+    var now = '';
+    try { now = localStorage.getItem('font') || ''; } catch (e) {}
+    fl = d.createElement('div');
+    fl.className = 'fl';
+    fl.setAttribute('role', 'group');
+    fl.setAttribute('aria-label', 'Font');
+    fl.setAttribute('data-notx', '');
+    fl.innerHTML = '<div class="fl__h">Font<button type="button" class="fl__x" aria-label="Zatvori">×</button></div>';
+    FONTS.forEach(function (f, i) {
+      if (typeof f === 'string') return fl.insertAdjacentHTML('beforeend', '<div class="fl__g">' + f + '</div>');
+      var l = d.createElement('label'), r = d.createElement('input');
+      r.type = 'radio'; r.name = 'fl'; r.checked = i ? f[1] === now : !now;
+      r.addEventListener('change', function () {
+        if (i) root.style.setProperty('--sans', f[1]); else root.style.removeProperty('--sans');
+        try { if (i) localStorage.setItem('font', f[1]); else localStorage.removeItem('font'); } catch (e) {}
+      });
+      l.style.fontFamily = f[1];
+      l.append(r, f[0]);
+      fl.append(l);
+    });
+    fl.querySelector('.fl__x').addEventListener('click', function () { fl.hidden = true; });
+    d.body.append(fl);
+  };
+  d.addEventListener('keydown', function (e) {
+    keys = keys.concat(e.key.toLowerCase()).slice(-10);
+    if (keys.join() !== KONAMI) return;
+    keys = [];
+    if (fl) fl.hidden = !fl.hidden; else openFonts();
+  });
+
   /* Keys: / search, j/k move between rows, Enter opens. */
   d.addEventListener('keydown', function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
