@@ -256,7 +256,7 @@ def load_places(db):
         # URLs and matching; abbr: the name on a phone's home page ('Основне академске студије - МИ', rows.html).
         smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"], "short": short_smer(top["name"]),
                                               "label": smer_label(top["name"]),
-                                              "abbr": top["name"][:1].upper() + top["name"][1:]})
+                                              "abbr": smer_abbr(top["name"])})
         if f is top:
             place[f["id"]] = (smer, None)
             continue
@@ -376,7 +376,8 @@ def load_cent(db, smerovi, subjects):
             smer_name = smer_name[:1].lower() + smer_name[1:]
             m = smer_of.get(fold(short_smer(smer_name)))
             if not m:
-                m = dict(id=f"cent:{program}", name=smer_name, short=short_smer(smer_name), label=smer_label(smer_name))
+                m = dict(id=f"cent:{program}", name=smer_name, short=short_smer(smer_name), label=smer_label(smer_name),
+                         abbr=smer_abbr(smer_name))
                 m["href"] = f"/smer/{slug(m['short'])}/"
                 m["key"] = m["href"].strip("/").split("/")[-1]
                 smerovi[m["id"]] = smer_of[fold(m["short"])] = m
@@ -1332,6 +1333,12 @@ def short_smer(name):
 def smer_label(name):
     """'основне академске студије - МИ' -> 'Основне академске студије - Машинско инжењерство': the smer as shown."""
     name = re.sub(r" - (МИ|ИТМ)$", lambda m: " - " + PROGRAM_NAMES[m[1]], name)
+    return name[:1].upper() + name[1:]
+
+
+def smer_abbr(name):
+    """'мастер академске студије - индустрија 4.0' -> 'Мастер академске студије - Инд. 4.0': the smer on a phone."""
+    name = re.sub(r" - индустрија 4\.0$", " - Инд. 4.0", name, flags=re.I)
     return name[:1].upper() + name[1:]
 
 

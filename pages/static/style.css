@@ -320,8 +320,11 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 /* A space in the link (site.js): kept, or an inline-block would drop it, and so underlined. */
 .wave--sp { white-space: pre; }
 @media (prefers-reduced-motion: reduce) { .wave { animation: none; } }
-/* The credit's name per script (base.html): Latin unless pismo.js has set Cyrillic. */
-html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [data-cyr] { display: none; }
+/* The credit's name per script (base.html): Latin unless pismo.js has set Cyrillic. Not display: none, which would
+   stop the hidden one's wave and restart it out of step when it shows: out of the flow, no width, unseen. */
+html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [data-cyr] {
+  position: absolute; width: 0; overflow: hidden; white-space: nowrap; visibility: hidden; pointer-events: none;
+}
 @media (min-width: 900px) {
   .frame { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; gap: 16px;
     padding: 16px max(20px, env(safe-area-inset-right)) 28px max(20px, env(safe-area-inset-left)); }}
@@ -866,11 +869,12 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fr__last time::before { content: "poslednja "; }
 /* Phone: a forum row (a smer, a subject) is its name and its last post only; its teachers and counts are on wide screens. */
 .fb--forums .fr__sub, .fb--forums .fr__n { display: none; }
-/* Phone: every forum row as tall as one whose name takes two lines (the long smer names): padding, two title lines,
-   the gap, the date line; a shorter row's name and date centred together. Wide screens: .fr__last's min-height. */
+/* Phone: every subject row as tall as one whose name takes two lines: padding, two title lines, the gap, the date
+   line; a shorter row's name and date centred together. Not a smer's (data-pids): its short name is one line.
+   Wide screens: .fr__last's min-height. */
 @container main (max-width: 759.98px) {
   /* shortcut: measured in Edge (6 + 40.6 two title lines + 2 + 18.1 date + 6 + 1 border); redo after a font size change. */
-  .fb--forums .fr { min-height: 74px; align-content: center; }
+  .fb--forums .fr:not([data-pids]) { min-height: 74px; align-content: center; }
 }
 .fr__s { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
 .fr__s .s2 { color: var(--dim); }
