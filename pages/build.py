@@ -17,7 +17,7 @@ import subprocess
 import sys
 import unicodedata
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, datetime
 from html import unescape
 from pathlib import Path
 from urllib.parse import quote, unquote, urljoin, urlsplit
@@ -324,6 +324,11 @@ def subject_name(forum_name):
     return " ".join(re.sub(r"\(\d+\)\s*$", "", forum_name.replace("﻿", "")).split())
 
 
+# A board subject under the name the faculty gives it now; its URL keeps the board's name. oas-mi's "Пумпе и
+# вентилатори (0442)" is the subject book's "Увод у пумпе и вентилаторе" (1505), which the mails (mail/) name.
+RENAMED = {"/predmet/oas-mi/pumpe-i-ventilatori/": "Увод у пумпе и вентилаторе"}
+
+
 def load_places(db):
     """Map each forum id to (smer, subject). A smer is a top forum; a subject merges the forums of one smer with one name.
     The subject is None for the smer's own notices."""
@@ -352,6 +357,8 @@ def load_places(db):
         # The smer in a search URL and in the index's filter: its URL's slug ('oas-mi'), never its Cyrillic name.
         m["key"] = m["href"].strip("/").split("/")[-1]
     set_hrefs(subjects.values(), lambda s: f"{s['smer']['href'].replace('/smer/', '/predmet/', 1)}{slug(s['name'])}/")
+    for s in subjects.values():
+        s["name"] = RENAMED.get(s["href"], s["name"])
     return place, smerovi, subjects
 
 
@@ -725,6 +732,34 @@ def load_katedre(db, smerovi, subjects):
                           when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.", posted=posted, author=n["site"],
                           site=dict(mark=n["site"], host=f"{n['site']}.mas.bg.ac.rs", name=SITES[n["site"]]),
                           body=strip_tags(html), html=html, files=[], gone=n["gone"], source_url=n["url"]))
+    return items
+
+
+MAIL = HERE.parent / "mail"
+
+
+def load_mail(subjects, folder=MAIL):
+    """mail.py's mails as board posts of their subject (post.json's page). A reply is in the topic of the oldest mail
+    here it answers; its number (the post's anchor, its order in the topic) is its time, so a mail added later never
+    renumbers the others. Its files are hosted here, under /mail/ (main copies them)."""
+    by_href = {s["href"]: s for s in subjects.values()}
+    mails = [dict(json.loads(p.read_text(encoding="utf-8")), dir=p.parent.name) for p in sorted(folder.glob("*/post.json"))]
+    key = {m["id"]: m["dir"][-8:] for m in mails}
+    items = []
+    for m in mails:
+        s = by_href.get(m["page"])
+        if not s:
+            print(f"mail: no subject page {m['page']} ({m['dir']})", file=sys.stderr)
+            continue
+        # Only a "Re:": a new subject line on a reply is a new notice, sent as a reply to keep the list of students.
+        root = next((r for r in m["refs"] if r in key), m["id"]) if re.match(r"re:", m["title"], re.I) else m["id"]
+        files = [(f"/mail/{m['dir']}/{quote(f)}", f, f"{(folder / m['dir'] / f).stat().st_size / 1024:.1f} KiB") for f in m["files"]]
+        html = linkify(clean_html(m["html"]) or "") + file_rows(files)
+        day = m["posted"][:10]
+        items.append(dict(id=f"m{key[m['id']]}", kind="post", title=m["title"], smer=s["smer"], subj=s, subject=s["name"],
+                          date=day, year=int(day[:4]), topic=f"m{key[root]}", num=int(datetime.fromisoformat(m["posted"]).timestamp()),
+                          when=m["when"], posted=m["posted"], author=m["author"], body=strip_tags(html), html=html,
+                          files=[], gone=0, source_url=None))
     return items
 
 
@@ -1809,7 +1844,9 @@ def main(db_path, out):
     db.row_factory = sqlite3.Row
     place, smerovi, subjects = load_places(db)
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
-    items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects)
+    items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + load_mail(subjects)
+    if MAIL.is_dir():
+        shutil.copytree(MAIL, site / "mail", ignore=shutil.ignore_patterns("post.json"))
     teachers = load_teachers(db, subjects)
     if teachers:
         write_photos(db, site)
@@ -2014,6 +2051,23 @@ if __name__ == "__main__":
         _k = load_katedre(_db, {1: _sm, 2: _kat}, _subj)
     assert [(i["id"], i["subj"]["id"]) for i in _k] == [("k8", 1), ("k9", "k:meh")], _k
     assert _subj[(2, "катедра за механизацију")]["href"] == "/predmet/katedre/katedra-za-mehanizaciju/"
+    # A mail's "Re:" is in the topic of the oldest mail it answers that is here; one answering a mail not here, or with
+    # a new subject line, starts its own.
+    import tempfile
+    with tempfile.TemporaryDirectory() as _t:
+        for _d, _id, _refs, _at, _ti in [("2026-01-01-aaaaaaaa", "<a>", [], "09:00", "T"), ("2026-01-02-bbbbbbbb", "<b>", ["<x>", "<a>"], "09:00", "Re: T"),
+                                         ("2026-01-03-cccccccc", "<c>", ["<a>", "<b>"], "08:00", "RE: T"), ("2026-01-04-dddddddd", "<d>", ["<x>"], "09:00", "Re: X"),
+                                         ("2026-01-05-eeeeeeee", "<e>", ["<a>"], "09:00", "Novo")]:
+            (Path(_t) / _d).mkdir()
+            (Path(_t) / _d / "r.pdf").write_bytes(b"x" * 2048)
+            (Path(_t) / _d / "post.json").write_text(json.dumps(dict(
+                id=_id, refs=_refs, page="/1/", author="llecic", posted=f"{_d[:10]}T{_at}:00+00:00", when="", title=_ti,
+                html='<div style="x">Hi <script>x</script></div>', files=["r.pdf"] if _id == "<a>" else [])), encoding="utf-8")
+        _m = load_mail({1: dict(id=1, name="S", smer=_sm, href="/1/")}, Path(_t))
+    assert [(i["id"], i["topic"]) for i in _m] == [("maaaaaaaa", "maaaaaaaa"), ("mbbbbbbbb", "maaaaaaaa"), ("mcccccccc", "maaaaaaaa"),
+                                                   ("mdddddddd", "mdddddddd"), ("meeeeeeee", "meeeeeeee")], _m
+    assert _m[0]["num"] < _m[1]["num"] < _m[2]["num"] and "script" not in _m[0]["html"] and 'style=' not in _m[0]["html"]
+    assert 'href="/mail/2026-01-01-aaaaaaaa/r.pdf"' in _m[0]["html"] and "<small>2.0 KiB</small>" in _m[0]["html"], _m[0]["html"]
     assert _p["subjects"][0] == ["/1/", "Б"] and _p["subjects"][4:] == [["/b9/", "Д", 0]], _p["subjects"]
     assert first_link('<h1>K</h1><a href="/f/k.pdf?a=1&amp;b=2">Календар  2026</a>') == ("Календар 2026", "/f/k.pdf?a=1&b=2")
     _pr = ('<h2>Raspored 2026</h2><h3>Jesenji semestar</h3><h4>OSNOVNE AKADEMSKE STUDIJE - <b>MAŠINSKO</b> INŽENjERSTVO</h4>'
