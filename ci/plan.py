@@ -86,8 +86,7 @@ def parts(slot, d, wins):
     """The scrapers for a run: "forum" (the board and the news) and those due today, or "skip". A hot day has five
     runs (morning, noon, afternoon, evening, night), another day three (noon, afternoon, evening); the day's first run
     takes the schedule pages (studije) on the 1st of the month and on the first day of a registration or an exam
-    period, the departments' sites (katedre, ~400 requests) on Mondays, and on 1 October the teachers and the
-    subjects."""
+    period, and on 1 October the teachers and the subjects. (The departments' sites run every time, in deploy.sh.)"""
     h = hot(d, wins)
     if slot in ("morning", "night") and not h:
         return "skip"
@@ -97,8 +96,6 @@ def parts(slot, d, wins):
         p.append("studije")
     if first and (d.month, d.day) == YEARLY:
         p += ["nastavnici", "predmeti"]
-    if first and d.weekday() == 0:
-        p.append("katedre")
     return " ".join(p)
 
 
@@ -151,17 +148,15 @@ if __name__ == "__main__":
         ("prijave", D(2027, 8, 16), D(2027, 8, 18)), ("rok", D(2027, 8, 23), D(2027, 9, 5)),
         ("prijave", D(2027, 9, 8), D(2027, 9, 9)), ("rok", D(2027, 9, 13), D(2027, 9, 26))], _w
     _p = lambda slot, *ymd: parts(slot, D(*ymd), _w)
-    # 2027-01-11, 01-18, 02-01 and 03-01 are Mondays: their first run takes the departments' sites too.
-    assert _p("morning", 2027, 1, 18) == "forum studije katedre" and _p("afternoon", 2027, 1, 18) == "forum"  # an exam period starts
+    assert _p("morning", 2027, 1, 18) == "forum studije" and _p("afternoon", 2027, 1, 18) == "forum"  # an exam period starts
     assert _p("afternoon", 2027, 2, 28) == "forum" and _p("morning", 2027, 3, 1) == "skip"  # 7 days after it, then not
-    assert _p("noon", 2027, 3, 1) == "forum studije katedre"                                # a quiet day's first: noon
+    assert _p("noon", 2027, 3, 1) == "forum studije"                                        # a quiet day's first: noon
     assert _p("morning", 2026, 11, 10) == "skip" and _p("night", 2027, 3, 30) == "skip"      # the smaller block: quiet
     assert _p("noon", 2026, 11, 10) == "forum" and _p("afternoon", 2027, 3, 30) == "forum"  # but its three runs
     assert _p("noon", 2026, 12, 1) == "forum studije" and _p("evening", 2026, 12, 1) == "forum"  # the 1st of a quiet month
     assert _p("evening", 2026, 12, 5) == "forum" and _p("night", 2026, 12, 5) == "skip"
-    assert _p("morning", 2027, 1, 11) == "forum studije katedre" and _p("noon", 2027, 1, 11) == "forum"  # registration opens
-    assert _p("noon", 2027, 2, 2) == "forum" and _p("morning", 2027, 2, 1) == "forum studije katedre"  # after January's; the 1st
-    assert _p("noon", 2026, 11, 16) == "forum katedre" and _p("evening", 2026, 11, 16) == "forum"  # a quiet Monday
+    assert _p("morning", 2027, 1, 11) == "forum studije" and _p("noon", 2027, 1, 11) == "forum"  # registration opens
+    assert _p("noon", 2027, 2, 2) == "forum" and _p("morning", 2027, 2, 1) == "forum studije"  # after January's; the 1st
     assert _p("morning", 2027, 10, 1) == "forum studije nastavnici predmeti"  # hot (after October's), the 1st, 1 October
     assert _p("noon", 2026, 10, 1) == "forum studije nastavnici predmeti"
     assert hot(D(2026, 10, 3), [("rok", D(2026, 9, 13), D(2026, 9, 26))]) and not hot(D(2026, 10, 4), [("rok", D(2026, 9, 13), D(2026, 9, 26))])

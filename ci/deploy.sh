@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Scrape, build and publish: the scheduled run (sync.yml) and this PC (by hand, as an override) run the same steps.
 # The site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
-# Usage: bash ci/deploy.sh [auto SLOT | sync | forum [studije] [nastavnici] [predmeti] [katedre]]   (from the repo root)
+# Usage: bash ci/deploy.sh [auto SLOT | sync | forum [studije] [nastavnici] [predmeti]]   (from the repo root)
 #   auto SLOT  the scheduled run: SLOT is morning, noon, afternoon, evening or night; ci/plan.py picks the scrapers from the faculty's
 #              teaching calendar, or "skip" (stop at once)
-#   sync       every scraper: the board, the news, the schedule pages, the teachers, the subjects, the departments'
-#              sites
-#   forum ...  the board and the news, and the scrapers named after it
+#   sync       every scraper: the board, the news, the departments' sites, the schedule pages, the teachers, the
+#              subjects
+#   forum ...  the board, the news and the departments' sites (cent and the others), and the scrapers named after it
 #   (none)     build and publish this copy's nastava.db, nothing scraped
 # A scrape first gets the saved state (ci/state.sh pull), so this PC goes on from the last scheduled run. When the
 # scrapers changed nothing (ci/plan.py fingerprint), the state is not saved. Then: build, publish (the footer shows
@@ -40,11 +40,10 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 			uv run -q ci/plan.py check || failed+=(kalendar)
 		fi
 	elif [[ $1 == sync ]]; then
-		# katedre: the departments' own sites, a crawl of every page, ~600 requests.
-		parts=(forum studije nastavnici predmeti katedre)
+		parts=(forum studije nastavnici predmeti)
 	fi
 	for p in "${parts[@]:1}"; do
-		[[ $p == studije || $p == nastavnici || $p == predmeti || $p == katedre ]] || { echo "unknown scraper: $p" >&2; exit 2; }
+		[[ $p == studije || $p == nastavnici || $p == predmeti ]] || { echo "unknown scraper: $p" >&2; exit 2; }
 	done
 	uv run test/parsers_test.py
 	# The newest post before the scrape: the posts after it get a web push once published (ci/push.py).
@@ -57,6 +56,9 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	uv run vesti.py sync || failed+=(vesti)
 	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
 	uv run cent.py sync || failed+=(cent)
+	# The other departments' sites, every run as cent (a subject's material changes with its posts): ~400 requests,
+	# ~7 minutes.
+	uv run katedre.py sync || failed+=(katedre)
 	for p in "${parts[@]:1}"; do
 		uv run "$p.py" sync || failed+=("$p")
 	done
