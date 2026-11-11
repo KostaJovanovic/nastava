@@ -965,7 +965,9 @@ def render_places(site, topics, smerovi, subjects):
         # Every subject has a page, an empty one too (predmet.html quiet); live: it has one.
         s["live"] = True
         if s["live"]:
-            authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]}.items(), key=lambda a: fold(a[1]))
+            # Not teams.py's "Student #N": a number within one thread, no one across the page.
+            authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]
+                              if not (r["author"] or "").startswith("Student #")}.items(), key=lambda a: fold(a[1]))
             # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
             quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
             write(site / s["href"].strip("/") / "index.html",

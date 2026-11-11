@@ -55,6 +55,8 @@ TEACHERS = {
 POSTS = ("RichText/Html", "Text")  # not the joins and other notices, nor the bots' cards
 # Folders of a library that are not material: meeting recordings show the students.
 NOT_MATERIAL = re.compile(r"(^|/)(Recordings|Snimci)/", re.I)
+# Files about the students that a teacher put in a library: the class list, the students' own work. Not published.
+PRIVATE = re.compile(r"spisak|списак|radovi studenata|радови студената", re.I)
 TZ = ZoneInfo("Europe/Belgrade")
 # An index number (385-2023, 385/2023), not a school year (2023/2024).
 INDEX = re.compile(r"\b(\d{1,4})\s*[-/]\s*(20\d\d)\b")
@@ -209,6 +211,9 @@ def add(export, zips):
                     names = []
                     for f in json.loads((m.get("properties") or {}).get("files") or "[]") if teacher else []:
                         path = lib_path(f)
+                        if path and PRIVATE.search(path):
+                            print(f"  not published (about the students): {path}")
+                            continue
                         z = next((z for z in archives if path and path in z.namelist()), None)
                         if not z:
                             missing.append(f"{t['name']}: {path or f.get('fileName')}")
@@ -233,17 +238,27 @@ def add(export, zips):
 
 def material(t, page, archives, posted_files, student_files):
     """The rest of a class's library: its zip is the one with most of the class's posted files. Not the files of a
-    student's post, nor the recordings."""
+    student's post, the recordings, the files about the students, nor a copy of a file listed already (a folder the
+    teacher copied)."""
     known = posted_files | student_files
-    z = max(archives, key=lambda z: len(known & set(z.namelist())), default=None)
-    if not z or not known & set(z.namelist()):
+    z = next((z for z in archives if Path(z.filename).stem == t["groupId"][:8]), None) or \
+        max(archives, key=lambda z: len(known & set(z.namelist())), default=None)
+    if not z or not (known & set(z.namelist()) or Path(z.filename).stem == t["groupId"][:8]):
         print(f"no library zip for {t['name']}", file=sys.stderr)
         return
-    rest = [p for p in z.namelist() if not p.endswith("/") and p not in known and not NOT_MATERIAL.search(p)]
-    out = MAIL / f"teams-{t['groupId'][:8]}"
-    for p in rest:
+    out, rest, seen = MAIL / f"teams-{t['groupId'][:8]}", [], set()
+    for p in sorted(z.namelist()):
+        if p.endswith("/") or p in known or NOT_MATERIAL.search(p) or PRIVATE.search(p):
+            continue
+        data = z.read(p)
+        if (h := hashlib.sha1(data).digest()) in seen:
+            continue
+        seen.add(h)
         (out / p).parent.mkdir(parents=True, exist_ok=True)
-        (out / p).write_bytes(z.read(p))
+        (out / p).write_bytes(data)
+        rest.append(p)
+    if not rest:
+        return print(f"{t['name']}: every file is on a post")
     (out / "material.json").write_text(json.dumps(dict(page=page, name=t["name"], files=rest), ensure_ascii=False, indent=1),
                                        encoding="utf-8")
     print(f"{t['name']}: {len(rest)} files of material")
