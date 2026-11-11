@@ -1476,7 +1476,10 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 @media (forced-colors: active) { mark { background: Highlight; color: HighlightText; } }
 /* A touch screen (an iPhone, an iPad at any width): iOS zooms in on a field under 16px when it is tapped. Last, so it
    wins over the smaller sizes of the wide-screen rules. */
-@media (pointer: coarse) { .cmd input, .cmd select, .field, .pick select { font-size: 16px; } }
+@media (pointer: coarse) { .field, .pick select { font-size: 16px; } }
+/* Phone: the header search's text as small as a forum row's date line, so its words fit (base.html maximum-scale
+   keeps an iPhone from zooming in on it). */
+@media (max-width: 759px) { .cmd input, .cmd select { font-size: 12.5px; } }
 @media print {
   .hd, .side, .status, .acts, .skip, .crumbs, .fbar { display: none !important; }
   .frame { display: block; padding: 0; }
