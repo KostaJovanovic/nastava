@@ -20,8 +20,9 @@
       {#- The followed subjects (as a subject page's star follows one), and the picker that adds them: a dialog that
           site.js fills from /izbor.json (build.py picker). Without the script it stays hidden. Once a subject is
           followed, the switch "Samo moji predmeti" applies to the whole site (head.js) and the search; off, all show. -#}
-      <fieldset class="fgroup" data-izbor hidden>
-        <legend class="sec">Moji predmeti <span data-moji-n></span></legend>
+      {#- A div, not a fieldset: Safari keeps a legend out of the phone's grid (style.css), floated or not. -#}
+      <div class="fgroup" role="group" aria-labelledby="moji-h" data-izbor hidden>
+        <p class="sec" id="moji-h">Moji predmeti <span data-moji-n></span></p>
         <div data-moji-scope hidden>
           <label class="tgl"><span>Samo moji predmeti</span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
           {#- Notifications of the followed subjects' new posts (site.js, static/sw.js, ci/push.py), where the browser
@@ -32,7 +33,7 @@
         </div>
         {#- With subjects followed, the button reads "Izmeni predmete", in the accent colour (site.js). -#}
         <div class="moji__open"><button type="button" class="btn" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Izaberi predmete</span></button></div>
-      </fieldset>
+      </div>
       <dialog class="mp" aria-labelledby="mp-h" data-mp>
         <div class="mp__top">
           <h2 id="mp-h">Moji predmeti <span class="mp__n" data-mp-n></span></h2>
