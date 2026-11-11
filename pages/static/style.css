@@ -1506,6 +1506,12 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
   /* The scope's name in full (Nastavnici, Dokumenti): the text box gives way, not the select. */
   .cmd select { max-width: none; padding: 0 8px; }
 }
+/* A finger: the select fills the bar's height, and its open list (Chromium's customizable select) has rows a finger
+   hits, as an iPhone's own picker has. */
+@media (pointer: coarse) {
+  .cmd select { height: 36px; }
+  .cmd select option { min-height: 44px; padding: 0 14px; align-items: center; font-size: 15px; }
+}
 @media print {
   .hd, .side, .status, .acts, .skip, .crumbs, .fbar { display: none !important; }
   .frame { display: block; padding: 0; }
