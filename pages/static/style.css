@@ -40,6 +40,14 @@
 @font-face { font-family: "Figtree"; src: url("/static/fonts/lab/Figtree.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Outfit"; src: url("/static/fonts/lab/Outfit.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: "Instrument Sans"; src: url("/static/fonts/lab/InstrumentSans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/lab/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/lab/IBMPlexMono-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "IBM Plex Math"; src: url("/static/fonts/lab/IBMPlexMath.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "3270"; src: url("/static/fonts/lab/3270.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 125%; }
+/* The PC's screen fonts: PxPlus IBM VGA 8x16 and IBM BIOS from the Ultimate Oldschool PC Font Pack by VileR
+   (int10h.org/oldschool-pc-fonts), CC BY-SA 4.0. Sized up so the 14px text is 16px: a whole screen pixel to each. */
+@font-face { font-family: "IBM VGA 8x16"; src: url("/static/fonts/lab/IBM-VGA-8x16.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 114.29%; }
+@font-face { font-family: "IBM BIOS"; src: url("/static/fonts/lab/IBM-BIOS.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 114.29%; }
 /* Latin only: Cyrillic falls back to Geist (site.js's stacks). Satoshi and Zina (Fontshare) as their vendor ships them. */
 @font-face { font-family: "Satoshi"; src: url("/static/fonts/lab/Satoshi.woff2") format("woff2"); font-weight: 300 900; font-display: swap; }
 @font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
