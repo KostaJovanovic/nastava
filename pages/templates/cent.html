@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 {% from "rows.html" import crumb %}
 
-{#- One version of a page on a department's site: a subject's on cent.mas.bg.ac.rs (build.py load_cent, render_cent),
-    the newest at <subject>/cent/<slug>/, or any of another site's (load_sites, render_sites) under /sajtovi-katedri/;
-    each older one under its first date. trail: the crumbs above it, (href, name), the last its subject or site; mark:
+{#- One version of a subject's page on cent.mas.bg.ac.rs (build.py load_cent, render_cent): the newest at
+    <subject>/cent/<slug>/, each older one under its first date. trail: the crumbs above it, (href, name), the last its subject or site; mark:
     the site's short name. Its links go to the site: the files are not hosted here. -#}
 {%- set _old = v is not sameas page.versions[0] %}
 {% block title %}{{ v.title }} · {{ trail[-1][1] }}{% if _old %} ({{ v.first_seen | dmy }}){% endif %}{% endblock %}

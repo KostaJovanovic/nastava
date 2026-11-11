@@ -9,7 +9,7 @@
     another author is a username, which stays in Latin. -#}
 {%- macro who(r) -%}
 {%- if r.teacher %}<a href="{{ r.teacher.href }}">{{ r.teacher.shown }}</a>
-{%- elif r.kind == 'cent' %}<span class="src" title="Sa sajta Katedre za proizvodno mašinstvo (cent.mas.bg.ac.rs)">cent</span>
+{%- elif r.site %}<span class="src" data-notx title="Sa sajta: {{ r.site.name }} ({{ r.site.host }})">{{ r.site.mark }}</span>
 {%- else %}<span data-notx>{{ r.author or '' }}</span>{% endif -%}
 {%- endmacro -%}
 
@@ -56,7 +56,7 @@
 
 {#- A post or topic the board no longer has: the archive keeps it (nastava.py marks it gone). -#}
 {%- macro gone(r) -%}
-{%- if r.gone %}<span class="gone">uklonjeno sa {{ 'sajta katedre' if (r.kind or (r.first and r.first.kind)) == 'cent' else 'foruma' }}</span>{% endif -%}
+{%- if r.gone %}<span class="gone">uklonjeno sa {{ 'sajta katedre' if (r.site or (r.first and r.first.site)) else 'foruma' }}</span>{% endif -%}
 {%- endmacro -%}
 
 {#- One topic row. place: show its subject (the home page). filter: data for the list filter (site.js).
@@ -145,8 +145,8 @@
     {% else %}<div class="prose">{{ (r.body or '') | trim }}</div>{% endif %}
   </div>
   <aside class="post__who" aria-label="Autor">
-    {%- if r.kind == 'cent' %}
-    <span class="av" aria-hidden="true">C</span><div><span class="post__name">cent.mas.bg.ac.rs</span><span>Katedra za proizvodno mašinstvo</span></div>
+    {%- if r.site %}
+    <span class="av" aria-hidden="true" data-notx>{{ (r.site.mark if r.site.mark | length <= 2 else r.site.mark[0]) | upper }}</span><div><span class="post__name" data-notx>{{ r.site.host }}</span><span>{{ r.site.name }}</span></div>
     {%- else %}
     {#- Initials tell the authors of a topic apart: given name and surname, or the username's first letters. -#}
     {%- set w = (r.teacher.name if r.teacher else '').split() %}

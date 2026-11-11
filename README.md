@@ -60,11 +60,12 @@ pipeline and site, with new scrapers for phpBB.
   (a version per change) and each notice apart, into `cent_pages` and `cent_notices`. The files stay linked on cent.
   The site puts each subject's notices among its topics with a "cent" mark, and its pages (predavanja, rezultati, …)
   under `/predmet/…/cent/`; a subject the board has no forum for gets a page too.
-- `katedre.py`: archive the departments' own sites (ie, etc, motori, meh, bmi, pt, ppm, fluidi, hidro, ciah): a crawl
-  from each site's start, on its host, each page's content as shown (a version per change of its text or links) into
-  `katedre_pages`. The files stay linked. Not the Moodles (a login) nor omk, geotermal, au, tmm (no answer).
-  The site does not show these pages yet; "Moji predmeti" marks the subjects that have one (a page titled with the
-  subject's name).
+- `katedre.py`: the announcements of the departments' own sites (ie, meh, bmi, pt, fluidi, hidro, ciah): only the
+  pages that have them, each as shown (a version per change) into `katedre_pages`, and ie's notices one by one into
+  `katedre_notices`. The site puts each subject's notices among its topics with the site's mark (as cent's, with a web
+  push), and ie's "Literatura" on the subject's page as a list of files. The files stay linked. The other sites'
+  notices are stored, not shown yet. Not the rest of a site, the Moodles (a login), etc, motori, ppm (no
+  announcements) nor omk, geotermal, au, tmm (no answer).
 - `nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;

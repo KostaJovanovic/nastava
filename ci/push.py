@@ -4,10 +4,11 @@
 # ///
 """Web push: tell the browsers that follow a subject (site.js subscribes, the Worker keeps them in KV) about its new posts.
 
-Usage: push.py keys | last | send <post id> [<notice id> <page rowid>]
+Usage: push.py keys | last | send <post id> [<notice id> <page rowid> <department notice id>]
   keys   make push-secret.json (git-ignored): the VAPID key pair and the key the Worker asks for. Keep a copy: a new
          pair drops every subscription. Prints where the public half and the Worker key go.
-  last   print the newest post id, cent notice id and cent page version in nastava.db (deploy.sh: before the scrape)
+  last   print the newest post id, cent notice id, cent page version and department notice id (katedre.py) in
+         nastava.db (deploy.sh: before the scrape)
   send   once the newest is on the site, notify what came after those (pages/.build/push.json, from build.py)
 The scheduled run (sync.yml) writes push-secret.json from the repository secret PUSH_SECRET.
 """
@@ -73,7 +74,8 @@ def keys():
 
 
 def last():
-    """The newest board post, cent notice and cent page version (rowid) in nastava.db: the "before" of send."""
+    """The newest board post, cent notice, cent page version (rowid) and department notice in nastava.db: the
+    "before" of send."""
     db = sqlite3.connect(f"file:{ROOT / 'nastava.db'}?mode=ro", uri=True)
 
     def newest(sql):
@@ -82,7 +84,7 @@ def last():
         except sqlite3.OperationalError:  # cent.py has not run yet
             return 0
     print(newest("select max(id) from posts"), newest("select max(nid) from cent_notices"),
-          newest("select max(rowid) from cent_pages"))
+          newest("select max(rowid) from cent_pages"), newest("select max(nid) from katedre_notices"))
 
 
 def subscriptions(key):
@@ -113,7 +115,7 @@ def run_log(**kw):
 
 
 def send(*before):
-    after = dict(zip("pcs", before))  # board posts, cent notices, cent page versions
+    after = dict(zip("pcsk", before))  # board posts, cent notices, cent page versions, department notices
     if after.get("p", 0) <= 0:
         sys.exit("no post id from before the scrape")
     secret = json.loads(SECRET.read_text())
