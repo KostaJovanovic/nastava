@@ -1377,6 +1377,30 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 /* Going dark, the dark page is hidden until its circle starts moving, so it never shows whole for a frame. */
 :root[data-vt="dark"]::view-transition-new(root) { clip-path: circle(0 at 0 0); }
 
+/* ---- Without JavaScript --------------------------------------------------- */
+/* Scripts off (scripting: none; a script still loading counts as on, so none of this shows then): what needs a script
+   is not shown (the search and the links into it, the script and theme buttons, the list filters, the keys), and the
+   folded sections are open. */
+@media (scripting: none) {
+  .cmd, .hd__ctl, form[data-filter], .status .keys, .tp__h a[href^="/?"], .err li:has(a[href^="/?"]) { display: none; }
+  /* The statistics' years and words open a search: kept as figures, not links. */
+  .ch__c[href^="/?"], .wc a { pointer-events: none; text-decoration: none; }
+  /* A phone's header has room for the name, with no search beside it. */
+  .brand__name { opacity: 1; visibility: visible; translate: 0 0; }
+}
+/* Apart: a browser without ::details-content drops this rule, and its sections stay folded, opened by a click. */
+@media (scripting: none) {
+  details.sg::details-content, .tp__bio::details-content { height: auto; content-visibility: visible; }
+}
+/* Only where they are open: their headings say so and no longer fold them. */
+@media (scripting: none) {
+  @supports selector(::details-content) {
+    details.sg > summary.sg__h::before { transform: rotate(45deg); }
+    .tp__bio summary .i { transform: rotate(90deg); }
+    details.sg > summary.sg__h, .tp__bio summary { pointer-events: none; }
+  }
+}
+
 /* ---- Preferences ---------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
 /* Apart: a browser without ::details-content would drop the whole rule above with it. */
