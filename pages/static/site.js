@@ -856,17 +856,26 @@
     showTheme();
   }
 
-  /* Font menu: the Konami code (↑↑↓↓←→←→BA) opens it at the bottom right, again closes it. A font picked stays in
-     localStorage ('font', its --sans) and head.js sets it before the first paint; Geist removes it. */
+  /* Font menu: the Konami code (↑↑↓↓←→←→BA) opens it at the bottom right. While it is open, localStorage 'font' holds
+     the font picked (its --sans; '' for Geist): head.js sets it before the first paint and each page opens the menu
+     again. Closing it (×, or the code again) removes 'font': the site is back to Geist. */
   var KONAMI = 'arrowup,arrowup,arrowdown,arrowdown,arrowleft,arrowright,arrowleft,arrowright,b,a', keys = [], fl = null;
   var FONTS = [
+    'Sans',
     ['Geist', '"Geist", system-ui, sans-serif'],
     ['Golos Text', '"Golos Text", system-ui, sans-serif'],
+    ['Onest', '"Onest", system-ui, sans-serif'],
+    ['Manrope', '"Manrope", system-ui, sans-serif'],
+    ['Geologica', '"Geologica", system-ui, sans-serif'],
+    ['Wix Madefor Text', '"Wix Madefor Text", system-ui, sans-serif'],
+    ['Rubik', '"Rubik", system-ui, sans-serif'],
+    ['IBM Plex Sans', '"IBM Plex Sans", system-ui, sans-serif'],
     ['Roboto', '"Roboto Lab", system-ui, sans-serif'],
     ['Inter', '"Inter", system-ui, sans-serif'],
     ['Montserrat', '"Montserrat", system-ui, sans-serif'],
     ['LT Wave Text', '"LT Wave Text", system-ui, sans-serif'],
     ['Mint Spirit No2', '"Mint Spirit No2", system-ui, sans-serif'],
+    ['Unbounded', '"Unbounded", system-ui, sans-serif'],
     'Serif',
     ['Literata', '"Literata", Georgia, serif'],
     ['Source Serif 4', '"Source Serif 4", Georgia, serif'],
@@ -874,6 +883,13 @@
     // Latin only: Cyrillic in Geist.
     'Latinica, sans',
     ['Satoshi', '"Satoshi", "Geist", system-ui, sans-serif'],
+    ['Space Grotesk', '"Space Grotesk", "Geist", system-ui, sans-serif'],
+    ['Bricolage Grotesque', '"Bricolage Grotesque", "Geist", system-ui, sans-serif'],
+    ['DM Sans', '"DM Sans", "Geist", system-ui, sans-serif'],
+    ['Plus Jakarta Sans', '"Plus Jakarta Sans", "Geist", system-ui, sans-serif'],
+    ['Figtree', '"Figtree", "Geist", system-ui, sans-serif'],
+    ['Outfit', '"Outfit", "Geist", system-ui, sans-serif'],
+    ['Instrument Sans', '"Instrument Sans", "Geist", system-ui, sans-serif'],
     ['Barlow', '"Barlow", "Geist", system-ui, sans-serif'],
     ['Human Sans', '"Human Sans", "Geist", system-ui, sans-serif'],
     ['Claris Sans', '"Claris Sans", "Geist", system-ui, sans-serif'],
@@ -884,36 +900,52 @@
     ['Redaction', '"Redaction", "Geist", Georgia, serif'],
     ['Zina', '"Zina", "Geist", Georgia, serif']
   ];
-  var openFonts = function () {
-    var now = '';
-    try { now = localStorage.getItem('font') || ''; } catch (e) {}
+  var saveFont = function (s) {
+    try { if (s === null) localStorage.removeItem('font'); else localStorage.setItem('font', s); } catch (e) {}
+  };
+  var openFonts = function (now) {
+    saveFont(now);
     fl = d.createElement('div');
     fl.className = 'fl';
     fl.setAttribute('role', 'group');
     fl.setAttribute('aria-label', 'Font');
     fl.setAttribute('data-notx', '');
-    fl.innerHTML = '<div class="fl__h">Font<button type="button" class="fl__x" aria-label="Zatvori">×</button></div>';
-    FONTS.forEach(function (f, i) {
-      if (typeof f === 'string') return fl.insertAdjacentHTML('beforeend', '<div class="fl__g">' + f + '</div>');
-      var l = d.createElement('label'), r = d.createElement('input');
-      r.type = 'radio'; r.name = 'fl'; r.checked = i ? f[1] === now : !now;
+    fl.innerHTML = '<div class="fl__h">Font<button type="button" class="fl__x" aria-label="Zatvori">×</button></div>'
+      + '<div class="fl__l"></div>';
+    var list = fl.lastChild, on = null;
+    FONTS.forEach(function (f) {
+      if (typeof f === 'string') return list.insertAdjacentHTML('beforeend', '<div class="fl__g">' + f + '</div>');
+      var l = d.createElement('label'), r = d.createElement('input'), geist = f[0] === 'Geist';
+      r.type = 'radio'; r.name = 'fl'; r.checked = geist ? !now : f[1] === now;
+      if (r.checked) on = l;
       r.addEventListener('change', function () {
-        if (i) root.style.setProperty('--sans', f[1]); else root.style.removeProperty('--sans');
-        try { if (i) localStorage.setItem('font', f[1]); else localStorage.removeItem('font'); } catch (e) {}
+        if (geist) root.style.removeProperty('--sans'); else root.style.setProperty('--sans', f[1]);
+        saveFont(geist ? '' : f[1]);
       });
       l.style.fontFamily = f[1];
       l.append(r, f[0]);
-      fl.append(l);
+      list.append(l);
     });
-    fl.querySelector('.fl__x').addEventListener('click', function () { fl.hidden = true; });
+    fl.querySelector('.fl__x').addEventListener('click', closeFonts);
     d.body.append(fl);
+    // The font picked in view, as the menu was on the page before.
+    if (on) list.scrollTop = on.offsetTop - list.offsetTop - list.clientHeight / 2;
+  };
+  var closeFonts = function () {
+    fl.remove();
+    fl = null;
+    root.style.removeProperty('--sans');
+    saveFont(null);
   };
   d.addEventListener('keydown', function (e) {
     keys = keys.concat(e.key.toLowerCase()).slice(-10);
     if (keys.join() !== KONAMI) return;
     keys = [];
-    if (fl) fl.hidden = !fl.hidden; else openFonts();
+    if (fl) closeFonts(); else openFonts('');
   });
+  var fontNow = null;
+  try { fontNow = localStorage.getItem('font'); } catch (e) {}
+  if (fontNow !== null) openFonts(fontNow);
 
   /* Keys: / search, j/k move between rows, Enter opens. */
   d.addEventListener('keydown', function (e) {
