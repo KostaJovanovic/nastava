@@ -171,7 +171,8 @@
     });
     if (izbor) izbor.then(function (j) {
       data = j;
-      folded = j.subjects.map(function (s) { return fold(s[1]); });
+      // A subject is found by its acronyms too (build.py acronyms: OOK, ME1).
+      folded = j.subjects.map(function (s, i) { return fold(s[1]) + ' ' + j.acr[i]; });
       // Each program's subjects once, by name (folded: Edge's 'sr' collation put Avionika before Adaptivne).
       studije = j.tree.map(function (n) {
         var o = {};
@@ -527,7 +528,7 @@
           return card(t[1], t[0], n + (n % 10 === 1 && n % 100 !== 11 ? ' predmet' : ' predmeta'));
         });
         var ss = [];
-        subj.forEach(function (s, i) { if (ss.length < 48 && has(s[1])) ss.push(card([i], s[1], where[i])); });
+        subj.forEach(function (s, i) { if (ss.length < 48 && has(s[1] + ' ' + data.acr[i])) ss.push(card([i], s[1], where[i])); });
         if (ts.length) group('Nastavnici', ts);
         if (ss.length) group('Predmeti', ss);
         if (!ts.length && !ss.length) body.appendChild(el('p', 'mp__none', 'Nema takvog predmeta ni nastavnika.'));

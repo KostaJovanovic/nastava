@@ -91,6 +91,35 @@ def fold(s):
     return "".join(ch for ch in unicodedata.normalize("NFD", s) if not unicodedata.combining(ch))
 
 
+# The short words a subject's acronym may leave out: teachers write both ОИККЗС and ОККЗС, ПЗСУЕ and ПЗСЕ.
+ACR_SKIP = {"i", "u", "iz", "za", "na", "o", "od", "sa", "s", "a", "po", "pri", "kod", "ili"}
+
+
+def acronyms(name, titles=()):
+    """A subject's acronyms for the search, folded: its words' initials with the short words and without, with its
+    number and without (ООК; МЕ1 and МЕ). And one in its topics' titles (ММ1, БМИО) whose letters follow the name's
+    and hold its initials (БМИО: Биомедицинска инструментација и опрема; ДОМАЋИ and ГРУПА are no one's)."""
+    words = re.findall(r"[a-z0-9]+", fold(name))
+    out = set()
+    for ws in (words, [w for w in words if w not in ACR_SKIP]):
+        a = "".join(w if w[0].isdigit() else w[0] for w in ws)
+        out |= {a, re.sub(r"\d+$", "", a)}
+    key = "".join(w[0] for w in words if w not in ACR_SKIP and not w[0].isdigit())
+    def follows(a, b):
+        """a's letters in b, in order: 'bmio' in 'biomedicinska...'."""
+        rest = iter(b)
+        return all(c in rest for c in a)
+
+    for title in titles:
+        for m in re.finditer(r"(?<!\w)([A-ZА-ЯЂЈЉЊЋЏŠĐČĆŽ]{2,6})(\d?)(?!\w)", title):
+            letters, num = fold(m[1]), m[2]
+            # Three letters at least: МИ (the smer) is not Механика 3's.
+            if len(letters) > 2 and key and letters[0] == key[0] and follows(key, letters) and follows(letters, "".join(words)) \
+                    and (not num or num in words):
+                out.add(letters + num)
+    return {a for a in out if len(a) > 1}
+
+
 def slug(s):
     """A name as a URL part: 'Душан Љ. Ђукић' -> 'dusan-lj-djukic'."""
     return re.sub(r"[^a-z0-9]+", "-", fold(s)).strip("-")
@@ -663,7 +692,7 @@ def render_places(site, topics, smerovi, subjects):
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m and s["live"]), key=lambda s: fold(s["name"]))
         for s in subs:
-            s["find"] = fold(" ".join([s["name"]] + [t["full_name"] for t in s.get("teachers", [])]))
+            s["find"] = fold(" ".join([s["name"], *s["acr"]] + [t["full_name"] for t in s.get("teachers", [])]))
         rows = in_smer[m["id"]]
         m["live"] = bool(rows or subs)
         m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
@@ -1125,7 +1154,8 @@ def load_book(db, subjects, teachers):
         if (name := dict(r).get("name")) and name not in place["names"]:
             place["names"].append(name)
     for s in book:
-        s["find"] = fold(" ".join([s["name"], s["id"], s["katedra"] or "", s["program"]]
+        s["acr"] = acronyms(s["name"]) | (s["forum"] or {}).get("acr", set())
+        s["find"] = fold(" ".join([s["name"], *s["acr"], s["id"], s["katedra"] or "", s["program"]]
                                   + [t["name"] for t in s["teachers"]] + [p["module"] or "" for p in s["places"]]))
         if s["forum"]:
             s["forum"].setdefault("info", s)
@@ -1199,6 +1229,7 @@ def picker(subjects, book, teachers):
     After render_places (the counts) and render_teachers (the courses)."""
     live = [s for s in subjects.values() if s.get("live")]
     entries = [[s["href"], s["name"]] for s in live]
+    acr = [" ".join(sorted(s.get("acr", ()))) for s in live]
     at = {("f", s["id"]): i for i, s in enumerate(live)}
     tree, placed = {}, set()
 
@@ -1209,6 +1240,7 @@ def picker(subjects, book, teachers):
         if key not in at:
             at[key] = len(entries)
             entries.append([b["href"], b["name"], 0])
+            acr.append(" ".join(sorted(b.get("acr", ()))))
         placed.add(key)
         return at[key]
 
@@ -1248,7 +1280,8 @@ def picker(subjects, book, teachers):
         return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
 
     listed = Counter(t["katedra"] for t in teachers if not t["gone"] and t["katedra"])
-    return dict(subjects=entries, tree=nodes(tree),
+    # acr: each subject's acronyms (acronyms), for the searches.
+    return dict(subjects=entries, acr=acr, tree=nodes(tree),
                 teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
                 # The listed teachers first, then the ones who left (the header search shows them where there is room).
@@ -1500,6 +1533,12 @@ def main(db_path, out):
         for s in t["subjects"]:
             if s["subj"] and t not in s["subj"].setdefault("teachers", []):
                 s["subj"]["teachers"].append(t)
+    titles = defaultdict(list)
+    for t in topics:
+        if t["subj"]:
+            titles[t["subj"]["id"]].append(t["title"])
+    for s in subjects.values():
+        s["acr"] = acronyms(s["name"], titles[s["id"]])
     book = load_book(db, subjects, teachers)
     render_places(site, topics, smerovi, subjects)
     render_cent(site, subjects)
@@ -1532,6 +1571,11 @@ def main(db_path, out):
 
 if __name__ == "__main__":
     assert fold("Ђачки распоред, Čas") == "djacki raspored, cas"
+    assert acronyms("Основи отпорности конструкција") == {"ook"} and acronyms("Машински елементи 1") == {"me1", "me"}
+    assert acronyms("Математика 1", ["МАТ1 рок", "МИ - вежбе"]) == {"m1", "mat1"} and acronyms("Електротехника") == set()
+    assert acronyms("Понашање заварених спојева у експлоатацији") == {"pzsue", "pzse"}
+    assert acronyms("Биомедицинска инструментација и опрема", ["BMIO - испит", "ДОМАЋИ 2", "ОМ ПРВИ ДЕО", "ММ1 рок"]) == {
+        "biio", "bio", "bmio"}
     asset_v["icons.svg"] = "ab"
     assert versioned('<use href="/static/icons.svg#i-x"> `/static/icons.svg#${k}` /static/icons.svg?v=ab /static/sw.js '
                      '/static/site.js') == ('<use href="/static/icons.svg?v=ab#i-x"> `/static/icons.svg?v=ab#${k}` '
