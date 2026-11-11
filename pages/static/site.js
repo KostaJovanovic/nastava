@@ -844,14 +844,18 @@
           + (h / 2 - r * (dark ? (1 - s) * (1 - s) : s * s)) + 'px)' });
       }
       root.dataset.vt = t;
-      var vt = vtNow = d.startViewTransition(function () { setTheme(t); });
+      var vt = vtNow = d.startViewTransition(function () { setTheme(t); }), anim = null;
       vt.ready.then(function () {
         // fill both: no frame without the clip at either end (that was a flash of the whole dark page).
-        root.animate(frames, { duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'both',
+        anim = root.animate(frames, { duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'both',
           pseudoElement: dark ? '::view-transition-new(root)' : '::view-transition-old(root)' });
       }, function () {});
-      // A second click cuts this one short and sets its own data-vt first: only the latest clears it.
-      vt.finished.then(function () { if (vtNow === vt) delete root.dataset.vt; });
+      // A second click cuts this one short and sets its own data-vt first: only the latest clears it. The animation
+      // goes too: kept (fill both), iOS put its last frame (the whole dark page) on the next switch's picture.
+      vt.finished.then(function () {
+        if (anim) anim.cancel();
+        if (vtNow === vt) delete root.dataset.vt;
+      });
     });
     showTheme();
   }
