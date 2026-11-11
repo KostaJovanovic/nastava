@@ -145,6 +145,9 @@ def crawl(db, s, site, starts, seen):
         if url in got:  # a redirect to a page already stored
             continue
         title, content, follow = parse(html, final)
+        # A login wall (most of pt's student wiki) is not a page: one that was public and is now behind it is gone.
+        if re.search(r"<h1[^>]*>\s*Permission Denied\s*</h1>", content):
+            continue
         got.add(url)
         new += store(db, site, url, title, content, seen)
         db.commit()
