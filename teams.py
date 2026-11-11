@@ -4,24 +4,19 @@
 # ///
 """The posts of the faculty's Teams classes, as posts of their subjects (build.py's load_mail, as mail.py's mails):
 each thread a teacher started, with its replies; a student's reply is "Student #N" (numbered per thread), with no name,
-index number, e-mail or file of theirs. Their files come from each class's SharePoint library (downloaded as zips); the
-rest of a library is the subject's material (mail/teams-<class>/material.json).
+index number, e-mail or file of theirs. Their files come from each class's SharePoint library (a zip each,
+teams-files.js); the rest of a library is the subject's material (mail/teams-<class>/material.json).
 
-The export comes from Teams in the browser (README: "To add Teams posts"): every channel's messages, as JSON.
+The export and the zips come from Teams in the browser (README: "To add Teams posts").
 
-Usage: teams.py files <token file> <zip folder>
-       teams.py add <teams-export.json> <zip folder>
-  files  download each class's library (CLASSES) through Graph into <zip folder>/<group>.zip; the token is Graph
-         Explorer's (its "Access token" tab, after consenting to Files.Read.All), saved in a file.
-  add    a post already here is skipped; a class's material is written again.
+Usage: teams.py add <teams-export.json> <folder of the classes' library zips>
+  add   a post already here is skipped; a class's material is written again.
 """
 import hashlib
 import json
 import re
 import sys
 import unicodedata
-import urllib.error
-import urllib.request
 import zipfile
 from datetime import datetime
 from html import escape
@@ -254,46 +249,6 @@ def material(t, page, archives, posted_files, student_files):
     print(f"{t['name']}: {len(rest)} files of material")
 
 
-GRAPH = "https://graph.microsoft.com/v1.0"
-MAX = 95 << 20  # GitHub Pages takes no file over 100 MB
-
-
-def files(token_file, out):
-    """Each class's library as <out>/<group>.zip, its paths as in the library ("Predavanja/P1.pdf"); not the
-    recordings, nor a file too big for the site."""
-    token = Path(token_file).read_text(encoding="utf-8").strip().removeprefix("Bearer ")
-
-    def get(url):
-        try:
-            return urllib.request.urlopen(urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"}), timeout=300)
-        except urllib.error.HTTPError as e:
-            sys.exit(f"{e.code} {url}\n{e.read()[:300].decode(errors='replace')}\n401: a new token; 403: consent to Files.Read.All")
-
-    def children(url):
-        while url:
-            page = json.load(get(url))
-            yield from page["value"]
-            url = page.get("@odata.nextLink")
-    Path(out).mkdir(parents=True, exist_ok=True)
-    for group in dict.fromkeys(CLASSES):
-        drive = json.load(get(f"{GRAPH}/groups/{group}/drive"))["id"]
-        n = size = 0
-        with zipfile.ZipFile(Path(out) / f"{group[:8]}.zip", "w", zipfile.ZIP_DEFLATED) as z:
-            folders = [("", f"{GRAPH}/drives/{drive}/root/children")]
-            while folders:
-                prefix, url = folders.pop()
-                for item in children(url):
-                    path = prefix + item["name"]
-                    if "folder" in item:
-                        folders.append((path + "/", f"{GRAPH}/drives/{drive}/items/{item['id']}/children"))
-                    elif NOT_MATERIAL.search(path) or item["size"] > MAX:
-                        print(f"  skipped {path} ({item['size'] / 2**20:.0f} MB)")
-                    else:
-                        z.writestr(path, get(f"{GRAPH}/drives/{drive}/items/{item['id']}/content").read())
-                        n, size = n + 1, size + item["size"]
-        print(f"{group[:8]}: {n} files, {size / 2**20:.1f} MB")
-
-
 def check():
     assert redact("Ana, 385-2023, ana@x.rs, 2023/2024") == "████ ████████, ████████, 2023/2024", redact("Ana, 385-2023, ana@x.rs, 2023/2024")
     assert redact("nema me na spisku. Milošević Nemanja 12/2024") == "nema me na spisku. █████████ ███████ ███████"
@@ -316,6 +271,6 @@ def check():
 
 if __name__ == "__main__":
     check()
-    if len(sys.argv) != 4 or sys.argv[1] not in ("add", "files"):
+    if len(sys.argv) != 4 or sys.argv[1] != "add":
         sys.exit(__doc__)
-    (add if sys.argv[1] == "add" else files)(sys.argv[2], sys.argv[3])
+    add(sys.argv[2], sys.argv[3])

@@ -142,8 +142,9 @@ To add mails: in webmail (RainLoop) open each mail, ▾ next to Reply → "Downl
 
 To add Teams posts: open teams.microsoft.com in a browser, paste `teams-export.js` into the DevTools console (Firefox:
 Ctrl+B for the multi-line editor) and run it: it saves `teams-export.json` (every channel's messages, read with the
-page's own sign-in; Graph needs an admin's consent for them). The classes' files: in Graph Explorer consent to
-Files.Read.All, save its access token in a file, `uv run teams.py files <token file> <zip folder>`. A new class goes in `CLASSES` (its group id → subject page), a new teacher in
+page's own sign-in; Graph needs an admin's consent for them). Then `teams-files.js` the same way: each class's
+SharePoint library as a zip in Downloads (its `CLASSES` list is teams.py's group ids); the sign-in never leaves the
+page. A new class goes in `CLASSES` (its group id → subject page; in both files), a new teacher in
 `TEACHERS` (their Teams account → board username), a student's name written in a reply with no index next to it in
 `NAMED`; then `uv run teams.py add <teams-export.json> <zip folder>`, read the students' replies in `mail/` for names
 it missed, and commit `mail/`.
