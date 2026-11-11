@@ -25,12 +25,13 @@
   <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
   {%- endif %}
 </div>
-{%- if subj.cent %}
-{#- The subject's pages on the department's site (build.py load_cent), in its order; each date: its last change. -#}
+{#- The subject's pages on a department's site (build.py load_cent: cent's, in its order; load_sites: another site's
+    named as the subject); each date: its last change. -#}
+{%- macro site_pages(mark, pages) %}
 <section class="fb fb--posts">
-  <div class="fb__h"><h2>Sa sajta katedre <span class="src">cent</span></h2><span>Izmenjeno</span></div>
+  <div class="fb__h"><h2>Sa sajta katedre <span class="src">{{ mark }}</span></h2><span>Izmenjeno</span></div>
   <ol class="fb__rows">
-    {%- for p in subj.cent %}
+    {%- for p in pages %}
     <li class="fr">
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-file"></use></svg></span>
       <div class="fr__t"><a class="fr__a" href="{{ p.versions[0].href }}">{{ p.title }}</a>{% if p.gone %}<span class="gone">uklonjeno sa sajta katedre</span>{% endif %}</div>
@@ -39,7 +40,9 @@
     {%- endfor %}
   </ol>
 </section>
-{%- endif %}
+{%- endmacro %}
+{%- if subj.cent %}{{ site_pages('cent', subj.cent) }}{% endif %}
+{%- for mark, pages in (subj.katedre or []) | groupby('site') %}{{ site_pages(mark, pages) }}{% endfor %}
 {%- if not topics %}
 {#- No posts on the board: a card with one of build.py QUIET, in place of an empty list and its filter. -#}
 <p class="quiet">{{ quiet }}</p>

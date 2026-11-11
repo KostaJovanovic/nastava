@@ -589,20 +589,73 @@ def mark_elsewhere(items):
             del s["elsewhere"]
 
 
-def load_katedre(db):
-    """katedre.py's pages that are a subject's own: {folded subject name: page url}. A page is one when its title or
-    its first heading is the name, nothing more ('Predmet: ' aside): a page that lists subjects names none."""
+# The departments' own sites katedre.py crawls, as the Linkovi page names them.
+SITES = {"ie": "Katedra za industrijsko inženjerstvo", "fluidi": "Katedra za mehaniku fluida",
+         "etc": "Prezentacije nastavnika", "pt": "Katedra za procesnu tehniku", "meh": "Katedra za mehanizaciju",
+         "hidro": "Katedra za hidraulične mašine i energetske sisteme", "motori": "Katedra za motore",
+         "ppm": "Katedra za poljoprivredno mašinstvo", "bmi": "Katedra za biomedicinsko inženjerstvo",
+         "ciah": "Laboratorija CIAH"}
+
+
+def load_sites(db, subjects):
+    """katedre.py's pages of the departments' sites: [dict(key, name, host, href, pages)] in SITES' order, each page
+    with its versions, newest first (render_sites), at /sajtovi-katedri/<site>/<its address>/.
+    A page's name: its title without the site's name (a part three or more of its titles share), else its first
+    heading no three pages share, else its address. A page named as a board subject ('Predmet: ' aside; a name of one
+    or two subjects: "Završni rad" is many smerovi' and no one's) is listed on that subject's page too (s["katedre"]),
+    and one named only that is the subject's site (s["site"]). Before render_places: such a subject has a page."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'katedre_pages'").fetchone():
-        return {}
-    out = {}
-    for url, title, html in db.execute("SELECT url, title, html FROM katedre_pages WHERE gone = 0 ORDER BY url"):
-        head = re.search(r"<h[1-4][^>]*>(.*?)</h[1-4]>", html or "", re.S)
-        for h in (title or "", head[1] if head else ""):
-            name = re.sub(r"\s+", " ", fold(unescape(re.sub(r"<[^>]+>", " ", h)))).strip(" :.-")
-            name = re.sub(r"^predmet ?: ?", "", name)
-            if len(name) > 3:
-                out.setdefault(name, url)
-    return out
+        return []
+    versions = defaultdict(list)
+    for r in db.execute("SELECT rowid AS rid, * FROM katedre_pages ORDER BY url, last_seen DESC"):
+        versions[r["url"]].append(dict(r))
+    text = lambda h: re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", h))).strip()
+    parts = lambda t: [p.strip() for p in re.split(r"\s+[—–|-]\s+|\[|\]", t or "") if p.strip()]
+    titles, heads = defaultdict(Counter), defaultdict(Counter)
+    for vs in versions.values():
+        v = vs[0]
+        v["heads"] = [h for x in re.findall(r"<h[1-4][^>]*>(.*?)</h[1-4]>", v["html"] or "", re.S) if (h := text(x))]
+        titles[v["site"]].update(set(parts(v["title"])))
+        heads[v["site"]].update(set(v["heads"]))
+    by_name = defaultdict(list)
+    for s in subjects.values():
+        by_name[fold(s["name"])].append(s)
+    names = sorted((n for n, ss in by_name.items() if len(n) >= 8 and len(ss) <= 2), key=len, reverse=True)
+    named = re.compile(r"(?<!\w)(" + "|".join(map(re.escape, names)) + r")(?!\w)") if names else None
+    sites = {k: dict(key=k, name=n, host=f"{k}.mas.bg.ac.rs", href=f"/sajtovi-katedri/{k}/", pages=[]) for k, n in SITES.items()}
+    for url, vs in versions.items():
+        v, u = vs[0], urlsplit(url)
+        if v["site"] not in sites:
+            continue
+        own = [p for p in parts(v["title"]) if titles[v["site"]][p] < 3]
+        head = next((h for h in v["heads"] if heads[v["site"]][h] < 3 and len(h) <= 120), None)
+        address = re.sub(r"[_/?=&:]+", " ", re.sub(r"\.(html?|php)$", "", unquote(u.path + (f"?{u.query}" if u.query else "")))).strip()
+        # A wiki page's id or a file's name is no name when a heading has one.
+        name = " – ".join(own) if own and (head is None or " " in " ".join(own)) else head or address or "Početna"
+        page = dict(title=name, link=url, gone=v["gone"], site=v["site"], id=v["rid"], versions=[],
+                    slug=slug(address) or "pocetna")
+        for x in vs:
+            html = clean_html(cent_tidy(x["html"]), url, classes=CENT_CLASSES) or ""
+            if strip_tags(html) or "<a " in html:
+                page["versions"].append(dict(title=name, html=html, first_seen=x["first_seen"], last_seen=x["last_seen"],
+                                             sha=x["sha"]))
+        if not page["versions"]:
+            continue
+        sites[v["site"]]["pages"].append(page)
+        subject = re.sub(r"^predmet ?: ?", "", fold(name)).strip(" .:-")
+        # The name first, at most two words after it ("Mašinski materijali II covid"): a lab named for its field
+        # ("Lab hibridni pogonski sistemi") or a longer subject's name is not the subject's.
+        m = named and named.match(subject)
+        for s in by_name[m[1]] if m and len(subject[m.end():].split()) <= 2 else []:
+            s.setdefault("katedre", []).append(page)
+            if m[1] == subject:
+                s.setdefault("site", url)
+    for x in sites.values():
+        set_hrefs(x["pages"], lambda p: f"{x['href']}{p['slug']}/")
+        for p in x["pages"]:
+            for i, v in enumerate(p["versions"]):
+                v["href"] = p["href"] if i == 0 else f"{p['href']}{v['first_seen'][:10]}-{v['sha'][:6]}/"
+    return [x for x in sites.values() if x["pages"]]
 
 
 def render_cent(site, subjects):
@@ -613,7 +666,24 @@ def render_cent(site, subjects):
         for p in s.get("cent", []):
             for v in p["versions"]:
                 # Not indexed: a cent page is often exam results, by student.
-                write(site / v["href"].strip("/") / "index.html", page.render(subj=s, page=p, v=v), index=False)
+                write(site / v["href"].strip("/") / "index.html", page.render(
+                    page=p, v=v, mark="cent", host="cent.mas.bg.ac.rs",
+                    trail=[(s["smer"]["href"], s["smer"]["label"]), (s["href"], s["name"])]), index=False)
+
+
+def render_sites(site, sites):
+    """The departments' sites (load_sites): the list of them, each site's pages, each page's versions as cent's are
+    (cent.html). Their links go to the department's site (the files are not hosted here)."""
+    lists, page = env.get_template("sajtovi.html"), env.get_template("cent.html")
+    write(site / "sajtovi-katedri" / "index.html", lists.render(sites=sites, s=None))
+    for x in sites:
+        write(site / x["href"].strip("/") / "index.html", lists.render(sites=sites, s=x))
+        for p in x["pages"]:
+            for v in p["versions"]:
+                # Not indexed: results and lists of students, as on cent.
+                write(site / v["href"].strip("/") / "index.html", page.render(
+                    page=p, v=v, mark=x["key"], host=x["host"],
+                    trail=[("/sajtovi-katedri/", "Sajtovi katedri"), (x["href"], x["name"])]), index=False)
 
 
 def pagefind_tags(it):
@@ -1670,6 +1740,7 @@ def main(db_path, out):
     db.row_factory = sqlite3.Row
     place, smerovi, subjects = load_places(db)
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
+    sites = load_sites(db, subjects)
     items = load_items(db, place) + cent_items
     teachers = load_teachers(db, subjects)
     if teachers:
@@ -1717,6 +1788,7 @@ def main(db_path, out):
     book = load_book(db, subjects, teachers)
     render_places(site, topics, smerovi, subjects)
     render_cent(site, subjects)
+    render_sites(site, sites)
     write_feeds(site, items, subjects, cent_pushed)
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it), index=False)
@@ -1834,14 +1906,26 @@ if __name__ == "__main__":
         ["Ж", "/z/", None, "do 1990", None]], _p["people"]
     assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1]], _p["katedre"]
     # A department page is a subject's when its title or first heading is the name; a list of subjects is none's.
+    # A department page's name: its own title, a heading when the title is an id, its address when every title is the
+    # site's; a page named as a subject is on its page; an empty page is none.
     _db = sqlite3.connect(":memory:")
-    _db.execute("CREATE TABLE katedre_pages (url, title, html, gone)")
-    _db.executemany("INSERT INTO katedre_pages VALUES (?, ?, ?, 0)", [
-        ("https://fluidi.mas.bg.ac.rs/omf/", "Основе механике флуида", ""),
-        ("https://etc.mas.bg.ac.rs/mm2.htm", "x", "<h2>Predmet: <b>Mašinski  materijali 2</b></h2>"),
-        ("https://motori.mas.bg.ac.rs/oas/", "OAS", "<h1>OAS</h1><h3>Мотори СУС</h3>")])
-    assert load_katedre(_db) == {"osnove mehanike fluida": "https://fluidi.mas.bg.ac.rs/omf/",
-                                 "masinski materijali 2": "https://etc.mas.bg.ac.rs/mm2.htm"}, load_katedre(_db)
+    _db.row_factory = sqlite3.Row
+    _db.execute("CREATE TABLE katedre_pages (url, sha, site, title, html, first_seen, last_seen, gone)")
+    _db.executemany("INSERT INTO katedre_pages VALUES (?, 'ab12cd34', ?, ?, ?, '2026-11-11T05:00:00+00:00', '2026-11-11T05:00:00+00:00', 0)", [
+        ("https://fluidi.mas.bg.ac.rs/omf/", "fluidi", "Основе механике флуида", "<p>a</p>"),
+        ("https://etc.mas.bg.ac.rs/mm2.htm", "etc", "x", "<h2>Predmet: <b>Mašinski  materijali 2</b></h2><p>b</p>"),
+        ("https://etc.mas.bg.ac.rs/empty.htm", "etc", "Empty", "<p> </p>"),
+        ("https://etc.mas.bg.ac.rs/lab.htm", "etc", "Lab mašinski materijali 2", "<p>c</p>"),
+        *[(f"https://hidro.mas.bg.ac.rs/{n}.html", "hidro", "Катедра за ХМЕС", "<p>x</p>") for n in ("rezultati", "a", "b")]])
+    _subj = {1: dict(name="Основе механике флуида"), 2: dict(name="Машински материјали 2")}
+    _ss = load_sites(_db, _subj)
+    assert [(x["key"], [(p["title"], p["href"]) for p in x["pages"]]) for x in _ss] == [
+        ("fluidi", [("Основе механике флуида", "/sajtovi-katedri/fluidi/omf/")]),
+        ("etc", [("Lab mašinski materijali 2", "/sajtovi-katedri/etc/lab/"), ("Predmet: Mašinski materijali 2", "/sajtovi-katedri/etc/mm2/")]),
+        ("hidro", [("a", "/sajtovi-katedri/hidro/a/"), ("b", "/sajtovi-katedri/hidro/b/"),
+                   ("rezultati", "/sajtovi-katedri/hidro/rezultati/")])], _ss
+    assert _subj[1]["site"] == "https://fluidi.mas.bg.ac.rs/omf/" and [p["title"] for p in _subj[2]["katedre"]] == [
+        "Predmet: Mašinski materijali 2"]
     assert _p["subjects"][0] == ["/1/", "Б"] and _p["subjects"][4:] == [["/b9/", "Д", 0]], _p["subjects"]
     assert first_link('<h1>K</h1><a href="/f/k.pdf?a=1&amp;b=2">Календар  2026</a>') == ("Календар 2026", "/f/k.pdf?a=1&b=2")
     _pr = ('<h2>Raspored 2026</h2><h3>Jesenji semestar</h3><h4>OSNOVNE AKADEMSKE STUDIJE - <b>MAŠINSKO</b> INŽENjERSTVO</h4>'
