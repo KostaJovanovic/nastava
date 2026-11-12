@@ -422,6 +422,8 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
     scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--slate) 55%, transparent) transparent; }
   .filters--years { flex: none; margin-bottom: 8px; }
 }
+/* Not on the home page (and its search, #res): the statistics have their own page. */
+body:has(#res) .filters--years { display: none; }
 /* Phone: the panel is not one box. Its parts are blocks of the page: the page links a tab bar (below), the followed
    subjects above the page, the statistics card under it. A part with nothing on view (no script yet) is left out. */
 @media (max-width: 899px) {
