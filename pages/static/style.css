@@ -1473,7 +1473,7 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 /* Izdvojeno: a card each with the site's preview image (og-link.html) on top; it lifts a little under the pointer.
    A row of three, then the plain cards (link.html featured_more), as many a row; a phone: one image card a row. */
 .lk__grid--f, .lk__grid--more { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.lk__grid--more { gap: 8px; margin-top: 8px; }
+.lk__grid--more { margin-top: 12px; }
 @media (max-width: 600px) { .lk__grid--f, .lk__grid--more { grid-template-columns: minmax(0, 1fr); } }
 .lk__f {
   display: flex; flex-direction: column; height: 100%; background: var(--card); border: 1px solid var(--line);

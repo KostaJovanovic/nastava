@@ -36,8 +36,8 @@ Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
   dugmići na dnu strane Moji predmeti više ne pokrivaju pola spiska.
 - 277 **Original je dugme** ispod posta, pored `Sve objave`, sa imenom sajta na kom je objavljen (`Original na
   ie.mas.bg.ac.rs`), umesto malog linka pored datuma.
-- 280, 282–284, 286 [novo] **Izdvojeno na strani Linkovi:** Veliki drajv, studenti.mas i studentski webmail na
-  vrhu, kao kartice sa slikom, a ispod njih Predmeti, Mašinci i Knjiga utisaka. Tu su i studentske organizacije
+- 280, 282–284, 286–287 [novo] **Izdvojeno na strani Linkovi:** Veliki drajv, studenti.mas i Mašinci na vrhu, kao
+  kartice sa slikom, a ispod njih Predmeti, studentski webmail i Knjiga utisaka. Tu su i studentske organizacije
   (Drumska strela, Beoavia, Robotoid), u delu `Studenti`, i Biblioteka fakulteta.
 - 251, 253 [novo] **Svaki smer ima svoju ikonicu** na početnoj i na strani smera, umesto fascikle.
 - 254 **Filter po godinama** se ne vidi ispod objave i vesti, gde je samo smetao.
