@@ -18,6 +18,26 @@ above the first `## ` is this note and is not shown.
 ## 11. novembra 2026.
 Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
 
+- 269–273 [novo] **Objave iz Teams-a** za šest predmeta: Termodinamika B, Osnovi otpornosti konstrukcija, Otpornost
+  materijala, Inženjerska grafika, Estetski dizajn i Mašinsko inženjerstvo i održivi razvoj. Objave nastavnika su
+  objave predmeta, sa prilozima. Odgovori studenata stoje kao `Student #1`, `Student #2`… bez imena, broja indeksa i
+  mejla. Ostali fajlovi iz Teams-a su na strani predmeta, u delu `Materijal sa Teams-a`.
+- 268 [novo] **Mejlovi sa predmeta Uvod u pumpe i ventilatore** su objave tog predmeta, sa prilozima (termini,
+  rezultati, materijali), a odgovor na mejl je odgovor u objavi. Predmet Pumpe i ventilatori na OAS MI se sad zove
+  Uvod u pumpe i ventilatore, kao kod fakulteta; link je isti.
+- 264–265 [novo] **Obaveštenja sa sajtova katedri su objave,** sa oznakom sajta (`ie`, `fluidi`, `meh`…), na strani
+  svog predmeta ili katedre, i stižu kao obaveštenja, kao ona sa cent-a. Materijal sa ie (`Literatura`) je na strani
+  predmeta, kao spisak fajlova. Arhiva strana svakog sajta je sklonjena sa strane Linkovi.
+- 256, 258–261 [novo] **Moji predmeti imaju svoju stranu,** do koje vodi `Obaveštenja` u side panelu. Prvo izabereš
+  predmete, pa uključiš obaveštenja i izabereš od kojih nastavnika stižu; bez izbora stižu sve objave predmeta.
+  Pretraga nalazi predmet po imenu, skraćenici ili nastavniku i ostaje u izabranom smeru, a godine se ne kriju kad
+  izabereš smer. Tu je i RSS izabranih predmeta za čitač (OPML).
+- 263 [ispravka] **Kad isključiš `Samo moji predmeti`,** početna je opet kao bez izabranih predmeta. Na telefonu
+  dugmići na dnu strane Moji predmeti više ne pokrivaju pola spiska.
+- 251, 253 [novo] **Svaki smer ima svoju ikonicu** na početnoj i na strani smera, umesto fascikle.
+- 254 **Filter po godinama** se ne vidi ispod objave i vesti, gde je samo smetao.
+- 255, 257 **Strana O sajtu je u izradi,** pa je link ka njoj sklonjen ispod pretrage, kao i hint za prečice na
+  tastaturi.
 - 243–244 [novo] **Sajtovi katedri** (ie, etc, motori, meh, bmi, pt, ppm, fluidi, hidro i ciah) se čuvaju ovde,
   strana po strana, sa ranijim verzijama, kao cent. Spisak strana svakog sajta je na strani Linkovi, u delu
   `Arhiva sajtova katedri`. Strana koja pripada predmetu je i na strani predmeta, označena imenom sajta.
@@ -35,7 +55,8 @@ Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
   izvorima.
 - 238, 248 **Ikonica objave sa odgovorima** više nije u tamnom krugu, a oznaka sa kog je sajta nešto (`cent`) ima
   oštrije uglove.
-- 247 **Održavanje:** plan za Android aplikaciju.
+- 247, 249–250, 252, 262, 266–267, 274 **Održavanje:** plan za Android aplikaciju, dnevnik osvežavanja sajta,
+  ispravke deploy-a i rezervna kopija fajlova sa sajtova katedri.
 
 ## 10. novembra 2026.
 Strana Linkovi, novi font, oblak reči i broj posetilaca na statistici, strana Verzije i dosta popravki za
