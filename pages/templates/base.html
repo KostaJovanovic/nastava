@@ -95,10 +95,11 @@
       <a href="/vesti/feed.xml"><span data-notx>RSS</span> vesti</a>
       <a href="https://github.com/KostaJovanovic/nastava/issues">Prijavi grešku</a>
     </nav>
-    {#- The time the board was last read (build.py forum_checked): site.js writes "u hh:mm, dd.mm.yyyy." in the
-        reader's time; without it, the date. -#}
+    {#- The time the board was last read (build.py forum_checked, "2026-11-12T14:32Z"): site.js writes "u hh:mm,
+        dd.mm.yyyy." in the reader's time; without it, the same in UTC, said so (the UTC date alone is a day off
+        around midnight). -#}
     {#- Spans: a phone puts each on its own line, without the dot (style.css). -#}
-    <p class="ft__note">{% if forum_checked %}<span>Provereno <time datetime="{{ forum_checked }}">{{ forum_checked | dmy }}</time></span><span class="ft__dot"> · </span>{% endif %}<span><a href="/o-sajtu/">Ovaj sajt je lični projekat.</a></span> <span>Nisam u komunikaciji sa fakultetom.</span></p>
+    <p class="ft__note">{% if forum_checked %}<span>Provereno <time datetime="{{ forum_checked }}">u {{ forum_checked[11:16] }} UTC, {{ forum_checked | dmy }}</time></span><span class="ft__dot"> · </span>{% endif %}<span><a href="/o-sajtu/">Ovaj sajt je lični projekat.</a></span> <span>Nisam u komunikaciji sa fakultetom.</span></p>
   </div>
   <div class="ft__side">
     {#- A wave through its letters (site.js), as the header of valjdakosta.com. -#}
