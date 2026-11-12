@@ -1443,7 +1443,9 @@ def render_teachers(site, teachers, items, book):
             # The faculty took the profile down: the Wayback Machine's copy nearest the last day it was listed.
             stamp = re.sub(r"\D", "", t["last_seen"])[:14]
             source = f"https://web.archive.org/web/{stamp}/{source}"
-        local = lambda v: pages.get(v.split("?")[0]) or subj_pages.get(v.split("?")[0])
+        # A page written here (OTHER_TEACHERS) links this site's own pages ("/item/p3263/"): those stay as they are.
+        local = lambda v: (pages.get(v.split("?")[0]) or subj_pages.get(v.split("?")[0])
+                           or (v if t.get("source") and v.startswith("/") and not v.startswith("//") else None))
         # The profile repeats the name as its first heading and the photo; the page has both above it.
         html = re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S)
         # base: the profile's relative links are the faculty's (or masinac.org's), even when shown from the Wayback copy.
