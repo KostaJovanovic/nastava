@@ -61,6 +61,11 @@ nastava.store_topic(db, 1, 11, (5, 'F', [post(10), post(11)]))
 assert db.execute('select sum(gone) from posts').fetchone() == (0,)
 nastava.store_topic(db, 1, 11, None)
 assert db.execute('select gone from topics').fetchone() == (1,) and db.execute('select count(*), sum(gone) from posts').fetchone() == (2, 2)
+# A gone topic listed again (a moderator restored it) is fetched again, so its posts come back.
+nastava.get = lambda path: BeautifulSoup('<ul><li class="row"><a class="topictitle" href="./viewtopic.php?t=1">t</a>'
+	'<dd class="posts">1</dd><dd class="lastpost"><a href="./viewtopic.php?p=11">x</a></dd></li></ul>', 'html.parser')
+nastava.walk_forum(db, 5, 'viewforum.php?f=5')
+assert db.execute('select gone, done_last_post from topics').fetchone() == (0, None)
 
 # The teacher list, a profile and the emeritus page.
 listed = nastavnici.parse_list(read('nastavnici.html'))

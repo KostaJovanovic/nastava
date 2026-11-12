@@ -197,8 +197,10 @@ def walk_forum(db, forum_id, path):
 			else:
 				listed.append(id_)
 				# A global announcement shows in every forum; the topic page sets its real forum.
+				# A topic back after it was gone (restored by a moderator) is fetched again: its posts are still marked gone.
 				db.execute('insert into topics (id, forum, title, replies, last_post) values (?,?,?,?,?) '
-					'on conflict(id) do update set title=excluded.title, replies=excluded.replies, last_post=excluded.last_post, gone=0',
+					'on conflict(id) do update set title=excluded.title, replies=excluded.replies, last_post=excluded.last_post, '
+					'done_last_post=case when topics.gone then null else topics.done_last_post end, gone=0',
 					(id_, forum_id, title, posts, last_post))
 	if forum_id is not None:
 		db.execute('update forums set own_topics = ? where id = ?', (own or 0, forum_id))
