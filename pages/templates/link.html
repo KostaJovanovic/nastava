@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 {#- The links worth keeping, as cards (as masinci.org/link): (name, href, icon from icons.svg, data-domain). A card's
     second line is its address; with a data-domain (the drive), that name, as the dialog before it says (site.js). -#}
-{#- Izdvojeno, above the rest and in its place below too: (name, href, its image (og-link.html; Predmeti: the page's
-    own; the guestbook: its site's own), the line under the name, data-domain). -#}
+{#- Izdvojeno, above the rest and in its place below too: three cards with an image (name, href, its image from
+    og-link.html, the line under the name, data-domain), then three as the rest's. -#}
 {% set featured = [
   ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'og-link-drajv.png', 'Materijali po godinama, na OneDrive-u', 'kosta-onedrive.com'),
   ('studenti.mas', 'https://studenti.mas.bg.ac.rs/', 'og-link-estudent.png', 'Prijava ispita i ocene', none),
   ('Studentski webmail', 'https://webmail.studenti.mas.bg.ac.rs/', 'og-link-webmail.png', 'Mejl @studenti.mas.bg.ac.rs', none),
-  ('Predmeti', '/predmeti/', 'og-predmeti.png', 'Svi programi, moduli i semestri', none),
-  ('Mašinci', 'https://masinci.org/', 'og-link-masinci.png', 'Studentska lista Stepen Sigurnosti', none),
-  ('Knjiga utisaka', 'https://valjdakosta.com/guestbook', 'og-link-guestbook.jpg', 'Ostavi poruku autoru sajta', none),
+] %}
+{% set featured_more = [
+  ('Predmeti', '/predmeti/', 'book', none),
+  ('Mašinci', 'https://masinci.org/', 'users', none),
+  ('Knjiga utisaka', 'https://valjdakosta.com/guestbook', 'msgs', none),
 ] %}
 {% set groups = [
   ('Fakultet', [
@@ -77,6 +79,16 @@
 {% set down = ['https://omk.mas.bg.ac.rs/', 'https://mat.mas.bg.ac.rs/', 'http://www.en.mas.bg.ac.rs/',
                'https://lgs.mas.bg.ac.rs/', 'https://geotermal.mas.bg.ac.rs/'] %}
 
+{#- One link's card. Another site's icon in the corner (build.py icons), unless the corner says it does not work. A
+    faculty site without its own: the faculty's (www.mas.bg.ac.rs). -#}
+{% macro card(name, href, icon, domain) %}
+    {%- set host = href.split('/')[2] if '://' in href else '' %}
+    {%- set fav = icons.get(host) or (icons.get('www.mas.bg.ac.rs') if host.endswith('.mas.bg.ac.rs') else none) %}
+    <li><a class="lk__a{% if href in down %} lk__a--down{% endif %}" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}>
+      {%- if fav and href not in down %}<img class="lk__fav" src="/static/link/{{ fav }}" alt="" width="16" height="16" loading="lazy" decoding="async">{% endif %}
+      {%- if href in down %}<span class="lk__down">ne radi</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ name }}</b><small data-notx>{{ 'OneDrive' if domain else href.split('://')[-1].rstrip('/') }}</small></span></a></li>
+{%- endmacro %}
+
 {% block title %}Linkovi{% endblock %}
 {% block description %}Važni linkovi Mašinskog fakulteta u Beogradu na jednom mestu: forum nastave, studentski servis, webmail, vesti, raspored ispita i Veliki drajv.{% endblock %}
 
@@ -91,21 +103,16 @@
     <li><a class="lk__f" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}><img src="/static/{{ img }}" alt="" width="1200" height="630" decoding="async"><span class="lk__t"><b>{{ name }}</b><small>{{ line }}</small></span></a></li>
     {%- endfor %}
   </ul>
+  <ul class="lk__grid lk__grid--more">
+    {%- for l in featured_more %}{{ card(*l) }}{% endfor %}
+  </ul>
 </section>
 {%- for title, links in groups %}
 <section class="lk" aria-labelledby="lk-{{ loop.index }}">
   {#- loop.index from 1: lk-0 is Izdvojeno. -#}
   <h2 class="lk__h" id="lk-{{ loop.index }}">{{ title }}</h2>
   <ul class="lk__grid">
-    {%- for name, href, icon, domain in links %}
-    {#- Another site's icon in the corner (build.py icons), unless the corner says it does not work. A faculty site
-        without its own: the faculty's (www.mas.bg.ac.rs). -#}
-    {%- set host = href.split('/')[2] if '://' in href else '' %}
-    {%- set fav = icons.get(host) or (icons.get('www.mas.bg.ac.rs') if host.endswith('.mas.bg.ac.rs') else none) %}
-    <li><a class="lk__a{% if href in down %} lk__a--down{% endif %}" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}>
-      {%- if fav and href not in down %}<img class="lk__fav" src="/static/link/{{ fav }}" alt="" width="16" height="16" loading="lazy" decoding="async">{% endif %}
-      {%- if href in down %}<span class="lk__down">ne radi</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ name }}</b><small data-notx>{{ 'OneDrive' if domain else href.split('://')[-1].rstrip('/') }}</small></span></a></li>
-    {%- endfor %}
+    {%- for l in links %}{{ card(*l) }}{% endfor %}
   </ul>
 </section>
 {%- endfor %}
