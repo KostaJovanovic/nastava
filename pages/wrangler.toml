@@ -12,11 +12,11 @@ routes = [
   { pattern = "nastava.masinci.org", custom_domain = true }
 ]
 
-# The automatic update, every 4 hours (src/index.js dispatch starts sync.yml): 2, 6, 10, 14, 18 and 22 h in Belgrade in
+# The automatic update (src/index.js dispatch starts sync.yml): 7:17, 11:17, 15:17, 19:17 and 22:17 in Belgrade in
 # winter, an hour later in summer. Once: npx wrangler secret put GH_TOKEN, a fine-grained GitHub token for this repo
 # with Actions read and write.
 [triggers]
-crons = ["0 1,5,9,13,17,21 * * *"]
+crons = ["17 6,10,14,18,21 * * *"]
 
 # The web push subscriptions (src/index.js). Once: npx wrangler kv namespace create PUSH, and its id here; then
 # npx wrangler secret put PUSH_KEY, with the "key" of push-secret.json (uv run ci/push.py keys).

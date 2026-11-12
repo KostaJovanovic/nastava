@@ -133,7 +133,7 @@ async function visit(request, env) {
 
 // The automatic update (wrangler.toml crons): GitHub's own schedule started runs 5–8 hours late, a dispatch starts at
 // once. The UTC hour -> the run's slot (ci/plan.py). GH_TOKEN: a fine-grained token, this repo, Actions read and write.
-export const SLOTS = { 1: "night", 5: "morning", 9: "noon", 13: "afternoon", 17: "evening", 21: "late" };
+export const SLOTS = { 6: "morning", 10: "noon", 14: "afternoon", 18: "evening", 21: "late" };
 
 export async function dispatch(env, time) {
 	const slot = SLOTS[new Date(time).getUTCHours()];

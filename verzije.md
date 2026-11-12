@@ -16,10 +16,10 @@ above the first `## ` is this note and is not shown.
   tests, tools) goes into one `Održavanje` entry a day, not a line each.
 
 ## 12. novembra 2026.
-Nova adresa masinci.org, a sajt se osvežava šest puta dnevno, na vreme.
+Nova adresa masinci.org, a sajt se osvežava pet puta dnevno, na vreme.
 
-- 299, 315 **Sajt se osvežava šest puta dnevno,** svaki dan, na svaka četiri sata: u 2, 6, 10, 14, 18 i 22 h (leti
-  sat kasnije). GitHub je osvežavanje pokretao i po nekoliko sati kasnije, a sad ga pokreće Cloudflare, na vreme.
+- 299, 315, 317 **Sajt se osvežava pet puta dnevno,** svaki dan: u 7:17, 11:17, 15:17, 19:17 i 22:17 (leti sat
+  kasnije). GitHub je osvežavanje pokretao i po nekoliko sati kasnije, a sad ga pokreće Cloudflare, na vreme.
 - 301–304 [novo] **Nova adresa: `masinci.org`.** Stare adrese (`nastava.masinci.org`, `nastava.valjdakosta.com`)
   vode na istu stranu na novoj. Stepen sigurnosti je sad na `stepen.masinci.org`, a link ka njemu u footer-u i na
   strani Linkovi se zove Mašinci.
@@ -37,6 +37,7 @@ Nova adresa masinci.org, a sajt se osvežava šest puta dnevno, na vreme.
   stranu.
 - 310–311, 313–314 [novo] **Početna:** Najnovije objave su iznad vesti. Kad otvoriš stranu, ta dva spiska blede ka
   dnu ekrana, a čim skroluješ, pojave se cela. Donji meni na telefonu je bez senke.
+- 316 **Održavanje:** ova strana.
 
 ## 11. novembra 2026.
 Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.

@@ -1,6 +1,6 @@
 name: sync
 
-# The automatic update. Six runs a day, every 4 hours, each scraping the board and the news; ci/plan.py (through
+# The automatic update. Five runs a day (7:17 to 22:17 in Belgrade), each scraping the board and the news; ci/plan.py (through
 # ci/deploy.sh auto) adds to the morning run the schedule pages on the 1st of the month and on the first day of a
 # registration or an exam period (from the faculty's teaching calendar), and the teachers and the subjects on 1 October.
 # The Worker's cron starts them (pages/wrangler.toml, src/index.js dispatch): GitHub's own schedule started runs 5–8
@@ -11,7 +11,7 @@ on:
       what:
         description: "forum: the board and the news; sync: every scraper; auto: as a scheduled run"
         type: choice
-        options: ["forum", "forum studije", "sync", "auto night", "auto morning", "auto noon", "auto afternoon", "auto evening", "auto late"]
+        options: ["forum", "forum studije", "sync", "auto morning", "auto noon", "auto afternoon", "auto evening", "auto late"]
         default: forum
 
 permissions:

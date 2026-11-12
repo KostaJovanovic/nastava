@@ -66,12 +66,12 @@ test("each cron hour starts sync.yml as its slot; a failed dispatch throws", asy
 	const sent = [], real = globalThis.fetch;
 	globalThis.fetch = async (url, init) => (sent.push([url, init]), new Response(null, { status: sent.length > 6 ? 401 : 204 }));
 	try {
-		for (const h of [1, 5, 9, 13, 17, 21]) await dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, h, 0, 3));
+		for (const h of [6, 10, 14, 18, 21, 21]) await dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, h, 17, 3));
 		assert.deepEqual(sent.map(([, i]) => JSON.parse(i.body).inputs.what),
-			["auto night", "auto morning", "auto noon", "auto afternoon", "auto evening", "auto late"]);
+			["auto morning", "auto noon", "auto afternoon", "auto evening", "auto late", "auto late"]);
 		assert.match(sent[0][0], /\/actions\/workflows\/sync\.yml\/dispatches$/);
 		assert.equal(sent[0][1].headers.Authorization, "Bearer t");
-		await assert.rejects(dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, 5)), /401/);
+		await assert.rejects(dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, 6, 17)), /401/);
 		await assert.rejects(dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, 3)), /no slot/);
 	} finally {
 		globalThis.fetch = real;
