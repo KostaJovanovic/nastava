@@ -1056,7 +1056,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* A gradient can't transition, a registered number can: --hide goes 1 → 0 (.fade → .faded, then no mask at all). */
 @property --hide { syntax: "<number>"; inherits: false; initial-value: 0; }
 .lists { display: grid; }
-/* 80% at the top, nothing at --end (50px above the screen's bottom or the phone's tab bar, search.html). */
+/* 80% at the top, nothing at --end: the screen's bottom or the phone's tab bar (search.html). */
 :is(.fade, .faded) .lists {
   --mask: linear-gradient(rgb(0 0 0 / calc(1 - .2 * var(--hide))), rgb(0 0 0 / calc(1 - var(--hide))) var(--end, 100px));
   -webkit-mask-image: var(--mask); mask-image: var(--mask); transition: --hide .5s ease-out;
