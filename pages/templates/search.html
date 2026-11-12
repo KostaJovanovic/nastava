@@ -23,8 +23,9 @@
     <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu.</p>
   </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
-  {#- Faded out at load until the first scroll, wheel, touch or key (style.css .fade). -#}
-  <script>{ const h = document.documentElement; if (!scrollY && !h.classList.contains("searching")) { h.classList.add("fade"); ["scroll", "wheel", "touchmove", "keydown"].forEach(e => addEventListener(e, () => h.classList.replace("fade", "faded"), { once: true, passive: true })); } }</script>
+  {#- Faded out at load until the first move down (style.css .fade): a scroll, a wheel, a finger or a key. Up, at
+      the top of the page, does not reveal them. -#}
+  <script>{ const h = document.documentElement; if (!scrollY && !h.classList.contains("searching")) { h.classList.add("fade"); let y0 = 0; const down = { scroll: () => scrollY > 0, wheel: e => e.deltaY > 0, touchstart: e => (y0 = e.touches[0].clientY, false), touchmove: e => e.touches[0].clientY < y0, keydown: e => ["ArrowDown", "PageDown", "End", " "].includes(e.key) && !e.target.closest("input, select, textarea") }; const go = e => { if (!down[e.type](e)) return; h.classList.replace("fade", "faded"); for (const t in down) removeEventListener(t, go); }; for (const t in down) addEventListener(t, go, { passive: true }); } }</script>
   <div class="lists" ontransitionend="event.propertyName == '--hide' && document.documentElement.classList.remove('faded')">
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
   {%- if vesti %}{{ vest_rows('Vesti fakulteta', vesti, more='/vesti/') }}{% endif %}
