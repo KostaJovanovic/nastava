@@ -666,11 +666,11 @@
     d.addEventListener('moji', sync);
   }).catch(function () {});
   var fillMine = function () {
-    var sec = d.getElementById('moji'), list = mine();
-    if (!sec) return;
-    // Only while "Samo moji predmeti" is on (head.js): off, the home page is as without followed subjects.
-    sec.hidden = !(window.mojiNow && window.mojiNow.only);
-    if (sec.hidden) return;
+    // Najnovije objave's rows of the followed subjects (rows.html topic_rows mine), shown in place of its own only while
+    // "Samo moji predmeti" is on (head.js, style.css .moji-only).
+    var ol = d.querySelector('[data-mine]'), list = mine();
+    if (!ol || !(window.mojiNow && window.mojiNow.only)) return;
+    var sec = ol.parentNode;
     // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
     Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
@@ -679,12 +679,12 @@
       // [last post time, row HTML]: the newest across the subjects first. The rows are this site's own build.
       var rows = [].concat.apply([], all.map(function (j) { return j.rows; }));
       rows.sort(function (a, b) { return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0; });
-      sec.querySelector('ol').innerHTML = rows.slice(0, 10).map(function (r) { return r[1]; }).join('');
+      ol.innerHTML = rows.slice(0, 10).map(function (r) { return r[1]; }).join('');
       sec.querySelector('.moji__none').hidden = rows.length > 0;
     });
   };
   fillMine();
-  // search.js puts the home page back when the search is cleared, without these rows.
+  // search.js puts the home page back when the search is cleared, as built: without these rows.
   d.addEventListener('pocetna', fillMine);
   d.addEventListener('moji', fillMine);
 

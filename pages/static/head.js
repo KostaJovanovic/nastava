@@ -13,8 +13,9 @@ try {
 // "Moji predmeti": while the side panel's choice is "Samo moji predmeti" ("sve" not "1") and some subjects are
 // followed ("moji", site.js), the site shows only them. A style made here hides the others before the first paint:
 // [data-pid] is a row of a subject or of a topic in one, [data-pids] a smer's row (its subjects); a box or group left
-// without such a row goes too. site.js calls it again when the choice or the subjects change; it returns
-// {only, has(href)} for the list counts.
+// without such a row goes too. The home page (#res) keeps its boxes: Studije greys its other smerovi, and Najnovije
+// objave shows the followed subjects' newest (site.js fillMine). site.js calls it again when the choice or the subjects
+// change; it returns {only, has(href)} for the list counts.
 window.moji = function () {
 	let list = [], all = false;
 	try {
@@ -28,8 +29,8 @@ window.moji = function () {
 		const pid = list.map((h) => `:not([data-pid=${q(h)}])`).join("");
 		const pids = list.map((h) => `:not([data-pids~=${q(h)}])`).join("");
 		const any = list.map((h) => `[data-pid=${q(h)}],[data-pids~=${q(h)}]`).join(",");
-		css = `[data-pid]${pid},[data-pids]${pids},:is(.fb,.sg,.sg__s,.sg__slot):has([data-pid],[data-pids]):not(:has(${any}))`
-			+ "{display:none!important}";
+		css = `[data-pid]${pid},[data-pids]${pids}:not(#res *),:is(.fb,.sg,.sg__s,.sg__slot):not(#res *):has([data-pid],[data-pids]):not(:has(${any}))`
+			+ `{display:none!important}#res [data-pids]${pids}{opacity:.45}`;
 	}
 	let style = document.getElementById("moji-css");
 	if (!style) {

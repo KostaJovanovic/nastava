@@ -677,8 +677,6 @@ body:has(#res) .filters--years { display: none; }
   .mp__foot { position: static; }
   /* The page's own: no statistics card under it, no subtitle (the steps say it). */
   body:has(.mp) .filters--years, .mp .mh__sub { display: none; }
-  /* The home page's followed subjects: the newest five, so the board's index is not far below. */
-  #moji .fr:nth-child(n+6) { display: none; }
 }
 @media (max-width: 600px) {
   .mp__cards { grid-template-columns: 1fr; gap: 6px; }
@@ -1039,6 +1037,9 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fb__more { display: flex; justify-content: center; align-items: center; min-height: 42px; border-top: 1px solid var(--line); color: var(--link); font-size: 13.5px; cursor: pointer; }
 .fb__more:hover { background: var(--hover); }
 .fb__more:has(input:checked), .moji-only .fb__more { display: none; }
+/* Najnovije objave (rows.html topic_rows mine): the followed subjects' rows in place of its own while "Samo moji
+   predmeti" is on. */
+.moji-only .fb__rows:has(~ [data-mine]), :root:not(.moji-only) :is([data-mine], .moji__none) { display: none; }
 .fb__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: -2px; }
 .fb__more input { position: absolute; opacity: 0; pointer-events: none; }
 /* The home page's two lists (Najnovije objave, vesti): faded out at load, whole at the first scroll (search.html). */

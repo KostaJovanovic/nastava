@@ -85,7 +85,9 @@
 
 {#- Topics, newest last post first. short: the first five, the rest after a tap on the toggle under them (a checkbox,
     no script; style.css .fb--short, which has the five). -#}
-{%- macro topic_rows(title, topics, place=false, filter=false, short=false) -%}
+{#- mine: the home page's newest. While "Samo moji predmeti" is on, its rows give way to the followed subjects'
+    newest, which site.js (fillMine) puts in [data-mine] from each subject's novo.json (style.css .moji-only). -#}
+{%- macro topic_rows(title, topics, place=false, filter=false, short=false, mine=false) -%}
 {%- set short = short and topics | length > 5 %}
 <section class="fb fb--topics{% if short %} fb--short{% endif %}">
   {%- if caller is defined %}{{ caller() }}{% endif %}
@@ -95,6 +97,10 @@
     {{ topic_row(t, place, filter) }}
     {%- endfor %}
   </ol>
+  {%- if mine %}
+  <ol class="fb__rows" data-mine></ol>
+  <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu.</p>
+  {%- endif %}
   {%- if short %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ topics | length - 5 }}</span></label>{% endif %}
   {%- if filter %}<p class="empty" data-none hidden>Nema objava za ovaj filter.</p>{% endif %}
 </section>
