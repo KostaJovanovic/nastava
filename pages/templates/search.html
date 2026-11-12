@@ -23,8 +23,12 @@
     <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu.</p>
   </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
-  {%- if vesti %}{{ vest_rows('Najnovije vesti', vesti, more='/vesti/') }}{% endif %}
+  {#- Faded out at load until the first scroll, wheel, touch or key (style.css .fade). -#}
+  <script>if (!scrollY && !document.documentElement.classList.contains("searching")) { document.documentElement.classList.add("fade"); ["scroll", "wheel", "touchmove", "keydown"].forEach(e => addEventListener(e, () => document.documentElement.classList.remove("fade"), { once: true, passive: true })); }</script>
+  <div class="lists">
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
+  {%- if vesti %}{{ vest_rows('Najnovije vesti', vesti, more='/vesti/') }}{% endif %}
+  </div>
   <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · objava <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b></p>
 </div>
 <nav class="status" aria-label="Stranice"></nav>

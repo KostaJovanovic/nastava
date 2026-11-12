@@ -1051,7 +1051,10 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fb__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: -2px; }
 .fb__more input { position: absolute; opacity: 0; pointer-events: none; }
 /* The home page's boxes (Moji predmeti, Studije, Najnovije objave) read as separate parts. */
-#res > .fb:not([hidden]) ~ .fb { margin-top: 14px; }
+#res > .fb:not([hidden]) ~ .fb, #res > .fb:not([hidden]) ~ .lists, .lists > .fb ~ .fb { margin-top: 14px; }
+/* The home page's two lists (Najnovije objave, vesti): faded out at load, whole at the first scroll (search.html). */
+.lists { display: grid; }
+.fade .lists { -webkit-mask-image: linear-gradient(#000, transparent 100px); mask-image: linear-gradient(#000, transparent 100px); }
 /* A search in the URL: the board index stays hidden until the results come (search.js shown()).
    If the script never gets there, the index shows after 6 s. */
 .searching .mh, .searching #res > * { visibility: hidden; animation: reveal 0s 6s forwards; }
