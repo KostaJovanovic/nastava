@@ -58,7 +58,8 @@ FORMS = {"objava": ("objava", "objave", "objava"), "post": ("post", "posta", "po
          "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
          "nastavnik": ("nastavnik", "nastavnika", "nastavnika"), "autor": ("autor", "autora", "autora"),
          "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja"),
-         "verzija": ("verzija", "verzije", "verzija"), "čas": ("čas", "časa", "časova"), "poen": ("poen", "poena", "poena")}
+         "verzija": ("verzija", "verzije", "verzija"), "čas": ("čas", "časa", "časova"), "poen": ("poen", "poena", "poena"),
+         "rad": ("rad", "rada", "radova")}
 
 
 def plural(n, word):
@@ -1257,6 +1258,18 @@ OTHER_TEACHERS += [
                '<p>Демонстратор на Машинским елементима, на прегледу пројектних задатака код проф. Ненада Коларевића и '
                'Александра Димића (<a href="/item/p20558/">2023</a>, <a href="/item/p23229/">2024</a>, '
                '<a href="/item/p26454/">2025</a>).</p>'),
+    *[_mentioned(f"ic-{slug(lat)}", name, "истраживач", None, "2026-11-12", 0,
+                 f"https://machinery.mas.bg.ac.rs/APP/faces/author.xhtml?author_id=orcid%3A%3A{orcid}",
+                 "machinery.mas.bg.ac.rs",
+                 f"<p>Истраживач Иновационог центра Машинског факултета: {n} радова у збирци „IC – radovi "
+                 "istraživača“ репозиторијума факултета (Machinery). Остали коаутори: "
+                 f'<a href="/istrazivaci/#{slug(lat)}">истраживачи</a>.</p>')
+      # The repository's most frequent authors of its Innovation Centre collection (2026-11-12): 100+ works each.
+      for name, lat, orcid, n in [("Симон Седмак", "Simon Sedmak", "0000-0002-2674-541X", 222),
+                                  ("Милош Милошевић", "Miloš Milošević", "0000-0002-2418-1032", 194),
+                                  ("Бранислав Ђорђевић", "Branislav Đorđević", "0000-0001-8595-6930", 120),
+                                  ("Алекса Миловановић", "Aleksa Milovanović", "0000-0003-4668-8800", 113),
+                                  ("Снежана Кирин", "Snežana Kirin", "0000-0002-2176-3969", 111)]],
     _mentioned("mentioned-kovacevic", "Сандра Ковачевић", "", "Катедра за термомеханику",
                "2026-11-11", 0, "https://vesti.mas.bg.ac.rs/?p=24064", "vesti.mas.bg.ac.rs",
                '<p>Мастер инжењер машинства (модул за термотехнику). 2023. награђена на Националном студентском '
@@ -1453,6 +1466,51 @@ def render_teachers(site, teachers, items, book):
     write(site / "nastavnici" / "arhiva" / "index.html",
           env.get_template("nastavnici.html").render(teachers=left, katedre=sorted({t["katedra"] for t in left if t["katedra"]}),
                                                      archive=True))
+    since = date.today().year - 3
+    found = researchers(teachers, since)
+    write(site / "istrazivaci" / "index.html", env.get_template("istrazivaci.html").render(people=found, since=since))
+    return found
+
+
+# A co-author in a profile's list of papers: "Kovačević Sandra, Petrović Branislav, Banjac Miloš (2026). Title".
+_NAME = r"[A-ZČĆŠĐŽ][a-zčćšđž]+(?:-[A-ZČĆŠĐŽ][a-zčćšđž]+)?"
+_PAPER = re.compile(rf"((?:{_NAME}(?: {_NAME})? {_NAME}, )*{_NAME}(?: {_NAME})? {_NAME}) \((20\d\d)\)\.? ([^,]{{0,80}})")
+
+
+def researchers(teachers, since, html=None):
+    """The co-authors in the teachers' profiles' papers since `since` who are no teacher of the faculty's: the
+    researchers and associates around them (/istrazivaci/, the header search). One with a makeshift page
+    (OTHER_TEACHERS) links to it. Kept: 3 papers or more, or on 2 profiles or more (one paper with one teacher is
+    mostly a guest). shortcut: a name is "Surname(s) Given" as the profiles write it; a paper with a middle initial
+    ("Đorđević Branislav R.") or a two-word given name is missed, and namesakes are one person."""
+    by_name = {}
+    for t in teachers:
+        w = [x for x in re.split(r"[\s-]+", fold(t["name"])) if x and not x.endswith(".")]
+        for sur in w[1:]:
+            by_name[(w[0], sur)] = t
+    papers, profiles, shown = defaultdict(set), defaultdict(dict), {}
+    for t in teachers:
+        if t.get("source") or t["gone"]:
+            continue
+        text = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", (html or {}).get(t["id"], t["html"]) or "")))
+        for m in _PAPER.finditer(text):
+            if int(m[2]) < since:
+                continue
+            for a in m[1].split(", "):
+                # The given name last: "Spasojević Brkić Vesna" has two surnames.
+                sur, given = a.rsplit(" ", 1)
+                known = by_name.get((fold(given), fold(re.split(r"[\s-]", sur)[0])))
+                if known and not known.get("source"):
+                    continue
+                key = fold(f"{given} {sur}")
+                shown.setdefault(key, (f"{given} {sur}", known))
+                papers[key].add((m[2], fold(m[3])[:40]))
+                profiles[key][t["href"]] = t
+    out = [dict(name=shown[k][0], page=shown[k][1] and shown[k][1]["href"], id=slug(k), n=len(papers[k]),
+                last=max(y for y, _ in papers[k]),
+                teachers=sorted(profiles[k].values(), key=lambda t: azbuka(t["shown"])))
+           for k in papers if len(papers[k]) >= 3 or len(profiles[k]) >= 2]
+    return sorted(out, key=lambda r: (-len(r["teachers"]), -r["n"], azbuka(r["name"])))
 
 
 # The programs in the order of the faculty's studies; a subject book program not here goes last.
@@ -1964,10 +2022,14 @@ def main(db_path, out):
     write_feeds(site, items, subjects, cent_pushed)
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it), index=False)
-    render_teachers(site, teachers, items, book)
+    found = render_teachers(site, teachers, items, book)
     render_book(site, book)
     raspored = render_study_pages(site, db)
-    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored),
+    # The researchers for the header search: [name, its row on /istrazivaci/, how many papers with whom].
+    istrazivaci = [[r["name"], f"/istrazivaci/#{r['id']}", f"{r['n']} {plural(r['n'], 'rad')} · {', '.join(t['shown'] for t in r['teachers'][:2])}"]
+                   for r in found]
+    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored,
+                                                     istrazivaci=istrazivaci),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
@@ -2020,6 +2082,13 @@ if __name__ == "__main__":
         "термодинамика", "процесна техника", "теорија механизама и машина", "аутоматско управљање", "моторна возила", "мотори",
         "информационе технологије у машинству"]
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
+    _r = [dict(id="1", name="Весна К. Спасојевић-Бркић", gone=0, href="/a/", shown="В",
+               html="<p>Spasojević Brkić Vesna, Kovačević Sandra, Banjac Miloš (2026). X, J.</p><p>Kovačević Sandra (2025). "
+                    "Y, J.</p><p>Kovačević Sandra (2024). Z, J.</p><p>Kovačević Sandra (2023). V, J.</p>"
+                    "<p>Gost Jedan (2024). W, J.</p>"),
+          dict(id="2", name="Милош Ј. Бањац", gone=0, href="/b/", shown="М", html="")]
+    _r = researchers(_r, 2024)  # two surnames and a teacher are known; 2023 is too old; one paper alone is a guest
+    assert [(r["name"], r["n"], r["id"]) for r in _r] == [("Sandra Kovačević", 3, "sandra-kovacevic")], _r
     assert env.filters["katedra"]("Катедра за механику флуида") == "механика флуида" and env.filters["katedra"](None) == ""
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
     assert slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4" and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"

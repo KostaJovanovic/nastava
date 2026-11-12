@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb %}
+{#- The co-authors in the teachers' papers of the last years who are no teacher of the faculty's (build.py
+    researchers): one row each, its id the name's slug (the header search links #slug). A makeshift page links. -#}
+
+{% block title %}Istraživači i saradnici{% endblock %}
+{% block description %}Istraživači i saradnici Mašinskog fakulteta u Beogradu koji nisu na spisku nastavnika: koautori radova nastavnika iz poslednjih godina.{% endblock %}
+{% block og %}-nastavnici{% endblock %}
+{% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
+
+{% block main %}
+<div class="mh">
+  <div class="mh__top"><h1 id="title">Istraživači i saradnici</h1></div>
+  <p class="mh__sub">Koautori radova nastavnika od {{ since }}. godine koji nisu na spisku nastavnika fakulteta, iz spiskova radova na stranicama nastavnika. Među njima su i saradnici sa drugih ustanova.</p>
+</div>
+<section class="fb fb--posts">
+  <div class="fb__h"><h2>{{ people | length }} {{ people | length | pl('autor') }}</h2><span>Radova</span><span>Poslednji</span></div>
+  <ol class="fb__rows">
+    {%- for r in people %}
+    <li class="fr" id="{{ r.id }}">
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-users"></use></svg></span>
+      <div class="fr__t">
+        {% if r.page %}<a class="fr__a" href="{{ r.page }}">{{ r.name }}</a>{% else %}<span class="fr__a" data-notx>{{ r.name }}</span>{% endif %}
+        <p class="fr__sub">sa {% for t in r.teachers %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+      </div>
+      <div class="fr__more"><span class="fr__s">{{ r.n }}</span><span class="fr__d">{{ r.last }}.</span></div>
+    </li>
+    {%- endfor %}
+  </ol>
+</section>
+{% endblock %}
