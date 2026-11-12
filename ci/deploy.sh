@@ -2,8 +2,8 @@
 # Scrape, build and publish: the scheduled run (sync.yml) and this PC (by hand, as an override) run the same steps.
 # The site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
 # Usage: bash ci/deploy.sh [auto SLOT | sync | forum [studije] [nastavnici] [predmeti]]   (from the repo root)
-#   auto SLOT  the scheduled run: SLOT is morning, noon, afternoon, evening or night; ci/plan.py picks the scrapers from the faculty's
-#              teaching calendar, or "skip" (stop at once)
+#   auto SLOT  the scheduled run: SLOT is morning, noon, afternoon, evening or night; ci/plan.py adds the scrapers due
+#              that day to the board and the news
 #   sync       every scraper: the board, the news, the departments' sites, the schedule pages, the teachers, the
 #              subjects
 #   forum ...  the board, the news and the departments' sites (cent and the others), and the scrapers named after it
@@ -57,9 +57,8 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 		echo "plan for the $2 run: $plan"
 		echo "$plan" > "$RUN_DIR/plan.txt"
 		read -ra parts <<< "$plan"
-		[[ ${parts[0]} == skip ]] && exit 0
 		# Once a day: a calendar the next days' runs can read.
-		if [[ $2 == evening ]]; then  # the last run every day has (night is on hot days only)
+		if [[ $2 == evening ]]; then
 			step kalendar uv run -q ci/plan.py check || failed+=(kalendar)
 		fi
 	elif [[ $1 == sync ]]; then

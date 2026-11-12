@@ -37,10 +37,9 @@ import plan  # noqa: E402
 
 DB = Path(os.getenv("DB", plan.ROOT / "nastava.db"))
 BG = ZoneInfo("Europe/Belgrade")
-# The schedule in use (sync.yml, plan.parts): UTC minute of day -> its slot. Morning and night only on hot days.
+# The schedule in use (sync.yml, plan.parts): UTC minute of day -> its slot, every day.
 NOW = {5 * 60 + 52: "morning", 10 * 60 + 52: "noon", 15 * 60 + 52: "afternoon", 20 * 60 + 52: "evening",
        1 * 60 + 52: "night"}
-HOT_ONLY = {"morning", "night"}
 BIN = 10  # minutes: the optimizer's histogram
 
 
@@ -163,7 +162,7 @@ def schedule(since, delay):
     mon = Counter(t.astimezone(BG).month for t, _ in posts)
     print("Posts by month (Jan..Dec): " + " ".join(str(mon[m]) for m in range(1, 13)) + "\n")
 
-    cur = {"hot": sorted(NOW), "quiet": sorted(m for m, s in NOW.items() if s not in HOT_ONLY)}
+    cur = {"hot": sorted(NOW), "quiet": sorted(NOW)}
     runs = run_times(posts[0][0], posts[-1][0], cur, season, delay)
     waits, total, useful = replay(posts, runs)
     print(f"The schedule in use (+{delay} min GitHub delay):")
