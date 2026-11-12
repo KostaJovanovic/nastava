@@ -1062,7 +1062,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   --mask: linear-gradient(rgb(0 0 0 / calc(1 - .2 * var(--hide))) var(--start, 0px), rgb(0 0 0 / calc(1 - var(--hide))) var(--end, 100px));
   -webkit-mask-image: var(--mask); mask-image: var(--mask);
   /* The rise: nearly all of it at once, then a slow settle. */
-  transition: --hide .5s ease-out, translate .5s cubic-bezier(0, .9, .1, 1);
+  transition: --hide .5s ease-out, translate .5s cubic-bezier(.1, .7, .2, 1);
 }
 .fade .lists { --hide: 1; translate: 0 50px; }
 @media (prefers-reduced-motion: reduce) { .lists { transition: none !important; } }
