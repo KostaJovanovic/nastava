@@ -1003,8 +1003,6 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   .fr__last .src { margin-right: 6px; }
 }
 .fr__s { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
-/* A researcher the header search led to (istrazivaci.html #slug). */
-.fr:target { background: var(--hover); }
 .fr__s .s2 { color: var(--dim); }
 
 @container main (min-width: 760px) {

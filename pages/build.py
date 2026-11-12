@@ -1223,13 +1223,13 @@ OTHER_TEACHERS = [dict(
          f'(2020): <a href="{_JOKSIMOVIC}">PDF</a>.</p>')]
 
 
-def _mentioned(id, name, title, katedra, seen, gone, source, source_name, html, researcher=False):
+def _mentioned(id, name, title, katedra, seen, gone, source, source_name, html, aside=False):
     """A makeshift page: someone the board or the faculty's pages name at their work (exercises, labs, papers), on no
-    list of the faculty's; what is known, from where. seen: the last date a source names them. researcher: no
-    teacher, so on /istrazivaci/ and not among the teachers (their list, the searches, the count)."""
+    list of the faculty's; what is known, from where. seen: the last date a source names them. aside: a
+    researcher or demonstrator, on /nastavnici/istrazivaci/ and not among the teachers (their list, the searches, the count)."""
     return dict(id=id, name=name, full_name=name, title=title, katedra=katedra, katedra_id=None, office=None, email=None,
                 username=None, phone=None, hours=None, research=None, emeritus=0, photo=None, first_seen=seen,
-                last_seen=seen, gone=gone, source=source, source_name=source_name, researcher=researcher,
+                last_seen=seen, gone=gone, source=source, source_name=source_name, aside=aside or title == "демонстратор",
                 html=html + "<p>Није на списку наставника на сајту факултета: ова страница је састављена из помена.</p>")
 
 
@@ -1263,8 +1263,7 @@ OTHER_TEACHERS += [
                  f"https://machinery.mas.bg.ac.rs/APP/faces/author.xhtml?author_id=orcid%3A%3A{orcid}",
                  "machinery.mas.bg.ac.rs",
                  f"<p>Истраживач Иновационог центра Машинског факултета: {n} радова у збирци „IC – radovi "
-                 "istraživača“ репозиторијума факултета (Machinery). Остали коаутори: "
-                 f'<a href="/istrazivaci/#{slug(lat)}">истраживачи</a>.</p>', researcher=True)
+                 "istraživača“ репозиторијума факултета (Machinery).</p>", aside=True)
       # The repository's most frequent authors of its Innovation Centre collection (2026-11-12): 100+ works each.
       for name, lat, orcid, n in [("Симон Седмак", "Simon Sedmak", "0000-0002-2674-541X", 222),
                                   ("Милош Милошевић", "Miloš Milošević", "0000-0002-2418-1032", 194),
@@ -1453,7 +1452,7 @@ def render_teachers(site, teachers, items, book):
         html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), base, local)
         write(site / t["href"].strip("/") / "index.html",
               env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name))
-    listed = [t for t in teachers if not t["gone"] and not t.get("researcher")]
+    listed = [t for t in teachers if not t["gone"] and not t.get("aside")]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
     # Each katedra's icon is a symbol in icons.svg (the cards, nastavnik.html); a new one shows a blank until drawn.
     sprite = (HERE / "static" / "icons.svg").read_text(encoding="utf-8")
@@ -1470,53 +1469,8 @@ def render_teachers(site, teachers, items, book):
           env.get_template("nastavnici.html").render(teachers=left, katedre=sorted({t["katedra"] for t in left if t["katedra"]}),
                                                      archive=True))
     write(site / "nastavnici" / "istrazivaci" / "index.html",
-          env.get_template("nastavnici.html").render(teachers=[t for t in teachers if t.get("researcher")], katedre=[],
+          env.get_template("nastavnici.html").render(teachers=[t for t in teachers if t.get("aside")], katedre=[],
                                                      researchers=True))
-    since = date.today().year - 3
-    found = researchers(teachers, since)
-    write(site / "istrazivaci" / "index.html", env.get_template("istrazivaci.html").render(people=found, since=since))
-    return found
-
-
-# A co-author in a profile's list of papers: "Kovačević Sandra, Petrović Branislav, Banjac Miloš (2026). Title".
-_NAME = r"[A-ZČĆŠĐŽ][a-zčćšđž]+(?:-[A-ZČĆŠĐŽ][a-zčćšđž]+)?"
-_PAPER = re.compile(rf"((?:{_NAME}(?: {_NAME})? {_NAME}, )*{_NAME}(?: {_NAME})? {_NAME}) \((20\d\d)\)\.? ([^,]{{0,80}})")
-
-
-def researchers(teachers, since, html=None):
-    """The co-authors in the teachers' profiles' papers since `since` who are no teacher of the faculty's: the
-    researchers and associates around them (/istrazivaci/, the header search). One with a makeshift page
-    (OTHER_TEACHERS) links to it. Kept: 3 papers or more, or on 2 profiles or more (one paper with one teacher is
-    mostly a guest). shortcut: a name is "Surname(s) Given" as the profiles write it; a paper with a middle initial
-    ("Đorđević Branislav R.") or a two-word given name is missed, and namesakes are one person."""
-    by_name = {}
-    for t in teachers:
-        w = [x for x in re.split(r"[\s-]+", fold(t["name"])) if x and not x.endswith(".")]
-        for sur in w[1:]:
-            by_name[(w[0], sur)] = t
-    papers, profiles, shown = defaultdict(set), defaultdict(dict), {}
-    for t in teachers:
-        if t.get("source") or t["gone"]:
-            continue
-        text = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", (html or {}).get(t["id"], t["html"]) or "")))
-        for m in _PAPER.finditer(text):
-            if int(m[2]) < since:
-                continue
-            for a in m[1].split(", "):
-                # The given name last: "Spasojević Brkić Vesna" has two surnames.
-                sur, given = a.rsplit(" ", 1)
-                known = by_name.get((fold(given), fold(re.split(r"[\s-]", sur)[0])))
-                if known and not known.get("source"):
-                    continue
-                key = fold(f"{given} {sur}")
-                shown.setdefault(key, (f"{given} {sur}", known))
-                papers[key].add((m[2], fold(m[3])[:40]))
-                profiles[key][t["href"]] = t
-    out = [dict(name=shown[k][0], page=shown[k][1] and shown[k][1]["href"], id=slug(k), n=len(papers[k]),
-                last=max(y for y, _ in papers[k]),
-                teachers=sorted(profiles[k].values(), key=lambda t: azbuka(t["shown"])))
-           for k in papers if len(papers[k]) >= 3 or len(profiles[k]) >= 2]
-    return sorted(out, key=lambda r: (-len(r["teachers"]), -r["n"], azbuka(r["name"])))
 
 
 # The programs in the order of the faculty's studies; a subject book program not here goes last.
@@ -1718,7 +1672,7 @@ def picker(subjects, book, teachers, items=()):
         return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
 
     listed = Counter(t["katedra"] for t in teachers if not t["gone"] and t["katedra"])
-    people = sorted((t for t in teachers if not t.get("researcher")), key=lambda t: t["gone"])
+    people = sorted((t for t in teachers if not t.get("aside")), key=lambda t: t["gone"])
     who = {t["href"]: i for i, t in enumerate(people)}
     posts = Counter((it["subj"]["id"], it["teacher"]["href"]) for it in items if it["subj"] and it["teacher"])
     posters = [[] for _ in entries]
@@ -2028,14 +1982,12 @@ def main(db_path, out):
     write_feeds(site, items, subjects, cent_pushed)
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it), index=False)
-    found = render_teachers(site, teachers, items, book)
+    render_teachers(site, teachers, items, book)
     render_book(site, book)
     raspored = render_study_pages(site, db)
-    # The researchers for the header search: [name, its row on /istrazivaci/, how many papers with whom].
-    istrazivaci = [[r["name"], f"/istrazivaci/#{r['id']}", f"{r['n']} {plural(r['n'], 'rad')} · {', '.join(t['shown'] for t in r['teachers'][:2])}"]
-                   for r in found]
     (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored,
-                                                     istrazivaci=istrazivaci),
+                                                     # The researchers and demonstrators for the header search: [name, page, title].
+                                                     istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")]),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
@@ -2049,7 +2001,7 @@ def main(db_path, out):
     write(site / "verzije" / "index.html", env.get_template("verzije.html").render(days=days))
     vesti = load_vesti(db)
     render_vesti(site, vesti)
-    (site / "index.html").write_text(versioned(render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("researcher") for t in teachers),
+    (site / "index.html").write_text(versioned(render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("aside") for t in teachers),
                                                            vesti)), encoding="utf-8")
     (site / "404.html").write_text(versioned(env.get_template("error.html").render()), encoding="utf-8")
     write_sitemap(site)
@@ -2088,13 +2040,6 @@ if __name__ == "__main__":
         "термодинамика", "процесна техника", "теорија механизама и машина", "аутоматско управљање", "моторна возила", "мотори",
         "информационе технологије у машинству"]
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
-    _r = [dict(id="1", name="Весна К. Спасојевић-Бркић", gone=0, href="/a/", shown="В",
-               html="<p>Spasojević Brkić Vesna, Kovačević Sandra, Banjac Miloš (2026). X, J.</p><p>Kovačević Sandra (2025). "
-                    "Y, J.</p><p>Kovačević Sandra (2024). Z, J.</p><p>Kovačević Sandra (2023). V, J.</p>"
-                    "<p>Gost Jedan (2024). W, J.</p>"),
-          dict(id="2", name="Милош Ј. Бањац", gone=0, href="/b/", shown="М", html="")]
-    _r = researchers(_r, 2024)  # two surnames and a teacher are known; 2023 is too old; one paper alone is a guest
-    assert [(r["name"], r["n"], r["id"]) for r in _r] == [("Sandra Kovačević", 3, "sandra-kovacevic")], _r
     assert env.filters["katedra"]("Катедра за механику флуида") == "механика флуида" and env.filters["katedra"](None) == ""
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
     assert slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4" and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"

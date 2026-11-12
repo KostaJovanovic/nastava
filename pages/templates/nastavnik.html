@@ -7,7 +7,7 @@
 {% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.shown }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
 {% block og_type %}profile{% endblock %}
 {% block og %}-{{ 'arhiva' if t.gone else 'nastavnici' }}{% endblock %}
-{% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.researcher %}{{ crumb('/nastavnici/istrazivaci/', 'Istraživači') }}{% endif %}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}
+{% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.aside %}{{ crumb('/nastavnici/istrazivaci/', 'Istraživači i demonstratori') }}{% endif %}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}
 {%- macro est(y, guess) %}{% if guess %}<span class="est" title="procena">~{{ y }}</span>{% else %}{{ y }}{% endif %}{% endmacro %}
 
 {#- One band on top: photo, who they are and how to reach them, their subjects. Under it, full width, their posts by

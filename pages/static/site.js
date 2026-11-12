@@ -25,7 +25,7 @@
      kind, else in the scope last picked on it. sf.data-u: the scope, for search.js. */
   var qk = d.getElementById('qk'), u = '', pageU = null, list = null, data = null, findOn = null, setScope = null;
   // The types with a list page ("Još N" goes there), all in the scope 'lista'.
-  var ENTER = { nastavnici: '/nastavnici/?', predmeti: '/predmeti/?', istrazivaci: '/istrazivaci/?' };
+  var ENTER = { nastavnici: '/nastavnici/?', predmeti: '/predmeti/?', istrazivaci: '/nastavnici/istrazivaci/?' };
   if (qk) {
     var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
     var PH = { '': 'Pretraži sve…', obavestenje: 'Pretraži objave…', vest: 'Pretraži vesti…', dokument: 'Pretraži dokumente…',
@@ -117,8 +117,8 @@
               a.insertBefore(svg, a.firstChild).appendChild(use);
             }];
           }), 'nastavnici');
-        // A researcher (build.py researchers): their row on /istrazivaci/, with how many papers and with whom.
-        section('istrazivaci', 'Istraživači i saradnici', (data.istrazivaci || []).filter(function (r) { return has(fold(r[0])); })
+        // A researcher or demonstrator (build.py OTHER_TEACHERS, aside): their page, with their title.
+        section('istrazivaci', 'Istraživači i demonstratori',(data.istrazivaci || []).filter(function (r) { return has(fold(r[0])); })
           .map(function (r) { return ['', r[0], r[2], r[1]]; }));
         section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
           .map(function (r) { return ['', r[0], r[1], r[2]]; }));
