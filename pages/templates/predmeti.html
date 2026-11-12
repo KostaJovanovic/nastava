@@ -11,7 +11,7 @@
     data-id tells site.js they are one subject. data-pid: the subject as "Moji predmeti" name it (build.py picker: its
     board page when it has topics, else this list's page), for head.js. -#}
 {% macro srow(s) -%}
-<li class="sr" data-pid="{{ s.forum.href if s.forum and s.forum.live else s.href }}" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
+<li class="sr" data-pid="{{ s.forum.href if s.forum else s.href }}" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
   {#- Its own site (build.py load_cent), beside the name. -#}
   <span class="sr__n"><a class="sr__a" href="{{ s.href }}">{{ s.name }}</a>
     {%- if s.forum and s.forum.site %}<a class="sr__w" href="{{ s.forum.site }}" rel="noopener" target="_blank" title="Sajt predmeta">sajt <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</span>

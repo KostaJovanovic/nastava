@@ -971,22 +971,20 @@ def render_places(site, topics, smerovi, subjects):
     for s in subjects.values():
         rows = in_subject[s["id"]]
         s["topics"], s["count"], s["last"] = len(rows), sum(len(t["posts"]) for t in rows), rows[0]["last"] if rows else None
-        # Every subject has a page, an empty one too (predmet.html quiet); live: it has one.
-        s["live"] = True
-        if s["live"]:
-            # Not teams.py's "Student #N": a number within one thread, no one across the page.
-            authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]
-                              if not (r["author"] or "").startswith("Student #")}.items(), key=lambda a: fold(a[1]))
-            # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
-            quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
-            write(site / s["href"].strip("/") / "index.html",
-                  env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet))
-            # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
-            (site / s["href"].strip("/") / "novo.json").write_text(json.dumps(
-                {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},
-                ensure_ascii=False), encoding="utf-8")
+        # Every subject has a page, an empty one too (predmet.html quiet).
+        # Not teams.py's "Student #N": a number within one thread, no one across the page.
+        authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]
+                          if not (r["author"] or "").startswith("Student #")}.items(), key=lambda a: fold(a[1]))
+        # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
+        quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
+        write(site / s["href"].strip("/") / "index.html",
+              env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet))
+        # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
+        (site / s["href"].strip("/") / "novo.json").write_text(json.dumps(
+            {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},
+            ensure_ascii=False), encoding="utf-8")
     for m in smerovi.values():
-        subs = sorted((s for s in subjects.values() if s["smer"] is m and s["live"]), key=lambda s: fold(s["name"]))
+        subs = sorted((s for s in subjects.values() if s["smer"] is m), key=lambda s: fold(s["name"]))
         for s in subs:
             s["find"] = fold(" ".join([s["name"], *s["acr"]] + [t["full_name"] for t in s.get("teachers", [])]))
             s["katedra"] = row_katedra(s, in_subject[s["id"]])
@@ -1035,9 +1033,8 @@ def write_feeds(site, items, subjects, pushed=()):
         if it["subj"] and len(of[it["subj"]["id"]]) < FEED:
             of[it["subj"]["id"]].append(it)
     for s in subjects.values():
-        if s.get("live"):
-            (site / s["href"].strip("/") / "feed.xml").write_text(atom(f"{s['name']} · forum nastave", s["href"], of[s["id"]]),
-                                                                  encoding="utf-8")
+        (site / s["href"].strip("/") / "feed.xml").write_text(atom(f"{s['name']} · forum nastave", s["href"], of[s["id"]]),
+                                                              encoding="utf-8")
     # The subjects' newest posts, next to the site (not on it), for ci/push.py: it notifies those newer than a post id.
     # k: "p" a board post, "c" a cent notice, "s" a cent page version; ci/push.py keeps one "before" per kind.
     # a: the teacher who wrote it (their page's slug), for a browser that wants only some teachers' posts of a subject.
@@ -1342,7 +1339,7 @@ def render_teachers(site, teachers, items, book):
     first_list = min((t["first_seen"][:4] for t in teachers if t["first_seen"]), default="0000")
     subj_pages = {f"/studije/predmeti/{c}": h for c, h in book_href.items()}
     subj_pages |= {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
-                   for t in teachers for s in t["subjects"] if s["subj"] and s["subj"].get("live")}
+                   for t in teachers for s in t["subjects"] if s["subj"]}
     # A page the plans list under several names (Завршни предмет's areas, load_book): one row per name.
     areas = {s["id"] for s in book for p in s["places"] if p["variants"]}
     for t in teachers:
@@ -1351,7 +1348,7 @@ def render_teachers(site, teachers, items, book):
         mine = Counter(p["subj"]["id"] for p in t["posts"] if p["subj"])
         courses = {}
         for s in t["subjects"]:
-            archived = s["subj"] if s["subj"] and s["subj"].get("live") else None
+            archived = s["subj"]
             area = s["code"] in areas
             # One row per name too: a subject the profile lists under two codes ('Трибологија' twice).
             row = courses.setdefault(archived["id"] if archived and not area else fold(s["name"]),
@@ -1534,9 +1531,6 @@ def book_page(html):
 def render_book(site, book):
     """A list of all subjects with a filter, grouping and sorting, and one page per subject: the faculty's page."""
     for s in book:
-        if s["forum"] and not s["forum"].get("live"):
-            s["forum"] = None
-    for s in book:
         write(site / s["href"].strip("/") / "index.html", env.get_template("predmet_opis.html").render(
             s=s, page=book_page(s["html"]), source_url=f"{STUDY_SITE}studije/predmeti/{s['id']}"))
     listed = [s for s in book if not s["gone"]]
@@ -1556,7 +1550,7 @@ def picker(subjects, book, teachers, items=()):
     [name, page], for the header search on a teacher's page. posters: per subject (as subjects), the teachers who
     posted in it as [index in people, posts], most first: the picker's second step, whose notifications to get.
     After render_places (the counts) and render_teachers (the courses)."""
-    live = [s for s in subjects.values() if s.get("live")]
+    live = list(subjects.values())
     entries = [[s["href"], s["name"]] for s in live]
     acr = [" ".join(sorted(s.get("acr", ()))) for s in live]
     at = {("f", s["id"]): i for i, s in enumerate(live)}
@@ -1565,7 +1559,7 @@ def picker(subjects, book, teachers, items=()):
     def index(b):
         """A plan's subject in the list: its board subject when that has topics, else its page in the book."""
         f = b["forum"]
-        key = ("f", f["id"]) if f and f.get("live") else ("b", b["id"])
+        key = ("f", f["id"]) if f else ("b", b["id"])
         if key not in at:
             at[key] = len(entries)
             entries.append([b["href"], b["name"], 0])
@@ -1940,7 +1934,7 @@ def main(db_path, out):
                                                            vesti)), encoding="utf-8")
     (site / "404.html").write_text(versioned(env.get_template("error.html").render()), encoding="utf-8")
     write_sitemap(site)
-    print(f"{len(items)} items, {len(topics)} topics, {sum(1 for s in subjects.values() if s['live'])} subjects, "
+    print(f"{len(items)} items, {len(topics)} topics, {len(subjects)} subjects, "
           f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti", flush=True)
     npx = shutil.which("npx") or sys.exit("npx not found: Pagefind needs Node.js")
     subprocess.run([npx, "-y", PAGEFIND, "--site", str(site)], check=True)
@@ -2011,7 +2005,7 @@ if __name__ == "__main__":
     assert row_katedra(dict(smer=dict(key="x")), []) is None
     _m, _k = dict(name="основне академске студије - МИ"), dict(name="катедре")
     assert smer_label(_m["name"]) == "Основне академске студије - Машинско инжењерство" and smer_label("катедре") == "Катедре"
-    _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, live=True, smer=m) for i, n, m in
+    _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, smer=m) for i, n, m in
                       ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k)))
     _pl = dict(program=PROGRAMS[0], module=None, semester=3, i=0, slot=None)
     _bk = lambda f, places, **kw: dict(dict(forum=f, places=places, gone=0, id="b", href="/b/", name="Б"), **kw)
