@@ -652,6 +652,8 @@ def file_rows(files, title="Prilozi"):
         return (f'<dd><a class="att" href="{escape(href)}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
                 f'{ext.upper() or "FAJL"}</span><span class="att__n">{escape(name)}'
                 + (f"<small>{escape(note)}</small>" if note else "") + "</span></a></dd>")
+    # The links come from other sites, not through clean_html: a web address or the release's file, no javascript:.
+    files = [f for f in files if re.match(r"(https?://|/files/)", f[0], re.I)]
     return f"<dl><dt>{title}</dt>{''.join(row(*f) for f in files)}</dl>" if files else ""
 
 
@@ -2036,6 +2038,7 @@ if __name__ == "__main__":
     assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1]], _p["katedre"]
     # An ie notice is a post of the subject its page's h1 names, punctuation aside; its written links are links, its
     # files a post's; the page's "Literatura" is the subject's material; a page no subject has is left out.
+    assert file_rows([("javascript:alert(1)", "x.pdf", None)]) == "" and "https://a/b.pdf" in file_rows([("https://a/b.pdf", "b", None)])
     assert linkify('Link: https://1drv.ms/x?e=V&amp;a=1. <a href="https://a/b">https://a/b</a>') == (
         'Link: <a href="https://1drv.ms/x?e=V&amp;a=1" rel="noopener noreferrer">https://1drv.ms/x?e=V&amp;a=1</a>. '
         '<a href="https://a/b">https://a/b</a>')
