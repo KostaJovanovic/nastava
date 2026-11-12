@@ -1050,12 +1050,11 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fb__more:has(input:checked), .moji-only .fb__more { display: none; }
 .fb__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: -2px; }
 .fb__more input { position: absolute; opacity: 0; pointer-events: none; }
-/* The home page's boxes (Moji predmeti, Studije, Najnovije objave) read as separate parts. */
-#res > .fb:not([hidden]) ~ .fb, #res > .fb:not([hidden]) ~ .lists, .lists > .fb ~ .fb { margin-top: 14px; }
 /* The home page's two lists (Najnovije objave, vesti): faded out at load, whole at the first scroll (search.html). */
 /* A gradient can't transition, a registered number can: --hide goes 1 → 0 (.fade → .faded, then no mask at all). */
 @property --hide { syntax: "<number>"; inherits: false; initial-value: 0; }
-.lists { display: grid; }
+/* Its boxes as far apart as #res's and every page's (.main): 10px. */
+.lists { display: grid; gap: 10px; }
 /* 80% at --start (1px under the Studije card, above the lists' own top), nothing at --end: the screen's bottom or the
    phone's tab bar (search.html); 50px lower until the reveal. */
 :is(.fade, .faded) .lists {
