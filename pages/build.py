@@ -1223,12 +1223,13 @@ OTHER_TEACHERS = [dict(
          f'(2020): <a href="{_JOKSIMOVIC}">PDF</a>.</p>')]
 
 
-def _mentioned(id, name, title, katedra, seen, gone, source, source_name, html):
+def _mentioned(id, name, title, katedra, seen, gone, source, source_name, html, researcher=False):
     """A makeshift page: someone the board or the faculty's pages name at their work (exercises, labs, papers), on no
-    list of the faculty's; what is known, from where. seen: the last date a source names them."""
+    list of the faculty's; what is known, from where. seen: the last date a source names them. researcher: no
+    teacher, so on /istrazivaci/ and not among the teachers (their list, the searches, the count)."""
     return dict(id=id, name=name, full_name=name, title=title, katedra=katedra, katedra_id=None, office=None, email=None,
                 username=None, phone=None, hours=None, research=None, emeritus=0, photo=None, first_seen=seen,
-                last_seen=seen, gone=gone, source=source, source_name=source_name,
+                last_seen=seen, gone=gone, source=source, source_name=source_name, researcher=researcher,
                 html=html + "<p>Није на списку наставника на сајту факултета: ова страница је састављена из помена.</p>")
 
 
@@ -1263,7 +1264,7 @@ OTHER_TEACHERS += [
                  "machinery.mas.bg.ac.rs",
                  f"<p>Истраживач Иновационог центра Машинског факултета: {n} радова у збирци „IC – radovi "
                  "istraživača“ репозиторијума факултета (Machinery). Остали коаутори: "
-                 f'<a href="/istrazivaci/#{slug(lat)}">истраживачи</a>.</p>')
+                 f'<a href="/istrazivaci/#{slug(lat)}">истраживачи</a>.</p>', researcher=True)
       # The repository's most frequent authors of its Innovation Centre collection (2026-11-12): 100+ works each.
       for name, lat, orcid, n in [("Симон Седмак", "Simon Sedmak", "0000-0002-2674-541X", 222),
                                   ("Милош Милошевић", "Miloš Milošević", "0000-0002-2418-1032", 194),
@@ -1452,7 +1453,7 @@ def render_teachers(site, teachers, items, book):
         html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), base, local)
         write(site / t["href"].strip("/") / "index.html",
               env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name))
-    listed = [t for t in teachers if not t["gone"]]
+    listed = [t for t in teachers if not t["gone"] and not t.get("researcher")]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
     # Each katedra's icon is a symbol in icons.svg (the cards, nastavnik.html); a new one shows a blank until drawn.
     sprite = (HERE / "static" / "icons.svg").read_text(encoding="utf-8")
@@ -1714,7 +1715,7 @@ def picker(subjects, book, teachers, items=()):
         return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
 
     listed = Counter(t["katedra"] for t in teachers if not t["gone"] and t["katedra"])
-    people = sorted(teachers, key=lambda t: t["gone"])
+    people = sorted((t for t in teachers if not t.get("researcher")), key=lambda t: t["gone"])
     who = {t["href"]: i for i, t in enumerate(people)}
     posts = Counter((it["subj"]["id"], it["teacher"]["href"]) for it in items if it["subj"] and it["teacher"])
     posters = [[] for _ in entries]
@@ -2045,7 +2046,7 @@ def main(db_path, out):
     write(site / "verzije" / "index.html", env.get_template("verzije.html").render(days=days))
     vesti = load_vesti(db)
     render_vesti(site, vesti)
-    (site / "index.html").write_text(versioned(render_home(topics, smerovi, side, sum(not t["gone"] for t in teachers),
+    (site / "index.html").write_text(versioned(render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("researcher") for t in teachers),
                                                            vesti)), encoding="utf-8")
     (site / "404.html").write_text(versioned(env.get_template("error.html").render()), encoding="utf-8")
     write_sitemap(site)
