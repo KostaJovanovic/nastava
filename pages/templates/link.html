@@ -1,17 +1,25 @@
 {% extends "base.html" %}
 {#- The links worth keeping, as cards (as masinci.org/link): (name, href, icon from icons.svg, data-domain). A card's
     second line is its address; with a data-domain (the drive), that name, as the dialog before it says (site.js). -#}
+{#- Izdvojeno, above the rest and not again in it: (name, href, its image (og-link.html; Predmeti: the page's own), the
+    line under the name, data-domain). -#}
+{% set featured = [
+  ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'og-link-drajv.png', 'Materijali po godinama, na OneDrive-u', 'kosta-onedrive.com'),
+  ('studenti.mas', 'https://studenti.mas.bg.ac.rs/', 'og-link-estudent.png', 'Prijava ispita i ocene', none),
+  ('Studentski webmail', 'https://webmail.studenti.mas.bg.ac.rs/', 'og-link-webmail.png', 'Mejl @studenti.mas.bg.ac.rs', none),
+  ('Predmeti', '/predmeti/', 'og-predmeti.png', 'Svi programi, moduli i semestri', none),
+  ('Mašinci', 'https://masinci.org/', 'og-link-masinci.png', 'Studentska lista Stepen Sigurnosti', none),
+] %}
 {% set groups = [
   ('Fakultet', [
     ('Forum nastave', 'https://nastava.mas.bg.ac.rs/nastava/', 'msgs', none),
-    ('eStudent', 'https://studenti.mas.bg.ac.rs/', 'user', none),
-    ('Studentski webmail', 'https://webmail.studenti.mas.bg.ac.rs/', 'mail', none),
     ('Mašinski fakultet', 'https://www.mas.bg.ac.rs/', 'globe', none),
     ('Vesti o predmetima', 'https://www.mas.bg.ac.rs/studije/vesti', 'news', none),
     ('Raspored ispita', 'https://www.mas.bg.ac.rs/studije/raspored-ispita', 'calendar', none),
     ('Vesti fakulteta', 'https://vesti.mas.bg.ac.rs/', 'news', none),
     ('Prezentacije nastavnika', 'https://etc.mas.bg.ac.rs/', 'file', none),
     ('FSEL (Moodle)', 'https://fsel.mas.bg.ac.rs/moodle/', 'book', none),
+    ('Biblioteka', 'https://www.mas.bg.ac.rs/biblioteka/start', 'book', none),
   ]),
   ('Katedre i programi', [
     ('Katedra za proizvodno mašinstvo', 'https://cent.mas.bg.ac.rs/', 'katedra-za-proizvodno-masinstvo', none),
@@ -30,6 +38,11 @@
     ('Industrija 4.0', 'https://i40.mas.bg.ac.rs/', 'folder', none),
     ('Modul ZZK', 'https://zzk.mas.bg.ac.rs/', 'folder', none),
   ]),
+  ('Studentske organizacije', [
+    ('Drumska strela (Formula Student)', 'https://fsra.stt.org.rs/', 'katedra-za-motorna-vozila', none),
+    ('Beoavia', 'https://beoavia.org/', 'katedra-za-vazduhoplovstvo', none),
+    ('Robotoid', 'https://robotoid.stt.org.rs/', 'katedra-za-automatsko-upravljanje', none),
+  ]),
   ('Ostali sajtovi fakulteta', [
     ('Sajt na engleskom', 'http://www.en.mas.bg.ac.rs/', 'globe', none),
     ('Pretprijava kandidata', 'https://pretprijava.mas.bg.ac.rs/', 'user', none),
@@ -42,12 +55,7 @@
     ('LGS', 'https://lgs.mas.bg.ac.rs/', 'globe', none),
     ('Geotermal', 'https://geotermal.mas.bg.ac.rs/', 'globe', none),
   ]),
-  ('Studenti', [
-    ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'cloud', 'kosta-onedrive.com'),
-    ('Mašinci', 'https://masinci.org/', 'users', none),
-  ]),
   ('Ovaj sajt', [
-    ('Predmeti', '/predmeti/', 'book', none),
     ('O sajtu', '/o-sajtu/', 'file', none),
     ('Statistika', '/statistika/', 'file', none),
     ('Verzije', '/verzije/', 'file', none),
@@ -55,6 +63,7 @@
     ('RSS vesti', '/vesti/feed.xml', 'rss', none),
     ('Kod na GitHub-u', 'https://github.com/KostaJovanovic/nastava', 'globe', none),
     ('Prijavi grešku', 'https://github.com/KostaJovanovic/nastava/issues', 'msg', none),
+    ('Knjiga utisaka', 'https://valjdakosta.com/guestbook', 'msgs', none),
   ]),
 ] %}
 {#- The sites that did not work when last checked (11.11.2026.): no answer, an empty page, the server's default
@@ -68,10 +77,18 @@
 {% block main %}
 <div class="mh">
   <h1 id="title">Linkovi</h1>
-  <p class="mh__sub">Sajtovi fakulteta i ovog sajta na jednom mestu.</p>
 </div>
+<section class="lk" aria-labelledby="lk-0">
+  <h2 class="lk__h" id="lk-0">Izdvojeno</h2>
+  <ul class="lk__grid lk__grid--f">
+    {%- for name, href, img, line, domain in featured %}
+    <li><a class="lk__f" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}><img src="/static/{{ img }}" alt="" width="1200" height="630" decoding="async"><span class="lk__t"><b>{{ name }}</b><small>{{ line }}</small></span></a></li>
+    {%- endfor %}
+  </ul>
+</section>
 {%- for title, links in groups %}
 <section class="lk" aria-labelledby="lk-{{ loop.index }}">
+  {#- loop.index from 1: lk-0 is Izdvojeno. -#}
   <h2 class="lk__h" id="lk-{{ loop.index }}">{{ title }}</h2>
   <ul class="lk__grid">
     {%- for name, href, icon, domain in links %}
