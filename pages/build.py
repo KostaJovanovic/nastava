@@ -691,7 +691,8 @@ def load_katedre(db, smerovi, subjects):
         return s
 
     subj_of, department = {}, set()
-    for r in db.execute("SELECT url, site, title, html FROM katedre_pages k WHERE gone = 0 AND last_seen = "
+    # A page gone from its site (or missed by one crawl) too: its notices stay in the archive, as cent's do.
+    for r in db.execute("SELECT url, site, title, html FROM katedre_pages k WHERE last_seen = "
                         "(SELECT max(last_seen) FROM katedre_pages WHERE url = k.url)"):
         if r["site"] not in FORUMS:  # a site katedre.py no longer reads (etc, motori, ppm): its old pages
             continue
