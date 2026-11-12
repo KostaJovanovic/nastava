@@ -208,10 +208,10 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 }
 .brand { grid-area: brand; display: flex; align-items: center; gap: 12px; min-width: 0; color: inherit; text-decoration: none; }
 .brand:hover { color: inherit; }
-.brand__mark svg { display: block; width: 38px; height: 38px; fill: none; stroke-width: 2.5; }
-/* The ring: white on the light theme's blue header, slate on the dark one. */
-.brand__mark circle { stroke: light-dark(#ffffff, var(--slate)); }
-.brand__mark path { stroke: var(--wave); stroke-linecap: round; }
+/* The frame and the diagonal: white on the light theme's blue header, slate on the dark one; the M in --wave. */
+.brand__mark svg { display: block; width: 38px; height: 38px; fill: none; stroke: light-dark(#ffffff, var(--slate));
+  stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.brand__mark .brand__m { stroke: var(--wave); }
 .brand__name { display: grid; min-width: 0; line-height: 1.15; }
 .brand__name b { font: 800 20px/1.1 var(--sans); letter-spacing: .01em; }
 /* The subtitle: wide screens only (a phone has no room for it). */
@@ -309,7 +309,7 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
     --scroll: #9fb4c6; --scroll-2: #5a7a93;
   }
   #tema { display: none; }
-  .brand__mark circle { stroke: #ffffff; }
+  .brand__mark svg { stroke: #ffffff; }
   .cmd { border: 1px solid #ffffff; background: #ffffff; }
   .cmd:focus-within { border-color: #ffffff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .45); }
   .tg { border: 1px solid rgba(255, 255, 255, .6); }
