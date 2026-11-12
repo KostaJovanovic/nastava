@@ -1,18 +1,21 @@
 {% extends "base.html" %}
 {#- The links worth keeping, as cards (as masinci.org/link): (name, href, icon from icons.svg, data-domain). A card's
     second line is its address; with a data-domain (the drive), that name, as the dialog before it says (site.js). -#}
-{#- Izdvojeno, above the rest and not again in it: (name, href, its image (og-link.html; Predmeti: the page's own), the
-    line under the name, data-domain). -#}
+{#- Izdvojeno, above the rest and in its place below too: (name, href, its image (og-link.html; Predmeti: the page's
+    own; the guestbook: its site's own), the line under the name, data-domain). -#}
 {% set featured = [
   ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'og-link-drajv.png', 'Materijali po godinama, na OneDrive-u', 'kosta-onedrive.com'),
   ('studenti.mas', 'https://studenti.mas.bg.ac.rs/', 'og-link-estudent.png', 'Prijava ispita i ocene', none),
   ('Studentski webmail', 'https://webmail.studenti.mas.bg.ac.rs/', 'og-link-webmail.png', 'Mejl @studenti.mas.bg.ac.rs', none),
   ('Predmeti', '/predmeti/', 'og-predmeti.png', 'Svi programi, moduli i semestri', none),
   ('Mašinci', 'https://masinci.org/', 'og-link-masinci.png', 'Studentska lista Stepen Sigurnosti', none),
+  ('Knjiga utisaka', 'https://valjdakosta.com/guestbook', 'og-link-guestbook.jpg', 'Ostavi poruku autoru sajta', none),
 ] %}
 {% set groups = [
   ('Fakultet', [
     ('Forum nastave', 'https://nastava.mas.bg.ac.rs/nastava/', 'msgs', none),
+    ('studenti.mas', 'https://studenti.mas.bg.ac.rs/', 'user', none),
+    ('Studentski webmail', 'https://webmail.studenti.mas.bg.ac.rs/', 'mail', none),
     ('Mašinski fakultet', 'https://www.mas.bg.ac.rs/', 'globe', none),
     ('Vesti o predmetima', 'https://www.mas.bg.ac.rs/studije/vesti', 'news', none),
     ('Raspored ispita', 'https://www.mas.bg.ac.rs/studije/raspored-ispita', 'calendar', none),
@@ -38,6 +41,10 @@
     ('Industrija 4.0', 'https://i40.mas.bg.ac.rs/', 'folder', none),
     ('Modul ZZK', 'https://zzk.mas.bg.ac.rs/', 'folder', none),
   ]),
+  ('Studenti', [
+    ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'cloud', 'kosta-onedrive.com'),
+    ('Mašinci', 'https://masinci.org/', 'users', none),
+  ]),
   ('Studentske organizacije', [
     ('Drumska strela (Formula Student)', 'https://fsra.stt.org.rs/', 'katedra-za-motorna-vozila', none),
     ('Beoavia', 'https://beoavia.org/', 'katedra-za-vazduhoplovstvo', none),
@@ -56,6 +63,7 @@
     ('Geotermal', 'https://geotermal.mas.bg.ac.rs/', 'globe', none),
   ]),
   ('Ovaj sajt', [
+    ('Predmeti', '/predmeti/', 'book', none),
     ('O sajtu', '/o-sajtu/', 'file', none),
     ('Statistika', '/statistika/', 'file', none),
     ('Verzije', '/verzije/', 'file', none),
