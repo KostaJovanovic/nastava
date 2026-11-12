@@ -1070,6 +1070,9 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   transition: --hide .5s ease-out, translate .5s cubic-bezier(.1, .7, .2, 1);
 }
 .fade .lists { --hide: 1; translate: 0 50px; }
+/* The source tags (cent, ie, teams…) without their colours until the reveal: the row's background, the line's text. */
+:is(.fade, .faded) .lists .src { transition: background-color .5s ease-out, color .5s ease-out; }
+.fade .lists .src { background-color: transparent; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .lists { transition: none !important; } }
 /* A search in the URL: the board index stays hidden until the results come (search.js shown()).
    If the script never gets there, the index shows after 6 s. */
