@@ -22,6 +22,8 @@ Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
   se sama suzi.
 - 289 [novo] **Scrollbar u bojama sajta,** u svetloj i tamnoj temi, i na strani i u spiskovima koji se skroluju
   (pretraga, side panel).
+- 290 [ispravka] **Objave nastavnika iz Teams-a** više ne pokazuju imena i brojeve indeksa studenata (spisak
+  rezultata, raspored odbrana), kao ni studentske mejlove. Bodovi i ocene ostaju, bez imena.
 - 269–273 [novo] **Objave iz Teams-a** za šest predmeta: Termodinamika B, Osnovi otpornosti konstrukcija, Otpornost
   materijala, Inženjerska grafika, Estetski dizajn i Mašinsko inženjerstvo i održivi razvoj. Objave nastavnika su
   objave predmeta, sa prilozima. Odgovori studenata stoje kao `Student #1`, `Student #2`… bez imena, broja indeksa i

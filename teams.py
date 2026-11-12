@@ -75,7 +75,19 @@ def lib_path(f):
 
 # A student's signature: up to three capitalized words before or after their index number ("Petrović Danilo 385/2023").
 WORD = r"[A-ZČĆŽŠĐА-ЯЂЈЉЊЋЏ][a-zčćžšđа-яђјљњћџ'’-]+"
-SIGNED = re.compile(rf"((?:{WORD}[ ,]{{1,2}}){{1,3}})?\b(\d{{1,4}})\s*[-/]\s*(?:20)?\d\d\b((?:[ ,]{{1,2}}{WORD}){{1,3}})?")
+
+
+def signed(number):
+    """A student's index number (its part after the first digits: number) with up to three names around it."""
+    return re.compile(rf"((?:{WORD}[\s,]{{1,4}}){{1,3}})?\b(\d{{1,4}})\s*{number}\b((?:[\s,]{{1,4}}{WORD}){{1,3}})?")
+
+
+SIGNED = signed(r"[-/]\s*(?:20)?\d\d")
+# A teacher's list of results ("Petar Petrović 385/2023 15.6"): there "10-12" is a time, so an index has a slash or a
+# four-digit year.
+SIGNED_T = signed(r"(?:/\s*(?:20)?\d\d|-\s*20\d\d)")
+# The addresses a teacher's post keeps: all but a student's faculty one (their class's gmail is where work goes).
+STUDENT_MAIL = re.compile(r"@studenti?\.mas\.bg\.ac\.rs$", re.I)
 # Students named in a reply with no index next to it, and not under their Teams name: found by reading the replies.
 NAMED = ["Jovan Geratovic"]
 LAT = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s".split()))
@@ -97,10 +109,11 @@ def spelled(word):
     return "(?:" + "".join(LATIN.get(t, re.escape(t)) for t in tokens) + "|" + "".join(CYRIL.get(t, re.escape(t)) for t in tokens) + ")"
 
 
-def redact(text):
-    """A student's index numbers, the name signed next to one, and e-mails: each letter a block, spaces kept."""
-    text = EMAIL.sub(lambda m: "█" * len(m[0]), text)
-    return SIGNED.sub(lambda m: re.sub(r"\S", "█", m[0]) if int(m[2]) < 1900 else m[0], text)
+def redact(text, teacher=False):
+    """A student's index numbers, the name written next to one, and e-mails: each letter a block, spaces kept.
+    teacher: a teacher's post, which keeps its times ("10-12") and every address but a student's."""
+    text = EMAIL.sub(lambda m: m[0] if teacher and not STUDENT_MAIL.search(m[0]) else "█" * len(m[0]), text)
+    return (SIGNED_T if teacher else SIGNED).sub(lambda m: re.sub(r"\S", "█", m[0]) if int(m[2]) < 1900 else m[0], text)
 
 
 def names_pattern(names):
@@ -138,8 +151,8 @@ def body(m, label, students, name_re):
         return label(acct) if acct else "Student"
     for node in soup.find_all(string=True):
         text = name_re.sub(named, str(node)) if name_re else str(node)
-        if student:
-            text = redact(text)
+        # A teacher's post too: a list of results names students who never posted (name_re does not know them).
+        text = redact(text, teacher=not student)
         if text != str(node):
             node.replace_with(text)
     return str(soup).strip()
@@ -273,6 +286,11 @@ def check():
     assert r.sub("X", "pozdrav petrović  petar i Петар Петровић, Jovan, Djordje Ilic") == "pozdrav X i X, Jovan, X"
     assert name_key("Петровић Петар") == name_key("Petar Petrovic") == "petar petrovic"
     assert redact("Бојана Лучић 902/24, 2023/24") == "██████ █████ ██████, 2023/24"
+    # A teacher's results list: the names and numbers go; times, school years and the teacher's address stay.
+    assert redact("Matija Stepanović   175/2023  15.6", teacher=True) == "██████ ██████████   ████████  15.6"
+    assert redact("Ana Ilić, 20-2024; ana.ilic@studenti.mas.bg.ac.rs", teacher=True) == "███ █████ ███████; " + "█" * 30
+    assert redact("Konsultacije Utorkom 10-12h, 2024/25, pera@mas.bg.ac.rs, dizajn@gmail.com", teacher=True) == \
+        "Konsultacije Utorkom 10-12h, 2024/25, pera@mas.bg.ac.rs, dizajn@gmail.com"
     m = dict(messagetype="RichText/Html", **{"from": "x/8:orgid:s1"}, content='<p>Hvala <span itemtype="http://schema.skype.com/Mention" '
              'itemid="0">Mirko</span> <img src="a">— Petar Petrović 12/2024</p>', properties=dict(mentions=json.dumps(
                  [dict(itemid=0, mri="8:orgid:t9")])))
