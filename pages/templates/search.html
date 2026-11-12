@@ -23,16 +23,16 @@
     <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu.</p>
   </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
-  {#- Faded out at load until the first move down (style.css .fade): a scroll, a wheel, a finger or a key. Up, at
-      the top of the page, does not reveal them. -#}
-  <script>{ const h = document.documentElement; if (!scrollY && !h.classList.contains("searching")) { h.classList.add("fade"); let y0 = 0; const down = { scroll: () => scrollY > 0, wheel: e => e.deltaY > 0, touchstart: e => (y0 = e.touches[0].clientY, false), touchmove: e => e.touches[0].clientY < y0, keydown: e => ["ArrowDown", "PageDown", "End", " "].includes(e.key) && !e.target.closest("input, select, textarea") }; const go = e => { if (!down[e.type](e)) return; h.classList.replace("fade", "faded"); for (const t in down) removeEventListener(t, go); }; for (const t in down) addEventListener(t, go, { passive: true }); } }</script>
+  {#- The lists below, at load: dropped to peek 72px above the screen's bottom (or the phone's tab bar), faded, until
+      the first move down (style.css .fade): a scroll, a wheel, a finger or a key; up, at the top, does not count.
+      --drop and the fade's end (--end, in the lists' own lengths) follow the screen: at once (the lists' top is the
+      Studije card's bottom and #res's gap, both parsed already, so no flash), at load (fonts, Moji predmeti) and on
+      every resize. -#}
+  <script>{ const h = document.documentElement; let s = document.currentScript.previousElementSibling; while (s && !s.matches(".fb")) s = s.previousElementSibling; if (s && !scrollY && !h.classList.contains("searching")) { h.classList.add("fade"); const place = () => { const bar = document.querySelector(".snav"), b = bar && getComputedStyle(bar).position == "fixed" ? bar.getBoundingClientRect().top : innerHeight, top = s.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(s.parentElement).rowGap) || 0), drop = Math.max(0, b - 72 - top); h.style.setProperty("--drop", drop + "px"); h.style.setProperty("--end", Math.max(b - top - drop, 50) + "px"); }; place(); addEventListener("load", place); addEventListener("resize", place); let y0 = 0; const down = { scroll: () => scrollY > 0, wheel: e => e.deltaY > 0, touchstart: e => (y0 = e.touches[0].clientY, false), touchmove: e => e.touches[0].clientY < y0, keydown: e => ["ArrowDown", "PageDown", "End", " "].includes(e.key) && !e.target.closest("input, select, textarea") }; const go = e => { if (!down[e.type](e)) return; h.classList.replace("fade", "faded"); for (const t in down) removeEventListener(t, go); removeEventListener("resize", place); }; for (const t in down) addEventListener(t, go, { passive: true }); } }</script>
   <div class="lists" ontransitionend="event.propertyName == '--hide' && document.documentElement.classList.remove('faded')">
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
   {%- if vesti %}{{ vest_rows('Vesti fakulteta', vesti, more='/vesti/') }}{% endif %}
   </div>
-  {#- The fade's span, in the lists' own lengths: from 1px under the Studije card (the box before them) to the screen's
-      bottom or the tab bar. Again at load: the page above the lists can still grow (fonts, Moji predmeti). -#}
-  <script>{ const l = document.querySelector(".lists"), bar = document.querySelector(".snav"); let s = l.previousElementSibling; while (s && !s.matches(".fb")) s = s.previousElementSibling; const span = () => { const top = l.getBoundingClientRect().top, b = bar && getComputedStyle(bar).position == "fixed" ? bar.getBoundingClientRect().top : innerHeight, a = s ? s.getBoundingClientRect().bottom + 1 - top : 0; l.style.setProperty("--start", a + "px"); l.style.setProperty("--end", Math.max(b - top, a + 50) + "px"); }; span(); addEventListener("load", span); }</script>
   <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · objava <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b></p>
 </div>
 <nav class="status" aria-label="Stranice"></nav>
