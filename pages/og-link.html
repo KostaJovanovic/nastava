@@ -1,17 +1,18 @@
 <!doctype html>
 <!-- The link preview images of Linkovi's featured cards (link.html): static/og-link-<name>.png, each drawn after
-     that site's own look. The address's #<name> picks one. To redo them, from pages/ (needs the network: masinci.org's
-     logo and fonts, which a page from a file may only use with the CORS header the route adds):
+     that site's own look. The address's #<name> picks one. Its fonts are in og-fonts/ (not deployed: only these images
+     use them); masinci.org's logo comes from the site. To redo them, from pages/:
      uv run --with playwright python -c "from playwright.sync_api import sync_playwright as s; from pathlib import Path
      with s() as p:
       b = p.chromium.launch(channel='msedge')
-      for n in ['drajv', 'webmail', 'estudent', 'masinci']: g = b.new_page(viewport={'width': 1200, 'height': 630}); g.route('https://masinci.org/fontovi/*', lambda r: (lambda f: r.fulfill(response=f, headers={**f.headers, 'access-control-allow-origin': '*'}))(r.fetch())); g.goto(Path('og-link.html').resolve().as_uri() + '#' + n); g.wait_for_timeout(1500); g.screenshot(path='static/og-link-' + n + '.png')" -->
+      for n in ['drajv', 'webmail', 'estudent', 'masinci']: g = b.new_page(viewport={'width': 1200, 'height': 630}); g.goto(Path('og-link.html').resolve().as_uri() + '#' + n); g.wait_for_timeout(1500); g.screenshot(path='static/og-link-' + n + '.png')" -->
 <html lang="sr">
 <meta charset="utf-8">
 <style>
-@import url(https://fonts.googleapis.com/css2?family=Golos+Text:wght@800&display=block);
-@font-face { font-family: Masinci; src: url(https://masinci.org/fontovi/Masinci-Regular.woff2); }
-@font-face { font-family: RobotoMono; src: url(https://masinci.org/fontovi/RobotoMono-Regular.woff2); }
+/* Golos Text: Google Fonts' latin part; Masinci and Roboto Mono: masinci.org's. */
+@font-face { font-family: "Golos Text"; font-weight: 800; src: url(og-fonts/GolosText-ExtraBold.woff2); }
+@font-face { font-family: Masinci; src: url(og-fonts/Masinci-Regular.woff2); }
+@font-face { font-family: RobotoMono; src: url(og-fonts/RobotoMono-Regular.woff2); }
 html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
 section { display: none; position: relative; width: 1200px; height: 630px; overflow: hidden; text-align: center; }
 section:target { display: block; }
