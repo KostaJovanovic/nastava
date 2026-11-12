@@ -5,7 +5,7 @@ self.addEventListener("push", (e) => {
 	try {
 		m = e.data ? e.data.json() : {};
 	} catch (err) {}
-	e.waitUntil(self.registration.showNotification(m.title || "Arhiva nastave", { body: m.body || "", data: m.url || "/" }));
+	e.waitUntil(self.registration.showNotification(m.title || "Arhiva nastave", { body: m.body || "", data: m.url || "/", icon: "/static/icon-192.png", badge: "/static/badge.png" }));
 });
 
 self.addEventListener("notificationclick", (e) => {
