@@ -8,6 +8,7 @@
 {#- The author: a teacher links to their page by name (no title or middle initial: those are on their page only);
     another author is a username, which stays in Latin. -#}
 {%- macro who(r) -%}
+{%- if r.via %}<span class="src src--{{ r.via.mark }}" data-notx title="{{ r.via.name }}">{{ r.via.mark }}</span> {% endif %}
 {%- if r.teacher %}<a href="{{ r.teacher.href }}">{{ r.teacher.shown }}</a>
 {%- elif r.site %}<span class="src" data-notx title="Sa sajta: {{ r.site.name }} ({{ r.site.host }})">{{ r.site.mark }}</span>
 {%- else %}<span data-notx>{{ r.author or '' }}</span>{% endif -%}

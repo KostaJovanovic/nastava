@@ -740,6 +740,8 @@ def load_katedre(db, smerovi, subjects):
 
 
 MAIL = HERE.parent / "mail"
+# The posts not from the board or a department's site: their tag (style.css .src--<mark>) and its title.
+VIA = {"teams": dict(mark="teams", name="Sa Microsoft Teams-a"), "webmail": dict(mark="webmail", name="Mejl studentima")}
 
 
 def mail_href(path):
@@ -765,10 +767,12 @@ def load_mail(subjects, folder=MAIL):
         files = [(mail_href(f"{m['dir']}/{f}"), f, f"{m['sizes'][f] / 1024:.1f} KiB") for f in m["files"]]
         html = linkify(clean_html(m["html"]) or "") + file_rows(files)
         day = m["posted"][:10]
+        # Where it came from, as a tag beside the author (rows.html who): a Teams post or a mail to the students.
+        via = VIA["teams" if m["id"].startswith("teams:") else "webmail"]
         items.append(dict(id=f"m{key[m['id']]}", kind="post", title=m["title"], smer=s["smer"], subj=s, subject=s["name"],
                           date=day, year=int(day[:4]), topic=f"m{key[root]}", num=int(datetime.fromisoformat(m["posted"]).timestamp()),
                           when=m["when"], posted=m["posted"], author=m["author"], body=strip_tags(html), html=html,
-                          files=[], gone=0, source_url=None))
+                          files=[], gone=0, source_url=None, via=via))
     # teams.py's material: a Teams class's library, beyond its posts' files, in one box on the subject's page; each
     # file with its class's school year and folder. shortcut: a subject with ie's "Literatura" too gets only this box.
     material = defaultdict(list)
