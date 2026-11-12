@@ -2,7 +2,8 @@
 
 A public archive of nastava.mas.bg.ac.rs, the notice board of Mašinski fakultet in Belgrade: every post (2014–today),
 with the schedules and the teachers of www.mas.bg.ac.rs. The attachments link to the faculty's site.
-The site is static. It is at https://nastava.masinci.org (https://nastava.valjdakosta.com redirects there). The UI is
+The site is static. It is at https://masinci.org (https://nastava.masinci.org and https://nastava.valjdakosta.com
+redirect there). The UI is
 in Serbian. Search engines may index its pages (subjects, smerovi, teachers, news, schedules, lists), but not the
 posts (`/item/`, `/tema/`) or the cent pages: those name students (exam results). Each page has a description,
 link-preview tags, a canonical URL on the main domain (also for its copy on github.io), and schema.org data (news,

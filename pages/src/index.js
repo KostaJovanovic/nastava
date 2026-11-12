@@ -140,9 +140,10 @@ export default {
 		if (request.method !== "GET" && request.method !== "HEAD") {
 			return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
 		}
-		// One domain for search engines and links: the second one moves there (/push stays: its subscriptions).
-		if (url.hostname === "nastava.valjdakosta.com") {
-			url.hostname = "nastava.masinci.org";
+		// One domain for search engines and links: the old ones move there, path and all (/push and /visit stay
+		// above: the subscriptions made on the old domains).
+		if (url.hostname === "nastava.masinci.org" || url.hostname === "nastava.valjdakosta.com") {
+			url.hostname = "masinci.org";
 			return Response.redirect(url.toString(), 301);
 		}
 		const key = new Request(url.toString());

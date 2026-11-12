@@ -28,7 +28,7 @@ from pywebpush import WebPushException, webpush
 
 ROOT = Path(__file__).resolve().parent.parent
 SECRET = ROOT / "push-secret.json"
-SITE = "https://nastava.masinci.org"
+SITE = "https://masinci.org"
 # As the Worker's PUSH_HOST: only the browsers' push services get a request.
 PUSH_HOST = re.compile(r"^https://([a-z0-9-]+\.)*(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)/")
 

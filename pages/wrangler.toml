@@ -5,7 +5,9 @@ workers_dev = false
 
 # The Worker has no static assets: GitHub Pages serves the site; the board's files link to the faculty's site, and
 # the mails' and Teams files come from the release "mail" (/files/).
+# The site is masinci.org; the other two only redirect there (src/index.js).
 routes = [
+  { pattern = "masinci.org", custom_domain = true },
   { pattern = "nastava.valjdakosta.com", custom_domain = true },
   { pattern = "nastava.masinci.org", custom_domain = true }
 ]
