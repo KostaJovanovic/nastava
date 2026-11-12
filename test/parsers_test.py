@@ -136,11 +136,16 @@ notice = lambda t: dict(title=t, date='2026-11-06', html='x', files=[])
 cent.store_notices(db, 1, [notice('a'), notice('b')], 's1')
 cent.store_notices(db, 1, [notice('b')], 's2')
 cent.store_notices(db, 2, [], 's2')
-assert db.execute('select title, gone, first_seen, last_seen from cent_notices order by nid').fetchall() == [('a', 1, 's1', 's1'), ('b', 0, 's1', 's2')]
+assert db.execute('select title, gone, first_seen, last_seen from cent_notices order by title').fetchall() == [('a', 1, 's1', 's1'), ('b', 0, 's1', 's2')]
 # An edited notice keeps its text before.
 cent.store_notices(db, 1, [dict(notice('b'), html='y')], 's3')
 assert db.execute('select html, last_seen from cent_notices where title = "b"').fetchone() == ('y', 's3')
-assert db.execute('select nid, html, last_seen from cent_notice_old').fetchall() == [(2, 'x', 's2')]
+assert db.execute('select html, last_seen from cent_notice_old').fetchall() == [('x', 's2')]
+# Two notices of one title and date (newest first) are two, each keeping its text run after run.
+for seen in ('s4', 's5'):
+    cent.store_notices(db, 3, [dict(notice('r'), html='new'), dict(notice('r'), html='old')], seen)
+assert db.execute('select html, gone from cent_notices where page = 3 order by nid').fetchall() == [('old', 0), ('new', 0)]
+assert db.execute('select count(*) from cent_notice_old').fetchone()[0] == 1
 page = dict(id=5, parent=0, menu_order=0, slug='x', title=dict(rendered='X &amp; Y'), link='L', modified='m')
 assert [cent.store_page(db, page, '1617', h, w) for h, w in (('a', 's1'), ('a', 's2'), ('b', 's3'), ('a', 's4'))] == [True, False, True, True]
 assert db.execute('select title, html, first_seen, last_seen from cent_pages order by last_seen desc').fetchall() == [

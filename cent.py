@@ -160,11 +160,15 @@ def store_page(db, p, code, html, seen):
 
 
 def store_notices(db, page_id, notices, seen):
-    """A notice is its page, title and date; a changed text updates it, the text before goes to cent_notice_old (with
-    when it was last seen). One no longer on its page is marked gone. Nothing is deleted."""
-    keys = []
-    for n in notices:
-        key = hashlib.sha1(f"{page_id}|{n['title']}|{n['date']}".encode()).hexdigest()
+    """A notice is its page, title, date and its place among the page's notices of that title and date, counted from
+    the oldest (the page lists the newest first); a changed text updates it, the text before goes to cent_notice_old
+    (with when it was last seen). One no longer on its page is marked gone. Nothing is deleted."""
+    keys, count = [], {}
+    for n in reversed(notices):
+        base = f"{page_id}|{n['title']}|{n['date']}"
+        count[base] = count.get(base, 0) + 1
+        # The first of a title and date keeps the key it had before the count: no stored notice changes its key.
+        key = hashlib.sha1((base if count[base] == 1 else f"{base}|{count[base]}").encode()).hexdigest()
         keys.append(key)
         old = db.execute("select nid, html, files, last_seen from cent_notices where key = ?", (key,)).fetchone()
         if old and (old[1], old[2]) != (n["html"], json.dumps(n["files"])):

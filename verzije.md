@@ -26,6 +26,8 @@ Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
   rezultata, raspored odbrana), kao ni studentske mejlove. Bodovi i ocene ostaju, bez imena.
 - 291 [ispravka] **Obaveštenja sa sajtova katedri ostaju** i kad katedra skloni stranu na kojoj su bila, ili kad
   se sajt jednom ne javi na vreme.
+- 292 [ispravka] **Dva obaveštenja sa cent-a istog naslova i datuma** (dva puta `Rezultati` istog dana) su dva
+  posta, a ne jedan koji sakrije drugi.
 - 269–273 [novo] **Objave iz Teams-a** za šest predmeta: Termodinamika B, Osnovi otpornosti konstrukcija, Otpornost
   materijala, Inženjerska grafika, Estetski dizajn i Mašinsko inženjerstvo i održivi razvoj. Objave nastavnika su
   objave predmeta, sa prilozima. Odgovori studenata stoje kao `Student #1`, `Student #2`… bez imena, broja indeksa i
