@@ -687,6 +687,7 @@
       // The foot: "Dalje" to the notifications once a subject is followed.
       var two = location.hash === '#nastavnici';
       mp.querySelector('[data-mp-sum]').textContent = two ? '' : n ? 'Izabrano: ' + n : 'Klikni predmete koje pratiš.';
+      mp.querySelector('[data-mp-reset]').hidden = !n;
       mp.querySelector('[data-mp-back]').hidden = !two;
       mp.querySelector('[data-mp-next]').hidden = two || !n;
       mp.querySelector('[data-mp-done]').hidden = !two && n > 0;
@@ -722,6 +723,12 @@
       }
       // keepMine's 'moji' event has run sync(): the card is marked; only a click pops its check (style.css).
       b.classList.toggle('mp__card--pop', b.getAttribute('aria-pressed') !== 'false');
+    });
+    // Unfollows everything, teachers' picks too, after asking: it cannot be undone. Back to step 1.
+    mp.querySelector('[data-mp-reset]').addEventListener('click', function () {
+      if (!confirm('Poništiti izbor svih predmeta i nastavnika?')) return;
+      keepMine([]);
+      if (location.hash) location.hash = ''; else step();
     });
     mq.addEventListener('input', render);
     window.addEventListener('hashchange', step);

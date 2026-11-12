@@ -15,7 +15,7 @@
     <h1 id="title">{{ subj.name }}</h1>
     <button type="button" class="btn star" data-star="{{ subj.href }}" data-name="{{ subj.name }}" aria-pressed="false" title="Najnovije objave praćenih predmeta su na početnoj strani" hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Prati</span></button>
   </div>
-  <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('objava') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}{% if subj.site %} · <a href="{{ subj.site }}" rel="noopener" target="_blank">sajt predmeta <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %} · <a href="{{ subj.href }}feed.xml" title="Novi postovi ovog predmeta u čitaču vesti (RSS)">RSS</a></p>
+  <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('objava') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}{% if subj.site %} · <a href="{{ subj.site }}" rel="noopener" target="_blank">sajt predmeta <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
   {%- if subj.elsewhere %}
   {#- Where its posts point for the material (build.py mark_elsewhere): each to the newest post that links it, with who
       links it (surnames; the full names in the title): often only some of a subject's teachers use it. -#}

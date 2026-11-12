@@ -13,7 +13,7 @@
 {% block main %}
 <div class="mh">
   <h1 id="title">Vesti {{ year }}</h1>
-  <p class="mh__sub">sa vesti.mas.bg.ac.rs · {{ total | n }} vesti od {{ years[-1] }}. · <a href="/vesti/feed.xml" title="Nove vesti u čitaču vesti (RSS)">RSS</a></p>
+  <p class="mh__sub">sa vesti.mas.bg.ac.rs · {{ total | n }} vesti od {{ years[-1] }}.</p>
 </div>
 <nav class="mp__tabs rs__tabs" aria-label="Godina">
   {%- for y in years %}<a class="mp__tab" href="{{ year_href[y] }}"{% if y == year %} aria-current="page"{% endif %}><span>{{ y }}</span></a>{% endfor %}
