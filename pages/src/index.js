@@ -62,12 +62,10 @@ async function releaseFile(path) {
 const HEAD_END = "<!--/head-->";
 
 export function join(shell, fragment) {
-	const start = fragment.indexOf("<title>");
+	// Every fragment has the mark: a deploy replaces the whole site, so none from before it is left.
 	const mark = fragment.indexOf(HEAD_END);
-	// A fragment built before the mark: its head is the <title> alone.
-	const end = mark < 0 ? fragment.indexOf("</title>") + "</title>".length : mark;
-	const head = fragment.slice(start, end);
-	const main = fragment.slice(mark < 0 ? end : mark + HEAD_END.length, fragment.lastIndexOf("</html>"));
+	const head = fragment.slice(fragment.indexOf("<title>"), mark);
+	const main = fragment.slice(mark + HEAD_END.length, fragment.lastIndexOf("</html>"));
 	// Function replacements: a "$&" in a post must stay as it is.
 	return shell.replace("<title></title>", () => head).replace("<!--main-->", () => main);
 }

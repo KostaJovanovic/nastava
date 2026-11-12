@@ -109,6 +109,8 @@ pipeline and site, with new scrapers for phpBB.
   notifications, and on GitHub how late the run started. `uv run ci/runs.py report` sums it up; `uv run ci/runs.py
   schedule` replays the board's posts since 2022 against the schedule in use and the best 2–6 runs a day per season.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
+- `test/worker_test.mjs`: the Worker's page join, push subscriptions and `/files/` paths, no network
+  (`node --test test/worker_test.mjs`, before `wrangler deploy`).
 - `test/browser_test.py`: real searches and screenshots in Edge against a running site.
 - `save.bat`: git (commit, push, pull), and `deploy [sync]`: commit, push, then `ci/deploy.sh`. `server.bat`: build
   and serve the site on this PC, port 15497, with a QR for phones.
