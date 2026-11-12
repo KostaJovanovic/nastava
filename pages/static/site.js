@@ -954,8 +954,28 @@
         frames.push({ clipPath: 'circle(' + r + 'px at ' + (dark ? -r + s * (w / 2 + r) : w / 2 + s * (w / 2 + r)) + 'px '
           + (h / 2 - r * (dark ? (1 - s) * (1 - s) : s * s)) + 'px)' });
       }
+      // The page's scrollbar is not in the transition's pictures: it keeps the old theme's colours (style.css --sb-*)
+      // until the circle's edge crosses it (the screen's right edge, half way down), at that point of the 650 ms.
+      var cs = getComputedStyle(root), SB = ['scroll', 'paper', 'head', 'head-line'];
+      SB.forEach(function (n) {
+        var m = /^light-dark\(\s*([^,]+),\s*(.+)\)$/.exec(cs.getPropertyValue('--' + n).trim());
+        if (m) root.style.setProperty('--sb-' + n, m[dark ? 1 : 2]);
+      });
+      var unpin = function () { if (vtNow === vt) SB.forEach(function (n) { root.style.removeProperty('--sb-' + n); }); };
+      var cross = 1, u = 0, cx, cy;
+      for (i = 0; i <= 96; i++) {
+        s = i / 96;
+        cx = dark ? -r + s * (w / 2 + r) : w / 2 + s * (w / 2 + r);
+        cy = h / 2 - r * (dark ? (1 - s) * (1 - s) : s * s);
+        if ((Math.hypot(w - cx, h / 2 - cy) < r) === dark) { cross = s; break; }
+      }
+      // The easing below, cubic-bezier(.65, 0, .35, 1): the time at which the way reaches cross.
+      while (u < 1 && 3 * (1 - u) * u * u + u * u * u < cross) u += .01;
+      var at = 650 * (3 * (1 - u) * (1 - u) * u * .65 + 3 * (1 - u) * u * u * .35 + u * u * u);
       root.dataset.vt = t;
       var vt = vtNow = d.startViewTransition(function () { setTheme(t); }), anim = null;
+      vt.ready.then(function () { setTimeout(unpin, at); }, unpin);
+      vt.finished.then(unpin, unpin);
       vt.ready.then(function () {
         // fill both: no frame without the clip at either end (that was a flash of the whole dark page).
         anim = root.animate(frames, { duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'both',

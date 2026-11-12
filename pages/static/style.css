@@ -146,10 +146,14 @@ h1, h2, h3, p { margin: 0; }
 /* The page's bar starts under the header, beside it the header's colours: only the ::-webkit-scrollbar rules can, so
    Chromium gets no scrollbar-color here (it would win over them). Firefox has only scrollbar-color: its bar runs the
    window's full height. */
+/* --sb-*: the old theme's colours, kept while a theme switch's circle has not yet reached the bar (site.js). */
 html { scrollbar-color: auto; }
-@supports (-moz-appearance: none) { html { scrollbar-color: var(--scroll) var(--paper); } }
-html::-webkit-scrollbar { background: linear-gradient(var(--head) calc(var(--hd) - 3px), var(--head-line) 0 var(--hd), var(--paper) 0); }
+@supports (-moz-appearance: none) {
+  html { scrollbar-color: var(--sb-scroll, var(--scroll)) var(--sb-paper, var(--paper)); transition: scrollbar-color .15s; }
+}
+html::-webkit-scrollbar { background: linear-gradient(var(--sb-head, var(--head)) calc(var(--hd) - 3px), var(--sb-head-line, var(--head-line)) 0 var(--hd), var(--sb-paper, var(--paper)) 0); }
 html::-webkit-scrollbar-track { margin-top: var(--hd); }
+html::-webkit-scrollbar-thumb { background-color: var(--sb-scroll, var(--scroll)); }
 
 mark {
   background: var(--mark); color: var(--fg);
