@@ -29,6 +29,8 @@
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
   {%- if vesti %}{{ vest_rows('Najnovije vesti', vesti, more='/vesti/') }}{% endif %}
   </div>
+  {#- Again at load: the page above the lists can still grow (fonts, Moji predmeti). -#}
+  <script>{ const l = document.querySelector(".lists"), bar = document.querySelector(".snav"), end = () => { const b = bar && getComputedStyle(bar).position == "fixed" ? bar.getBoundingClientRect().top : innerHeight; l.style.setProperty("--end", Math.max(b - 50 - l.getBoundingClientRect().top, 50) + "px"); }; end(); addEventListener("load", end); }</script>
   <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · objava <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b></p>
 </div>
 <nav class="status" aria-label="Stranice"></nav>

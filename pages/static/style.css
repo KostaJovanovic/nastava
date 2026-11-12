@@ -449,7 +449,7 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
     display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
     padding: 4px max(6px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
     overflow: visible;
-    background: var(--card); border-top: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -6px 18px rgba(1, 19, 33, .08);
+    background: var(--card); border-top: 1px solid var(--line); border-bottom: 0;
   }
   .snav__long { display: none; }
   .snav > a {
@@ -1056,7 +1056,11 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* A gradient can't transition, a registered number can: --hide goes 1 → 0 (.fade → .faded, then no mask at all). */
 @property --hide { syntax: "<number>"; inherits: false; initial-value: 0; }
 .lists { display: grid; }
-:is(.fade, .faded) .lists { -webkit-mask-image: linear-gradient(#000, rgb(0 0 0 / calc(1 - var(--hide))) 100px); mask-image: linear-gradient(#000, rgb(0 0 0 / calc(1 - var(--hide))) 100px); transition: --hide .5s ease-out; }
+/* 80% at the top, nothing at --end (50px above the screen's bottom or the phone's tab bar, search.html). */
+:is(.fade, .faded) .lists {
+  --mask: linear-gradient(rgb(0 0 0 / calc(1 - .2 * var(--hide))), rgb(0 0 0 / calc(1 - var(--hide))) var(--end, 100px));
+  -webkit-mask-image: var(--mask); mask-image: var(--mask); transition: --hide .5s ease-out;
+}
 .fade .lists { --hide: 1; }
 @media (prefers-reduced-motion: reduce) { .lists { transition: none !important; } }
 /* A search in the URL: the board index stays hidden until the results come (search.js shown()).
