@@ -986,7 +986,8 @@ def render_places(site, topics, smerovi, subjects):
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m), key=lambda s: fold(s["name"]))
         for s in subs:
-            s["find"] = fold(" ".join([s["name"], *s["acr"]] + [t["full_name"] for t in s.get("teachers", [])]))
+            # sorted: a set's order changes from run to run, and with it the page (a deploy with nothing new).
+            s["find"] = fold(" ".join([s["name"], *sorted(s["acr"])] + [t["full_name"] for t in s.get("teachers", [])]))
             s["katedra"] = row_katedra(s, in_subject[s["id"]])
         rows = in_smer[m["id"]]
         m["live"] = bool(rows or subs)
@@ -1453,7 +1454,7 @@ def load_book(db, subjects, teachers):
             place["names"].append(name)
     for s in book:
         s["acr"] = acronyms(s["name"]) | (s["forum"] or {}).get("acr", set())
-        s["find"] = fold(" ".join([s["name"], *s["acr"], s["id"], s["katedra"] or "", s["program"]]
+        s["find"] = fold(" ".join([s["name"], *sorted(s["acr"]), s["id"], s["katedra"] or "", s["program"]]
                                   + [t["name"] for t in s["teachers"]] + [p["module"] or "" for p in s["places"]]))
         if s["forum"]:
             s["forum"].setdefault("info", s)

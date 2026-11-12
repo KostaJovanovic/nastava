@@ -70,8 +70,8 @@ Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
   izvorima.
 - 238, 248 **Ikonica objave sa odgovorima** više nije u tamnom krugu, a oznaka sa kog je sajta nešto (`cent`) ima
   oštrije uglove.
-- 247, 249–250, 252, 262, 266–267, 274–276, 278–279, 281, 285, 293–297 **Održavanje:** plan za Android aplikaciju, dnevnik osvežavanja sajta,
-  ispravke deploy-a i rezervna kopija fajlova sa sajtova katedri.
+- 247, 249–250, 252, 262, 266–267, 274–276, 278–279, 281, 285, 293–298 **Održavanje:** plan za Android aplikaciju, dnevnik osvežavanja sajta,
+  ispravke deploy-a i rezervna kopija fajlova sa sajtova katedri, ispravke u arhiviranju i test za server.
 
 ## 10. novembra 2026.
 Strana Linkovi, novi font, oblak reči i broj posetilaca na statistici, strana Verzije i dosta popravki za
