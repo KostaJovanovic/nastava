@@ -1078,10 +1078,9 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 :is(.fade, .faded) .lists .src { transition: background-color .5s ease-out, color .5s ease-out; }
 .fade .lists .src { background-color: transparent; color: inherit; }
 /* So is Najnovije objave's title bar in the light theme (the dark one's is dark already): the light grey of the side
-   panel's Statistika bars (.hist i), with the rows' text. */
-:is(.fade, .faded) .lists > :first-child :is(.fb__h, .fb__h h2) { transition: background-color .5s ease-out, color .5s ease-out; }
-:root:not([data-tema="dark"]).fade .lists > :first-child .fb__h { background-color: color-mix(in srgb, var(--slate) 45%, var(--card)); color: var(--dim); }
-:root:not([data-tema="dark"]).fade .lists > :first-child .fb__h h2 { color: var(--text); }
+   panel's Statistika bars (.hist i); its text stays white. */
+:is(.fade, .faded) .lists > :first-child .fb__h { transition: background-color .5s ease-out; }
+:root:not([data-tema="dark"]).fade .lists > :first-child .fb__h { background-color: color-mix(in srgb, var(--slate) 45%, var(--card)); }
 @media (prefers-reduced-motion: reduce) { .lists { transition: none !important; } }
 /* A search in the URL: the board index stays hidden until the results come (search.js shown()).
    If the script never gets there, the index shows after 6 s. */
