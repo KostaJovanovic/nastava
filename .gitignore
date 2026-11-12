@@ -3,6 +3,10 @@
 *.db-*
 *.log
 files/
+# The mails' and Teams files: assets of the release "mail" (mail.py upload); git keeps their .json only.
+mail/**
+!mail/**/
+!mail/**/*.json
 __pycache__/
 .build/
 test/*.png

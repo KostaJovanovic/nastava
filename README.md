@@ -36,8 +36,8 @@ pipeline and site, with new scrapers for phpBB.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
   edge cache for a day at most (Pagefind's hashed files: a year). Most pages are stored as only their title and main
   part; the Worker puts them into `shell.html` (head, header, sidebar), which saves about 190 MB on GitHub Pages.
-- The attachments and images link straight to nastava.mas.bg.ac.rs. The site does not host them (only the mails',
-  `mail/`). The local
+- The attachments and images link straight to nastava.mas.bg.ac.rs. The site does not host them. The mails' and
+  Teams files (`mail/`) are assets of the GitHub release `mail`, which the Worker serves under `/files/`. The local
   `files/` folder keeps a copy of each one; dlwms's `release_files.py` and Worker `/files/` route (in `ref/dlwms`)
   can host them later.
 - Search finds Cyrillic and Latin alike: the index holds the text in Latin without diacritics, and the search box
@@ -70,8 +70,9 @@ pipeline and site, with new scrapers for phpBB.
   announcements) nor omk, geotermal, au, tmm (no answer).
 - `mail.py`: mails a teacher sent a subject's students (exported from webmail as .eml), in `mail/`: a folder per
   mail with `post.json` (sender, date, subject line, the text without the quoted mail) and its attachments. To and Cc
-  are never read. The site shows them as that subject's board posts (a "Re:" in its mail's topic) and hosts their files
-  under `/mail/`. Done by hand, not in the Action.
+  are never read. The site shows them as that subject's board posts (a "Re:" in its mail's topic). Git keeps only the
+  `.json` files; `mail.py upload` puts the attachments (and teams.py's files) in the release `mail` (an asset per
+  file, named by a hash of its path). Keep a copy of `mail/` elsewhere (OneDrive). Done by hand, not in the Action.
 - `teams.py`: the posts of the faculty's Teams classes into `mail/`, in the same form: each thread a teacher started,
   with its replies (a student's is "Student #N", numbered per thread, with no name, index, e-mail or file of theirs),
   and the rest of each class's SharePoint library as the subject's "Materijal sa Teams-a". `teams-export.js` reads
@@ -138,7 +139,7 @@ When the attachments are wanted: `uv run documents.py sync`. Old .doc/.xls/.ppt 
 
 To add mails: in webmail (RainLoop) open each mail, ▾ next to Reply → "Download as .eml", into one folder; then
 `uv run mail.py add <folder> /predmet/<smer>/<subject>/` (the subject page's URL; in Git Bash prefix
-`MSYS_NO_PATHCONV=1`) and commit `mail/`. A mail already there is skipped.
+`MSYS_NO_PATHCONV=1`), `uv run mail.py upload`, and commit `mail/`. A mail already there is skipped.
 
 To add Teams posts: open teams.microsoft.com in a browser, paste `teams-export.js` into the DevTools console (Firefox:
 Ctrl+B for the multi-line editor) and run it: it saves `teams-export.json` (every channel's messages, read with the
@@ -147,7 +148,7 @@ SharePoint library as a zip in Downloads (its `CLASSES` list is teams.py's group
 page. A new class goes in `CLASSES` (its group id → subject page; in both files), a new teacher in
 `TEACHERS` (their Teams account → board username), a student's name written in a reply with no index next to it in
 `NAMED`; then `uv run teams.py add <teams-export.json> <zip folder>`, read the students' replies in `mail/` for names
-it missed, and commit `mail/`.
+it missed, `uv run mail.py upload`, and commit `mail/`.
 
 ## License
 

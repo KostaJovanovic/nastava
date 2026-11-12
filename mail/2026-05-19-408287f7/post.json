@@ -10,5 +10,9 @@
  "files": [
   "AN-3.2 Maziva.pdf",
   "AN-3.1 Disipacija i tribologija.pdf"
- ]
+ ],
+ "sizes": {
+  "AN-3.2 Maziva.pdf": 5054874,
+  "AN-3.1 Disipacija i tribologija.pdf": 2846805
+ }
 }

@@ -33,6 +33,7 @@ HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent))
 from studije import PAGES as STUDY_PAGES, SITE as STUDY_SITE, media_path  # noqa: E402
 from nastavnici import photo_urls  # noqa: E402
+from mail import asset_name, TAG as MAIL_TAG  # noqa: E402
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
 KIND = {"post": "obavestenje", "document": "dokument", "vest": "vest", "cent": "obavestenje", "katedra": "obavestenje"}
 RECENT = 20
@@ -738,10 +739,15 @@ def load_katedre(db, smerovi, subjects):
 MAIL = HERE.parent / "mail"
 
 
+def mail_href(path):
+    """A file of mail/ (its path there), as the Worker serves it from the release "mail" (mail.py upload)."""
+    return f"/files/{MAIL_TAG}/{asset_name(path)}/{quote(path.rsplit('/', 1)[-1])}"
+
+
 def load_mail(subjects, folder=MAIL):
     """mail.py's mails as board posts of their subject (post.json's page). A reply is in the topic of the oldest mail
     here it answers; its number (the post's anchor, its order in the topic) is its time, so a mail added later never
-    renumbers the others. Its files are hosted here, under /mail/ (main copies them)."""
+    renumbers the others. Its files are the release's (mail_href)."""
     by_href = {s["href"]: s for s in subjects.values()}
     mails = [dict(json.loads(p.read_text(encoding="utf-8")), dir=p.parent.name) for p in sorted(folder.glob("*/post.json"))]
     key = {m["id"]: m["dir"][-8:] for m in mails}
@@ -753,7 +759,7 @@ def load_mail(subjects, folder=MAIL):
             continue
         # Only a "Re:": a new subject line on a reply is a new notice, sent as a reply to keep the list of students.
         root = next((r for r in m["refs"] if r in key), m["id"]) if re.match(r"re:", m["title"], re.I) else m["id"]
-        files = [(f"/mail/{m['dir']}/{quote(f)}", f, f"{(folder / m['dir'] / f).stat().st_size / 1024:.1f} KiB") for f in m["files"]]
+        files = [(mail_href(f"{m['dir']}/{f}"), f, f"{m['sizes'][f] / 1024:.1f} KiB") for f in m["files"]]
         html = linkify(clean_html(m["html"]) or "") + file_rows(files)
         day = m["posted"][:10]
         items.append(dict(id=f"m{key[m['id']]}", kind="post", title=m["title"], smer=s["smer"], subj=s, subject=s["name"],
@@ -770,7 +776,7 @@ def load_mail(subjects, folder=MAIL):
             print(f"mail: no subject page {m['page']} ({p.parent.name})", file=sys.stderr)
             continue
         year = (re.search(r"20\d\d/\d+", m["name"]) or [None])[0]
-        material[s["href"]] += [(f"/mail/{p.parent.name}/{quote(f)}", f.rsplit("/", 1)[-1],
+        material[s["href"]] += [(mail_href(f"{p.parent.name}/{f}"), f.rsplit("/", 1)[-1],
                                  " · ".join(filter(None, [year, f.rsplit("/", 1)[0] if "/" in f else None]))) for f in m["files"]]
     for href, files in material.items():
         by_href[href]["lit"] = dict(mark="teams", title="Materijal sa Teams-a", n=len(files), html=file_rows(files, "Teams"))
@@ -1861,8 +1867,6 @@ def main(db_path, out):
     place, smerovi, subjects = load_places(db)
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
     items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + load_mail(subjects)
-    if MAIL.is_dir():
-        shutil.copytree(MAIL, site / "mail", ignore=shutil.ignore_patterns("post.json", "material.json"))
     teachers = load_teachers(db, subjects)
     if teachers:
         write_photos(db, site)
@@ -2075,21 +2079,22 @@ if __name__ == "__main__":
                                          ("2026-01-03-cccccccc", "<c>", ["<a>", "<b>"], "08:00", "RE: T"), ("2026-01-04-dddddddd", "<d>", ["<x>"], "09:00", "Re: X"),
                                          ("2026-01-05-eeeeeeee", "<e>", ["<a>"], "09:00", "Novo")]:
             (Path(_t) / _d).mkdir()
-            (Path(_t) / _d / "r.pdf").write_bytes(b"x" * 2048)
+            # No file on disk: the build has only post.json (the files are in the release).
             (Path(_t) / _d / "post.json").write_text(json.dumps(dict(
                 id=_id, refs=_refs, page="/1/", author="llecic", posted=f"{_d[:10]}T{_at}:00+00:00", when="", title=_ti,
-                html='<div style="x">Hi <script>x</script></div>', files=["r.pdf"] if _id == "<a>" else [])), encoding="utf-8")
+                html='<div style="x">Hi <script>x</script></div>', files=["r.pdf"] if _id == "<a>" else [],
+                sizes={"r.pdf": 2048} if _id == "<a>" else {})), encoding="utf-8")
         (Path(_t) / "teams-x").mkdir()
         (Path(_t) / "teams-x" / "material.json").write_text(json.dumps(dict(page="/1/", name="T 2025/2026. godina",
                                                                              files=["Predavanja/P 1.pdf", "a.docx"])), encoding="utf-8")
         _ms = dict(id=1, name="S", smer=_sm, href="/1/")
         _m = load_mail({1: _ms}, Path(_t))
-    assert _ms["lit"]["n"] == 2 and 'href="/mail/teams-x/Predavanja/P%201.pdf"' in _ms["lit"]["html"], _ms["lit"]
+    assert _ms["lit"]["n"] == 2 and f'href="/files/mail/{asset_name("teams-x/Predavanja/P 1.pdf")}/P%201.pdf"' in _ms["lit"]["html"], _ms["lit"]
     assert "P 1.pdf<small>2025/2026 · Predavanja</small>" in _ms["lit"]["html"] and "a.docx<small>2025/2026</small>" in _ms["lit"]["html"]
     assert [(i["id"], i["topic"]) for i in _m] == [("maaaaaaaa", "maaaaaaaa"), ("mbbbbbbbb", "maaaaaaaa"), ("mcccccccc", "maaaaaaaa"),
                                                    ("mdddddddd", "mdddddddd"), ("meeeeeeee", "meeeeeeee")], _m
     assert _m[0]["num"] < _m[1]["num"] < _m[2]["num"] and "script" not in _m[0]["html"] and 'style=' not in _m[0]["html"]
-    assert 'href="/mail/2026-01-01-aaaaaaaa/r.pdf"' in _m[0]["html"] and "<small>2.0 KiB</small>" in _m[0]["html"], _m[0]["html"]
+    assert f'href="/files/mail/{asset_name("2026-01-01-aaaaaaaa/r.pdf")}/r.pdf"' in _m[0]["html"] and "<small>2.0 KiB</small>" in _m[0]["html"], _m[0]["html"]
     assert _p["subjects"][0] == ["/1/", "Б"] and _p["subjects"][4:] == [["/b9/", "Д", 0]], _p["subjects"]
     assert first_link('<h1>K</h1><a href="/f/k.pdf?a=1&amp;b=2">Календар  2026</a>') == ("Календар 2026", "/f/k.pdf?a=1&b=2")
     _pr = ('<h2>Raspored 2026</h2><h3>Jesenji semestar</h3><h4>OSNOVNE AKADEMSKE STUDIJE - <b>MAŠINSKO</b> INŽENjERSTVO</h4>'

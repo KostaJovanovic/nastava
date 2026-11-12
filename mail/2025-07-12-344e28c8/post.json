@@ -12,5 +12,11 @@
   "AN-3.2 Maziva.pdf",
   "AN-3.3 Odrzavanje i dijagnostika.pdf",
   "AN-3.4 Organizacija sluzbe i ekologija.pdf"
- ]
+ ],
+ "sizes": {
+  "AN-3.1 Disipacija i tribologija.pdf": 2846805,
+  "AN-3.2 Maziva.pdf": 5054874,
+  "AN-3.3 Odrzavanje i dijagnostika.pdf": 4571752,
+  "AN-3.4 Organizacija sluzbe i ekologija.pdf": 2540182
+ }
 }

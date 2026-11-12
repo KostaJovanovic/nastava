@@ -11,5 +11,10 @@
   "Pravilno popunjen indeks IG.pdf",
   "Pravilno popunjena ispitna sveska IG.pdf",
   "SMENA 3 2024 IG KO 1.pdf"
- ]
+ ],
+ "sizes": {
+  "Pravilno popunjen indeks IG.pdf": 241131,
+  "Pravilno popunjena ispitna sveska IG.pdf": 198498,
+  "SMENA 3 2024 IG KO 1.pdf": 83803
+ }
 }

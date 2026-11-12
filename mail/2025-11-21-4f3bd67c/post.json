@@ -10,5 +10,9 @@
  "files": [
   "dijagonalna masina.pdf",
   "aksijalna masina.pdf"
- ]
+ ],
+ "sizes": {
+  "dijagonalna masina.pdf": 366056,
+  "aksijalna masina.pdf": 407818
+ }
 }

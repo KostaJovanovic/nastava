@@ -11,5 +11,10 @@
   "Popravni T1.pdf",
   "Popravni T2.pdf",
   "Rezultati MIOR sk25_26 2.pdf"
- ]
+ ],
+ "sizes": {
+  "Popravni T1.pdf": 209932,
+  "Popravni T2.pdf": 201728,
+  "Rezultati MIOR sk25_26 2.pdf": 769782
+ }
 }

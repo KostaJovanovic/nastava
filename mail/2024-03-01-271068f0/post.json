@@ -11,5 +11,10 @@
   "1. vezba - postavka.pdf",
   "Vezba 1 - handout.pdf",
   "vezba 2.pdf"
- ]
+ ],
+ "sizes": {
+  "1. vezba - postavka.pdf": 505618,
+  "Vezba 1 - handout.pdf": 3962982,
+  "vezba 2.pdf": 2206734
+ }
 }

@@ -12,5 +12,11 @@
   "Dijagonalna masina.pdf",
   "Aksijalna masina.pdf",
   "Radijalna pumpa.pdf"
- ]
+ ],
+ "sizes": {
+  "Radno kolo radijalne pumpe.pdf": 626811,
+  "Dijagonalna masina.pdf": 366056,
+  "Aksijalna masina.pdf": 407818,
+  "Radijalna pumpa.pdf": 1786235
+ }
 }

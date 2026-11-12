@@ -227,7 +227,8 @@ def add(export, zips):
                                 author=TEACHERS[who(m)] if teacher else label(who(m)),
                                 posted=sent.isoformat(), when=f"{sent.astimezone(TZ):%d.%m.%Y. %H:%M}",
                                 title=title if m is root else f"Re: {title}",
-                                html=body(m, label, student_ids, name_re), files=names)
+                                html=body(m, label, student_ids, name_re), files=names,
+                                sizes={f: (out / f).stat().st_size for f in names})
                     (out / "post.json").write_text(json.dumps(post, ensure_ascii=False, indent=1), encoding="utf-8")
                     added += 1
         material(t, page, archives, posted_files, student_files)

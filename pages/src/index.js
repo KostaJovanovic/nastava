@@ -1,6 +1,7 @@
-// Serve the site from GitHub Pages through the edge cache. The attachments link straight to the faculty's site.
-// The site is public: there is no auth.
+// Serve the site from GitHub Pages through the edge cache. The board's attachments link straight to the faculty's
+// site; the mails' and Teams files (mail/) come from the GitHub release "mail" (/files/). The site is public: no auth.
 const PAGES = "https://kostajovanovic.github.io/nastava";
+const RELEASES = "https://github.com/KostaJovanovic/nastava/releases/download";
 // Most pages are stored as a fragment, <html lang="sr"> with their <title> and main part; join() puts it into
 // shell.html (build.py split_page). A whole page starts with <!doctype html>. pages/serve.py joins the same way.
 const FRAGMENT = '<html lang="sr"><title>';
@@ -9,6 +10,8 @@ const ENTRY = /^\/pagefind\/pagefind[^/]*\.(js|json|css)$/;
 const YEAR = 31536000;
 
 function cacheControl(path) {
+	// An asset never changes: a changed file is a new path, so a new asset (mail.py asset_name).
+	if (path.startsWith("/files/")) return `public, max-age=${YEAR}, immutable`;
 	if (path.startsWith("/pagefind/") && !ENTRY.test(path)) return `public, max-age=${YEAR}, immutable`;
 	// An item or a news post rarely changes, but its side panel (counts, links) and an edited post do: a day, at the
 	// edge too.
@@ -31,6 +34,28 @@ async function page(url) {
 	const shell = await fetch(PAGES + "/shell.html");
 	if (!shell.ok) return new Response("shell.html missing", { status: 502 });
 	return new Response(join(await shell.text(), fragment), response);
+}
+
+async function releaseFile(path) {
+	// build.py links /files/<release tag>/<asset name>/<file name> (mail_href).
+	const [tag, asset, name, extra] = path.slice("/files/".length).split("/");
+	if (!tag || !asset || !name || extra !== undefined) return null;
+	let filename;
+	try {
+		filename = decodeURIComponent(name);
+	} catch {
+		return null;
+	}
+	const response = await fetch(`${RELEASES}/${encodeURIComponent(tag)}/${encodeURIComponent(asset)}`);
+	if (!response.ok) return null;
+	// Always a download: an uploaded HTML or SVG file must not run on this origin.
+	return new Response(response.body, {
+		headers: {
+			"Content-Type": "application/octet-stream",
+			"Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+			"X-Content-Type-Options": "nosniff",
+		},
+	});
 }
 
 // The fragment's own head (<title>, description, canonical) ends at this mark; the main part follows.
@@ -130,7 +155,8 @@ export default {
 			response.headers.set("Cache-Control", cacheControl(url.pathname));
 			return response;
 		}
-		const origin = await page(url);
+		const origin = url.pathname.startsWith("/files/") ? await releaseFile(url.pathname) : await page(url);
+		if (!origin) return new Response("Not found", { status: 404 });
 		// Cache only a 200: a 404 for a new Pagefind file must not stay in the cache.
 		if (origin.status !== 200) return origin;
 		const response = new Response(origin.body, origin);

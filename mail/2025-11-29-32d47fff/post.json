@@ -10,5 +10,9 @@
  "files": [
   "Svi zadaci.pdf",
   "Dodeljeni zadaci.pdf"
- ]
+ ],
+ "sizes": {
+  "Svi zadaci.pdf": 1934516,
+  "Dodeljeni zadaci.pdf": 186077
+ }
 }

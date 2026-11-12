@@ -10,5 +10,9 @@
  "files": [
   "Pregled koriscenih oznaka.pdf",
   "Deo 1 Uvod i osnovni pojmovi.pdf"
- ]
+ ],
+ "sizes": {
+  "Pregled koriscenih oznaka.pdf": 93362,
+  "Deo 1 Uvod i osnovni pojmovi.pdf": 1578118
+ }
 }

@@ -18,5 +18,17 @@
   "Grupa 8.pdf",
   "Grupa 9.pdf",
   "Grupa 10.pdf"
- ]
+ ],
+ "sizes": {
+  "Grupa 1.pdf": 88075,
+  "Grupa 2.pdf": 86936,
+  "Grupa 3.pdf": 87963,
+  "Grupa 4.pdf": 88380,
+  "Grupa 5.pdf": 86948,
+  "Grupa 6.pdf": 88621,
+  "Grupa 7.pdf": 88308,
+  "Grupa 8.pdf": 86960,
+  "Grupa 9.pdf": 88817,
+  "Grupa 10.pdf": 88967
+ }
 }
