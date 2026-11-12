@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{#- The links worth keeping, as cards (as masinci.org/link): (name, href, icon from icons.svg, data-domain). A card's
+{#- The links worth keeping, as cards (as stepen.masinci.org/link): (name, href, icon from icons.svg, data-domain). A card's
     second line is its address; with a data-domain (the drive), that name, as the dialog before it says (site.js). -#}
 {#- Izdvojeno, above the rest and in its place below too: three cards with an image (name, href, its image from
     og-link.html, the line under the name, data-domain), then three as the rest's. -#}
 {% set featured = [
   ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'og-link-drajv.png', 'Materijali po godinama, na OneDrive-u', 'kosta-onedrive.com'),
   ('studenti.mas', 'https://studenti.mas.bg.ac.rs/', 'og-link-estudent.png', 'Prijava ispita i ocene', none),
-  ('Mašinci', 'https://masinci.org/', 'og-link-masinci.png', 'Studentska lista Stepen Sigurnosti', none),
+  ('Mašinci', 'https://stepen.masinci.org/', 'og-link-masinci.png', 'Studentska lista Stepen Sigurnosti', none),
 ] %}
 {% set featured_more = [
   ('Predmeti', '/predmeti/', 'book', none),
@@ -28,7 +28,7 @@
   ]),
   ('Studenti', [
     ('Veliki drajv', 'https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU', 'cloud', 'kosta-onedrive.com'),
-    ('Mašinci', 'https://masinci.org/', 'users', none),
+    ('Mašinci', 'https://stepen.masinci.org/', 'users', none),
     ('Drumska strela', 'https://fsra.stt.org.rs/', 'katedra-za-motorna-vozila', none),
     ('Beoavia', 'https://beoavia.org/', 'katedra-za-vazduhoplovstvo', none),
     ('Robotoid', 'https://robotoid.stt.org.rs/', 'katedra-za-automatsko-upravljanje', none),
