@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 {% set origin = 'https://www.mas.bg.ac.rs/fakultet/nastavnici/start' %}
 {% from "rows.html" import crumb %}
-{#- Two pages: the faculty's teachers today (/nastavnici/) and, with archive, the ones no longer on its list
-    (/nastavnici/arhiva/). -#}
+{#- Three pages: the faculty's teachers today (/nastavnici/); with archive, the ones no longer on its list
+    (/nastavnici/arhiva/); with researchers, the researchers with a page here, on no list of teachers
+    (/nastavnici/istrazivaci/, build.py OTHER_TEACHERS). -#}
+{%- set name = 'Arhiva nastavnika' if archive else 'Istraživači' if researchers else 'Nastavnici' %}
 
-{% block title %}{% if archive %}Arhiva nastavnika{% else %}Nastavnici{% endif %}{% endblock %}
-{% block description %}{% if archive %}Nastavnici Mašinskog fakulteta u Beogradu koji više nisu na spisku fakulteta: zvanja, katedre, predmeti i objave na forumu nastave.{% else %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
+{% block title %}{{ name }}{% endblock %}
+{% block description %}{% if archive %}Nastavnici Mašinskog fakulteta u Beogradu koji više nisu na spisku fakulteta: zvanja, katedre, predmeti i objave na forumu nastave.{% elif researchers %}Istraživači Inovacionog centra Mašinskog fakulteta u Beogradu: radovi i saradnja sa nastavnicima.{% else %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
 {% block og %}-{{ 'arhiva' if archive else 'nastavnici' }}{% endblock %}
-{% block crumbs %}{% if archive %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endif %}{% endblock %}
+{% block crumbs %}{% if archive or researchers %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endif %}{% endblock %}
 
 {%- macro card(t) %}
   {#- The grey corner: a departed teacher, on the archive page and in the list's search. -#}
@@ -37,15 +39,16 @@
 {% block main %}
 <div class="mh">
   <div class="mh__top">
-    <h1 id="title">{% if archive %}Arhiva nastavnika{% else %}Nastavnici{% endif %}</h1>
-    {%- if not archive %}
+    <h1 id="title">{{ name }}</h1>
+    {%- if not archive and not researchers %}
     <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span><b class="arch__n">{{ left | length | n }}</b></a>
     {%- endif %}
   </div>
-  <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na fakultetu.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave. Ostali koautori nastavnika: <a href="/istrazivaci/">istraživači i saradnici</a>.{% endif %}</p>
+  <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na fakultetu.{% elif researchers %}Istraživači Inovacionog centra fakulteta, koji nisu na spisku nastavnika. Ostali koautori nastavnika: <a href="/istrazivaci/">istraživači i saradnici</a>.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave. Istraživači sa stranicom ovde: <a href="/nastavnici/istrazivaci/">istraživači</a>; ostali koautori nastavnika: <a href="/istrazivaci/">istraživači i saradnici</a>.{% endif %}</p>
 </div>
 {#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
-<form class="people__bar" data-filter data-scope="{% if archive %}Arhiva{% else %}Nastavnici{% endif %}" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
+<form class="people__bar" data-filter data-scope="{% if archive %}Arhiva{% elif researchers %}Istraživači{% else %}Nastavnici{% endif %}" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
+  {%- if katedre %}
   <label class="vh" for="t-k">Katedra</label>
   {#- value: the name's Latin slug, which ?katedra= links and the rows' data-k use (no Cyrillic in a URL);
       data-label: the full name, a group's heading (site.js). -#}
@@ -53,6 +56,7 @@
     <option value="">Sve katedre</option>
     {%- for k in katedre %}<option value="{{ k | slug }}" data-label="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
   </select>
+  {%- endif %}
   <label class="vh" for="t-z">Zvanje</label>
   <select class="field" id="t-z" name="zvanje" data-f="z">
     <option value="">Sva zvanja</option>
@@ -64,7 +68,7 @@
     <label class="pick">Grupiši
     <select id="t-g" name="grupa" data-group>
       <option value="">bez grupa</option>
-      <option value="k">po katedri</option>
+      {%- if katedre %}<option value="k">po katedri</option>{% endif %}
       <option value="z">po zvanju</option>
     </select></label>
     <label class="pick">Poređaj
@@ -92,7 +96,7 @@
 </ol>
 </div>
 <p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
-{%- if not archive %}
+{%- if not archive and not researchers %}
 {#- The departed, so the search finds them too: shown under the current teachers only while there is search text
     (site.js). Outside [data-groups]: grouping and order do not take them. -#}
 <section class="sg" data-left hidden>

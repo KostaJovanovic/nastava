@@ -1469,6 +1469,9 @@ def render_teachers(site, teachers, items, book):
     write(site / "nastavnici" / "arhiva" / "index.html",
           env.get_template("nastavnici.html").render(teachers=left, katedre=sorted({t["katedra"] for t in left if t["katedra"]}),
                                                      archive=True))
+    write(site / "nastavnici" / "istrazivaci" / "index.html",
+          env.get_template("nastavnici.html").render(teachers=[t for t in teachers if t.get("researcher")], katedre=[],
+                                                     researchers=True))
     since = date.today().year - 3
     found = researchers(teachers, since)
     write(site / "istrazivaci" / "index.html", env.get_template("istrazivaci.html").render(people=found, since=since))
