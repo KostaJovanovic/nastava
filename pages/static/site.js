@@ -17,20 +17,21 @@
 
   /* The header search's scope: the select after the text (base.html #qk, the form's kind), what the bar searches.
      '' (Sve): the matching subjects (by studije), teachers and schedule entries listed under the bar, Enter searches
-     all the texts; a text's kind (posts, news): Enter searches those (search.js); nastavnici, predmeti: the matching
-     ones under the bar, Enter opens their list page.
+     all the texts; a text's kind (posts, news): Enter searches those (search.js); lista: the matching subjects,
+     teachers and katedre under the bar, Enter opens the first.
      A page with [data-scope] (its label; data-ph, the placeholder) starts in it: a list page's own list
      ([data-filter], below) is filtered by the bar; a label that is no option (a subject's topics, a smer's subjects)
      is an option of its own. data-enter: where Enter goes in it, with q= appended. The home page starts in the URL's
      kind, else in the scope last picked on it. sf.data-u: the scope, for search.js. */
   var qk = d.getElementById('qk'), u = '', pageU = null, list = null, data = null, findOn = null, setScope = null;
+  // The types with a list page ("Još N" goes there), all in the scope 'lista'.
   var ENTER = { nastavnici: '/nastavnici/?', predmeti: '/predmeti/?' };
   if (qk) {
     var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
     var PH = { '': 'Pretraži sve…', obavestenje: 'Pretraži objave…', vest: 'Pretraži vesti…', dokument: 'Pretraži dokumente…',
-      nastavnici: 'Ime nastavnika…', predmeti: 'Naziv predmeta…' };
+      lista: 'Predmet, nastavnik ili katedra…' };
     // A scope whose Enter searches the texts (search.js): every one but the lists and a page's own.
-    var texts = function (v) { return !ENTER[v] && v !== 'ovde'; };
+    var texts = function (v) { return v !== 'lista' && v !== 'ovde'; };
     var onHome = location.pathname === '/', saved = null;
     if (scope) {
       var mine0 = [].filter.call(qk.options, function (o) { return fold(o.text) === fold(scope.dataset.scope); })[0];
@@ -39,12 +40,14 @@
       PH[pageU] = scope.dataset.ph;
     }
     try { saved = localStorage.getItem('trazi'); } catch (e) {}
+    // Picked before the two were one.
+    if (saved === 'nastavnici' || saved === 'predmeti') saved = 'lista';
     var kind = new URLSearchParams(location.search).get('kind') || '';
     // A search in the URL is of the texts, which a teachers' or subjects' scope would hide.
     if (onHome && location.search) u = kind in PH && texts(kind) ? kind : '';
     else if (onHome && saved !== null && saved in PH) u = saved;
     else if (pageU) u = pageU;
-    else if (saved === null) u = 'predmeti'; // A new visitor (nothing picked yet) starts in the subjects.
+    else if (saved === null) u = 'lista'; // A new visitor (nothing picked yet) starts in the subjects and teachers.
     var studije = [], folded = [];
     setScope = function (v) {
       u = qk.value = sf.dataset.u = v;
@@ -60,16 +63,16 @@
       asked++;
       // The page's own list filtered by the bar (q.dataset.f, below): nothing under the bar.
       if (!w.length || q.dataset.f || u === 'ovde') { list.hidden = true; return; }
-      if (!u || ENTER[u]) {
+      if (!u || u === 'lista') {
         // rows: [subgroup, name, hint, href, decorate(a)]. In Sve, the first 5 of a type with a list page (3 of the
-        // katedre), and a link to the rest. of: the scope it shows in besides Sve (the katedre in Nastavnici too).
+        // katedre), and a link to the rest. of: the type it counts as (the katedre: with the teachers, in 'lista').
         var section = function (key, title, rows, of) {
           var cap = u ? 200 : ENTER[key] ? 5 : key === 'katedre' ? 3 : 200, sub = null;
-          if (!rows.length || (u && u !== (of || key))) return;
+          if (!rows.length || (u && !ENTER[of || key])) return;
           var g = list.appendChild(el('div', 'cmd__g'));
           g.setAttribute('role', 'group');
           g.setAttribute('aria-label', title);
-          if (u !== key) g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
+          g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
           rows.slice(0, cap).forEach(function (r) {
             if (r[0] && r[0] !== sub) g.appendChild(el('p', 'cmd__s', sub = r[0])).setAttribute('aria-hidden', 'true');
             var a = g.appendChild(el('a', null, r[1]));
@@ -80,7 +83,6 @@
           if (rows.length > cap && ENTER[key]) {
             var m = g.appendChild(el('a', 'cmd__more', 'Još ' + (rows.length - cap) + ' →'));
             m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
-            m.dataset.u = key;
           }
         };
         var subj = [];
@@ -174,7 +176,7 @@
           .map(function (r) { return r.dataset.pid || (r.querySelector('a') || {}).href; }).filter(Boolean);
         if (one.length && one.every(function (h) { return h === one[0]; })) location.href = one[0];
       }
-      else if (v && !q.dataset.f && ENTER[u]) location.href = ENTER[u] + 'q=' + encodeURIComponent(v);
+      else if (v && !q.dataset.f && u === 'lista' && hits.length) location.href = hits[0].href;
     });
     if (izbor) izbor.then(function (j) {
       data = j;
@@ -193,12 +195,12 @@
       q.setAttribute('aria-controls', 'q-list');
       q.addEventListener('input', show);
       q.addEventListener('focus', show);
-      // A "još N" link narrows the bar to its type.
+      // A "još N" link narrows the bar to the subjects and teachers, which shows them all.
       list.addEventListener('click', function (e) {
         var m = e.target.closest('.cmd__more');
         if (!m) return;
         e.preventDefault();
-        qk.value = m.dataset.u;
+        qk.value = 'lista';
         qk.dispatchEvent(new Event('change'));
       });
       // Arrow keys move between the bar and the list's links; Escape or a click elsewhere closes the list.

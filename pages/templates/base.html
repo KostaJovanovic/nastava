@@ -48,15 +48,14 @@
     <label class="vh" for="q">Pretraži arhivu</label>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
     <input id="q" name="q" type="search" placeholder="Pretraži sve postove…" autocomplete="off" enterkeyhint="search">
-    {#- What the bar searches (site.js). A text's kind is its ?kind= (search.js, Pagefind's "vrsta"); the teachers and
-        subjects are lists under the bar. Without the script: hidden, everything. -#}
+    {#- What the bar searches (site.js). A text's kind is its ?kind= (search.js, Pagefind's "vrsta"); lista: the
+        subjects, teachers and katedre, as lists under the bar. Without the script: hidden, everything. -#}
     <select id="qk" name="kind" aria-label="Šta pretražuješ" hidden>
       <option value="">Sve</option>
       <option value="obavestenje">Objave</option>
       <option value="vest">Vesti</option>
       {%- if side.kinds.get('dokument') %}<option value="dokument">Dokumenti</option>{% endif %}
-      <option value="nastavnici">Nastavnici</option>
-      <option value="predmeti">Predmeti</option>
+      <option value="lista">Predmeti i nastavnici</option>
     </select>
     <button class="cmd__go" type="submit">Traži</button>
   </form>

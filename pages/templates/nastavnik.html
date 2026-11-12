@@ -16,7 +16,7 @@
 {%- set h = t.history %}
 {%- set past = h and not t.first_seen %}
 {#- data-scope: the header search starts in the teachers (site.js). tp--gone: the grey corner of the departed. -#}
-<section class="tp{% if t.gone %} tp--gone" style="--p: {{ t.age }}%{% endif %}" aria-labelledby="title" data-scope="Nastavnici" data-ph="Ime nastavnika…">
+<section class="tp{% if t.gone %} tp--gone" style="--p: {{ t.age }}%{% endif %}" aria-labelledby="title" data-scope="Predmeti i nastavnici" data-ph="Predmet, nastavnik ili katedra…">
   {%- if t.photo %}
   <img class="tp__img" src="{{ t.photo }}" alt="" fetchpriority="high">
   {%- else %}

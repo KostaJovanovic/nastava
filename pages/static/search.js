@@ -337,8 +337,8 @@ function restoreFromUrl() {
 	return String(p) !== "" || form.elements.q.value.trim() !== "";
 }
 
-// The header search's scope (site.js): in the teachers or the subjects, the bar does not search the posts.
-const posts = () => !["nastavnici", "predmeti"].includes(form.dataset.u);
+// The header search's scope (site.js): in the subjects and teachers, the bar does not search the posts.
+const posts = () => form.dataset.u !== "lista";
 form.addEventListener("submit", (e) => {
 	e.preventDefault();
 	if (posts()) run();
