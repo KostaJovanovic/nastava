@@ -137,10 +137,11 @@
   <div class="post__body">
     <{{ h }} class="post__title"{% if h == 'h1' %} id="title"{% endif %}>{% if link %}<a href="/item/{{ r.id }}/">{{ r.title }}</a>{% else %}{{ r.title }}{% endif %}</{{ h }}>
     <p class="post__meta">od {{ who(r) }} » <time datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
-      {#- In a topic: a link to this post's place in it (site.js copies it). A post gone from the board has no original. -#}
+      {#- In a topic: a link to this post's place in it (site.js copies it). A post gone from the board has no original;
+          on a post's own page the original is a button under it (detail.html). -#}
       {%- if link %} · <a href="#p{{ r.num }}" data-copy title="Link do ovog posta u objavi">link</a>{% endif %}
       {%- if r.gone %} · {{ gone(r) }}
-      {%- elif r.source_url %} · <a href="{{ r.source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
+      {%- elif r.source_url and link %} · <a href="{{ r.source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
     {% if r.html %}<div class="prose prose--html">{{ r.html | safe }}</div>
     {% else %}<div class="prose">{{ (r.body or '') | trim }}</div>{% endif %}
   </div>
