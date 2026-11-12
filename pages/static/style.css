@@ -140,10 +140,16 @@ h1, h2, h3, p { margin: 0; }
 /* The scrollbars in the site's colours: the page's on the paper, a box's (the search's list, the side panel) on no
    track of its own. Firefox and Chromium read scrollbar-color; Safari only the ::-webkit-scrollbar rules. */
 * { scrollbar-color: var(--scroll) transparent; }
-html { scrollbar-color: var(--scroll) var(--paper); }
 ::-webkit-scrollbar { width: 12px; height: 12px; background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--scroll); border: 3px solid transparent; border-radius: 6px; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background-color: var(--scroll-2); }
+/* The page's bar starts under the header, beside it the header's colours: only the ::-webkit-scrollbar rules can, so
+   Chromium gets no scrollbar-color here (it would win over them). Firefox has only scrollbar-color: its bar runs the
+   window's full height. */
+html { scrollbar-color: auto; }
+@supports (-moz-appearance: none) { html { scrollbar-color: var(--scroll) var(--paper); } }
+html::-webkit-scrollbar { background: linear-gradient(var(--head) calc(var(--hd) - 3px), var(--head-line) 0 var(--hd), var(--paper) 0); }
+html::-webkit-scrollbar-track { margin-top: var(--hd); }
 
 mark {
   background: var(--mark); color: var(--fg);
