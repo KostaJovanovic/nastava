@@ -1203,7 +1203,9 @@ def write_photos(db, site):
 
 
 # A teacher whose forum account is not their e-mail's name (the e-mail changed with a surname): theirs on the board.
-FORUM_ACCOUNT = {"sjosipovic": "sgrbic"}  # Sonja Josipović, née Grbić (ie.mas.bg.ac.rs/zaposleni.html)
+# Sonja Josipović, née Grbić (ie.mas.bg.ac.rs/zaposleni.html); Nevena Rosić, née Aranđelović (signs her posts, as
+# post 23279; the faculty's list gives her forum f=752).
+FORUM_ACCOUNT = {"sjosipovic": "sgrbic", "nrosic": "narandjelovic"}
 # Teachers who post on the board but are on no list of the faculty's (nastavnici.py), from the faculty's other pages.
 # source: where the profile's facts are from.
 _JOKSIMOVIC = ("https://mas.bg.ac.rs/_media/fakultet/izbori-u-zvanja/referati/2020/"
