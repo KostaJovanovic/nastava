@@ -18,6 +18,8 @@ above the first `## ` is this note and is not shown.
 ## 11. novembra 2026.
 Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
 
+- 288 [ispravka] **Header u užem prozoru:** pretraga više ne prekriva ime sajta i dugmiće za pismo i temu, nego
+  se sama suzi.
 - 269–273 [novo] **Objave iz Teams-a** za šest predmeta: Termodinamika B, Osnovi otpornosti konstrukcija, Otpornost
   materijala, Inženjerska grafika, Estetski dizajn i Mašinsko inženjerstvo i održivi razvoj. Objave nastavnika su
   objave predmeta, sa prilozima. Odgovori studenata stoje kao `Student #1`, `Student #2`… bez imena, broja indeksa i

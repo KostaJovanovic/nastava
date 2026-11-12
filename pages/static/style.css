@@ -318,8 +318,9 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 }
 
 @media (min-width: 760px) {
-  /* Equal side columns, so the search is in the middle of the header. */
-  .hd { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); grid-template-areas: "brand cmd pismo"; gap: 24px;
+  /* Equal side columns, so the search is in the middle of the header; never narrower than the name and the buttons
+     (a narrow window shrinks the search instead of sliding them under it). */
+  .hd { grid-template-columns: minmax(max-content, 1fr) minmax(0, 560px) minmax(max-content, 1fr); grid-template-areas: "brand cmd pismo"; gap: 24px;
     padding: 10px max(24px, env(safe-area-inset-right)) 10px max(24px, env(safe-area-inset-left)); }
   .cmd input { font-size: 14px; }
   .tg span { display: inline; }
