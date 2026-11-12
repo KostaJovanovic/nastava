@@ -1222,6 +1222,50 @@ OTHER_TEACHERS = [dict(
          f'(2020): <a href="{_JOKSIMOVIC}">PDF</a>.</p>')]
 
 
+def _mentioned(id, name, title, katedra, seen, gone, source, source_name, html):
+    """A makeshift page: someone the board or the faculty's pages name at their work (exercises, labs, papers), on no
+    list of the faculty's; what is known, from where. seen: the last date a source names them."""
+    return dict(id=id, name=name, full_name=name, title=title, katedra=katedra, katedra_id=None, office=None, email=None,
+                username=None, phone=None, hours=None, research=None, emeritus=0, photo=None, first_seen=seen,
+                last_seen=seen, gone=gone, source=source, source_name=source_name,
+                html=html + "<p>Није на списку наставника на сајту факултета: ова страница је састављена из помена.</p>")
+
+
+_POST = "https://nastava.mas.bg.ac.rs/nastava/viewtopic.php?p={}"
+OTHER_TEACHERS += [
+    _mentioned("mentioned-maslarevic", "Александар Масларевић", "асистент", "Катедра за технологију материјала",
+               "2025-10-28", 0, _POST.format(25454), "форум наставе",
+               '<p>Држао вежбе из Машинских материјала 2 (од 2016, <a href="/item/p3263/">резултати колоквијума</a>), '
+               'а 2025. са проф. Братиславом Рајичићем дежурао на испитима из ММ2 и ПЗСУЕ '
+               '(<a href="/item/p25454/">„др Александар Масларевић“</a>). Коаутор радова наставника Катедре за '
+               'технологију материјала.</p>'),
+    _mentioned("mentioned-opacic", "Мирјана Опачић", "асистент", "Катедра за технологију материјала",
+               "2016-05-31", 1, _POST.format(2533), "форум наставе",
+               '<p>Предметни асистент на лабораторијским вежбама из Машинских материјала 1 у школској 2015/16 '
+               '(<a href="/item/p2348/">резултати колоквијума</a>, <a href="/item/p2533/">поправни колоквијум</a>).</p>'),
+    _mentioned("mentioned-vukojevic", "Филип Вукојевић", "сарадник у настави", "Катедра за математику",
+               "2026-11-07", 0, _POST.format(27977), "форум наставе",
+               '<p>Мастер инжењер, сарадник у настави из математике од 2026, са проф. Јеленом Матовић, Александром '
+               'Пејчевим и Душаном Ђукићем (<a href="/item/p27977/">„предметни асистент“</a>, '
+               '<a href="/item/p29351/">распоред смена</a>).</p>'),
+    _mentioned("mentioned-marajnovic", "Андријана Марајновић", "асистент", "Катедра за математику",
+               "2021-11-13", 1, _POST.format(15483), "форум наставе",
+               '<p>Асистент на математици; припремила материјал о непрекидним расподелама за предавања проф. '
+               'Александра Пејчева (<a href="/item/p15483/">2021</a>).</p>'),
+    _mentioned("mentioned-berdic", "Стефан Бердић", "демонстратор", "Катедра за опште машинске конструкције",
+               "2025-12-01", 0, _POST.format(26454), "форум наставе",
+               '<p>Демонстратор на Машинским елементима, на прегледу пројектних задатака код проф. Ненада Коларевића и '
+               'Александра Димића (<a href="/item/p20558/">2023</a>, <a href="/item/p23229/">2024</a>, '
+               '<a href="/item/p26454/">2025</a>).</p>'),
+    _mentioned("mentioned-kovacevic", "Сандра Ковачевић", "", "Катедра за термомеханику",
+               "2026-11-11", 0, "https://vesti.mas.bg.ac.rs/?p=24064", "vesti.mas.bg.ac.rs",
+               '<p>Мастер инжењер машинства (модул за термотехнику). 2023. награђена на Националном студентском '
+               'такмичењу из КГХ (<a href="https://vesti.mas.bg.ac.rs/?p=24064">вест</a>). Коаутор радова '
+               'проф. Милоша Бањца и Бранислава Петровића (2026) и Приручника за обуку енергетских саветника '
+               '(Машински факултет, 2025).</p>'),
+]
+
+
 HISTORY = Path(__file__).resolve().parent.parent / "nastavnici-istorija.jsonl"
 # Portraits of teachers without one, from the monograph, the old site, In memoriam, Wikipedia, SANU: page id, the
 # image's key in the photos table, the page it is on and its caption there.
