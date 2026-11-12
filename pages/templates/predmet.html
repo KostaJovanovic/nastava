@@ -46,8 +46,9 @@
 <p class="quiet">{{ quiet }}</p>
 {%- else %}
 {% call topic_rows('Objave', topics, filter=true) %}
-{#- data-scope: the header search filters the topics (site.js); Enter searches the text of this subject's posts. -#}
-<form class="fbar" data-filter data-scope="Objave predmeta" data-ph="Naslov ili autor; Enter: u tekstu" data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
+{#- Its own search filters the topics (site.js); Enter searches the text of this subject's posts. -#}
+<form class="fbar" data-filter data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
+  <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži objave predmeta" autocomplete="off" enterkeyhint="search">
   <label class="vh" for="f-a">Autor</label>
   {#- value: the username; pismo.js changes the option text, not the value. -#}
   <select class="field" id="f-a" name="autor" data-f="a">

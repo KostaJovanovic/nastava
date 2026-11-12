@@ -46,8 +46,9 @@
   </div>
   <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na fakultetu.{% elif researchers %}Istraživači Inovacionog centra fakulteta i demonstratori, koji nisu na spisku nastavnika.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave. Ostali: <a href="/nastavnici/istrazivaci/">istraživači i demonstratori</a>.{% endif %}</p>
 </div>
-{#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
-<form class="people__bar" data-filter data-scope="{% if archive %}Arhiva{% elif researchers %}Istraživači{% else %}Nastavnici{% endif %}" data-ph="Ime, predmet, katedra, kabinet, mejl…" onsubmit="return false">
+{#- Its own search filters this list (site.js); its text is ?q=. -#}
+<form class="people__bar" data-filter onsubmit="return false">
+  <input class="field" type="search" name="q" data-f="find" placeholder="Ime, predmet, katedra, kabinet, mejl…" aria-label="Pretraži: {{ name }}" autocomplete="off" enterkeyhint="search">
   {%- if katedre %}
   <label class="vh" for="t-k">Katedra</label>
   {#- value: the name's Latin slug, which ?katedra= links and the rows' data-k use (no Cyrillic in a URL);

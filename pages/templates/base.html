@@ -47,16 +47,9 @@
   <form id="sf" class="cmd" action="/" method="get" role="search">
     <label class="vh" for="q">Pretraži arhivu</label>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
-    <input id="q" name="q" type="search" placeholder="Pretraži sve postove…" autocomplete="off" enterkeyhint="search">
-    {#- What the bar searches (site.js). A text's kind is its ?kind= (search.js, Pagefind's "vrsta"); lista: the
-        subjects, teachers and katedre, as lists under the bar. Without the script: hidden, everything. -#}
-    <select id="qk" name="kind" aria-label="Šta pretražuješ" hidden>
-      <option value="">Sve</option>
-      <option value="obavestenje">Objave</option>
-      <option value="vest">Vesti</option>
-      {%- if side.kinds.get('dokument') %}<option value="dokument">Dokumenti</option>{% endif %}
-      <option value="lista" data-short="Osnovno">Predmeti i nastavnici</option>
-    </select>
+    {#- Searches everything: the subjects, teachers and schedules under the bar, Enter the texts (site.js, search.js).
+        A list page has its own box for its list (its .fbar). -#}
+    <input id="q" name="q" type="search" placeholder="Pretraži sve…" autocomplete="off" enterkeyhint="search">
     <button class="cmd__go" type="submit">Traži</button>
   </form>
   {#- Script (pismo.js) and theme (site.js) buttons; each click moves to the next choice. data-notx: pismo.js leaves their labels alone. -#}

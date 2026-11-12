@@ -36,6 +36,8 @@ function build(tag, props, children) {
 
 // The order of a search with a query: by relevance, or newest first (?red=novije). Without a query: always newest.
 let newest = false;
+// A text's kind (?kind=, Pagefind's "vrsta") as its chip names it.
+const KINDS = { vest: "Vesti", obavestenje: "Objave", dokument: "Dokumenti" };
 
 // The subjects this browser follows (site.js, the side panel's picker and a subject's star): their URLs.
 function followed() {
@@ -328,22 +330,24 @@ function restoreFromUrl() {
 	// Text typed before this module loaded stays, and is searched.
 	if (p.has("q")) form.elements.q.value = p.get("q");
 	newest = p.get("red") === "novije";
-	// The kind is the header's scope, which site.js sets from the URL.
-	// A teacher, a subject, a smer or the years have no choice in the panel: they come from a link (a teacher's page,
-	// a year on /statistika/) and stay in the form as a hidden field, shown as a chip until it is removed.
-	for (const name of ["autor", "subject", "smer", "from", "to"]) {
-		for (const value of p.getAll(name)) form.append(build("input", { type: "hidden", name, value }, []));
+	// A kind, a teacher, a subject, a smer or the years have no choice in the panel: they come from a link (the news'
+	// own search, a teacher's page, a year on /statistika/) and stay in the form as a hidden field, shown as a chip until
+	// it is removed.
+	for (const name of ["kind", "autor", "subject", "smer", "from", "to"]) {
+		for (const value of p.getAll(name)) {
+			const input = build("input", { type: "hidden", name, value }, []);
+			if (name === "kind") input.dataset.name = KINDS[value] ?? value;
+			form.append(input);
+		}
 	}
 	return String(p) !== "" || form.elements.q.value.trim() !== "";
 }
 
-// The header search's scope (site.js): in the subjects and teachers, the bar does not search the posts.
-const posts = () => form.dataset.u !== "lista";
 form.addEventListener("submit", (e) => {
 	e.preventDefault();
-	if (posts()) run();
+	run();
 });
-form.elements.q.addEventListener("input", () => { if (posts()) run(1, 200); });
+form.elements.q.addEventListener("input", () => run(1, 200));
 // A subject followed or no longer followed: a search on view covers the new list.
 document.addEventListener("moji", () => { if (state) run(); });
-if (restoreFromUrl() && posts()) run(Number(new URLSearchParams(location.search).get("page")) || 1);
+if (restoreFromUrl()) run(Number(new URLSearchParams(location.search).get("page")) || 1);

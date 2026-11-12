@@ -4,8 +4,6 @@
   var d = document;
   var fold = window.pismoFold;
   var sf = d.getElementById('sf'), q = d.getElementById('q');
-  // The page's context for the header search (see below); null on a page without one.
-  var scope = q && sf && d.querySelector('[data-scope]');
   // The side panel's picker and the header search's lists (build.py picker).
   var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
   var el = function (tag, cls, text) {
@@ -15,131 +13,98 @@
     return e;
   };
 
-  /* The header search's scope: the select after the text (base.html #qk, the form's kind), what the bar searches.
-     '' (Sve): the matching subjects (by studije), teachers and schedule entries listed under the bar, Enter searches
-     all the texts; a text's kind (posts, news): Enter searches those (search.js); lista: the matching subjects,
-     teachers and katedre under the bar, Enter opens the first.
-     A page with [data-scope] (its label; data-ph, the placeholder) starts in it: a list page's own list
-     ([data-filter], below) is filtered by the bar; a label that is no option (a subject's topics, a smer's subjects)
-     is an option of its own. data-enter: where Enter goes in it, with q= appended. The home page starts in the URL's
-     kind, else in the scope last picked on it. sf.data-u: the scope, for search.js. */
-  var qk = d.getElementById('qk'), u = '', pageU = null, list = null, data = null, findOn = null, setScope = null;
-  // The types with a list page ("Još N" goes there), all in the scope 'lista'.
+  /* The header search, of everything: the matching subjects (by studije), teachers, katedre, researchers and schedule
+     entries listed under the bar, the first few of each with a link to the rest on its list page; off the home page,
+     the texts' best hits too. Enter searches all the texts (search.js on the home page). A list page filters its own
+     list with its own box (below). */
+  var list = null, data = null;
+  // The types with a list page ("Još N" goes there, with ?q=).
   var ENTER = { nastavnici: '/nastavnici/?', predmeti: '/predmeti/?', istrazivaci: '/nastavnici/istrazivaci/?' };
-  if (qk) {
-    var attr = window.pismoAttr || function (el, a, v) { return v === undefined ? el.getAttribute(a) : el.setAttribute(a, v); };
-    var PH = { '': 'Pretraži sve…', obavestenje: 'Pretraži objave…', vest: 'Pretraži vesti…', dokument: 'Pretraži dokumente…',
-      lista: 'Predmet, nastavnik ili katedra…' };
-    // A scope whose Enter searches the texts (search.js): every one but the lists and a page's own.
-    var texts = function (v) { return v !== 'lista' && v !== 'ovde'; };
-    var onHome = location.pathname === '/', saved = null;
-    if (scope) {
-      var mine0 = [].filter.call(qk.options, function (o) { return fold(o.text) === fold(scope.dataset.scope); })[0];
-      if (!mine0) qk.add(mine0 = new Option(scope.dataset.scope, 'ovde'), 0);
-      pageU = mine0.value;
-      PH[pageU] = scope.dataset.ph;
-    }
-    try { saved = localStorage.getItem('trazi'); } catch (e) {}
-    // Picked before the two were one.
-    if (saved === 'nastavnici' || saved === 'predmeti') saved = 'lista';
-    var kind = new URLSearchParams(location.search).get('kind') || '';
-    // A search in the URL is of the texts, which a teachers' or subjects' scope would hide.
-    if (onHome && location.search) u = kind in PH && texts(kind) ? kind : '';
-    else if (onHome && saved !== null && saved in PH) u = saved;
-    else if (pageU) u = pageU;
-    else if (saved === null) u = 'lista'; // A new visitor (nothing picked yet) starts in the subjects and teachers.
+  if (q && sf) {
+    var onHome = location.pathname === '/';
     var studije = [], folded = [];
-    setScope = function (v) {
-      u = qk.value = sf.dataset.u = v;
-      // On a phone the scope's long placeholder can't fit; the select beside it names the scope anyway.
-      attr(q, 'placeholder', matchMedia('(max-width: 759px)').matches ? 'Pretraži…' : PH[v]);
-      if (findOn) findOn(v === pageU);
-    };
     var show = function () {
       if (!list) return;
       var v = q.value.trim(), w = fold(v).split(/\s+/).filter(Boolean);
       var has = function (s) { return w.every(function (x) { return s.indexOf(x) > -1; }); };
       list.textContent = '';
       asked++;
-      // The page's own list filtered by the bar (q.dataset.f, below): nothing under the bar.
-      if (!w.length || q.dataset.f || u === 'ovde') { list.hidden = true; return; }
-      if (!u || u === 'lista') {
-        // rows: [subgroup, name, hint, href, decorate(a)]. In Sve, the first 5 of a type with a list page (3 of the
-        // katedre), and a link to the rest. of: the type it counts as (the katedre: with the teachers, in 'lista').
-        var section = function (key, title, rows, of) {
-          var cap = u ? 200 : ENTER[key] ? 5 : key === 'katedre' ? 3 : 200, sub = null;
-          if (!rows.length || (u && !ENTER[of || key])) return;
-          var g = list.appendChild(el('div', 'cmd__g'));
-          g.setAttribute('role', 'group');
-          g.setAttribute('aria-label', title);
-          g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
-          rows.slice(0, cap).forEach(function (r) {
-            if (r[0] && r[0] !== sub) g.appendChild(el('p', 'cmd__s', sub = r[0])).setAttribute('aria-hidden', 'true');
-            var a = g.appendChild(el('a', null, r[1]));
-            a.href = r[3];
-            if (r[2]) a.appendChild(el('small', null, r[2]));
-            if (r[4]) r[4](a);
-          });
-          if (rows.length > cap && ENTER[key]) {
-            var m = g.appendChild(el('a', 'cmd__more', 'Još ' + (rows.length - cap) + ' →'));
-            m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
-          }
-        };
-        var subj = [];
-        studije.forEach(function (s) {
-          s[1].forEach(function (i) { if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0]]); });
+      if (!w.length) { list.hidden = true; return; }
+      // rows: [subgroup, name, hint, href, decorate(a)]: the first 5 of a type with a list page (3 of the katedre),
+      // and a link to the rest.
+      var section = function (key, title, rows) {
+        var cap = ENTER[key] ? 5 : key === 'katedre' ? 3 : 200, sub = null;
+        if (!rows.length) return;
+        var g = list.appendChild(el('div', 'cmd__g'));
+        g.setAttribute('role', 'group');
+        g.setAttribute('aria-label', title);
+        g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
+        rows.slice(0, cap).forEach(function (r) {
+          if (r[0] && r[0] !== sub) g.appendChild(el('p', 'cmd__s', sub = r[0])).setAttribute('aria-hidden', 'true');
+          var a = g.appendChild(el('a', null, r[1]));
+          a.href = r[3];
+          if (r[2]) a.appendChild(el('small', null, r[2]));
+          if (r[4]) r[4](a);
         });
-        section('predmeti', 'Predmeti', subj);
-        // A teacher as on /nastavnici/: the photo (or the initials), the title; one who left under its own subheading,
-        // with the cards' grey corner (style.css .pc--gone). The listed first, so those show where there is room.
-        section('nastavnici', 'Nastavnici', data.people.filter(function (t) { return has(fold(t[0])); })
-          .map(function (t) {
-            var gone = t.length > 4;
-            return [gone ? 'Više nisu na fakultetu' : '', t[0], t[3], t[1], function (a) {
-              var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
-              if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
-              a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
-              // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
-              if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
-              a.insertBefore(img, a.firstChild);
-            }];
-          }));
-        // A katedra: its icon, and its teachers' list.
-        section('katedre', 'Katedre', (data.katedre || []).filter(function (k) { return has(fold(k[0])); })
-          .map(function (k) {
-            var n = k[3] % 10 === 1 && k[3] % 100 !== 11 ? ' nastavnik' : ' nastavnika';
-            return ['', k[1], k[3] + n, '/nastavnici/?katedra=' + k[2], function (a) {
-              var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
-              svg.setAttribute('class', 'i cmd__img');
-              svg.setAttribute('aria-hidden', 'true');
-              use.setAttribute('href', '/static/icons.svg#i-' + k[2]);
-              a.className = 'cmd__p';
-              a.insertBefore(svg, a.firstChild).appendChild(use);
-            }];
-          }), 'nastavnici');
-        // A researcher or demonstrator (build.py OTHER_TEACHERS, aside): their page, with their title.
-        section('istrazivaci', 'Istraživači i demonstratori',(data.istrazivaci || []).filter(function (r) { return has(fold(r[0])); })
-          .map(function (r) { return ['', r[0], r[2], r[1]]; }));
-        section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
-          .map(function (r) { return ['', r[0], r[1], r[2]]; }));
-      }
+        if (rows.length > cap && ENTER[key]) {
+          var m = g.appendChild(el('a', 'cmd__more', 'Još ' + (rows.length - cap) + ' →'));
+          m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
+        }
+      };
+      var subj = [];
+      studije.forEach(function (s) {
+        s[1].forEach(function (i) { if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0]]); });
+      });
+      section('predmeti', 'Predmeti', subj);
+      // A teacher as on /nastavnici/: the photo (or the initials), the title; one who left under its own subheading,
+      // with the cards' grey corner (style.css .pc--gone). The listed first, so those show where there is room.
+      section('nastavnici', 'Nastavnici', data.people.filter(function (t) { return has(fold(t[0])); })
+        .map(function (t) {
+          var gone = t.length > 4;
+          return [gone ? 'Više nisu na fakultetu' : '', t[0], t[3], t[1], function (a) {
+            var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
+            if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
+            a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
+            // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
+            if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
+            a.insertBefore(img, a.firstChild);
+          }];
+        }));
+      // A katedra: its icon, and its teachers' list.
+      section('katedre', 'Katedre', (data.katedre || []).filter(function (k) { return has(fold(k[0])); })
+        .map(function (k) {
+          var n = k[3] % 10 === 1 && k[3] % 100 !== 11 ? ' nastavnik' : ' nastavnika';
+          return ['', k[1], k[3] + n, '/nastavnici/?katedra=' + k[2], function (a) {
+            var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
+            svg.setAttribute('class', 'i cmd__img');
+            svg.setAttribute('aria-hidden', 'true');
+            use.setAttribute('href', '/static/icons.svg#i-' + k[2]);
+            a.className = 'cmd__p';
+            a.insertBefore(svg, a.firstChild).appendChild(use);
+          }];
+        }));
+      // A researcher or demonstrator (build.py OTHER_TEACHERS, aside): their page, with their title.
+      section('istrazivaci', 'Istraživači i demonstratori',(data.istrazivaci || []).filter(function (r) { return has(fold(r[0])); })
+        .map(function (r) { return ['', r[0], r[2], r[1]]; }));
+      section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
+        .map(function (r) { return ['', r[0], r[1], r[2]]; }));
       // The texts (posts, news): off the home page, their best hits as they come; the home page lists them itself.
-      if (texts(u) && !onHome) {
+      if (!onHome) {
         var box = list.appendChild(el('div', 'cmd__g'));
-        var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u ' + (TEXTS[u] || 'postovima i vestima')));
-        a.href = '/?q=' + encodeURIComponent(fold(v)) + (u ? '&kind=' + u : '');
+        var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima i vestima'));
+        a.href = '/?q=' + encodeURIComponent(fold(v));
         textHits(box, a, fold(v), asked);
       }
       list.hidden = !list.children.length;
     };
     // The texts' first 5 hits in Pagefind (loaded at the first word), as search.js would find them: the followed
-    // subjects only while "Samo moji predmeti" is on, except in the news. my: the show() that asked; a later one wins.
-    var TEXTS = { obavestenje: 'objavama', vest: 'vestima', dokument: 'dokumentima' }, pagefind = null, asked = 0;
+    // subjects only while "Samo moji predmeti" is on. my: the show() that asked; a later one wins.
+    var pagefind = null, asked = 0;
     var textHits = function (box, all, query, my) {
       pagefind = pagefind || import('/pagefind/pagefind.js');
       pagefind.then(function (pf) {
-        var f = u ? { vrsta: { any: [u] } } : {}, m = window.mojiNow;
-        if (m && m.only && u !== 'vest') f.pid = { any: mine().map(function (s) { return s.href; }) };
+        var f = {}, m = window.mojiNow;
+        if (m && m.only) f.pid = { any: mine().map(function (s) { return s.href; }) };
         return pf.debouncedSearch(query, { filters: f }, 150);
       }).then(function (r) {
         if (!r || my !== asked) return null;
@@ -147,8 +112,8 @@
       }).then(function (got) {
         if (!got || my !== asked || !got[0]) return;
         box.setAttribute('role', 'group');
-        box.setAttribute('aria-label', u ? qk.options[qk.selectedIndex].text : 'Objave i vesti');
-        if (!u) box.appendChild(el('p', 'cmd__h', 'Objave i vesti')).setAttribute('aria-hidden', 'true');
+        box.setAttribute('aria-label', 'Objave i vesti');
+        box.appendChild(el('p', 'cmd__h', 'Objave i vesti')).setAttribute('aria-hidden', 'true');
         got[1].forEach(function (x) {
           var a = box.appendChild(el('a', null, x.meta.title));
           a.href = x.url;
@@ -158,29 +123,8 @@
         all.textContent = 'Svi rezultati (' + got[0] + ') →';
       }).catch(function () {});
     };
-    qk.addEventListener('change', function () {
-      setScope(qk.value);
-      if (onHome) try { localStorage.setItem('trazi', u); } catch (e) {}
-      // The page's list, the list under the bar and search.js redraw for the text in the new scope.
-      q.dispatchEvent(new Event('input'));
-      q.focus();
-    });
-    sf.addEventListener('submit', function (e) {
-      var v = q.value.trim(), hits = list && !list.hidden ? list.querySelectorAll('a:not(.cmd__more)') : [];
-      if (list) list.hidden = true;
-      if (texts(u)) return;
-      e.preventDefault();
-      if (hits.length === 1) location.href = hits[0].href;
-      else if (v && u === pageU && scope.dataset.enter) location.href = scope.dataset.enter + 'q=' + encodeURIComponent(fold(v));
-      else if (v && q.dataset.f) {
-        // The page's own list filtered down to one row (a subject in two plans is two): Enter opens it, a subject on
-        // the forum (data-pid: its board page, or its book page when it has no topics).
-        var one = [].filter.call(d.querySelectorAll('[data-rows] > li:not([hidden]):not([data-sep])'), function (r) { return r.offsetParent; })
-          .map(function (r) { return r.dataset.pid || (r.querySelector('a') || {}).href; }).filter(Boolean);
-        if (one.length && one.every(function (h) { return h === one[0]; })) location.href = one[0];
-      }
-      else if (v && !q.dataset.f && u === 'lista' && hits.length) location.href = hits[0].href;
-    });
+    // Enter: the texts (the form's own submit); the list under the bar closes.
+    sf.addEventListener('submit', function () { if (list) list.hidden = true; });
     if (izbor) izbor.then(function (j) {
       data = j;
       // A subject is found by its acronyms too (build.py acronyms: OOK, ME1).
@@ -198,18 +142,10 @@
       q.setAttribute('aria-controls', 'q-list');
       q.addEventListener('input', show);
       q.addEventListener('focus', show);
-      // A "još N" link narrows the bar to the subjects and teachers, which shows them all.
-      list.addEventListener('click', function (e) {
-        var m = e.target.closest('.cmd__more');
-        if (!m) return;
-        e.preventDefault();
-        qk.value = 'lista';
-        qk.dispatchEvent(new Event('change'));
-      });
       // Arrow keys move between the bar and the list's links; Escape or a click elsewhere closes the list.
       sf.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { list.hidden = true; return; }
-        if (list.hidden || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') || e.target === qk) return;
+        if (list.hidden || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
         var links = [].slice.call(list.querySelectorAll('a')), i = links.indexOf(d.activeElement);
         e.preventDefault();
         i = e.key === 'ArrowDown' ? Math.min(i + 1, links.length - 1) : i - 1;
@@ -219,18 +155,6 @@
       // Typed before the lists loaded.
       if (d.activeElement === q) show();
     }).catch(function () {});
-    setScope(u);
-    // A phone: a long scope name is short in the bar (data-short), in full in the open list. A new text node, so
-    // pismo.js converts it.
-    var phone = matchMedia('(max-width: 759px)');
-    [].forEach.call(qk.querySelectorAll('[data-short]'), function (o) {
-      var full = o.text, name = function (open) { o.text = open || !phone.matches ? full : o.dataset.short; };
-      qk.addEventListener('pointerdown', function () { name(true); });
-      qk.addEventListener('blur', function () { name(false); });
-      phone.addEventListener('change', function () { name(false); });
-      name(false);
-    });
-    qk.hidden = false;
   }
 
   /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
@@ -328,13 +252,25 @@
 
 
   /* A table filter in the page (a subject's topics, the teachers, a smer's subjects): every row is in the page.
-     data-f="find": all words in the row's folded data-find; data-f="x" on a select: the value is one of row data-x ("a|b").
-     With data-scope on it, the header search is its text box (?q=). */
+     data-f="find": all words in the row's folded data-find (the bar's own search box, ?q=); data-f="x" on a select: the
+     value is one of row data-x ("a|b"). Enter in the box: data-enter and q= when the bar has it (the texts of a
+     subject's posts, of the news), else the one row left, if one is. */
   var bar = d.querySelector('[data-filter]'), runRows = null;
   if (bar) {
     var rows = [].slice.call(d.querySelectorAll('[data-rows] > li:not([data-sep])')), sep = d.querySelector('[data-sep]');
     var ctl = [].slice.call(bar.querySelectorAll('[data-f]'));
-    if (bar === scope) { q.dataset.f = 'find'; ctl.unshift(q); }
+    var findBox = bar.querySelector('[data-f="find"]');
+    if (findBox) findBox.addEventListener('keydown', function (e) {
+      var v = findBox.value.trim();
+      if (e.key !== 'Enter' || !v) return;
+      e.preventDefault();
+      if (bar.dataset.enter) { location.href = bar.dataset.enter + 'q=' + encodeURIComponent(fold(v)); return; }
+      // The list filtered down to one row (a subject in two plans is two): its page, a subject on the forum (data-pid:
+      // its board page, or its book page when it has no topics).
+      var one = [].filter.call(d.querySelectorAll('[data-rows] > li:not([hidden]):not([data-sep])'), function (r) { return r.offsetParent; })
+        .map(function (r) { return r.dataset.pid || (r.querySelector('a') || {}).href; }).filter(Boolean);
+      if (one.length && one.every(function (h) { return h === one[0]; })) location.href = one[0];
+    });
     /* Grouping and order (the teachers, the subjects): [data-group] groups by a row's data-<value> ('-': one group),
        '' is the page's own grouping; [data-sort] orders each group by data-<value>, '-x' by the number x, highest first.
        The rows are moved, not copied (pismo.js keeps each text's original). A row with the data-id of an earlier one
@@ -447,13 +383,6 @@
       });
       // String(p), not p.size: Safari before 17 has no size.
       history.replaceState(null, '', String(p) ? '?' + p : location.pathname);
-    };
-    // The header search's scope: the page's own (its text filters the list) or another (the list shows all).
-    if (bar === scope) findOn = function (on) {
-      var i = ctl.indexOf(q);
-      if (on === (i > -1)) return;
-      if (on) { q.dataset.f = 'find'; ctl.unshift(q); } else { ctl.splice(i, 1); delete q.dataset.f; }
-      runRows();
     };
     var p = new URLSearchParams(location.search);
     ctl.forEach(function (c) {

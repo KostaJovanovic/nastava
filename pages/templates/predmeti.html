@@ -26,8 +26,9 @@
   <h1 id="title">Predmeti</h1>
   <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj objava je sa foruma nastave.</p>
 </div>
-{#- data-scope: the header search filters this list (site.js); its text is ?q=. -#}
-<form class="people__bar" data-filter data-scope="Predmeti" data-ph="Naziv, šifra, nastavnik, katedra, modul…" onsubmit="return false">
+{#- Its own search filters this list (site.js); its text is ?q=. -#}
+<form class="people__bar" data-filter onsubmit="return false">
+  <input class="field" type="search" name="q" data-f="find" placeholder="Naziv, šifra, nastavnik, katedra, modul…" aria-label="Pretraži predmete" autocomplete="off" enterkeyhint="search">
   <label class="vh" for="s-p">Studijski program</label>
   <select class="field" id="s-p" name="program" data-f="p">
     <option value="">Svi programi</option>

@@ -19,8 +19,9 @@
   {%- for y in years %}<a class="mp__tab" href="{{ year_href[y] }}"{% if y == year %} aria-current="page"{% endif %}><span>{{ y }}</span></a>{% endfor %}
 </nav>
 {% call vest_rows('Vesti ' ~ year, vesti, filter=true) %}
-{#- data-scope: the header search filters this year's list (site.js); Enter searches the text of all the news. -#}
-<form class="fbar" data-filter data-scope="Vesti" data-ph="Naslov ili kategorija; Enter: u tekstu" onsubmit="return false">
+{#- Its own search filters this year's list (site.js); Enter searches the text of all the news. -#}
+<form class="fbar" data-filter data-enter="/?kind=vest&" onsubmit="return false">
+  <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili kategorija; Enter: u tekstu" aria-label="Pretraži vesti" autocomplete="off" enterkeyhint="search">
   <label class="vh" for="v-k">Kategorija</label>
   {#- value: the name's Latin slug (?kategorija=, the rows' data-k); pismo.js changes the option text, not the value. -#}
   <select class="field" id="v-k" name="kategorija" data-f="k">

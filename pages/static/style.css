@@ -248,26 +248,6 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   font: 400 16px var(--sans); outline: none;
 }
 .cmd input::placeholder { color: var(--dim); opacity: 1; }
-/* What the bar searches (site.js): a quiet button beside Traži, the same height and corners. */
-.cmd select {
-  /* As wide as the chosen option, not the longest one. */
-  flex: none; field-sizing: content; max-width: 40%; height: 32px; padding: 0 10px;
-  border: 0; border-radius: 7px; background: light-dark(#e1ebf2, #2f4d63); color: var(--fg);
-  font: 400 12.5px var(--sans); text-overflow: ellipsis; cursor: pointer;
-}
-.cmd select:hover { background: light-dark(#cadceb, #3a5a72); }
-.cmd select:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 1px; }
-/* The open list rounded like Traži: a customizable select (Chromium); elsewhere the system's own list. */
-.cmd select, .cmd select::picker(select) { appearance: base-select; }
-/* base-select lays the select out as a flex box, its text at the top unless centred. */
-.cmd select { align-items: center; }
-.cmd select::picker(select) {
-  margin-top: 4px; padding: 4px;
-  border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--fg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
-}
-.cmd select option { padding: 4px 8px; border-radius: 5px; }
-.cmd select option:hover, .cmd select option:focus-visible { background: var(--alt); outline: none; }
 .cmd__go {
   height: 32px; padding: 0 14px;
   border: 0; border-radius: 7px; background: var(--go); color: #fff;
@@ -275,8 +255,8 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 }
 .cmd__go:hover { background: var(--go-2); }
 /* A very narrow screen: no button, Enter (the keyboard's search key, enterkeyhint) searches. */
-/* The text last: room after it; the scope select last: the bar's 4px all round it. */
-@media (max-width: 420px) { .cmd__go { display: none; } .cmd:has(#qk[hidden]) { padding-right: 10px; } }
+/* The text last: room after it. */
+@media (max-width: 420px) { .cmd__go { display: none; } .cmd { padding-right: 10px; } }
 /* The matches under the bar (site.js): by type, the subjects by studije; scrolls on its own when long. */
 .cmd { position: relative; }
 .cmd__list {
@@ -332,8 +312,6 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
   .brand__mark circle { stroke: #ffffff; }
   .cmd { border: 1px solid #ffffff; background: #ffffff; }
   .cmd:focus-within { border-color: #ffffff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .45); }
-  .cmd select { background: #e1ebf2; }
-  .cmd select:hover { background: #cadceb; }
   .tg { border: 1px solid rgba(255, 255, 255, .6); }
   .tg:hover { background: rgba(0, 0, 0, .14); }
 }
@@ -1039,13 +1017,13 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   .fb--posts .fb__h > :last-child { text-align: left; }
 }
 
-/* The filter of a table (a subject's topics, the teachers): above its header. */
-.fbar { display: grid; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line-2); }
-.fbar__n { color: var(--dim); font-size: 13px; align-self: center; white-space: nowrap; }
+/* The filter of a table (a subject's topics, the news, a smer's subjects): above its header, its own search box first. */
+.fbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line-2); }
+.fbar > .field { flex: 1 1 200px; max-width: 280px; }
+.fbar__n { margin-left: auto; color: var(--dim); font-size: 13px; white-space: nowrap; }
 .fbar__n b { color: var(--fg); font-variant-numeric: tabular-nums; }
-@container main (min-width: 760px) {
-  .fbar { grid-template-columns: minmax(0, 240px) auto; justify-content: space-between; align-items: center; }
-}
+/* The lists' own search box: typed in, not picked (the bar's selects show a pointer). */
+.people__bar > input.field { cursor: text; }
 
 .stats { padding: 4px 2px; color: var(--dim); font-size: 13px; }
 .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
