@@ -220,6 +220,16 @@
       if (d.activeElement === q) show();
     }).catch(function () {});
     setScope(u);
+    // A phone: a long scope name is short in the bar (data-short), in full in the open list. A new text node, so
+    // pismo.js converts it.
+    var phone = matchMedia('(max-width: 759px)');
+    [].forEach.call(qk.querySelectorAll('[data-short]'), function (o) {
+      var full = o.text, name = function (open) { o.text = open || !phone.matches ? full : o.dataset.short; };
+      qk.addEventListener('pointerdown', function () { name(true); });
+      qk.addEventListener('blur', function () { name(false); });
+      phone.addEventListener('change', function () { name(false); });
+      name(false);
+    });
     qk.hidden = false;
   }
 
