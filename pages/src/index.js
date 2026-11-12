@@ -131,7 +131,26 @@ async function visit(request, env) {
 	return Response.json({ n });
 }
 
+// The automatic update (wrangler.toml crons): GitHub's own schedule started runs 5–8 hours late, a dispatch starts at
+// once. The UTC hour -> the run's slot (ci/plan.py). GH_TOKEN: a fine-grained token, this repo, Actions read and write.
+export const SLOTS = { 1: "night", 5: "morning", 9: "noon", 13: "afternoon", 17: "evening", 21: "late" };
+
+export async function dispatch(env, time) {
+	const slot = SLOTS[new Date(time).getUTCHours()];
+	if (!slot) throw new Error(`no slot at ${new Date(time).toISOString()}`);
+	const r = await fetch("https://api.github.com/repos/KostaJovanovic/nastava/actions/workflows/sync.yml/dispatches", {
+		method: "POST",
+		headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: "application/vnd.github+json", "User-Agent": "nastava-worker" },
+		body: JSON.stringify({ ref: "main", inputs: { what: `auto ${slot}` } }),
+	});
+	// Thrown: the Worker's log shows the failed trigger.
+	if (!r.ok) throw new Error(`dispatch ${slot}: ${r.status} ${await r.text()}`);
+}
+
 export default {
+	async scheduled(controller, env) {
+		await dispatch(env, controller.scheduledTime);
+	},
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
 		// Before the cache: these are not pages.

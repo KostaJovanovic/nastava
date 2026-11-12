@@ -14,8 +14,9 @@ pipeline and site, with new scrapers for phpBB.
 
 ## How it works
 
-- `.github/workflows/sync.yml` updates the site on GitHub (`bash ci/deploy.sh auto SLOT`, morning to night). The board and
-  the news are scraped five times a day, every 5 hours from 6:52 to 2:52 Belgrade time (an hour later in summer).
+- `.github/workflows/sync.yml` updates the site on GitHub (`bash ci/deploy.sh auto SLOT`, night to late). The board and
+  the news are scraped six times a day, every 4 hours from 2:00 to 22:00 Belgrade time (an hour later in summer): the
+  Worker's cron (`pages/wrangler.toml`) starts each run, as GitHub's own schedule started them hours late.
   `ci/plan.py` reads the exam dates from the faculty's teaching calendar (the PDF `studije.py` archives): the morning
   run also takes the schedule pages on the 1st of the month and on the first day of each registration and exam
   period, and the teachers and the subjects on 1 October.

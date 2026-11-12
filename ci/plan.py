@@ -4,12 +4,12 @@
 # ///
 """What a scheduled run (sync.yml) does, from the faculty's teaching calendar; and the database's fingerprint.
 
-Usage: plan.py morning|noon|afternoon|evening|night | check | fingerprint
-  morning … night  the run's slot: print the parts for ci/deploy.sh ("forum", "forum studije", ...)
-  check            exit 1 when the calendar of this school year is missing or unreadable (after 15 October)
-  fingerprint      a hash of what the scrapers store: equal before and after a scrape means nothing changed
-Today is the UTC date (the runs are 5–20 UTC, the same day in Belgrade; the night run, 1:52 UTC, is after midnight in
-both, so it plans with the new day); TODAY=2027-01-11 overrides it for a test.
+Usage: plan.py night|morning|noon|afternoon|evening|late | check | fingerprint
+  night … late  the run's slot: print the parts for ci/deploy.sh ("forum", "forum studije", ...)
+  check         exit 1 when the calendar of this school year is missing or unreadable (after 15 October)
+  fingerprint   a hash of what the scrapers store: equal before and after a scrape means nothing changed
+Today is the UTC date (the runs are at 1, 5, 9, 13, 17 and 21 UTC, the same day in Belgrade but for the late run in
+summer, 23 h there, still the same day in UTC); TODAY=2027-01-11 overrides it for a test.
 """
 import datetime as dt
 import hashlib
@@ -83,7 +83,7 @@ def hot(d, wins):
 
 
 def parts(slot, d, wins):
-    """The scrapers for a run: "forum" (the board and the news) and those due today. All five runs scrape, every day;
+    """The scrapers for a run: "forum" (the board and the news) and those due today. All six runs scrape, every day;
     the morning run also takes the schedule pages (studije) on the 1st of the month and on the first day of a
     registration or an exam period, and on 1 October the teachers and the subjects. (The departments' sites run every
     time, in deploy.sh.)"""
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     assert _p("morning", 2027, 1, 18) == "forum studije" and _p("afternoon", 2027, 1, 18) == "forum"  # an exam period starts
     assert _p("morning", 2027, 3, 1) == "forum studije" and _p("noon", 2027, 3, 1) == "forum"  # the 1st: morning only
     assert _p("morning", 2026, 11, 10) == "forum" and _p("night", 2027, 3, 30) == "forum"    # every run scrapes
-    assert _p("evening", 2026, 12, 5) == "forum" and _p("night", 2026, 12, 5) == "forum"
+    assert _p("evening", 2026, 12, 5) == "forum" and _p("late", 2027, 3, 1) == "forum"
     assert _p("morning", 2027, 1, 11) == "forum studije" and _p("noon", 2027, 1, 11) == "forum"  # registration opens
     assert _p("noon", 2027, 2, 2) == "forum" and _p("morning", 2027, 2, 1) == "forum studije"  # after January's; the 1st
     assert _p("morning", 2027, 10, 1) == "forum studije nastavnici predmeti"  # the 1st, 1 October
@@ -169,7 +169,7 @@ if __name__ == "__main__":
             # The faculty may publish it late: no alarm before 15 October.
             if n < 12 and today >= D(y, 10, 15):
                 sys.exit(f"no readable calendar for {y}/{y + 1} on www.mas.bg.ac.rs (kalendar nastave): the extra runs use the nearest year's dates")
-        case [("morning" | "noon" | "afternoon" | "evening" | "night") as slot]:
+        case [("night" | "morning" | "noon" | "afternoon" | "evening" | "late") as slot]:
             cals = calendars(sqlite3.connect(f"file:{DB}?mode=ro", uri=True))
             print(parts(slot, today, for_year(cals, school_year(today))))
         case _:

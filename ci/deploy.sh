@@ -2,7 +2,7 @@
 # Scrape, build and publish: the scheduled run (sync.yml) and this PC (by hand, as an override) run the same steps.
 # The site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
 # Usage: bash ci/deploy.sh [auto SLOT | sync | forum [studije] [nastavnici] [predmeti]]   (from the repo root)
-#   auto SLOT  the scheduled run: SLOT is morning, noon, afternoon, evening or night; ci/plan.py adds the scrapers due
+#   auto SLOT  the scheduled run: SLOT is night, morning, noon, afternoon, evening or late; ci/plan.py adds the scrapers due
 #              that day to the board and the news
 #   sync       every scraper: the board, the news, the departments' sites, the schedule pages, the teachers, the
 #              subjects
@@ -53,7 +53,7 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	parts=("$@")
 	if [[ $1 == auto ]]; then
 		# tr: on Windows, Python ends its lines with \r\n.
-		plan=$(uv run -q ci/plan.py "${2:?usage: deploy.sh auto morning|noon|afternoon|evening|night}" | tr -d '\r')
+		plan=$(uv run -q ci/plan.py "${2:?usage: deploy.sh auto night|morning|noon|afternoon|evening|late}" | tr -d '\r')
 		echo "plan for the $2 run: $plan"
 		echo "$plan" > "$RUN_DIR/plan.txt"
 		read -ra parts <<< "$plan"

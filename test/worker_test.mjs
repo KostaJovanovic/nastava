@@ -2,7 +2,7 @@
 // the /files/ path check. No network: KV and the cache are stand-ins. Run: node --test test/worker_test.mjs
 import assert from "node:assert/strict";
 import test from "node:test";
-import worker, { join } from "../pages/src/index.js";
+import worker, { dispatch, join } from "../pages/src/index.js";
 
 globalThis.caches = { default: { match: async () => undefined, put: async () => {} } };
 
@@ -60,6 +60,22 @@ test("a subscription the Worker must refuse", async () => {
 		{ endpoint: EP, keys, s: [S], t: { [S]: ["<script>"] } }, // not a page's slug
 	]) assert.equal((await post(env, body)).status, 400, JSON.stringify(body));
 	assert.equal(env.PUSH.m.size, 0);
+});
+
+test("each cron hour starts sync.yml as its slot; a failed dispatch throws", async () => {
+	const sent = [], real = globalThis.fetch;
+	globalThis.fetch = async (url, init) => (sent.push([url, init]), new Response(null, { status: sent.length > 6 ? 401 : 204 }));
+	try {
+		for (const h of [1, 5, 9, 13, 17, 21]) await dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, h, 0, 3));
+		assert.deepEqual(sent.map(([, i]) => JSON.parse(i.body).inputs.what),
+			["auto night", "auto morning", "auto noon", "auto afternoon", "auto evening", "auto late"]);
+		assert.match(sent[0][0], /\/actions\/workflows\/sync\.yml\/dispatches$/);
+		assert.equal(sent[0][1].headers.Authorization, "Bearer t");
+		await assert.rejects(dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, 5)), /401/);
+		await assert.rejects(dispatch({ GH_TOKEN: "t" }, Date.UTC(2026, 10, 12, 3)), /no slot/);
+	} finally {
+		globalThis.fetch = real;
+	}
 });
 
 test("a /files/ path without its three parts is a 404, with no request to GitHub", async () => {

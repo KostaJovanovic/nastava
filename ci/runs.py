@@ -37,9 +37,8 @@ import plan  # noqa: E402
 
 DB = Path(os.getenv("DB", plan.ROOT / "nastava.db"))
 BG = ZoneInfo("Europe/Belgrade")
-# The schedule in use (sync.yml, plan.parts): UTC minute of day -> its slot, every day.
-NOW = {5 * 60 + 52: "morning", 10 * 60 + 52: "noon", 15 * 60 + 52: "afternoon", 20 * 60 + 52: "evening",
-       1 * 60 + 52: "night"}
+# The schedule in use (pages/wrangler.toml crons, src/index.js SLOTS): UTC minute of day -> its slot, every day.
+NOW = {1 * 60: "night", 5 * 60: "morning", 9 * 60: "noon", 13 * 60: "afternoon", 17 * 60: "evening", 21 * 60: "late"}
 BIN = 10  # minutes: the optimizer's histogram
 
 
