@@ -1056,12 +1056,15 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* A gradient can't transition, a registered number can: --hide goes 1 → 0 (.fade → .faded, then no mask at all). */
 @property --hide { syntax: "<number>"; inherits: false; initial-value: 0; }
 .lists { display: grid; }
-/* 80% at the top, nothing at --end: the screen's bottom or the phone's tab bar (search.html). */
+/* 80% at the top, nothing at --end: the screen's bottom or the phone's tab bar (search.html); 50px lower until the
+   reveal. */
 :is(.fade, .faded) .lists {
   --mask: linear-gradient(rgb(0 0 0 / calc(1 - .2 * var(--hide))), rgb(0 0 0 / calc(1 - var(--hide))) var(--end, 100px));
-  -webkit-mask-image: var(--mask); mask-image: var(--mask); transition: --hide .5s ease-out;
+  -webkit-mask-image: var(--mask); mask-image: var(--mask);
+  /* The rise: nearly all of it at once, then a slow settle. */
+  transition: --hide .5s ease-out, translate .5s cubic-bezier(0, .9, .1, 1);
 }
-.fade .lists { --hide: 1; }
+.fade .lists { --hide: 1; translate: 0 50px; }
 @media (prefers-reduced-motion: reduce) { .lists { transition: none !important; } }
 /* A search in the URL: the board index stays hidden until the results come (search.js shown()).
    If the script never gets there, the index shows after 6 s. */
