@@ -1,0 +1,98 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["requests", "beautifulsoup4"]
+# ///
+"""A local backup of the files the department sites link (cent.py's and katedre.py's pages and notices, every
+version): files/sites/<host>/<path>. The site links them on their own servers; this copy is only for when they go.
+One request at a time (8 of the sites are one server, as katedre.py); a file already here is skipped.
+
+Usage: site_files.py list | download
+"""
+import json
+import os
+import sqlite3
+import sys
+import time
+from pathlib import Path
+from urllib.parse import unquote, urljoin, urlsplit
+
+import requests
+from bs4 import BeautifulSoup
+
+from cent import FILE
+
+HERE = Path(__file__).resolve().parent
+DB = os.getenv("DB", str(HERE / "nastava.db"))
+OUT = HERE / "files" / "sites"
+DELAY = float(os.getenv("DELAY", "0.3"))
+
+
+def links(db):
+    """Every file URL the stored pages and notices link, on a faculty host."""
+    found = set()
+
+    def add(base, html, files=None):
+        soup = BeautifulSoup(html or "", "html.parser")
+        hrefs = [a.get("href") for a in soup.find_all("a")] + [i.get("src") for i in soup.find_all("img")]
+        hrefs += [f[0] for f in json.loads(files or "[]") if f]
+        for h in filter(None, hrefs):
+            url = urljoin(base, h.strip()).split("#")[0]
+            parts = urlsplit(url)
+            if parts.scheme in ("http", "https") and parts.hostname and parts.hostname.endswith("mas.bg.ac.rs") \
+                    and FILE.search(unquote(parts.path)):
+                found.add(url)
+    for url, html in db.execute("SELECT url, html FROM katedre_pages"):
+        add(url, html)
+    for url, html, files in db.execute("SELECT url, html, files FROM katedre_notices"):
+        add(url, html, files)
+    for link, html in db.execute("SELECT link, html FROM cent_pages"):
+        add(link, html)
+    for link, html, files in db.execute("SELECT p.link, n.html, n.files FROM cent_notices n JOIN cent_pages p ON p.id = n.page"):
+        add(link, html, files)
+    return sorted(found)
+
+
+def target(url):
+    parts = urlsplit(url)
+    path = [p for p in unquote(parts.path).split("/") if p not in ("", ".", "..")]
+    # Windows: no reserved characters in a name; a query (a few download scripts) as part of the name.
+    clean = lambda s: "".join("_" if c in '<>:"\\|?*' or ord(c) < 32 else c for c in s).strip(" .") or "_"
+    name = clean(path[-1] + (f"_{parts.query}" if parts.query else ""))
+    return OUT / parts.hostname / Path(*map(clean, path[:-1])) / name
+
+
+def download(urls):
+    s = requests.Session()
+    s.headers["User-Agent"] = "nastava-arhiva (backup of linked files)"
+    done = failed = 0
+    for i, url in enumerate(urls, 1):
+        path = target(url)
+        if path.exists():
+            continue
+        try:
+            r = s.get(url, timeout=60)
+            r.raise_for_status()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(r.content)
+            done += 1
+        except requests.RequestException as e:
+            failed += 1
+            print(f"failed {url}: {e}", file=sys.stderr, flush=True)
+        if i % 100 == 0:
+            print(f"{i}/{len(urls)}", flush=True)
+        time.sleep(DELAY)
+    print(f"{done} downloaded, {failed} failed, {len(urls) - done - failed} were here")
+
+
+if __name__ == "__main__":
+    assert target("https://ie.mas.bg.ac.rs/data_store/upload/1815_R%C5%A0 2.docx") == OUT / "ie.mas.bg.ac.rs" / "data_store" / "upload" / "1815_RŠ 2.docx"
+    assert target("https://cent.mas.bg.ac.rs/a/../x.pdf?id=3").name == "x.pdf_id=3"
+    if sys.argv[1:] not in (["list"], ["download"]):
+        sys.exit(__doc__)
+    db = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    urls = links(db)
+    if sys.argv[1] == "list":
+        from collections import Counter
+        print(len(urls), "files:", dict(Counter(urlsplit(u).hostname for u in urls).most_common()))
+    else:
+        download(urls)
