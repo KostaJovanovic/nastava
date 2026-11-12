@@ -24,8 +24,8 @@
   </section>
   {{ forum_rows('Studije', smerovi, 'folder') }}
   {#- Faded out at load until the first scroll, wheel, touch or key (style.css .fade). -#}
-  <script>if (!scrollY && !document.documentElement.classList.contains("searching")) { document.documentElement.classList.add("fade"); ["scroll", "wheel", "touchmove", "keydown"].forEach(e => addEventListener(e, () => document.documentElement.classList.remove("fade"), { once: true, passive: true })); }</script>
-  <div class="lists">
+  <script>{ const h = document.documentElement; if (!scrollY && !h.classList.contains("searching")) { h.classList.add("fade"); ["scroll", "wheel", "touchmove", "keydown"].forEach(e => addEventListener(e, () => h.classList.replace("fade", "faded"), { once: true, passive: true })); } }</script>
+  <div class="lists" ontransitionend="event.propertyName == '--hide' && document.documentElement.classList.remove('faded')">
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
   {%- if vesti %}{{ vest_rows('Najnovije vesti', vesti, more='/vesti/') }}{% endif %}
   </div>
