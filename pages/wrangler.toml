@@ -3,7 +3,8 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = false
 
-# The Worker has no static assets: GitHub Pages serves the site; the files link to the faculty's site.
+# The Worker has no static assets: GitHub Pages serves the site; the board's files link to the faculty's site, and
+# the mails' and Teams files come from the release "mail" (/files/).
 routes = [
   { pattern = "nastava.valjdakosta.com", custom_domain = true },
   { pattern = "nastava.masinci.org", custom_domain = true }
