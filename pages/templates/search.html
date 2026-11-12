@@ -27,7 +27,7 @@
   <script>{ const h = document.documentElement; if (!scrollY && !h.classList.contains("searching")) { h.classList.add("fade"); ["scroll", "wheel", "touchmove", "keydown"].forEach(e => addEventListener(e, () => h.classList.replace("fade", "faded"), { once: true, passive: true })); } }</script>
   <div class="lists" ontransitionend="event.propertyName == '--hide' && document.documentElement.classList.remove('faded')">
   {{ topic_rows('Najnovije objave', recent, place=true, short=true) }}
-  {%- if vesti %}{{ vest_rows('Najnovije vesti', vesti, more='/vesti/') }}{% endif %}
+  {%- if vesti %}{{ vest_rows('Vesti fakulteta', vesti, more='/vesti/') }}{% endif %}
   </div>
   {#- The fade's span, in the lists' own lengths: from 1px under the Studije card (the box before them) to the screen's
       bottom or the tab bar. Again at load: the page above the lists can still grow (fonts, Moji predmeti). -#}
