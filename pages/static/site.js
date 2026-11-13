@@ -527,7 +527,7 @@
       // A plan's subject with no topics on the board yet: it can be followed, it is shown muted.
       if (ids.length === 1 && subj[ids[0]][2] === 0) {
         b.classList.add('mp__card--none');
-        hint = (hint ? hint + ' · ' : '') + 'nema objava na forumu';
+        hint = (hint ? hint + ' · ' : '') + 'bez objava';
       }
       b.type = 'button';
       b.dataset.ids = ids.join(',');
@@ -537,22 +537,31 @@
       return b;
     };
     var group = function (title, list) {
-      var sec = el('section', 'mp__group'), grid = el('div', 'mp__cards');
-      sec.appendChild(el('h3', null, title)).appendChild(el('span', null, ' · ' + list.length));
+      // The old subjects folded under their heading: few follow them.
+      var old = title === 'Stari predmeti', sec = el(old ? 'details' : 'section', 'mp__group'), grid = el('div', 'mp__cards');
+      sec.appendChild(el(old ? 'summary' : 'h3', null, title)).appendChild(el('span', null, ' · ' + list.length));
       list.forEach(function (c) { grid.appendChild(c); });
       sec.appendChild(grid);
       body.appendChild(sec);
     };
     // One row of choices: the programs as tabs (the level small, above the program), the rest as chips.
     // Nothing is picked at first; a pick filters the cards, and pressing it again undoes it (phones then show only it).
+    // A program as the schedule's tabs (build.py, 'OAS - MI'): 'Основне академске студије — МИ' -> 'ОАС - МИ'
+    // (pismo.js writes it in Latin), 'Мастер … — Индустрија 4.0' -> 'МАС - ИНД4.0', the doctoral studies 'ДАС'.
+    var short = function (name) {
+      var p = name.split(' — '), lv = { 'основне': 'ОАС', 'мастер': 'МАС', 'докторске': 'ДАС' }[p[0].split(' ')[0].toLowerCase()];
+      if (!lv || !p[1]) return name;
+      if (lv === 'ДАС') return lv;
+      return lv + ' - ' + (/^индустрија 4/i.test(p[1]) ? 'ИНД4.0' : p[1]);
+    };
     var row = function (level, depth) {
       var r = el('div', depth ? 'mp__chips' : 'mp__tabs'), on = path[depth] < level.length;
       level.forEach(function (n, i) {
-        var b = el('button', 'mp__tab'), parts = depth ? [n.n] : n.n.split(' — ');
+        var b = el('button', 'mp__tab');
         b.type = 'button';
         b.setAttribute('aria-pressed', on && i === path[depth]);
-        if (parts[1]) b.appendChild(el('small', null, parts[0]));
-        b.appendChild(el('span', null, parts[1] || parts[0]));
+        b.appendChild(el('span', null, depth ? n.n : short(n.n)));
+        if (!depth) b.title = n.n;
         badges.push([b.appendChild(el('i', 'mp__badge')), n]);
         b.addEventListener('click', function () {
           var was = path[depth];
@@ -591,13 +600,21 @@
         subj.forEach(function (s, i) { if (ss.length < 48 && has(s[1] + ' ' + data.acr[i])) ss.push(card([i], s[1], where[i])); });
         if (ts.length) group('Nastavnici', ts);
         if (ss.length) group('Predmeti', ss);
+      } else if (!path.length) {
+        // Nothing picked nor searched: no list, a program first (all of them at once were a thousand cards).
+        body.appendChild(el('p', 'mp__none', 'Izaberi studijski program ili potraži predmet.'));
       } else if (level.length && level[0].c.length) {
-        // A row left unpicked: every subject under it, each once, by name (folded: Edge's 'sr' collation put Avionika before Adaptivne).
-        var all = {};
-        (function walk(x) { x.s.forEach(function (i) { all[i] = 1; }); x.c.forEach(walk); })({ s: [], c: level });
-        var ids = Object.keys(all).filter(function (i) { return hit(+i); });
-        if (ids.length) group(w.length ? 'Predmeti' : 'Svi predmeti', ids.sort(function (a, b) { return fold(subj[a][1]).localeCompare(fold(subj[b][1])); })
-          .map(function (i) { return card([+i], subj[i][1], where[i]); }));
+        // A row left unpicked: a section per choice in it (a year, a module), its subjects each once, by name (folded:
+        // Edge's 'sr' collation put Avionika before Adaptivne), with their group (an elective block) beside them.
+        level.forEach(function (n) {
+          var seen = {}, ids = [];
+          (function walk(x, g) {
+            x.s.forEach(function (i) { if (!seen[i] && hit(i)) { seen[i] = g || ' '; ids.push(i); } });
+            x.c.forEach(function (c) { walk(c, c.n || g); });
+          })(n, '');
+          if (ids.length) group(n.n, ids.sort(function (a, b) { return fold(subj[a][1]).localeCompare(fold(subj[b][1])); })
+            .map(function (i) { return card([i], subj[i][1], seen[i].trim().replace(/^Изборни предмет/, 'Изборни')); }));
+        });
       } else level.forEach(function (g) {
         var title = g.n || (/godina$/.test(node.n) ? 'Obavezni predmeti' : 'Predmeti'), ids = g.s.filter(hit);
         if (ids.length) group(title, ids.map(function (i) { return card([i], subj[i][1]); }));

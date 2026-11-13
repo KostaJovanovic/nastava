@@ -638,13 +638,12 @@ body:has(#res) .filters--years { display: none; }
 .mp h1 { display: flex; align-items: center; gap: 10px; }
 .mp__n { min-width: 26px; padding: 0 8px; border-radius: 13px; background: var(--accent); color: var(--accent-fg); font: 800 14px/26px var(--sans); text-align: center; }
 .mp__n:empty { display: none; }
-/* The two steps as one segmented bar; the current one in the accent. */
-.mp__steps { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 16px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
-.mp__steps a { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 9px; color: var(--dim); font: 800 14px var(--sans); text-decoration: none; }
-.mp__steps a:hover { color: var(--fg); background: var(--hover); }
-.mp__steps b { display: grid; place-items: center; width: 22px; height: 22px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 12px; }
-.mp__steps a[aria-current] { background: var(--accent); color: var(--accent-fg); }
-.mp__steps a[aria-current] b { border-color: transparent; background: var(--accent-fg); color: var(--accent); }
+/* The two steps as plain tabs, the current one underlined: the accent is for what is picked. */
+.mp__steps { display: flex; gap: 24px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.mp__steps a { display: flex; align-items: center; gap: 8px; min-height: 40px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--dim); font: 800 14px var(--sans); text-decoration: none; }
+.mp__steps a:hover { color: var(--fg); }
+.mp__steps b { display: grid; place-items: center; width: 20px; height: 20px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 11px; }
+.mp__steps a[aria-current] { border-bottom-color: var(--fg); color: var(--fg); }
 .mp__search { padding-bottom: 12px; }
 .mp__nav { display: grid; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .mp__hint { margin: 0 0 4px; color: var(--dim); font-size: 13.5px; }
@@ -673,8 +672,20 @@ body:has(#res) .filters--years { display: none; }
 .mp__badge:empty { display: none; }
 .mp__tab[aria-pressed="true"] .mp__badge { background: var(--fg); color: var(--card); }
 .mp__body { padding: 4px 0 20px; }
-.mp__group h3 { margin: 16px 0 8px; color: var(--fg); font: 800 14.5px var(--sans); }
-.mp__group h3 span { color: var(--dim); font-weight: 400; }
+.mp__group h3, .mp__group summary { margin: 16px 0 8px; color: var(--fg); font: 800 14.5px var(--sans); }
+.mp__group h3 span, .mp__group summary span { color: var(--dim); font-weight: 400; }
+.mp__group summary { cursor: pointer; }
+/* Step 1's subjects: a checklist, one row each, its group (an elective block) on the right. */
+[data-mp-body] .mp__cards { grid-template-columns: 1fr; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--card); overflow: hidden; }
+[data-mp-body] .mp__card { align-items: center; border: 0; border-radius: 0; padding: 9px 12px; }
+[data-mp-body] .mp__card + .mp__card { border-top: 1px solid var(--line-2); }
+@media (hover: hover) { [data-mp-body] .mp__card:hover { background: var(--hover); transform: none; } }
+[data-mp-body] .mp__card:active { transform: none; }
+[data-mp-body] .mp__card[aria-pressed="mixed"] { border-style: solid; }
+[data-mp-body] .mp__name { display: flex; flex: 1; align-items: baseline; justify-content: space-between; gap: 12px; }
+[data-mp-body] .mp__name small { flex: none; max-width: 45%; margin: 0; text-align: right; }
+[data-mp-body] .mp__card--none:not([aria-pressed="true"]) { border-style: solid; background: none; }
+[data-mp-body] .mp__check { border-radius: 5px; }
 .mp__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .mp__card {
   display: flex; align-items: flex-start; gap: 10px;
