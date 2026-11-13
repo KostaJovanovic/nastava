@@ -3,5 +3,6 @@
      square, inside the middle 80% circle a maskable icon keeps. The PNGs are drawn from it with pages/icons.py. -->
 <rect width="40" height="40" fill="#0076b1" stroke="none"/>
 <mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#fff" stroke="none"/><path d="M25 1 13 39" stroke="#000" stroke-width="7"/></mask>
-<g transform="translate(6 6) scale(.7)"><g mask="url(#cut)"><rect x="3" y="11" width="34" height="21.5" rx="6.5"/><path d="M4.8 27.8Q10 16 17.3 7.8L14 32.6M18.6 21.5Q25 12 33.4 4L26 34.5"/></g><path d="M25 1 13 39"/></g>
+<mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#fff" stroke="none"/><path d="M4.8 27.8Q10 16 17.3 7.8L15.5 30Q24 14 33.4 4L26 34.5" stroke="#000" stroke-width="7"/></mask>
+<g transform="translate(6 6) scale(.7)"><rect x="3" y="11" width="34" height="21.5" rx="6.5" mask="url(#cut)"/><path d="M25 1 13 39" mask="url(#m)"/><path d="M4.8 27.8Q10 16 17.3 7.8L15.5 30Q24 14 33.4 4L26 34.5"/></g>
 </svg>
