@@ -1,6 +1,13 @@
 {#- The board's tables, as on nastava.mas.bg.ac.rs: forums (smerovi, predmeti), topics and posts.
     A row: icon, title with a line under it, then .fr__more (the count columns; one line on a phone). -#}
 
+{#- An empty state: an icon, the text, and where to go instead (a link, or none). hidden: a list filter's, which
+    site.js shows (data-none). -#}
+{%- macro empty(icon, text, href=none, link=none, hidden=false) -%}
+<p class="empty"{% if hidden %} data-none hidden{% endif %}><svg class="i empty__i" aria-hidden="true"><use href="/static/icons.svg#i-{{ icon }}"></use></svg><span>{{ text }}</span>
+  {%- if href %} <a href="{{ href }}">{{ link }}</a>{% endif %}</p>
+{%- endmacro -%}
+
 {%- macro crumb(href, name) -%}
 <svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><a href="{{ href }}" title="{{ name }}">{{ name }}</a>
 {%- endmacro -%}
@@ -57,7 +64,7 @@
     </li>
     {%- endfor %}
   </ol>
-  {%- if filter %}<p class="empty" data-none hidden>Nijedan predmet ne odgovara pretrazi.</p>{% endif %}
+  {%- if filter %}{{ empty('book', 'Nijedan predmet ne odgovara pretrazi.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
 
@@ -99,10 +106,10 @@
   </ol>
   {%- if mine %}
   <ol class="fb__rows" data-mine></ol>
-  <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu.</p>
+  <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu. <a href="/mojipredmeti/">Izmeni izbor</a></p>
   {%- endif %}
   {%- if short %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ topics | length - 5 }}</span></label>{% endif %}
-  {%- if filter %}<p class="empty" data-none hidden>Nema objava za ovaj filter.</p>{% endif %}
+  {%- if filter %}{{ empty('msgs', 'Nema objava za ovaj filter.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
 
@@ -121,7 +128,7 @@
     </li>
     {%- endfor %}
   </ol>
-  {%- if filter %}<p class="empty" data-none hidden>Nema vesti za ovaj filter.</p>{% endif %}
+  {%- if filter %}{{ empty('news', 'Nema vesti za ovaj filter.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
 

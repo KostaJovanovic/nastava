@@ -879,6 +879,10 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .order button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
 /* A subject's name with the star that follows it (site.js). */
 .mh__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+/* Its katedra's icon before the name (predmet.html), as on the teachers' cards. */
+.mh__ki { flex: none; display: flex; color: var(--slate); font-size: 24px; }
+a.mh__ki:hover { color: var(--accent-t); }
+.mh__ki + h1 { flex: 1; }
 .star { flex: none; min-height: 32px; padding: 0 12px; font-size: 13px; }
 .star[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-t); }
 /* Just followed (site.js): the star pops as a picked card's check does. Not on load: a followed subject's page. */
@@ -1547,6 +1551,9 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 
 /* ---- Empty, error --------------------------------------------------------- */
 .empty { padding: 24px 16px; color: var(--dim); font-size: 14px; }
+/* An empty state with its icon (rows.html empty): centered, the icon above the text. */
+.empty:has(> .empty__i) { text-align: center; }
+.empty__i { display: block; margin: 0 auto 8px; color: var(--slate); font-size: 28px; }
 .empty h2 { margin-bottom: 8px; color: var(--fg); font: 800 17px/1.4 var(--sans); overflow-wrap: anywhere; }
 .empty ul { margin: 0; padding-left: 18px; }
 #res > .empty { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }

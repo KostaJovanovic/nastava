@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set origin = 'https://www.mas.bg.ac.rs/fakultet/nastavnici/start' %}
-{% from "rows.html" import crumb %}
+{% from "rows.html" import crumb, empty %}
 {#- Three pages: the faculty's teachers today (/nastavnici/); with archive, the ones no longer on its list
     (/nastavnici/arhiva/); with researchers, the researchers and demonstrators with a page here, on no list of teachers
     (/nastavnici/istrazivaci/, build.py OTHER_TEACHERS). -#}
@@ -98,7 +98,7 @@
   {%- endfor %}
 </ol>
 </div>
-<p class="empty" data-none hidden>Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.</p>
+{{ empty('users', 'Nijedan nastavnik ne odgovara pretrazi. Probaj deo imena ili samo prezime.', hidden=true) }}
 {%- if not archive and not researchers %}
 {#- The departed, so the search finds them too: shown under the current teachers only while there is search text
     (site.js). Outside [data-groups]: grouping and order do not take them. -#}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "rows.html" import crumb, post, who %}
+{% from "rows.html" import crumb, post, who, empty %}
 
 {% block title %}{{ it.title }}{% endblock %}
 {#- The board repeats titles ("Обавештење", "Re: …"): the subject and the date tell them apart. -#}
@@ -31,7 +31,7 @@
       {%- endfor %}
     </ol>
     {% else %}
-    <p class="empty">Za ovaj dokument nema izvučenog teksta. Preuzmite datoteku da vidite sadržaj.</p>
+    {{ empty('file', 'Za ovaj dokument nema izvučenog teksta. Preuzmite datoteku da vidite sadržaj.') }}
     {% endif %}
   </div>
 </article>

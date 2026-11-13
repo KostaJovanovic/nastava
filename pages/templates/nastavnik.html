@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set origin = 'https://www.mas.bg.ac.rs/fakultet/nastavnici/start' %}
-{% from "rows.html" import crumb, post_href %}
+{% from "rows.html" import crumb, post_href, empty %}
 
 {% block title %}{{ t.shown }}{% endblock %}
 {#- past (set in each block): known only from the faculty's history (build.py load_history), never on its list here. -#}
@@ -117,7 +117,7 @@
   {%- endfor %}
   {%- if ns.i > 10 %}<label class="tp__more"><input type="checkbox"><span>Prikaži još {{ ns.i - 10 }}</span></label>{% endif %}
   {%- else %}
-  <p class="tp__none">{% if t.username %}Nema postova na forumu nastave.{% else %}Nije povezan ni sa jednim nalogom na forumu.{% endif %}</p>
+  {{ empty('msgs', 'Nema postova na forumu nastave.' if t.username else 'Nije povezan ni sa jednim nalogom na forumu.', '#radovi' if h and h.works else none, 'Pogledaj radove') }}
   {%- endif %}
 </section>
 {%- endif %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "rows.html" import empty %}
 {% set origin = 'https://www.mas.bg.ac.rs/studije/predmeti/start' %}
 
 {% block title %}Predmeti{% endblock %}
@@ -94,5 +95,5 @@
   </details>
   {%- endfor %}
 </div>
-<p class="empty" data-none hidden>Nijedan predmet ne odgovara pretrazi. Probaj deo naziva ili šifru.</p>
+{{ empty('book', 'Nijedan predmet ne odgovara pretrazi. Probaj deo naziva ili šifru.', hidden=true) }}
 {% endblock %}

@@ -51,7 +51,7 @@
           m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
         }
       };
-      // A katedra's icon (icons.svg) left of the row: a katedra's, and a subject's katedra's (build.py picker ki).
+      // A katedra's icon (icons.svg) left of the row: a katedra's, and a subject's katedra's (build.py picker ki), else the book.
       var icon = function (id) {
         return id && function (a) {
           var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
@@ -65,7 +65,7 @@
       var subj = [];
       studije.forEach(function (s) {
         s[1].forEach(function (i) {
-          if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0], icon((data.ki || [])[i])]);
+          if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0], icon((data.ki || [])[i] || 'book')]);
         });
       });
       section('predmeti', 'Predmeti', subj);
