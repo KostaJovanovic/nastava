@@ -74,8 +74,8 @@
         });
       });
       // The switch off (site.js): first the lists fall back to the peek, their rows still the followed subjects'; then
-      // site.js changes Studije and their rows. The switch on's timing the other way round: the fall is the rise's .5s
-      // and curve (style.css .faded), and resolves 240 ms in, as the rise starts 240 ms into Studije's change. Their
+      // site.js changes Studije and their rows. The fall is the rise's .5s and curve (style.css .faded); Studije's
+      // change starts 100 ms in, when the fall's curve has done ~70% of the way. Their
       // place on the screen follows that curve each frame, whatever Studije's height does meanwhile (a transition
       // would be re-aimed by each frame of its growth); the clock is an empty animation with the curve. At once if
       // they do not fall (scrolled, a search on view).
@@ -92,7 +92,7 @@
           requestAnimationFrame(step);
         };
         step();
-        setTimeout(done, 240);
+        setTimeout(done, 100);
       });
       // The rise or the fall over (style.css): the lists' own transitions only.
       document.addEventListener("transitionend", (e) => e.target.matches(".lists") && e.propertyName == "--hide" && cl.remove("faded", "falling"));
