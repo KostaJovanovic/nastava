@@ -19,10 +19,9 @@
   {#- The lists below, at load: dropped to peek 72px above the screen's bottom (or the phone's tab bar), faded, until
       the first move down (style.css .fade): a scroll, a wheel, a finger or a key; up, at the top, does not count.
       Not while "Samo moji predmeti" is on (head.js .moji-only): Studije is short, the lists are in place from the
-      start, and switching it on brings them up as a scroll would ('moji', site.js; once its own listener, registered after this
-      one, has the new state), after Studije's own animation (site.js fadeStudije): the two at once, with Najnovije
-      objave's rows changing too (fillMine), lag on a phone. A flip back mid-way cancels it. Switching it off, at the
-      page's top, lets them fall back to the peek, after Studije's animation too.
+      start, and switching it on brings them up as a scroll would ('moji', site.js; once its own listener, registered
+      after this one, has the new state). Switching it off, at the page's top, lets them fall back to the peek. Either
+      ends 740/750 ms after the click, over the end of Studije's own animation (site.js fadeStudije).
       --drop and the fade's end (--end, in the lists' own lengths) follow the screen: at once (the lists' top is the
       Studije card's bottom and #res's gap, both parsed already, so no flash), at load (fonts, Moji predmeti), on
       every resize and whenever Studije's height changes (Samo moji predmeti greys and shrinks its rows, head.js): on
@@ -33,17 +32,20 @@
     let s = document.currentScript.previousElementSibling;
     while (s && !s.matches(".fb")) s = s.previousElementSibling;
     if (s) {
-      const place = () => { const bar = document.querySelector(".snav"), b = bar && getComputedStyle(bar).position == "fixed" ? bar.getBoundingClientRect().top : innerHeight, top = s.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(s.parentElement).rowGap) || 0), drop = Math.max(0, b - 72 - top), l = s.parentElement.querySelector(":scope > .lists") || h; l.style.setProperty("--drop", drop + "px"); l.style.setProperty("--end", Math.max(b - top - drop, 50) + "px"); };
+      // Falling (below) while Studije still grows (site.js fadeStudije): from its height at the end, so the fall aims at
+      // one place, not one moving every frame.
+      const bottom = () => { const r = s.getBoundingClientRect(), a = cl.contains("falling") && s.getAnimations()[0], k = a && a.effect.getKeyframes().pop(); return k && k.height ? r.top + parseFloat(k.height) : r.bottom; };
+      const place = () => { const bar = document.querySelector(".snav"), b = bar && getComputedStyle(bar).position == "fixed" ? bar.getBoundingClientRect().top : innerHeight, top = bottom() + (parseFloat(getComputedStyle(s.parentElement).rowGap) || 0), drop = Math.max(0, b - 72 - top), l = s.parentElement.querySelector(":scope > .lists") || h; l.style.setProperty("--drop", drop + "px"); l.style.setProperty("--end", Math.max(b - top - drop, 50) + "px"); };
       const ro = new ResizeObserver(place);
       let y0 = 0;
       const down = { scroll: () => scrollY > 0, wheel: e => e.deltaY > 0, touchstart: e => (y0 = e.touches[0].clientY, false), touchmove: e => e.touches[0].clientY < y0, keydown: e => ["ArrowDown", "PageDown", "End", " "].includes(e.key) && !e.target.closest("input, select, textarea") };
       // The peek, only at the page's top: at load at once, or falling back to it (fall, style.css .falling).
       const arm = (fall) => {
         if (cl.contains("fade") || scrollY || cl.contains("searching")) return;
-        place();
         cl.remove("faded");
-        cl.add("fade");
         if (fall) cl.add("falling");
+        place();
+        cl.add("fade");
         addEventListener("resize", place);
         ro.observe(s);
         for (const t in down) addEventListener(t, go, { passive: true });
