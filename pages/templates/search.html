@@ -57,8 +57,16 @@
         ro.disconnect();
       };
       const go = (e) => down[e.type](e) && open();
-      // The switch: on brings the lists up, off lets them fall back, each after Studije's own animation.
-      document.addEventListener("moji", () => queueMicrotask(() => Promise.all(s.getAnimations({ subtree: true }).map((a) => a.finished)).then(() => (window.mojiNow.only ? open() : arm(true)), () => {})));
+      // The switch: on brings the lists up 740 ms after the click, off lets them fall back at 750 ms (site.js gives the
+      // click's time); never before Studije's own animation has ended. A flip mid-way cancels the wait.
+      let wait = 0;
+      document.addEventListener("moji", (e) => {
+        clearTimeout(wait);
+        queueMicrotask(() => Promise.all(s.getAnimations({ subtree: true }).map((a) => a.finished)).then(() => {
+          const only = window.mojiNow.only, at = e.detail ? e.detail.at + (only ? 740 : 750) : 0;
+          wait = setTimeout(() => (only ? open() : arm(true)), at - performance.now());
+        }, () => {}));
+      });
       addEventListener("load", place);
       if (!cl.contains("moji-only")) arm();
     }

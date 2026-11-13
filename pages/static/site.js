@@ -280,8 +280,10 @@
   };
   if (only) only.addEventListener('change', function () {
     try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
-    // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows.
-    fadeStudije(function () { d.dispatchEvent(new Event('moji')); });
+    // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows. at: the click's
+    // time, for what is timed from it (search.html: the lists under Studije).
+    var at = performance.now();
+    fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); });
   });
 
 
