@@ -45,7 +45,7 @@
     <span class="fbar__n">prikazano <b data-shown>{{ places | length }}</b></span>
   </form>
   {%- endif %}
-  <div class="fb__h"><h2>{{ title }}</h2><span>Objave</span><span>Postovi</span><span>Poslednji post</span></div>
+  <div class="fb__h"><h2>{{ title }}</h2><span>Threadovi</span><span>Postovi</span><span>Poslednji post</span></div>
   <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for s in places %}
     {#- data-pid: a subject's row, data-pids: a smer's (its subjects); hidden while only "Moji predmeti" show (head.js). -#}
@@ -60,7 +60,7 @@
         {%- if s.teachers %}<p class="fr__sub">{% for t in s.teachers[:4] %}<a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% if s.teachers | length > 4 %} i još {{ s.teachers | length - 4 }}{% endif %}</p>
         {%- elif s.subjects is number %}<p class="fr__sub">{{ s.subjects }} {{ s.subjects | pl('predmet') }}</p>{% endif %}
       </div>
-      <div class="fr__more"><span class="fr__n" data-l="{{ s.topics | pl('objava') }}">{{ s.topics | n }}</span><span class="fr__n" data-l="{{ s.count | pl('post') }}">{{ s.count | n }}</span>{{ last(s.last) }}</div>
+      <div class="fr__more"><span class="fr__n" data-l="{{ s.topics | pl('thread') }}">{{ s.topics | n }}</span><span class="fr__n" data-l="{{ s.count | pl('post') }}">{{ s.count | n }}</span>{{ last(s.last) }}</div>
     </li>
     {%- endfor %}
   </ol>
@@ -108,10 +108,10 @@
   </ol>
   {%- if mine %}
   <ol class="fb__rows" data-mine></ol>
-  <p class="moji__none" hidden>Izabrani predmeti još nemaju objava na forumu. <a href="/mojipredmeti/">Izmeni izbor</a></p>
+  <p class="moji__none" hidden>Izabrani predmeti još nemaju threadova na forumu. <a href="/mojipredmeti/">Izmeni izbor</a></p>
   {%- endif %}
   {%- if short %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ topics | length - 5 }}</span></label>{% endif %}
-  {%- if filter %}{{ empty('msgs', 'Nema objava za ovaj filter.', hidden=true) }}{% endif %}
+  {%- if filter %}{{ empty('msgs', 'Nema threadova za ovaj filter.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
 
@@ -161,7 +161,7 @@
     <p class="post__meta">od {{ who(r) }} » <time datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
       {#- In a topic: a link to this post's place in it (site.js copies it). A post gone from the board has no original;
           on a post's own page the original is a button under it (detail.html). -#}
-      {%- if link %} · <a href="#p{{ r.num }}" data-copy title="Link do ovog posta u objavi">link</a>{% endif %}
+      {%- if link %} · <a href="#p{{ r.num }}" data-copy title="Link do ovog posta u threadu">link</a>{% endif %}
       {%- if r.gone %} · {{ gone(r) }}
       {%- elif r.source_url and link %} · <a href="{{ r.source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
     {% if r.html %}<div class="prose prose--html">{{ r.html | safe }}</div>

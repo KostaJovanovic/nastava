@@ -7,7 +7,7 @@
 
 {% block title %}{{ k }}{% endblock %}
 {% block og %}-nastavnici{% endblock %}
-{% block description %}{{ k }}, Mašinski fakultet u Beogradu: {{ teachers | length | n }} {{ teachers | length | pl('nastavnik') }}, {{ n_subjects | n }} {{ n_subjects | pl('predmet') }} i najnovije objave sa foruma nastave.{% endblock %}
+{% block description %}{{ k }}, Mašinski fakultet u Beogradu: {{ teachers | length | n }} {{ teachers | length | pl('nastavnik') }}, {{ n_subjects | n }} {{ n_subjects | pl('predmet') }} i najnoviji threadovi sa foruma nastave.{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
 
 {%- macro ext(href, text) %}<a href="{{ href }}" rel="noopener" target="_blank">{{ text }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endmacro %}
@@ -37,7 +37,7 @@
 </section>
 
 {%- if topics %}
-{{ topic_rows('Najnovije objave', topics, place=true, short=true) }}
+{{ topic_rows('Najnoviji threadovi', topics, place=true, short=true) }}
 {%- endif %}
 
 {%- for label, subs in groups %}

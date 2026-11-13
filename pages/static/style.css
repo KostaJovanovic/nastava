@@ -1024,7 +1024,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fr__sub time, .fr__last time, .fr__d, .post__meta time, .mh__sub time { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fr__d { font-size: 12.5px; }
 .fr__x { margin-top: 2px; color: var(--dim); font-size: 13px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-/* A search result's other posts in the same objava (search.js). */
+/* A search result's other posts in the same thread (search.js). */
 .fr__in { display: inline-block; margin-top: 3px; color: var(--link); font-size: 12.5px; text-decoration: none; }
 .fr__in:hover { color: var(--accent-t); text-decoration: underline; }
 
@@ -1108,12 +1108,12 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fb__more { display: flex; justify-content: center; align-items: center; min-height: 42px; border-top: 1px solid var(--line); color: var(--link); font-size: 13.5px; cursor: pointer; }
 .fb__more:hover { background: var(--hover); }
 .fb__more:has(input:checked), .moji-only .fb__more { display: none; }
-/* Najnovije objave (rows.html topic_rows mine): the followed subjects' rows in place of its own while "Samo moji
+/* Najnoviji threadovi (rows.html topic_rows mine): the followed subjects' rows in place of its own while "Samo moji
    predmeti" is on. */
 .moji-only .fb__rows:has(~ [data-mine]), :root:not(.moji-only) :is([data-mine], .moji__none) { display: none; }
 .fb__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: -2px; }
 .fb__more input { position: absolute; opacity: 0; pointer-events: none; }
-/* The home page's two lists (Najnovije objave, vesti): faded out at load, whole at the first scroll (search.html). */
+/* The home page's two lists (Najnoviji threadovi, vesti): faded out at load, whole at the first scroll (search.html). */
 /* A gradient can't transition, a registered number can: --hide goes 1 → 0 (.fade → .faded, then no mask at all). */
 @property --hide { syntax: "<number>"; inherits: false; initial-value: 0; }
 .lists { display: grid; gap: var(--gap); }
@@ -1133,7 +1133,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* The source tags (cent, ie, teams…) without their colours until the reveal: the row's background, the line's text. */
 :is(.fade, .faded) .lists .src { transition: background-color .5s ease-out, color .5s ease-out; }
 .fade .lists .src { background-color: transparent; color: inherit; }
-/* So is Najnovije objave's title bar in the light theme (the dark one's is dark already): the light grey of the side
+/* So is Najnoviji threadovi's title bar in the light theme (the dark one's is dark already): the light grey of the side
    panel's Statistika bars (.hist i); its text stays white. */
 :is(.fade, .faded) .lists > :first-child .fb__h { transition: background-color .5s ease-out; }
 :root:not([data-tema="dark"]).fade .lists > :first-child .fb__h { background-color: color-mix(in srgb, var(--slate) 45%, var(--card)); }

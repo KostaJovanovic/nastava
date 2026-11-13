@@ -3,7 +3,7 @@
 
 {% block title %}{{ smer.label }}{% endblock %}
 {% block og %}-predmeti{% endblock %}
-{% block description %}{{ smer.label }}, Mašinski fakultet u Beogradu: {{ smer.subjects | n }} {{ smer.subjects | pl('predmet') }} i {{ smer.topics | n }} {{ smer.topics | pl('objava') }} sa foruma nastave.{% endblock %}
+{% block description %}{{ smer.label }}, Mašinski fakultet u Beogradu: {{ smer.subjects | n }} {{ smer.subjects | pl('predmet') }} i {{ smer.topics | n }} {{ smer.topics | pl('thread') }} sa foruma nastave.{% endblock %}
 
 {% block main %}
 <div class="mh mh--card">
@@ -11,7 +11,7 @@
     <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ smer.key if smer.key in smer_icons else 'folder' }}"></use></svg></span>
     <div>
       <h1 id="title">{{ smer.label }}</h1>
-      <p class="mh__stats"><span><b>{{ smer.subjects | n }}</b> {{ smer.subjects | pl('predmet') }}</span><span><b>{{ smer.topics | n }}</b> {{ smer.topics | pl('objava') }}</span><span><b>{{ smer.count | n }}</b> {{ smer.count | pl('post') }}</span></p>
+      <p class="mh__stats"><span><b>{{ smer.subjects | n }}</b> {{ smer.subjects | pl('predmet') }}</span><span><b>{{ smer.topics | n }}</b> {{ smer.topics | pl('thread') }}</span><span><b>{{ smer.count | n }}</b> {{ smer.count | pl('post') }}</span></p>
     </div>
   </div>
 </div>
@@ -21,5 +21,5 @@
 {%- set empty = subjects | rejectattr('topics') | list %}
 {% if used %}{{ forum_rows('Predmeti', used, 'book', filter=true) }}{% endif %}
 {% if topics %}{{ topic_rows('Opšta obaveštenja smera', topics, filter=true) }}{% endif %}
-{% if empty %}{{ forum_rows('Predmeti bez objava', empty, 'book', filter=true) }}{% endif %}
+{% if empty %}{{ forum_rows('Predmeti bez threadova', empty, 'book', filter=true) }}{% endif %}
 {% endblock %}

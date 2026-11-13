@@ -54,9 +54,9 @@ CYR = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш",
 assert len(CYR) == 30
 
 env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
-# The noun after a number: 1, 21 objava; 2, 3, 4, 22 objave; 5–20, 11–14 objava.
-# The site's words: a topic is an "objava", one post in it a "post".
-FORMS = {"objava": ("objava", "objave", "objava"), "post": ("post", "posta", "postova"),
+# The noun after a number: 1, 21 thread; 2, 3, 4, 22 threada; 5–20, 11–14 threadova.
+# The site's words: a topic is a "thread" (Cyrillic "низ", pismo.js), one post in it a "post".
+FORMS = {"thread": ("thread", "threada", "threadova"), "post": ("post", "posta", "postova"),
          "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
          "nastavnik": ("nastavnik", "nastavnika", "nastavnika"), "autor": ("autor", "autora", "autora"),
          "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja"),
@@ -835,7 +835,7 @@ def pagefind_tags(it):
         tags.append(("filter", "godina", str(it["year"])))
     if it["date"]:
         tags += [("sort", "datum", it["date"]), ("meta", "datum", it["date"])]
-    # The objava of a post that has replies: search.js shows one row per objava on a page of results.
+    # The thread of a post that has replies: search.js shows one row per thread on a page of results.
     if it.get("thread") and len(it["thread"]["posts"]) > 1:
         tags.append(("meta", "tema", it["thread"]["href"]))
     # The text as written, word for word the indexed folded copy: search.js shows the excerpt in it.
@@ -1999,7 +1999,7 @@ def archive_stats(items, topics, teachers):
     by_teachers = sum(1 for it in posts if it["teacher"])
     return dict(
         first=min(dated, key=lambda it: it["date"], default=None), last=max(dated, key=lambda it: it["date"], default=None),
-        totals=[(len(posts), "post"), (len(topics), "objava"), (len(tally["authors"]), "autor"),
+        totals=[(len(posts), "post"), (len(topics), "thread"), (len(tally["authors"]), "autor"),
                 (len(tally["subjects"]), "predmet"), (len(files), "prilog"), (sum(tally["files"].values()), "preuzimanje")],
         years=bars(sorted(years.items()), lambda y: f"/?from={y}&to={y}"),
         heat=[dict(year=y, cells=[dict(m=MONTHS[m - 1], n=months[(y, m)], pct=round(months[(y, m)] / top_month * 100))
@@ -2241,7 +2241,7 @@ if __name__ == "__main__":
     set_hrefs(_r, lambda r: f"/p/{slug(r['n'])}/")
     assert [r["href"] for r in _r] == ["/p/mata-1/", "/p/mata-1-7/", "/p/drugo/"]
     assert subject_name("﻿Цевни  водови (1044) ") == "Цевни водови"
-    assert [plural(n, "objava") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "objava objave objava objava objava objava objave objava objava".split()
+    assert [plural(n, "thread") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "thread threada threadova threadova threadova thread threada threadova threadova".split()
     assert [plural(n, "post") for n in (1, 2, 5, 21, 22)] == "post posta postova post posta".split()
     _v = load_verzije("note\n## 2. x\nLead **b**.\n- 2–3 [novo] **A** `B`\n  dalje\n### H\n- 1, 4 C <i>\n")[0]
     assert (_v["span"], _v["n"], _v["lead"]) == ("0.1–0.4", 4, Markup("Lead <b>b</b>.")), _v

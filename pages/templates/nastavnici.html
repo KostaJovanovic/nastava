@@ -8,7 +8,7 @@
 {%- set name = 'Arhiva nastavnika' if archive else 'Istraživači i demonstratori' if researchers else 'Nastavnici' %}
 
 {% block title %}{{ name }}{% endblock %}
-{% block description %}{% if archive %}Nastavnici Mašinskog fakulteta u Beogradu koji više nisu na spisku fakulteta: zvanja, katedre, predmeti i objave na forumu nastave.{% elif researchers %}Istraživači Inovacionog centra i demonstratori Mašinskog fakulteta u Beogradu, koji nisu na spisku nastavnika.{% else %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
+{% block description %}{% if archive %}Nastavnici Mašinskog fakulteta u Beogradu koji više nisu na spisku fakulteta: zvanja, katedre, predmeti i threadovi na forumu nastave.{% elif researchers %}Istraživači Inovacionog centra i demonstratori Mašinskog fakulteta u Beogradu, koji nisu na spisku nastavnika.{% else %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i threadovi na forumu nastave.{% endif %}{% endblock %}
 {% block og %}-{{ 'arhiva' if archive else 'nastavnici' }}{% endblock %}
 {#- The first frame waits for a screen of the list only (its 30th card). -#}
 {% block paint %}paint{% endblock %}

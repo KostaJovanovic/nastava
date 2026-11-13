@@ -121,8 +121,8 @@
       }).then(function (got) {
         if (!got || my !== asked || !got[0]) return;
         box.setAttribute('role', 'group');
-        box.setAttribute('aria-label', 'Objave i vesti');
-        box.appendChild(el('p', 'cmd__h', 'Objave i vesti')).setAttribute('aria-hidden', 'true');
+        box.setAttribute('aria-label', 'Threadovi i vesti');
+        box.appendChild(el('p', 'cmd__h', 'Threadovi i vesti')).setAttribute('aria-hidden', 'true');
         got[1].forEach(function (x) {
           var a = box.appendChild(el('a', null, x.meta.title));
           a.href = x.url;
@@ -527,7 +527,7 @@
       // A plan's subject with no topics on the board yet: it can be followed, it is shown muted.
       if (ids.length === 1 && subj[ids[0]][2] === 0) {
         b.classList.add('mp__card--none');
-        hint = (hint ? hint + ' · ' : '') + 'bez objava';
+        hint = (hint ? hint + ' · ' : '') + 'bez threadova';
       }
       b.type = 'button';
       b.dataset.ids = ids.join(',');
@@ -651,9 +651,9 @@
         all.dataset.t = '';
         ps.forEach(function (x) {
           var p = data.people[x[0]], w = p[0].split(' ');
-          var few = x[1] % 10 >= 2 && x[1] % 10 <= 4 && (x[1] % 100 < 12 || x[1] % 100 > 14);
+          var n = x[1], one = n % 10 === 1 && n % 100 !== 11, few = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14);
           // The title without the katedra (people's "title · katedra"): the subject says where they teach.
-          var b = grid.appendChild(card([], p[0], [(p[3] || '').split(' · ')[0], x[1] + (few ? ' objave' : ' objava')].filter(Boolean).join(' · ')));
+          var b = grid.appendChild(card([], p[0], [(p[3] || '').split(' · ')[0], n + (one ? ' thread' : few ? ' threada' : ' threadova')].filter(Boolean).join(' · ')));
           var img = p[2] ? el('img', 'mp__ph') : el('span', 'mp__ph', w[0][0] + w[w.length - 1][0]);
           if (p[2]) { img.src = p[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
           b.classList.add('mp__card--t');
@@ -738,7 +738,7 @@
     d.addEventListener('moji', sync);
   }).catch(function () {});
   var fillMine = function () {
-    // Najnovije objave's rows of the followed subjects (rows.html topic_rows mine), shown in place of its own only while
+    // Najnoviji threadovi's rows of the followed subjects (rows.html topic_rows mine), shown in place of its own only while
     // "Samo moji predmeti" is on (head.js, style.css .moji-only).
     var ol = d.querySelector('[data-mine]'), list = mine();
     if (!ol || !(window.mojiNow && window.mojiNow.only)) return;
@@ -845,7 +845,7 @@
         var key = Uint8Array.from(atob(PUSH_PUBLIC.replace(/-/g, '+').replace(/_/g, '/')), function (c) { return c.charCodeAt(0); });
         return reg.then(function (r) { return r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }); });
       }).then(function (sub) { return save(sub, withPosts()); }).then(function () {
-        said('Stižu kad arhiva preuzme nove objave sa foruma. Sajt čuva samo adresu obaveštenja ovog browsera i spisak predmeta.');
+        said('Stižu kad arhiva preuzme nove threadove sa foruma. Sajt čuva samo adresu obaveštenja ovog browsera i spisak predmeta.');
       }) : current().then(function (sub) {
         if (sub) return save(sub, []).then(function () { return sub.unsubscribe(); });
       })).catch(function (e) {

@@ -12,7 +12,7 @@
     description: for search results and link previews (Viber, Discord). These are in Latin (build.py lat), as the
     page shows by default: no script converts them (pismo.js converts only the page and its title). -#}
 <title>{% block title %}Pretraga{% endblock %}{% block title_more %}{% endblock %} · arhiva nastave</title>
-<meta name="description" content="{% filter lat %}{% block description %}Arhiva foruma nastave Mašinskog fakulteta u Beogradu: sve objave od 2014, vesti, rasporedi, predmeti i nastavnici, sa pretragom ćirilicom i latinicom.{% endblock %}{% endfilter %}">
+<meta name="description" content="{% filter lat %}{% block description %}Arhiva foruma nastave Mašinskog fakulteta u Beogradu: svi threadovi od 2014, vesti, rasporedi, predmeti i nastavnici, sa pretragom ćirilicom i latinicom.{% endblock %}{% endfilter %}">
 <meta property="og:title" content="{{ self.title() | lat }}">
 <meta property="og:description" content="{{ self.description() | lat }}">
 <meta property="og:type" content="{% block og_type %}website{% endblock %}">

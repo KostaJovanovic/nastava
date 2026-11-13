@@ -4,22 +4,22 @@
 {#- A year of the board's topics, by their last post (build.py render_objave): the newest year at /objave/, each
     other at /objave/<year>/, with the years as tabs, as vesti.html. -#}
 {%- set _newest = year == years[0] %}
-{% block title %}Objave{% if not _newest %} {{ year }}{% endif %}{% endblock %}
-{% block description %}Objave sa foruma nastave Mašinskog fakulteta u Beogradu iz {{ year }}. godine, i one koje su uklonjene sa foruma.{% endblock %}
-{% block crumbs %}{% if not _newest %}{{ crumb('/objave/', 'Objave') }}{% endif %}{% endblock %}
+{% block title %}Threadovi{% if not _newest %} {{ year }}{% endif %}{% endblock %}
+{% block description %}Threadovi sa foruma nastave Mašinskog fakulteta u Beogradu iz {{ year }}. godine, i oni koji su uklonjeni sa foruma.{% endblock %}
+{% block crumbs %}{% if not _newest %}{{ crumb('/objave/', 'Threadovi') }}{% endif %}{% endblock %}
 
 {% block main %}
 <div class="mh">
-  <h1 id="title">Objave {{ year }}</h1>
-  <p class="mh__sub">sa foruma nastave · {{ total | n }} {{ total | pl('objava') }} od {{ years[-1] }}.</p>
+  <h1 id="title">Threadovi {{ year }}</h1>
+  <p class="mh__sub">sa foruma nastave · {{ total | n }} {{ total | pl('thread') }} od {{ years[-1] }}.</p>
 </div>
 <nav class="mp__tabs rs__tabs" aria-label="Godina">
   {%- for y in years %}<a class="mp__tab" href="{{ year_href[y] }}"{% if y == year %} aria-current="page"{% endif %}><span>{{ y }}</span></a>{% endfor %}
 </nav>
-{% call topic_rows('Objave ' ~ year, topics, place=true, filter=true) %}
+{% call topic_rows('Threadovi ' ~ year, topics, place=true, filter=true) %}
 {#- Its own search filters this year's list (site.js); Enter searches the text of all the posts. -#}
 <form class="fbar" data-filter data-enter="/?" onsubmit="return false">
-  <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži objave" autocomplete="off" enterkeyhint="search">
+  <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži threadove" autocomplete="off" enterkeyhint="search">
   <label class="vh" for="f-a">Autor</label>
   {#- value: the username; pismo.js changes the option text, not the value. -#}
   <select class="field" id="f-a" name="autor" data-f="a">

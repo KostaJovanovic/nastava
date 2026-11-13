@@ -14,7 +14,7 @@ try {
 // followed ("moji", site.js), the site shows only them. A style made here hides the others before the first paint:
 // [data-pid] is a row of a subject or of a topic in one, [data-pids] a smer's row (its subjects); a box or group left
 // without such a row goes too. The home page (#res) keeps its boxes: Studije greys its other smerovi, and Najnovije
-// objave shows the followed subjects' newest (site.js fillMine). site.js calls it again when the choice or the subjects
+// threadovi shows the followed subjects' newest (site.js fillMine). site.js calls it again when the choice or the subjects
 // change; it returns {only, has(href)} for the list counts. sve: the switch as given ("1" off, "" on), not as saved
 // (mojiAhead).
 window.moji = function (sve) {

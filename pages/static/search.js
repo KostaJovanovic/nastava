@@ -37,7 +37,7 @@ function build(tag, props, children) {
 // The order of a search with a query: by relevance, or newest first (?red=novije). Without a query: always newest.
 let newest = false;
 // A text's kind (?kind=, Pagefind's "vrsta") as its chip names it.
-const KINDS = { vest: "Vesti", obavestenje: "Objave", dokument: "Dokumenti" };
+const KINDS = { vest: "Vesti", obavestenje: "Threadovi", dokument: "Dokumenti" };
 
 // The subjects this browser follows (site.js, the side panel's picker and a subject's star): their URLs.
 function followed() {
@@ -145,10 +145,10 @@ function lead(title, text) {
 	return body.slice(0, 30).join(" ") + (body.length > 30 ? " …" : "");
 }
 
-// "još 1 post", "još 3 posta", "još 5 postova" of the same objava.
+// "još 1 post", "još 3 posta", "još 5 postova" of the same thread.
 const posta = (n) => (n % 10 === 1 && n % 100 !== 11 ? "post" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "posta" : "postova");
 
-// more: the other results of its objava on this page, merged into this row (showPage).
+// more: the other results of its thread on this page, merged into this row (showPage).
 function renderRow(data, more = 0) {
 	const li = rowTpl.content.firstElementChild.cloneNode(true);
 	const kind = { dokument: "file", vest: "news" }[data.meta.vrsta];
@@ -169,7 +169,7 @@ function renderRow(data, more = 0) {
 	else x.textContent = lead(data.meta.title, data.meta.tekst);
 	if (more) {
 		li.querySelector(".fr__t").append(build("a", {
-			className: "fr__in", href: data.meta.tema, textContent: `+ još ${more} ${posta(more)} iz ove objave`,
+			className: "fr__in", href: data.meta.tema, textContent: `+ još ${more} ${posta(more)} iz ovog threada`,
 		}, []));
 	}
 	return li;
@@ -271,8 +271,8 @@ async function showPage(page, id = runs) {
 			const input = form.querySelectorAll(`input[name="${name}"]`);
 			if (input.length === 1 && batch[0].meta[meta]) input[0].dataset.name = batch[0].meta[meta];
 		}
-		// One row per objava: its best result, with a link to the whole objava for the others on this page.
-		// shortcut: only within a page; an objava can show again on the next one. Merge across pages if that bothers.
+		// One row per thread: its best result, with a link to the whole thread for the others on this page.
+		// shortcut: only within a page; a thread can show again on the next one. Merge across pages if that bothers.
 		const rows = [], of = {};
 		for (const data of batch) {
 			const t = data.meta.tema;

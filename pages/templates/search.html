@@ -103,10 +103,10 @@
     }
   }</script>
   <div class="lists">
-  {{ topic_rows('Najnovije objave', recent, place=true, short=true, mine=true, more='/objave/') }}
+  {{ topic_rows('Najnoviji threadovi', recent, place=true, short=true, mine=true, more='/objave/') }}
   {%- if vesti %}{{ vest_rows('Vesti fakulteta', vesti, more='/vesti/') }}{% endif %}
   </div>
-  <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · objava <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b></p>
+  <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · threadova <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b></p>
 </div>
 <nav class="status" aria-label="Stranice"></nav>
 {#- search.js fills #res from Pagefind with this markup. -#}

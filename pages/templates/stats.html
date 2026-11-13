@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Statistika{% endblock %}
-{% block description %}Statistika foruma nastave Mašinskog fakulteta u Beogradu: objave po godinama, predmetima i nastavnicima, najpreuzimaniji prilozi.{% endblock %}
+{% block description %}Statistika foruma nastave Mašinskog fakulteta u Beogradu: threadovi po godinama, predmetima i nastavnicima, najpreuzimaniji prilozi.{% endblock %}
 
 {#- A bar chart: rows from build.py bars(). A bar with an href (a year) opens the search for it. The count is over the
     bar (.ch--n; a chart too dense for it keeps it for screen readers and in the tooltip). -#}
@@ -118,13 +118,13 @@
   {{ rank("Najaktivniji autori", st.authors) }}
   {{ rank("Predmeti sa najviše postova", st.subjects) }}
   {{ rank("Studije", st.smerovi) }}
-  {{ rank("Najduže objave", st.longest) }}
+  {{ rank("Najduži threadovi", st.longest) }}
 </div>
 
 <h2 class="st-sec">Preuzimanja</h2>
-<p class="st__note">Broj preuzimanja priloga kakav je forum pokazivao kad je objava poslednji put arhivirana.
+<p class="st__note">Broj preuzimanja priloga kakav je forum pokazivao kad je thread poslednji put arhiviran.
   Prilozi objavljeni od aprila do sredine septembra 2026. imaju naduvane brojeve: od sredine septembra do oktobra 2026.
-  neko ih je preuzimao masovno, cele objave odjednom (do 30.000 po fajlu, a običan prilog ima nekoliko stotina).
+  neko ih je preuzimao masovno, cele threadove odjednom (do 30.000 po fajlu, a običan prilog ima nekoliko stotina).
   Zato su pri vrhu ovih lista.</p>
 <div class="st-grid">
   {{ rank("Najpreuzimaniji prilozi", st.files) }}

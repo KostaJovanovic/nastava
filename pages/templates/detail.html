@@ -15,7 +15,7 @@
 {#- One post or document; the page Pagefind indexes (build.py mark_for_pagefind: exactly one </article>). -#}
 {%- set _many = it.thread and it.thread.posts | length > 1 -%}
 {%- if _many %}
-<p class="note">Ovaj post je deo objave <a href="{{ it.thread.href }}#p{{ it.num }}">„{{ it.thread.title }}“</a> ({{ it.thread.posts | length }} {{ it.thread.posts | length | pl('post') }}).</p>
+<p class="note">Ovaj post je deo threada <a href="{{ it.thread.href }}#p{{ it.num }}">„{{ it.thread.title }}“</a> ({{ it.thread.posts | length }} {{ it.thread.posts | length | pl('post') }}).</p>
 {%- endif %}
 
 {% if doc %}
@@ -41,10 +41,10 @@
 </p>
 {% else %}
 {{ post(it, 'h1', link=false) }}<p class="acts">
-  {%- if _many %}<a class="btn btn--pri" href="{{ it.thread.href }}#p{{ it.num }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-msgs"></use></svg>Cela objava</a>{% endif %}
+  {%- if _many %}<a class="btn btn--pri" href="{{ it.thread.href }}#p{{ it.num }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-msgs"></use></svg>Ceo thread</a>{% endif %}
   {%- if it.prev %}<a class="btn" href="/item/{{ it.prev.id }}/" rel="prev" title="{{ it.prev.title }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Prethodni post</a>{% endif %}
   {%- if it.next %}<a class="btn" href="/item/{{ it.next.id }}/" rel="next" title="{{ it.next.title }}">Sledeći post<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg></a>{% endif %}
-  {%- if it.subj %}<a class="btn" href="{{ it.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Sve objave: {{ it.subj.name }}</a>{% endif %}
+  {%- if it.subj %}<a class="btn" href="{{ it.subj.href }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Svi threadovi: {{ it.subj.name }}</a>{% endif %}
   {#- The post where it was published (the board, cent, a department's site); not one gone from there. -#}
   {%- if source_url and not it.gone %}<a class="btn" href="{{ source_url }}" rel="noopener" target="_blank">Original na {{ source_url.split('/')[2] }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}
 </p>

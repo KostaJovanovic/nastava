@@ -22,14 +22,17 @@
 	}
 
 	function toCyr(s) {
+		const letters = (w) => w.replace(/dž|lj|nj|[a-zčćšžđ]/gi, (m) => {
+			const c = C[m.toLowerCase()];
+			return !c ? m : m === m.toLowerCase() ? c : c.toUpperCase();
+		});
 		return s.replace(/\S+/g, (w) =>
+			// The site's "thread" (a forum topic) is "niz" in Cyrillic, ending and all: threadova, низова.
+			/^\W*thread/i.test(w) ? letters(w.replace(/thread/i, (t) => t === "THREAD" ? "NIZ" : t[0] === "T" ? "Niz" : "niz"))
 			// Foreign words, addresses and file names stay in Latin.
 			// The file extension or domain ends the word, so "maš.inž." is still converted.
-			/[qwxyQWXY@]|:\/\/|www\.|\.[a-z]{2,4}[)\],.;:!?]*$/.test(w) ? w
-				: w.replace(/dž|lj|nj|[a-zčćšžđ]/gi, (m) => {
-					const c = C[m.toLowerCase()];
-					return !c ? m : m === m.toLowerCase() ? c : c.toUpperCase();
-				}));
+			: /[qwxyQWXY@]|:\/\/|www\.|\.[a-z]{2,4}[)\],.;:!?]*$/.test(w) ? w
+			: letters(w));
 	}
 
 	// For comparing names in either script (the subject search in the side panel).

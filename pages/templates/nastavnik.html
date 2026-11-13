@@ -4,7 +4,7 @@
 
 {% block title %}{{ t.page_name }}{% endblock %}
 {#- past (set in each block): known only from the faculty's history (build.py load_history), never on its list here. -#}
-{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.page_name }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.page_name }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
+{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.page_name }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.page_name }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i threadovi na forumu nastave.{% endif %}{% endblock %}
 {% block og_type %}profile{% endblock %}
 {% block og %}-{{ 'arhiva' if t.gone else 'nastavnici' }}{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.aside %}{{ crumb('/nastavnici/istrazivaci/', 'Istraživači i demonstratori') }}{% endif %}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}

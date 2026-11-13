@@ -4,7 +4,7 @@
 {% block title %}{{ subj.name }}{% endblock %}
 {#- One name is a subject in several smerovi. -#}
 {% block title_more %} · {{ subj.smer.short }}{% endblock %}
-{% block description %}{{ subj.name }} ({{ subj.smer.label }}), Mašinski fakultet u Beogradu: sve objave sa foruma nastave, {{ subj.topics | n }} {{ subj.topics | pl('objava') }} — rezultati, termini ispita i obaveštenja.{% endblock %}
+{% block description %}{{ subj.name }} ({{ subj.smer.label }}), Mašinski fakultet u Beogradu: svi threadovi sa foruma nastave, {{ subj.topics | n }} {{ subj.topics | pl('thread') }} — rezultati, termini ispita i obaveštenja.{% endblock %}
 {% block og %}-predmeti{% endblock %}
 {% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{% endblock %}
 
@@ -17,11 +17,11 @@
     {%- set ki %}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ k | slug if k else 'book' }}"></use></svg>{% endset %}
     {%- if k %}<a class="mh__ki" href="{{ k | katedra_href }}" title="{{ k }}" aria-label="{{ k }}">{{ ki }}</a>{% else %}<span class="mh__ki">{{ ki }}</span>{% endif %}
     <h1 id="title">{{ subj.name }}</h1>
-    <button type="button" class="btn star" data-star="{{ subj.href }}" data-name="{{ subj.name }}" aria-pressed="false" title="Najnovije objave praćenih predmeta su na početnoj strani" hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Prati</span></button>
+    <button type="button" class="btn star" data-star="{{ subj.href }}" data-name="{{ subj.name }}" aria-pressed="false" title="Najnoviji threadovi praćenih predmeta su na početnoj strani" hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Prati</span></button>
     {#- Followed or not, before the first frame (base.html rel=expect). -#}
     <script>showStar()</script>
   </div>
-  <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('objava') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}{% if subj.site %} · <a href="{{ subj.site }}" rel="noopener" target="_blank">sajt predmeta <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
+  <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('thread') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}{% if subj.site %} · <a href="{{ subj.site }}" rel="noopener" target="_blank">sajt predmeta <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
   {%- if subj.elsewhere %}
   {#- Where its posts point for the material (build.py mark_elsewhere): each to the newest post that links it, with who
       links it (surnames; the full names in the title): often only some of a subject's teachers use it. -#}
@@ -51,10 +51,10 @@
 {#- No posts on the board: a card with one of build.py QUIET, in place of an empty list and its filter. -#}
 <p class="quiet">{{ quiet }}</p>
 {%- else %}
-{% call topic_rows('Objave', topics, filter=true) %}
+{% call topic_rows('Threadovi', topics, filter=true) %}
 {#- Its own search filters the topics (site.js); Enter searches the text of this subject's posts. -#}
 <form class="fbar" data-filter data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
-  <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži objave predmeta" autocomplete="off" enterkeyhint="search">
+  <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži threadove predmeta" autocomplete="off" enterkeyhint="search">
   <label class="vh" for="f-a">Autor</label>
   {#- value: the username; pismo.js changes the option text, not the value. -#}
   <select class="field" id="f-a" name="autor" data-f="a">

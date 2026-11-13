@@ -6,7 +6,7 @@
 {% block og %}-predmeti{% endblock %}
 {#- The first frame waits for a screen of the list only (the first plan's second semester). -#}
 {% block paint %}paint{% endblock %}
-{% block description %}Svi predmeti Mašinskog fakulteta u Beogradu po studijskim programima, modulima i semestrima, sa izbornim blokovima, ESPB, nastavnicima i objavama sa foruma.{% endblock %}
+{% block description %}Svi predmeti Mašinskog fakulteta u Beogradu po studijskim programima, modulima i semestrima, sa izbornim blokovima, ESPB, nastavnicima i threadovima sa foruma.{% endblock %}
 
 {#- One row of the list. The data-* are what site.js filters, groups and sorts by: k katedra, p program (Latin slugs,
     as in the URL; the filter's option has the name), e ECTS, c forum topics (the name sorts by the link's text).
@@ -21,14 +21,14 @@
     {%- if s.forum and s.forum.site %}<a class="sr__w" href="{{ s.forum.site }}" rel="noopener" target="_blank" title="Sajt predmeta">sajt <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</span>
   <span class="sr__h">{% if s.holder_t %}{{ s.holder_t.shown }}{% endif %}</span>
   <span class="sr__e">{% if s.ects %}{{ s.ects }} ESPB{% endif %}</span>
-  <span class="sr__c">{% if s.forum %}<a href="{{ s.forum.href }}">{{ s.forum.topics | n }} {{ s.forum.topics | pl('objava') }}</a>{% endif %}</span>
+  <span class="sr__c">{% if s.forum %}<a href="{{ s.forum.href }}">{{ s.forum.topics | n }} {{ s.forum.topics | pl('thread') }}</a>{% endif %}</span>
 </li>
 {%- endmacro %}
 
 {% block main %}
 <div class="mh">
   <h1 id="title">Predmeti</h1>
-  <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj objava je sa foruma nastave.</p>
+  <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj threadova je sa foruma nastave.</p>
 </div>
 {#- Its own search filters this list (site.js); its text is ?q=. -#}
 <form class="people__bar" data-filter onsubmit="return false">
@@ -58,7 +58,7 @@
       <option value="">kao u planu</option>
       <option value="n">po nazivu</option>
       <option value="-e">po ESPB</option>
-      <option value="-c">po broju objava</option>
+      <option value="-c">po broju threadova</option>
     </select></label>
   </div>
 </form>
