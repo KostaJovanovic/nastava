@@ -2,21 +2,23 @@
 {% set origin = 'https://www.mas.bg.ac.rs/' %}
 
 {#- The archived pages of www.mas.bg.ac.rs that no other part of the site shows (studije.py wiki_pages, build.py
-    render_wiki_pages): groups, (name, [(href, title, gone)]), in the wiki's sections. -#}
+    render_wiki_pages), as Linkovi's cards (link.html): groups, (name, icon, [page]) by what the pages are; a page:
+    href, title, gone, path (its address on the wiki, the card's second line). -#}
 {% block title %}Sajt fakulteta{% endblock %}
-{% block description %}Arhiva stranica sa www.mas.bg.ac.rs: upis, studenti, dokumenti, akreditacija, biblioteka, istraživanje, sa svim ranijim verzijama.{% endblock %}
+{% block description %}Arhiva stranica sa www.mas.bg.ac.rs: upis, studiranje, propisi, akreditacija, izbori u zvanja, biblioteka i nauka, sa svim ranijim verzijama.{% endblock %}
 
 {% block main %}
 <div class="mh">
   <h1 id="title">Sajt fakulteta</h1>
-  <p class="mh__sub">{{ total | n }} stranica sa <a href="https://www.mas.bg.ac.rs/" rel="noopener" target="_blank">www.mas.bg.ac.rs</a>, sa fajlovima i svim ranijim verzijama</p>
+  <p class="mh__sub">{{ total | n }} stranica sa <a href="https://www.mas.bg.ac.rs/" rel="noopener" target="_blank">www.mas.bg.ac.rs</a>, sa svim ranijim verzijama</p>
 </div>
-{%- for name, rows in groups %}
-<section class="panel" aria-labelledby="mf-{{ loop.index }}">
-  <h2 id="mf-{{ loop.index }}">{{ name }}</h2>
-  <ul>
-    {%- for href, title, gone in rows %}
-    <li><a href="{{ href }}">{{ title }}</a>{% if gone %} <small>(uklonjeno sa sajta)</small>{% endif %}</li>
+{%- for name, icon, rows in groups %}
+<section class="lk" aria-labelledby="mf-{{ loop.index }}">
+  <h2 class="lk__h" id="mf-{{ loop.index }}">{{ name }} <small>{{ rows | length }}</small></h2>
+  <ul class="lk__grid">
+    {%- for p in rows %}
+    <li><a class="lk__a{% if p.gone %} lk__a--down{% endif %}" href="{{ p.href }}">
+      {%- if p.gone %}<span class="lk__down">uklonjeno</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ p.title }}</b><small data-notx>{{ p.path }}</small></span></a></li>
     {%- endfor %}
   </ul>
 </section>

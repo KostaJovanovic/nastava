@@ -1274,11 +1274,23 @@ def render_study_pages(site, db):
     return schedule_entries(calendar, lectures, get("raspored-ispita"))
 
 
-# The wiki's sections, as /mf/ shows them: the first part of a page's path -> its group. The rest under Ostalo.
-WIKI_GROUPS = {"upis": "Upis", "studenti": "Studenti", "studije": "Studije", "servisi": "Servisi",
-               "fakultet": "Fakultet", "organizacija": "Fakultet", "akreditacija": "Akreditacija",
-               "biblioteka": "Biblioteka", "izdanja": "Biblioteka", "katalozi": "Biblioteka",
-               "istrazivanje": "Istraživanje", "sindikat": "Sindikat"}
+# /mf/'s groups, by what a page is (not by the wiki's folders): (name, icon, the paths in it). In this order; the first
+# that matches a page's path takes it.
+WIKI_GROUPS = [
+    ("Upis", "enter", r"upis/|претпријава$"),
+    ("Studiranje", "user", r"studenti/|studije/"),
+    ("Nalozi i servisi", "mail", r"servisi/"),
+    ("Propisi i dokumenti", "file", r"fakultet/dokumenti/"),
+    ("Akreditacija i kvalitet", "star", r"akreditacija/"),
+    ("Izbori u zvanja", "users", r"fakultet/izbori-u-zvanja"),
+    ("Izdanja po katedrama", "katedre", r"biblioteka/izdanja/\d"),
+    ("Biblioteka i izdanja", "book", r"biblioteka/|izdanja/|katalozi/|fakultet/(izdanja|monografija)$"),
+    ("FME Transactions", "news", r"istrazivanje/fme/"),
+    ("Nauka i projekti", "globe", r"istrazivanje/"),
+    ("Obuke", "calendar", r"fakultet/obuke/"),
+    ("Sindikat", "msgs", r"sindikat/|fakultet/sindikat$"),
+    ("O fakultetu", "home", r""),
+]
 
 
 def render_wiki_pages(site, db, render):
@@ -1295,12 +1307,38 @@ def render_wiki_pages(site, db, render):
         href = "/mf/" + "/".join(map(slug, path.split("/"))) + "/"
         assert href not in hrefs, f"two wiki pages at {href}"
         hrefs.add(href)
+        for v in versions:
+            v["title"] = wiki_title(v["title"])
         render(versions, href, STUDY_SITE + quote(path), ("/mf/", "Sajt fakulteta"))
         v = versions[0]
-        groups[WIKI_GROUPS.get(path.split("/")[0], "Ostalo")].append((v["href"], v["title"], v["gone"]))
-    order = list(dict.fromkeys(WIKI_GROUPS.values())) + ["Ostalo"]
+        # A page with next to nothing on it ("Страница је у припреми.", "a"): kept, not listed.
+        if len(strip_tags(v["html"]).replace(v["title"], "").split()) < 8 and not v["gone"]:
+            continue
+        group = next(g for g in WIKI_GROUPS if re.match(g[2], path))
+        groups[group].append(dict(href=v["href"], title=v["title"], gone=v["gone"], path=path))
     write(site / "mf" / "index.html", env.get_template("mf.html").render(
-        total=len(pages), groups=[(g, sorted(groups[g], key=lambda r: fold(r[1]))) for g in order if g in groups]))
+        total=sum(map(len, groups.values())),
+        groups=[(name, icon, sorted(groups[(name, icon, rx)], key=newest_first))
+                for name, icon, rx in WIKI_GROUPS if (name, icon, rx) in groups]))
+
+
+def wiki_title(t):
+    """A wiki page's title as the site shows it: one in capitals ("УПИС НА ОСНОВНЕ...") in sentence case, a page
+    name ("cenovnik") capitalized."""
+    return t[0].upper() + t[1:].lower() if t.isupper() or t.islower() else t
+
+
+def newest_first(page):
+    """/mf/'s order in a group: the newest year a title names first (the coming enrollment above the past ones), then
+    those with none, each by path."""
+    years = [int(y) for y in re.findall(r"\b(20\d\d)\b", page["title"])]
+    return -max(years, default=0), natural(page["path"])
+
+
+def natural(path):
+    """A sort key: numbers as numbers (vol9 before vol10), a folder's start page first."""
+    path = re.sub(r"(^|/)start(/|$)", r"\1\2", path)
+    return [int(x) if x.isdigit() else fold(x) for x in re.split(r"(\d+)", path)]
 
 
 def photo_path(url, kind):
@@ -2271,6 +2309,10 @@ def main(db_path, out, dev_mode=False):
 
 if __name__ == "__main__":
     assert fold("Ђачки распоред, Čas") == "djacki raspored, cas"
+    assert wiki_title("УПИС 2026/2027.") == "Упис 2026/2027." and wiki_title("cenovnik") == "Cenovnik" and wiki_title("ОАС Упис") == "ОАС Упис"
+    assert sorted([dict(title="Volume 9, 2001", path="fme/vol9"), dict(title="О", path="a/start"), dict(title="Упис 2026/2027.", path="b"),
+                   dict(title="Volume 10, 2002", path="fme/vol10")], key=newest_first)[0]["path"] == "b"
+    assert natural("fme/vol9") < natural("fme/vol10") and natural("a/start/x") < natural("a/b")
     assert acronyms("Основи отпорности конструкција") == {"ook"} and acronyms("Машински елементи 1") == {"me1", "me"}
     assert acronyms("Математика 1", ["МАТ1 рок", "МИ - вежбе"]) == {"m1", "mat1"} and acronyms("Електротехника") == set()
     assert acronyms("Понашање заварених спојева у експлоатацији") == {"pzsue", "pzse"}
