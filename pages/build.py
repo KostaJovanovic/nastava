@@ -1436,7 +1436,10 @@ def load_teachers(db, subjects):
             m = re.search(r"Monografija.*#page=(\d+)", f["page"])
             t["photo_src"] = dict(f, book_page=m and int(m[1]) - 2)
         # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
-        t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
+        # Their own page names them in full (page_name); elsewhere some go by their first surname only (SHORT_SURNAME).
+        t["page_name"] = t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
+        if t["id"] in SHORT_SURNAME:
+            t["shown"] = t["shown"].split("-")[0]
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
         t["rank"] = RANKS.index(t["title"]) if t["title"] in RANKS else 9
     for name, left in (("nastavnici-foto.jsonl", fotos), ("nastavnici-biografije.jsonl", bios), (SUMMARIES.name, sums)):
@@ -1446,6 +1449,9 @@ def load_teachers(db, subjects):
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
 
+# Teachers shown without their second surname, except on their own page (the user's choice): Vasić-Milovanović,
+# Lazović-Kapor, Milošević-Mitić, Mutavdžić-Đukić, Sretenović-Dobrić.
+SHORT_SURNAME = {"30", "90", "115", "494", "191"}
 RANKS = ["професор емеритус", "редовни професор", "ванредни професор", "доцент", "асистент са докторатом", "асистент"]
 AZBUKA = {c: i for i, c in enumerate("абвгдђежзијклљмнњопрстћуфхцчџш")}
 

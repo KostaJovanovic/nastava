@@ -2,9 +2,9 @@
 {% set origin = 'https://www.mas.bg.ac.rs/fakultet/nastavnici/start' %}
 {% from "rows.html" import crumb, post_href, empty %}
 
-{% block title %}{{ t.shown }}{% endblock %}
+{% block title %}{{ t.page_name }}{% endblock %}
 {#- past (set in each block): known only from the faculty's history (build.py load_history), never on its list here. -#}
-{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.shown }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.shown }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
+{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.page_name }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.page_name }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
 {% block og_type %}profile{% endblock %}
 {% block og %}-{{ 'arhiva' if t.gone else 'nastavnici' }}{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.aside %}{{ crumb('/nastavnici/istrazivaci/', 'Istraživači i demonstratori') }}{% endif %}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}
@@ -26,7 +26,7 @@
   {#- The katedra's icon in the band's top right corner, as on the list's cards. -#}
   {%- if t.katedra %}<span class="tp__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
   <div class="tp__who">
-    <h1 id="title">{{ t.shown }}</h1>
+    <h1 id="title">{{ t.page_name }}</h1>
     <p>{{ t.title }}{% if t.katedra %}{% if t.title %}, {% endif %}<a href="{% if t.gone %}/nastavnici/arhiva/?katedra={{ t.katedra | slug }}{% else %}{{ t.katedra | katedra_href }}{% endif %}">{{ t.katedra }}</a>{% endif %}</p>
     <dl class="tp__dl">
       {%- if h and h.life %}<dt>Život</dt><dd>{{ h.life }}</dd>
@@ -248,7 +248,7 @@
 </details>
 {%- endif %}
 {#- A teacher who left: no longer the faculty's (worksFor). -#}
-{%- set _person = {"@type": "Person", "name": t.shown, "jobTitle": t.title, "url": site_url ~ t.href} %}
+{%- set _person = {"@type": "Person", "name": t.page_name, "jobTitle": t.title, "url": site_url ~ t.href} %}
 {%- if t.photo %}{% set _ = _person.update(image=(site_url ~ t.photo) if t.photo.startswith('/') else t.photo) %}{% endif %}
 {%- if not t.gone %}{% set _ = _person.update(worksFor={"@type": "CollegeOrUniversity", "name": "Mašinski fakultet Univerziteta u Beogradu", "url": "https://www.mas.bg.ac.rs/"}) %}{% endif %}
 {{ {"@context": "https://schema.org", "@type": "ProfilePage", "mainEntity": _person} | ld }}
