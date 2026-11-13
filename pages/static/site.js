@@ -919,7 +919,7 @@
     }
     // A link with data-domain (the footer's drive) says only that name, in masinci.org's words and buttons.
     var named = a.getAttribute('data-domain'), say = leave.querySelector('[data-leave-say]');
-    say.innerHTML = named ? 'Ovaj link vodi na <b></b>' : 'Link vodi na <b></b>, sajt van ove arhive. Otvoriće se u novoj kartici.';
+    say.innerHTML = named ? 'Ovaj link vodi na <b></b>' : 'Link vodi na <b></b>, sajt van ove arhive. Otvoriće se u novom tabu.';
     say.querySelector('b').textContent = named || a.hostname;
     leave.querySelector('h2').hidden = leave.querySelector('[data-leave-url]').hidden = !!named;
     leave.querySelector('[data-leave-stay]').textContent = named ? 'Nazad' : 'Ostani';

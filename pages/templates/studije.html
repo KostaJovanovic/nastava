@@ -15,7 +15,7 @@
   <p class="mh__sub">stranica sa mas.bg.ac.rs, {% if _old %}verzija od {{ page.first_seen | dmy }} do {{ page.last_seen | dmy }}{% else %}provereno {{ page.last_seen | dmy }}{% endif %} · <a href="{{ source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
 </div>
 {%- if _old %}
-<p class="note">Ovo je ranija verzija stranice, sa datotekama kakve su tada bile. <a href="{{ current.href }}">Najnovija verzija</a></p>
+<p class="note">Ovo je ranija verzija stranice, sa fajlovima kakvi su tada bili. <a href="{{ current.href }}">Najnovija verzija</a></p>
 {%- endif %}
 <article class="panel">
   <div class="prose prose--html">{{ html | safe }}</div>
