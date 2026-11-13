@@ -897,13 +897,14 @@ pages = {}  # dev: "/nastavnici/" -> the page (Lazy); the 404 page under "/404.h
 
 
 class Lazy:
-    """A page not rendered yet: its template's name and the data it was given."""
+    """A page not rendered yet: its template's name and the data it was given. fresh: {name: function} of data read
+    again at each render, from a file serve.py does not watch (verzije.md), so its edit shows on the next reload."""
 
     def __init__(self, name, data):
-        self.name, self.data = name, data
+        self.name, self.data, self.fresh = name, data, {}
 
     def __str__(self):
-        return Template.render(env.get_template(self.name), **self.data)
+        return Template.render(env.get_template(self.name), **(self.data | {k: f() for k, f in self.fresh.items()}))
 
 
 class LazyTemplate(Template):
@@ -2066,8 +2067,11 @@ def main(db_path, out, dev_mode=False):
     # icons: {host: file} of the sites' own icons in static/link (saved by hand), for link.html's cards.
     write(site / "link" / "index.html", env.get_template("link.html").render(
         icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}))
-    days = load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
-    write(site / "verzije" / "index.html", env.get_template("verzije.html").render(days=days))
+    days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
+    page = env.get_template("verzije.html").render(days=days())
+    if dev:
+        page.fresh["days"] = days
+    write(site / "verzije" / "index.html", page)
     vesti = load_vesti(db)
     render_vesti(site, vesti)
     write_page(site / "index.html", render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("aside") for t in teachers), vesti))
