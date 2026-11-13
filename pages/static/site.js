@@ -282,8 +282,12 @@
     try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
     // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows. at: the click's
     // time, for what is timed from it (search.html: the lists under Studije).
-    var at = performance.now();
-    fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); });
+    var at = performance.now(), on = only.checked;
+    // Off: the lists under Studije fall back to their peek first (search.html fallFirst), then Studije changes; unless
+    // the switch went back on meanwhile.
+    (on || !window.fallFirst ? Promise.resolve() : window.fallFirst()).then(function () {
+      if (only.checked === on) fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); });
+    });
   });
 
 
