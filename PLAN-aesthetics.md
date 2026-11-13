@@ -19,6 +19,8 @@ Decided with the user, one question at a time. Done items are marked.
 6. [ ] A local page per katedra from www.mas.bg.ac.rs/organizacija/katedre/<id> (store the page; nastavnici.py
        fetches it already), with a link to the katedra's own site, its teachers as cards, its subjects, its latest
        notices. Katedra links (search, cards, icon) go there instead of /nastavnici/?katedra=.
-7. [ ] Biomed icon: a good-looking helix with a gear peeking from behind. Preview before applying.
-8. [ ] Subject page header: its katedra icon (book if none), linking to the katedra page.
-   [ ] Friendlier empty states: icon + a useful link instead of grey one-liners.
+7. [x] Biomed icon: helix open at both ends, gaps at the crossings, half a gear behind on the right (variant L of
+       %TEMP%\helix\helix.py).
+8. [x] Subject page header: its katedra icon (book if none); link goes to /nastavnici/?katedra= until #6.
+   [x] Friendlier empty states: icon + a useful link instead of grey one-liners (rows.html empty).
+2. [x] (book fallback done)
