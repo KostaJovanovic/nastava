@@ -78,9 +78,12 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_header("Location", url.path + "/" + (f"?{url.query}" if url.query else ""))
                 return self.end_headers()
             if page := build.pages.get(path):
-                # shortcut: no aria-current on the side panel link in the first frame (site.js adds it), unlike
-                # join(); mark it here too once build.py's snav_href is committed.
-                return self.send_page(200, str(page))
+                # The side panel link aria-current in the first frame, as join() marks it from the build's <meta>.
+                page = str(page)
+                if h := build.snav_href(path, build.snav):
+                    a = f'<a href="{h}"'
+                    page = page.replace(a, a + ' aria-current="page"', 1)
+                return self.send_page(200, page)
             return super().do_GET()
         file = Path(self.translate_path(self.path))
         if file.is_dir() and urlsplit(self.path).path.endswith("/"):
