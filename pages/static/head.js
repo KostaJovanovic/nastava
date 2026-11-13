@@ -37,6 +37,10 @@ window.moji = function () {
 			+ `{display:none!important}${grey}{opacity:.45;padding-block:2px;row-gap:0}`
 			+ `${grey} :is(.fr__sub,.fr__last>*){max-height:0;opacity:0;overflow:hidden}${grey} .fr__last{min-height:0}`
 			+ `@container main (max-width:759.98px){${grey} .fr__more{max-height:0;opacity:0;overflow:hidden}}`
+			// A wide screen: the name over the whole row; the columns stay in their places under it, faded and unclickable.
+			+ `@container main (min-width:760px){${grey} .fr__t{grid-area:1/2/2/-1}`
+			+ `${grey} .fr__more>*{grid-row:1;opacity:0;border-left-color:transparent;pointer-events:none}`
+			+ `${grey} .fr__more>:nth-child(1){grid-column:3}${grey} .fr__more>:nth-child(2){grid-column:4}${grey} .fr__more>:nth-child(3){grid-column:5}}`
 			+ `${grey} .fr__i{width:16px;height:16px;translate:8px 0}${grey} .fr__i .i{width:12px;height:12px}`;
 	}
 	let style = document.getElementById("moji-css");

@@ -990,7 +990,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* Studije's smerovi greying and shrinking as "Samo moji predmeti" flips (head.js), and back. No transition at load:
    head.js styles them before the first paint. */
 @media (prefers-reduced-motion: no-preference) {
-  #res [data-pids], #res [data-pids] :is(.fr__i, .fr__i .i, .fr__more, .fr__sub, .fr__last, .fr__last > *) { transition: .35s cubic-bezier(.2, .8, .2, 1); transition-property: opacity, padding, row-gap, width, height, translate, max-height, min-height; }
+  #res [data-pids], #res [data-pids] :is(.fr__i, .fr__i .i, .fr__more, .fr__more > *, .fr__sub, .fr__last > *) { transition: .35s cubic-bezier(.2, .8, .2, 1); transition-property: opacity, padding, row-gap, width, height, translate, max-height, min-height, border-color; }
 }
 /* shortcut: the collapse animates to 3em, not each line's own height; fine while each is one line. */
 #res [data-pids] :is(.fr__sub, .fr__last > *) { max-height: 3em; }
