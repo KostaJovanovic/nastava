@@ -1413,6 +1413,14 @@ def load_teachers(db, subjects):
         t["username"] = FORUM_ACCOUNT.get(t["username"], t["username"])
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
     local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
+    # The faculty's placeholder (a silhouette, 19 teachers in 2026-11): the same file under several teachers' URLs.
+    # Theirs counts as no photo, so a portrait found elsewhere shows instead, else the initials.
+    same = defaultdict(set)
+    for url, data in db.execute("SELECT url, data FROM photos WHERE url LIKE '%/_media/fakultet/nastavnici/%'"):
+        same[hashlib.sha1(data).digest()].add(url)
+    placeholder = {u for urls in same.values() if len({u.split("?")[0] for u in urls}) >= 3 for u in urls}
+    # So is one URL kept as several departed teachers' photo (masinac.org's nema_slike.jpg).
+    placeholder |= {u for u, n in Counter(t.get("photo") for t in teachers if t.get("photo")).items() if n >= 3}
     fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
     bios = {b["id"]: b["paras"] for b in map(json.loads, BIOS.read_text(encoding="utf-8").splitlines())} if BIOS.exists() else {}
     sums = ({b["id"]: b["paras"] for b in map(json.loads, SUMMARIES.read_text(encoding="utf-8").splitlines())}
@@ -1429,6 +1437,8 @@ def load_teachers(db, subjects):
         thumb, photo = photo_urls(t["html"], t.get("photo"))
         t["thumb"] = local.get(thumb) or (None if t["off_list"] else thumb)
         t["photo"] = local.get(photo) or (None if t["off_list"] else photo)
+        if photo in placeholder or thumb in placeholder:
+            t["thumb"] = t["photo"] = None
         # One without: a portrait found elsewhere (nastavnici-foto.jsonl), its source shown among the page's sources.
         f = fotos.pop(t["id"], None)
         if f and not t["photo"] and f["image"] in local:
