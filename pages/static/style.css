@@ -583,10 +583,9 @@ body:has(#res) .filters--years { display: none; }
 .tgl:has(input:disabled):hover { background: none; }
 .tgl__bell { display: none; }
 
-/* "Moji predmeti" in the side panel: the button that opens the picker; in the accent once subjects are followed. */
+/* "Moji predmeti" in the side panel: the button that opens the picker, a plain one (the switch shows the state). */
 .moji__open { padding: 0 16px; }
 .moji__open .btn { width: 100%; min-height: 34px; font-size: 13.5px; }
-.moji__open .btn.is-set { border-color: var(--accent); color: var(--accent-t); }
 .moji__edit { display: none; }
 /* Under the switches: the notifications' state, the OPML link. */
 .moji__more { margin: -4px 16px 10px; color: var(--dim); font-size: 12.5px; }
@@ -602,13 +601,13 @@ body:has(#res) .filters--years { display: none; }
   [data-moji-scope] > :last-child { margin-bottom: 0; }
   .fgroup[data-izbor] .moji__open .btn { white-space: nowrap; }
   /* Subjects followed: one row, one control in three cells: the switch with the count, a bell for the notifications,
-     and a pencil that opens the picker. All take the switch's tint while it is on. */
+     and a pencil that opens the picker. Only the switch's cell takes its tint while on; the other two stay plain. */
   .fgroup[data-izbor]:has(.is-set):not([hidden]) { grid-template-columns: minmax(0, 1fr) auto; column-gap: 0; }
   .fgroup[data-izbor]:has(.is-set) > [data-moji-scope] { grid-area: 1 / 1; }
   .fgroup[data-izbor]:has(.is-set) > .moji__open { padding: 0 16px 0 0; }
   .fgroup[data-izbor] [data-moji-scope] { display: flex; }
-  .fgroup[data-izbor] .tgl { flex: 1; min-width: 0; min-height: 44px; margin: 0 0 0 16px; padding-block: 0; border-right: 0; border-radius: 8px 0 0 8px; }
-  .fgroup[data-izbor] .tgl--push { flex: none; width: 44px; margin: 0; padding: 0; justify-content: center; border-color: var(--line); border-right: 0; border-radius: 0; background: var(--card); color: var(--dim); }
+  .fgroup[data-izbor] .tgl { flex: 1; min-width: 0; min-height: 44px; margin: 0 0 0 16px; padding-block: 0; border-radius: 8px 0 0 8px; }
+  .fgroup[data-izbor] .tgl--push { flex: none; width: 44px; margin: 0; padding: 0; justify-content: center; border-color: var(--line); border-width: 1px 0; border-radius: 0; background: var(--card); color: var(--dim); }
   .fgroup[data-izbor] .tgl--push:has(input:focus-visible) { outline-offset: -2px; }
   .fgroup[data-izbor] .tgl--push > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .fgroup[data-izbor] .tgl--push .tgl__s { display: none; }
@@ -619,7 +618,6 @@ body:has(#res) .filters--years { display: none; }
   .fgroup[data-izbor] .tgl--push:has(input:disabled) { opacity: 1; }
   .fgroup[data-izbor] .tgl--push:has(input:disabled) .tgl__bell { opacity: .4; }
   .fgroup[data-izbor] .btn.is-set { width: 44px; min-height: 44px; padding: 0; border-color: var(--line); border-radius: 0 8px 8px 0; color: var(--fg); }
-  .fgroup[data-izbor]:has([data-moji-only]:checked) :is(.tgl--push, .btn.is-set) { border-color: var(--accent); border-left-color: color-mix(in srgb, var(--accent) 35%, var(--card)); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
   .fgroup[data-izbor] .btn.is-set:hover { background: var(--hover); color: var(--accent-t); }
   .fgroup[data-izbor] .btn.is-set:active { transform: none; }
   .fgroup[data-izbor] .btn.is-set > .i:first-child { display: none; }
