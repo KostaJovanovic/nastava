@@ -3,7 +3,7 @@
 # dependencies = ["requests", "beautifulsoup4"]
 # ///
 """A local backup of the files the department sites link (cent.py's and katedre.py's pages and notices, every
-version): files/sites/<host>/<path>. The site links them on their own servers; this copy is only for when they go.
+version) and those of www.mas.bg.ac.rs's wiki pages (studije.py): files/sites/<host>/<path>. The site links them on their own servers; this copy is only for when they go.
 One request at a time (8 of the sites are one server, as katedre.py); a file already here is skipped.
 
 Usage: site_files.py list | download
@@ -14,12 +14,13 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
 
 from cent import FILE
+from studije import SITE as STUDY_SITE, media_path
 
 HERE = Path(__file__).resolve().parent
 DB = os.getenv("DB", str(HERE / "nastava.db"))
@@ -49,6 +50,12 @@ def links(db):
         add(link, html)
     for link, html, files in db.execute("SELECT p.link, n.html, n.files FROM cent_notices n JOIN cent_pages p ON p.id = n.page"):
         add(link, html, files)
+    # www.mas.bg.ac.rs (studije.py wiki_pages): every media link, as its plain /_media/ URL (FILE knows no .rtf, .gz).
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name = 'wiki_pages'").fetchone():
+        for (html,) in db.execute("SELECT html FROM wiki_pages"):
+            for tag in BeautifulSoup(html, "html.parser").find_all(["a", "img"]):
+                if p := media_path(tag.get("href") or tag.get("src")):
+                    found.add(STUDY_SITE + "_media/" + quote(p))
     return sorted(found)
 
 

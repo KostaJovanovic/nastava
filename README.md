@@ -51,7 +51,8 @@ pipeline and site, with new scrapers for phpBB.
   stored rows and exits 1 when posts are missing.
 - `documents.py`: download the attachments into `files/` and extract their text. Not run for now (not in the Action);
   `stats` writes `files/no-text.txt` (scans: need OCR).
-- `studije.py`: archive the schedule pages of www.mas.bg.ac.rs (kalendar nastave, raspored predavanja, raspored ispita)
+- `studije.py`: archive the schedule pages of www.mas.bg.ac.rs (kalendar nastave, raspored predavanja, raspored ispita),
+  the rest of its wiki that no other scraper keeps (upis, studenti, dokumenti, akreditacija, ...: `/mf/` on the site)
   and every file they link, into `nastava.db`. A changed page or file adds a version; the site shows the newest and
   serves the files itself (PDFs open in the browser).
 - `vesti.py`: archive the news of vesti.mas.bg.ac.rs (WordPress REST API: each run lists every post, and reads the new or changed ones) into the

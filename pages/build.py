@@ -945,8 +945,9 @@ def split_page(html):
 
 
 # A section's pages count as its side panel link: a teacher under Nastavnici, an archived schedule page under Raspored,
-# a news post under Vesti (site.js has the same rule).
-SECTION = {"/nastavnik/": "/nastavnici/", "/katedra/": "/nastavnici/", "/studije/": "/raspored/", "/vest/": "/vesti/"}
+# a news post under Vesti, an archived page of the faculty's site under Linkovi (site.js has the same rule).
+SECTION = {"/nastavnik/": "/nastavnici/", "/katedra/": "/nastavnici/", "/studije/": "/raspored/", "/vest/": "/vesti/",
+           "/mf/": "/link/"}
 snav = []  # the side panel's links (sidebar.html), set by main()
 
 
@@ -1237,13 +1238,11 @@ def render_study_pages(site, db):
         then = [url for first, url in seen if first <= when]
         return then[-1] if then else seen[0][1] if seen else None
 
-    pages, now = defaultdict(list), {}
-    for r in db.execute("SELECT * FROM study_pages ORDER BY slug, last_seen DESC"):
-        pages[r["slug"]].append(dict(r))
-    for name, versions in pages.items():
-        source = f"{STUDY_SITE}studije/{name}"
+    def render(versions, base, source, crumb):
+        """A page's versions, newest first: the newest at base, each older one under its first date. Returns the
+        newest one's html."""
         for i, v in enumerate(versions):
-            v["href"] = f"/studije/{name}/" if i == 0 else f"/studije/{name}/{v['first_seen'][:10]}-{v['sha'][:6]}/"
+            v["href"] = base if i == 0 else f"{base}{v['first_seen'][:10]}-{v['sha'][:6]}/"
         for v in versions:
             when = None if v is versions[0] else v["last_seen"]
             local = lambda value: (p := media_path(value)) and (file_then(p, when) if when else newest.get(p))
@@ -1253,9 +1252,18 @@ def render_study_pages(site, db):
             if m and fold(re.sub(r"<[^>]+>", "", m[2]).strip()) == fold(v["title"]):
                 html = html[:m.start()] + html[m.end():]
             write(site / v["href"].strip("/") / "index.html", env.get_template("studije.html").render(
-                page=v, current=versions[0], versions=versions, html=html, source_url=source))
+                page=v, current=versions[0], versions=versions, html=html, source_url=source, crumb_to=crumb))
             if v is versions[0]:
-                now[name] = dict(page=v, html=html)
+                newest_html = html
+        return newest_html
+
+    pages, now = defaultdict(list), {}
+    for r in db.execute("SELECT * FROM study_pages ORDER BY slug, last_seen DESC"):
+        pages[r["slug"]].append(dict(r))
+    for name, versions in pages.items():
+        html = render(versions, f"/studije/{name}/", f"{STUDY_SITE}studije/{name}", ("/raspored/", "Kalendar i rasporedi"))
+        now[name] = dict(page=versions[0], html=html)
+    render_wiki_pages(site, db, render)
     get = lambda slug: now.get(slug, {}).get("html")
     calendar, lectures = first_link(get("kalendar-nastave")), parse_lectures(get("raspored-predavanja"))
     write(site / "raspored" / "index.html", env.get_template("raspored.html").render(
@@ -1264,6 +1272,35 @@ def render_study_pages(site, db):
         sources=[(now[slug]["page"]["href"], title) for slug, title in STUDY_PAGES.items() if slug in now],
         checked=max((n["page"]["last_seen"] for n in now.values()), default=None)))
     return schedule_entries(calendar, lectures, get("raspored-ispita"))
+
+
+# The wiki's sections, as /mf/ shows them: the first part of a page's path -> its group. The rest under Ostalo.
+WIKI_GROUPS = {"upis": "Upis", "studenti": "Studenti", "studije": "Studije", "servisi": "Servisi",
+               "fakultet": "Fakultet", "organizacija": "Fakultet", "akreditacija": "Akreditacija",
+               "biblioteka": "Biblioteka", "izdanja": "Biblioteka", "katalozi": "Biblioteka",
+               "istrazivanje": "Istraživanje", "sindikat": "Sindikat"}
+
+
+def render_wiki_pages(site, db, render):
+    """The rest of www.mas.bg.ac.rs (studije.py wiki_pages) at /mf/<its path>/, as the schedule pages (render, from
+    render_study_pages), and /mf/ listing them by WIKI_GROUPS. A page gone from the wiki stays, marked."""
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'wiki_pages'").fetchone():
+        return
+    pages = defaultdict(list)
+    for r in db.execute("SELECT * FROM wiki_pages ORDER BY path, last_seen DESC"):
+        pages[r["path"]].append(dict(r))
+    groups, hrefs = defaultdict(list), set()
+    for path, versions in pages.items():
+        # Latin, as the site's other URLs: a few wiki pages have a Cyrillic name (upis/konkurs-дас).
+        href = "/mf/" + "/".join(map(slug, path.split("/"))) + "/"
+        assert href not in hrefs, f"two wiki pages at {href}"
+        hrefs.add(href)
+        render(versions, href, STUDY_SITE + quote(path), ("/mf/", "Sajt fakulteta"))
+        v = versions[0]
+        groups[WIKI_GROUPS.get(path.split("/")[0], "Ostalo")].append((v["href"], v["title"], v["gone"]))
+    order = list(dict.fromkeys(WIKI_GROUPS.values())) + ["Ostalo"]
+    write(site / "mf" / "index.html", env.get_template("mf.html").render(
+        total=len(pages), groups=[(g, sorted(groups[g], key=lambda r: fold(r[1]))) for g in order if g in groups]))
 
 
 def photo_path(url, kind):
@@ -1421,7 +1458,7 @@ def load_teachers(db, subjects):
     placeholder = {u for urls in same.values() if len({u.split("?")[0] for u in urls}) >= 3 for u in urls}
     # So is one URL kept as several departed teachers' photo (masinac.org's nema_slike.jpg).
     placeholder |= {u for u, n in Counter(t.get("photo") for t in teachers if t.get("photo")).items() if n >= 3}
-    fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
+    fotos ={f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
     bios = {b["id"]: b["paras"] for b in map(json.loads, BIOS.read_text(encoding="utf-8").splitlines())} if BIOS.exists() else {}
     sums = ({b["id"]: b["paras"] for b in map(json.loads, SUMMARIES.read_text(encoding="utf-8").splitlines())}
             if SUMMARIES.exists() else {})

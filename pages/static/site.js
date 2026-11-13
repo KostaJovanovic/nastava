@@ -167,9 +167,10 @@
   }
 
   /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
-     (a teacher's page is under Nastavnici, an archived schedule page under Raspored, a news post under Vesti). */
+     (a teacher's page is under Nastavnici, an archived schedule page under Raspored, a news post under Vesti, a page
+     of the faculty's site under Linkovi). */
   var here = location.pathname.replace(/^\/(nastavnik|katedra)\//, '/nastavnici/').replace(/^\/studije\//, '/raspored/')
-    .replace(/^\/vest\//, '/vesti/');
+    .replace(/^\/vest\//, '/vesti/').replace(/^\/mf\//, '/link/');
   [].forEach.call(d.querySelectorAll('.snav a'), function (a) {
     if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');
   });

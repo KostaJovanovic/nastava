@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% set origin = 'https://www.mas.bg.ac.rs/' %}
+
+{#- The archived pages of www.mas.bg.ac.rs that no other part of the site shows (studije.py wiki_pages, build.py
+    render_wiki_pages): groups, (name, [(href, title, gone)]), in the wiki's sections. -#}
+{% block title %}Sajt fakulteta{% endblock %}
+{% block description %}Arhiva stranica sa www.mas.bg.ac.rs: upis, studenti, dokumenti, akreditacija, biblioteka, istraživanje, sa svim ranijim verzijama.{% endblock %}
+
+{% block main %}
+<div class="mh">
+  <h1 id="title">Sajt fakulteta</h1>
+  <p class="mh__sub">{{ total | n }} stranica sa <a href="https://www.mas.bg.ac.rs/" rel="noopener" target="_blank">www.mas.bg.ac.rs</a>, sa fajlovima i svim ranijim verzijama</p>
+</div>
+{%- for name, rows in groups %}
+<section class="panel" aria-labelledby="mf-{{ loop.index }}">
+  <h2 id="mf-{{ loop.index }}">{{ name }}</h2>
+  <ul>
+    {%- for href, title, gone in rows %}
+    <li><a href="{{ href }}">{{ title }}</a>{% if gone %} <small>(uklonjeno sa sajta)</small>{% endif %}</li>
+    {%- endfor %}
+  </ul>
+</section>
+{%- endfor %}
+{% endblock %}

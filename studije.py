@@ -2,7 +2,8 @@
 # requires-python = ">=3.11"
 # dependencies = ["requests", "beautifulsoup4"]
 # ///
-"""Archive the schedule pages of www.mas.bg.ac.rs and every file they link.
+"""Archive the pages of www.mas.bg.ac.rs and every file they link: the schedule pages (study_pages) and the rest of
+the wiki that no other scraper keeps (wiki_pages, NOT_WIKI), found in the wiki's index.
 
 Usage: studije.py sync
 
@@ -14,16 +15,28 @@ import re
 import sys
 import time
 from datetime import datetime, timezone
-from urllib.parse import unquote, urljoin, urlparse
+from html import unescape
+from urllib.parse import quote, unquote, urljoin, urlparse
 
 SITE = 'https://www.mas.bg.ac.rs/'
 PAGES = {'kalendar-nastave': 'Kalendar nastave', 'raspored-predavanja': 'Raspored predavanja', 'raspored-ispita': 'Raspored ispita'}
 # Served from the archive's own origin, so only types that cannot run script there.
 SAFE = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'txt', 'csv'}
 
+# The rest of the wiki (wiki_pages): every page its index lists but the English copies, the pages other scrapers keep
+# (predmeti.py: the course book and the study plans; nastavnici.py: the teachers and the departments), the parts of
+# other pages (-kockice, -include) and the wiki's own (its menus, its test pages).
+NOT_WIKI = re.compile(r'^(en|eng|playground|wiki|wiki-renamed|studije/(predmeti|oas|mas|ds)|fakultet/nastavnici|organizacija/katedre)(/|$)'
+	r'|-(kockice|include)$|^(start|menu|navigacija|sidebar|top|topitems|my-404-page|mapa)$')
+# Their pages' files stay linked to the wiki, not stored here: ~5.8 GB of PDFs (2026-11), too big for nastava.db and
+# the site. site_files.py keeps a local copy of them.
+LINKED = re.compile(r'^(fakultet|akreditacija|biblioteka|izdanja|katalozi|istrazivanje|sindikat)/')
+
 SCHEMA = '''
 create table if not exists study_pages (slug text, sha text, title text, html text, first_seen text, last_seen text, primary key (slug, sha));
 create table if not exists study_files (path text, sha text, data blob, first_seen text, last_seen text, primary key (path, sha));
+create table if not exists wiki_pages (path text, sha text, title text, html text, first_seen text, last_seen text,
+	gone integer not null default 0, primary key (path, sha));
 '''
 
 
@@ -35,7 +48,9 @@ def media_path(url):
 	if u.path.startswith('/_media/'):
 		return unquote(u.path[len('/_media/'):])
 	match = re.search(r'(?:^|&)media=([^&]+)', u.query) if u.path.endswith('fetch.php') else None
-	return unquote(match.group(1)).replace(':', '/') if match else None
+	media = match and unquote(match.group(1))
+	# fetch.php?media=https://www.mas.bg.ac.rs/_media/...: the wiki's own file, linked by its whole URL.
+	return media_path(media) if media and media.startswith(('http:', 'https:')) else media.replace(':', '/') if media else None
 
 
 def safe(path):
@@ -49,6 +64,26 @@ def store(db, table, key_col, key, sha, now, **cols):
 		f'on conflict({key_col}, sha) do update set last_seen = excluded.last_seen', (key, sha, now, now, *cols.values()))
 
 
+def parse_index(html):
+	"""One namespace of the wiki's index (ajax.php call=index) -> ([its namespaces], {page path: its title})."""
+	spaces = [unescape(m) for m in re.findall(r'title="([^"]+)" class="idx_dir"', html)]
+	pages = {m[0].replace(':', '/'): ' '.join(unescape(m[1]).split()) for m in re.findall(r'data-wiki-id="([^"]+)"[^>]*>([^<]*)<', html)}
+	return spaces, pages
+
+
+def wiki_index(get):
+	"""{path: title} of every page in the wiki not NOT_WIKI and not one of PAGES. get(namespace) -> its index html."""
+	todo, seen, pages = [''], set(), {}
+	while todo:
+		ns = todo.pop()
+		if ns not in seen:
+			seen.add(ns)
+			spaces, found = parse_index(get(ns))
+			todo += spaces
+			pages |= found
+	return {p: t for p, t in pages.items() if not NOT_WIKI.search(p) and p.removeprefix('studije/') not in PAGES}
+
+
 def sync(db):
 	# Imported here: pages/build.py imports this module for media_path and has none of these installed.
 	from bs4 import BeautifulSoup
@@ -56,15 +91,40 @@ def sync(db):
 	from nastava import DELAY, session
 	now = datetime.now(timezone.utc).isoformat(timespec='seconds')
 	files = set()
-	for slug, title in PAGES.items():
-		r = session().get(f'{SITE}studije/{slug}', timeout=60)
+
+	def page(path):
+		"""The page's content (div.page), None when the wiki has no such page."""
+		r = session().get(SITE + quote(path), timeout=60)
+		if r.status_code in (403, 404):
+			return None
 		r.raise_for_status()
 		main = BeautifulSoup(r.text, 'html.parser').select_one('div.page')
 		if main is None:
-			raise RuntimeError(f'{slug}: no div.page, the site changed')
-		html = str(main)
+			raise RuntimeError(f'{path}: no div.page, the site changed')
+		if not LINKED.match(path):
+			files.update(p for tag in main.select('a[href], img[src]') for p in [media_path(tag.get('href') or tag.get('src'))] if p and safe(p))
+		return str(main)
+
+	for slug, title in PAGES.items():
+		html = page(f'studije/{slug}')
+		if html is None:
+			raise RuntimeError(f'studije/{slug}: not on the site')
 		store(db, 'study_pages', 'slug', slug, hashlib.sha256(html.encode()).hexdigest(), now, title=title, html=html)
-		files |= {p for tag in main.select('a[href], img[src]') for p in [media_path(tag.get('href') or tag.get('src'))] if p and safe(p)}
+	index = wiki_index(lambda ns: session().post(SITE + 'lib/exe/ajax.php', data={'call': 'index', 'idx': ns}, timeout=60).text)
+	# A broken index (an error page) must not mark the whole wiki gone.
+	if len(index) < 100:
+		raise RuntimeError(f'the wiki index lists {len(index)} pages, the site changed')
+	got = []
+	for path, title in index.items():
+		time.sleep(DELAY)
+		html = page(path)
+		if html is None:
+			print(f'skip {path}: not readable', flush=True)
+			continue
+		store(db, 'wiki_pages', 'path', path, hashlib.sha256(html.encode()).hexdigest(), now, title=title or path, html=html)
+		db.execute('update wiki_pages set gone = 0 where path = ?', (path,))
+		got.append(path)
+	db.execute(f'update wiki_pages set gone = 1 where path not in ({",".join("?" * len(got))})', got)
 	ok = skipped = 0
 	for path in sorted(files):
 		time.sleep(DELAY)
@@ -77,7 +137,7 @@ def sync(db):
 		store(db, 'study_files', 'path', path, hashlib.sha256(r.content).hexdigest(), now, data=r.content)
 		ok += 1
 	db.commit()
-	print(f'{len(PAGES)} pages, {ok} files, {skipped} skipped', flush=True)
+	print(f'{len(PAGES)} schedule pages, {len(got)} wiki pages, {ok} files, {skipped} skipped', flush=True)
 
 
 def main():

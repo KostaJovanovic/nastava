@@ -113,6 +113,21 @@ assert studije.media_path('/lib/exe/fetch.php?media=studije:itm1.pdf') == 'studi
 assert studije.media_path('https://example.com/_media/x.pdf') is None
 assert not studije.safe(studije.media_path('/lib/exe/fetch.php?media=:x.pdf'))
 assert not studije.safe('a/../../x.pdf') and not studije.safe('x.svg') and studije.safe('studije/i_godina.pdf')
+assert studije.media_path('/lib/exe/fetch.php?tok=a5&media=https%3A%2F%2Fwww.mas.bg.ac.rs%2F_media%2Fakreditacija%2F2019%2Fa.pdf') == 'akreditacija/2019/a.pdf'
+assert studije.media_path('/lib/exe/fetch.php?media=https%3A%2F%2Fexample.com%2Fa.pdf') is None
+
+# The wiki's index (studije.py wiki_index): its namespaces walked, the pages kept but NOT_WIKI and the schedule pages.
+_idx = {'': '<li><a href="/?idx=upis" title="upis" class="idx_dir"rel="nofollow"><strong>upis</strong></a></li>'
+            '<li><a href="/?idx=en" title="en" class="idx_dir"rel="nofollow"><strong>en</strong></a></li>'
+            '<li><a href="/vesti" class="wikilink1" data-wiki-id="vesti">Вести</a></li>'
+            '<li><a href="/menu" class="wikilink1" data-wiki-id="menu">menu</a></li>',
+        'upis': '<li><a href="/upis/oas" class="wikilink1" data-wiki-id="upis:oas">УПИС  НА &amp; ОАС</a></li>'
+                '<li><a href="/upis/oas-kockice" class="wikilink1" data-wiki-id="upis:oas-kockice">x</a></li>',
+        'en': '<li><a href="/en/x" class="wikilink1" data-wiki-id="en:x">X</a></li>'}
+assert studije.wiki_index(_idx.__getitem__) == {'vesti': 'Вести', 'upis/oas': 'УПИС НА & ОАС'}
+assert studije.NOT_WIKI.search('studije/predmeti/0642') and studije.NOT_WIKI.search('fakultet/nastavnici/7')
+assert studije.NOT_WIKI.search('wiki-renamed/syntax') and studije.LINKED.match('fakultet/dokumenti/start')
+assert not studije.NOT_WIKI.search('studije/praksa') and not studije.NOT_WIKI.search('fakultet/dokumenti/start')
 
 # cent.mas.bg.ac.rs (cent.py): a subject's notices page (a notice; Divi's script links made <a>), a results page (file
 # icons named by the file), a labs page (video links), and a subject's own page (only the header: no content).

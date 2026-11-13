@@ -1,19 +1,23 @@
 {% extends "base.html" %}
-{% set origin = 'https://www.mas.bg.ac.rs/studije/start' %}
+{% set origin = source_url %}
 {% from "rows.html" import crumb %}
 
-{#- One version of a schedule page: the newest at /studije/<slug>/, each older one under its first date (build.py). -#}
+{#- One version of a page of www.mas.bg.ac.rs: a schedule page (the newest at /studije/<slug>/) or another wiki page
+    (/mf/<path>/), each older one under its first date (build.py render_study_pages). crumb_to: (href, name) above it. -#}
 {%- set _old = page is not sameas current %}
 {% block title %}{{ page.title }}{% if _old %} ({{ page.first_seen | dmy }}){% endif %}{% endblock %}
 {% block description %}{{ page.title }}, Mašinski fakultet u Beogradu: {{ html | striptags | desc }}{% endblock %}
-{% block og %}-raspored{% endblock %}
-{% block crumbs %}{{ crumb('/raspored/', 'Kalendar i rasporedi') }}{% if _old %}{{ crumb(current.href, current.title) }}{% endif %}{% endblock %}
+{% block og %}{% if crumb_to[0] == '/raspored/' %}-raspored{% endif %}{% endblock %}
+{% block crumbs %}{{ crumb(*crumb_to) }}{% if _old %}{{ crumb(current.href, current.title) }}{% endif %}{% endblock %}
 
 {% block main %}
 <div class="mh">
   <h1 id="title">{{ page.title }}</h1>
   <p class="mh__sub">stranica sa mas.bg.ac.rs, {% if _old %}verzija od {{ page.first_seen | dmy }} do {{ page.last_seen | dmy }}{% else %}provereno {{ page.last_seen | dmy }}{% endif %} · <a href="{{ source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
 </div>
+{%- if current.gone and not _old %}
+<p class="note">Ove stranice više nema na sajtu fakulteta.</p>
+{%- endif %}
 {%- if _old %}
 <p class="note">Ovo je ranija verzija stranice, sa fajlovima kakvi su tada bili. <a href="{{ current.href }}">Najnovija verzija</a></p>
 {%- endif %}
