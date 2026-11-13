@@ -50,9 +50,11 @@
     </dl>
   </div>
   {%- if t.courses %}
-  {#- Two lists: the subjects with topics on the forum, then, under a line (no heading), the ones without. -#}
+  {#- Two lists: the subjects with topics on the forum, then, under a line (no heading), the ones without. On a phone
+      the first 5 (data-more the rest, and a list all of whose are), the others behind the toggle (style.css). -#}
   {%- set on_forum = t.courses | selectattr('subj') | list %}
   {%- set off_forum = t.courses | rejectattr('subj') | list %}
+  {%- set n_on = on_forum | length %}
   <div class="tp__subj">
     <h2>Predmeti</h2>
     {%- if on_forum %}
@@ -60,22 +62,24 @@
       {%- for c in on_forum %}
       {#- Their own material elsewhere in it (build.py mark_elsewhere), not the subject's other teachers'. An area of
           Завршни предмет (c.area) has its own name and the subject's board. -#}
-      <li><span class="tp__nm"><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.name if c.area else c.subj.name }}</a>
+      <li{{ ' data-more' if loop.index > 5 else '' }}><span class="tp__nm"><a href="{{ c.subj.href }}" title="{{ c.subj.smer.name }}">{{ c.name if c.area else c.subj.name }}</a>
         {%- for e in (c.subj.elsewhere or {}).values() if t.username in e.users %}<span class="ext" title="Materijal i na: {{ e.name }}">{{ e.name }}</span>{% endfor %}</span><span class="tp__smer" title="{{ c.subj.smer.label }}">{{ (c.subj.smer.short[:1] | upper) ~ c.subj.smer.short[1:] }}</span><span class="tp__n">{{ c.mine or '' }}</span></li>
       {%- endfor %}
     </ul>
     {%- endif %}
     {%- if off_forum %}
-    <ul{% if on_forum %} class="tp__offl"{% endif %}>
+    <ul{% if on_forum %} class="tp__offl"{% endif %}{{ ' data-more' if n_on >= 5 else '' }}>
       {%- for c in off_forum %}
+      {%- set m = ' data-more' if n_on + loop.index > 5 else '' %}
       {%- if c.url.startswith('/') %}
-      <li class="tp__off"><a href="{{ c.url }}" title="Nema ga na forumu; opis predmeta">{{ c.name }}</a><span></span><span></span></li>
+      <li class="tp__off"{{ m }}><a href="{{ c.url }}" title="Nema ga na forumu; opis predmeta">{{ c.name }}</a><span></span><span></span></li>
       {%- else %}
-      <li class="tp__off"><a href="{{ c.url }}" rel="noopener" target="_blank" title="Nema ga na forumu; stranica predmeta na mas.bg.ac.rs">{{ c.name }}</a><span></span><span></span></li>
+      <li class="tp__off"{{ m }}><a href="{{ c.url }}" rel="noopener" target="_blank" title="Nema ga na forumu; stranica predmeta na mas.bg.ac.rs">{{ c.name }}</a><span></span><span></span></li>
       {%- endif %}
       {%- endfor %}
     </ul>
     {%- endif %}
+    {%- if t.courses | length > 5 %}<label class="tp__more"><input type="checkbox"><span>Prikaži još {{ t.courses | length - 5 }}</span></label>{% endif %}
   </div>
   {%- endif %}
 </section>
