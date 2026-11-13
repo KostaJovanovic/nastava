@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% set origin = 'https://www.mas.bg.ac.rs/studije/start' %}
 
-{#- The calendar and the schedules on one page (build.py render_study_pages): the calendar's file as a banner, the
+{#- The calendar and the schedules on one page (build.py render_study_pages): the calendar's file as a card, the
     lecture schedule by program (build.py parse_lectures; site.js makes the programs tabs, without it they are one
     under the other), then the exam schedule as the faculty's page has it. The sources link the archived pages,
     which keep every version. -#}
@@ -19,11 +19,13 @@
 </div>
 
 {%- if calendar %}
-<a class="rs-cal" href="{{ calendar[1] }}">
-  <svg class="i rs-cal__i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>
-  <span class="rs-cal__t"><small>Kalendar nastave i ispita</small><b>{{ calendar[0] }}</b></span>
-  <span class="rs-cal__go">{{ pdf() }}Otvori PDF</span>
-</a>
+{#- The calendar as the schedules' sections: its heading, its file as a card like a year's schedule. -#}
+<section class="panel rs" aria-labelledby="rk-h">
+  <div class="rs__head"><h2 id="rk-h">Kalendar nastave i ispita</h2></div>
+  <ul class="rs-cards">
+    <li><a class="rs-card" href="{{ calendar[1] }}"><span class="rs-card__b"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg></span><span class="rs-card__n" title="{{ calendar[0] }}">{% for w in calendar[0].split() if '/' in w %}Školska {{ w }}{% else %}{{ calendar[0] }}{% endfor %}</span>{{ pdf() }}</a></li>
+  </ul>
+</section>
 {%- endif %}
 
 <section class="panel rs" aria-labelledby="rs-h" data-rs>
