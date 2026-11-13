@@ -674,11 +674,16 @@ body:has(#res) .filters--years { display: none; }
 .mp__body { padding: 4px 0 20px; }
 .mp__group h3, .mp__group summary { margin: 16px 0 8px; color: var(--fg); font: 800 14.5px var(--sans); }
 .mp__group h3 span, .mp__group summary span { color: var(--dim); font-weight: 400; }
-.mp__group summary { cursor: pointer; }
+.mp__group summary { display: flex; align-items: center; gap: 0; min-height: 34px; margin: 2px 0; cursor: pointer; list-style: none; }
+.mp__group summary::-webkit-details-marker { display: none; }
+.mp__group summary span { white-space: pre; }  /* its ' · n': a flex item drops a leading space */
+/* Its chevron: right while folded, down while open. */
+.mp__group summary::before { content: ""; flex: none; width: 7px; height: 7px; margin: 0 11px 0 3px; border: solid var(--dim); border-width: 0 2px 2px 0; rotate: -45deg; transition: rotate .15s; }
+.mp__group[open] summary::before { rotate: 45deg; }
 /* A year over its groups (site.js show): the groups' headings smaller under it. */
 .mp__year { margin: 28px 0 0; color: var(--fg); font: 800 17px var(--sans); }
 .mp__year:first-child { margin-top: 12px; }
-.mp__year ~ .mp__group h3 { margin: 12px 0 6px; color: var(--dim); font-size: 13px; }
+.mp__year ~ .mp__group summary { margin: 0; color: var(--dim); font-size: 13.5px; }
 /* Step 1's subjects: a checklist, one row each, its group (an elective block) on the right. */
 [data-mp-body] .mp__cards { grid-template-columns: 1fr; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--card); overflow: hidden; }
 [data-mp-body] .mp__card { align-items: center; border: 0; border-radius: 0; padding: 9px 12px; }
@@ -746,9 +751,6 @@ body:has(#res) .filters--years { display: none; }
   .mp__nav .mp__tabs, .mp__nav .mp__chips { gap: 6px; }
   .mp__nav .mp__tab { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .mp__nav .mp__badge { position: static; border: 0; }
-  /* The year's heading says it: its first list (the required ones) without its own. */
-  .mp__year + .mp__group h3 { display: none; }
-  .mp__year + .mp__group { margin-top: 8px; }
   /* Smaller cards: "Svi nastavnici" one line, the photos smaller. */
   .mp__card { padding: 8px 12px; }
   .mp__card:not(.mp__card--t)[data-t] small { display: none; }

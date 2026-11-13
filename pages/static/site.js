@@ -536,10 +536,12 @@
       if (hint) t.appendChild(el('small', null, hint));
       return b;
     };
+    // Each group folds under its heading: open in a search, or where a subject in it is followed.
+    var searching = false;
     var group = function (title, list) {
-      // The old subjects folded under their heading: few follow them.
-      var old = title === 'Stari predmeti', sec = el(old ? 'details' : 'section', 'mp__group'), grid = el('div', 'mp__cards');
-      sec.appendChild(el(old ? 'summary' : 'h3', null, title)).appendChild(el('span', null, ' · ' + list.length));
+      var sec = el('details', 'mp__group'), grid = el('div', 'mp__cards'), o = followed();
+      sec.open = searching || list.some(function (c) { return c.dataset.ids && c.dataset.ids.split(',').some(function (i) { return o[subj[i][0]]; }); });
+      sec.appendChild(el('summary', null, title)).appendChild(el('span', null, ' · ' + list.length));
       list.forEach(function (c) { grid.appendChild(c); });
       sec.appendChild(grid);
       body.appendChild(sec);
@@ -577,6 +579,7 @@
     var render = function () {
       var w = fold(mq.value.trim()).split(/\s+/).filter(Boolean);
       var has = function (s) { s = fold(s); return w.every(function (x) { return s.indexOf(x) > -1; }); };
+      searching = w.length > 0;
       nav.textContent = '';
       body.textContent = '';
       badges = [];
