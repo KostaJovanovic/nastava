@@ -68,6 +68,40 @@ test/worker_test.mjs`, `pages/devcheck.py` (dev mode = build), and `uv run pages
 8. **Done plans.** Delete `PLAN-sync.md` and `PLAN-cent.md`, only after asking the user at this step; fix the
    README and `PLAN.md` links to them.
 
+## Waste to cut (found 2026-11-13, after the steps above)
+
+These change what the build does, so they come after the output-neutral steps, each with its own check. Start-up
+shares are of dev mode's load (`uv run pages/serve.py`, ~15 s; profiled with cProfile, which doubles the times).
+
+1. **The word cloud once a week.** `archive_stats` (`post_words` over all 24k posts) is ~26% of each start-up and
+   build, for `/statistika/` alone. The user's call: recompute it at most weekly. Keep the result with the date it was
+   made; on each build or dev start, use it while it is under 7 days old, else compute it again and save it with the
+   new date. Where it lives: CI builds from a fresh checkout (`ci/deploy.sh`: `ci/state.sh pull`, build, `state.sh
+   push` to the "runs" release), so a file only in the working tree is lost each run; keep it with the saved state
+   (or in the database's `meta` table, which the build now opens read-only). Not important to the user: keep it
+   simple.
+2. **`lat()` letter by letter.** `build.py` `lat` calls a Python function per Cyrillic letter (4.5M calls, ~18% of
+   start-up). A `str.translate` table, with the Љ/Њ/Џ capital rule kept (all-caps word: "LJ", else "Lj"), does the
+   same faster. Step 2's `common.py` table is the place.
+   Open question for the user (asked, not answered): build everything in Latin and keep only the Cyrillic button?
+   Gain: a Latin reader's page needs no conversion at all (`pismo.js` would only act on a click). Loss: the Cyrillic
+   view becomes Latin→Cyrillic of the Latin, which `toCyr` cannot always undo: "nj"/"lj"/"dž" across a word's parts
+   ("injekcija" → инјекција, not ињекција; "nadživeti" → надживети, not наџивети), so a post first written in Cyrillic
+   no longer shows exactly as written. Text first written in Latin is already converted this way today.
+3. **HTML cleaning up front in dev mode.** `clean_html` (nh3, ~14% of start-up) makes each forum post's HTML safe and
+   local: drops scripts and unsafe tags or attributes, rewrites links. Needed (a post must not run code on the site),
+   but dev mode needs it only for the post page opened: do it at render there.
+4. **`write()` costs ~18% of the dev start-up** though it only stores the page in dev mode. Not explained yet: find out
+   (`path.parent.relative_to` 33k times? arguments evaluated eagerly?).
+5. **`pismo.js` converts each page twice**: once as the parser adds nodes, then `set(mode)` walks the whole body again
+   at DOMContentLoaded. The second walk is only for text the parser grew after its first conversion (split across
+   network chunks); let it skip a node whose text is still what was shown (`shown`), converting only the grown ones.
+   The script switch (a click) still converts everything.
+6. **The shell fetched per page.** Most pages are stored as a fragment (their head and `<main>`); the frame every page
+   shares (header, side panel, footer, scripts) is one `shell.html`. The Worker (`pages/src/index.js`) joins them, and
+   fetches `shell.html` from GitHub Pages for every page not in its cache: one extra request each. Cache the shell in
+   the Worker (by deploy) instead. Minor.
+
 ## Not changed
 
 The Teams `CLASSES` list stays in both `teams.py` and `teams-files.js` (a console script cannot read the repo), each
