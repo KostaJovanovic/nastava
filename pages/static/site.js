@@ -604,17 +604,29 @@
         // Nothing picked nor searched: no list, a program first (all of them at once were a thousand cards).
         body.appendChild(el('p', 'mp__none', 'Izaberi studijski program ili potraži predmet.'));
       } else if (level.length && level[0].c.length) {
-        // A row left unpicked: a section per choice in it (a year, a module), its subjects each once, by name (folded:
-        // Edge's 'sr' collation put Avionika before Adaptivne), with their group (an elective block) beside them.
-        level.forEach(function (n) {
-          var seen = {}, ids = [];
-          (function walk(x, g) {
-            x.s.forEach(function (i) { if (!seen[i] && hit(i)) { seen[i] = g || ' '; ids.push(i); } });
-            x.c.forEach(function (c) { walk(c, c.n || g); });
-          })(n, '');
-          if (ids.length) group(n.n, ids.sort(function (a, b) { return fold(subj[a][1]).localeCompare(fold(subj[b][1])); })
-            .map(function (i) { return card([i], subj[i][1], seen[i].trim().replace(/^Изборни предмет/, 'Изборни')); }));
-        });
+        // A row left unpicked: each choice in it (a year; a module's years) under its heading, its subjects by group
+        // as when picked: the required ones, then each elective block on its own. A choice of one unnamed group (Stari
+        // predmeti) is that group alone. By name (folded: Edge's 'sr' collation put Avionika before Adaptivne).
+        var byName = function (a, b) { return fold(subj[a][1]).localeCompare(fold(subj[b][1])); };
+        var show = function (n, pre) {
+          var name = pre ? pre + ' › ' + n.n : n.n;
+          if (n.c.length && n.c[0].c.length) return n.c.forEach(function (c) { show(c, name); });
+          var gs = n.c.length ? n.c : [n];
+          if (gs.length === 1 && !gs[0].n) {
+            var one = gs[0].s.filter(hit).sort(byName);
+            if (one.length) group(name, one.map(function (i) { return card([i], subj[i][1]); }));
+            return;
+          }
+          var head = body.appendChild(el('h3', 'mp__year', name)), any = false;
+          gs.forEach(function (g) {
+            var ids = g.s.filter(hit).sort(byName);
+            if (!ids.length) return;
+            any = true;
+            group(g.n || 'Obavezni predmeti', ids.map(function (i) { return card([i], subj[i][1]); }));
+          });
+          if (!any) head.remove();
+        };
+        level.forEach(function (n) { show(n, ''); });
       } else level.forEach(function (g) {
         var title = g.n || (/godina$/.test(node.n) ? 'Obavezni predmeti' : 'Predmeti'), ids = g.s.filter(hit);
         if (ids.length) group(title, ids.map(function (i) { return card([i], subj[i][1]); }));
