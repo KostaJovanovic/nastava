@@ -850,6 +850,11 @@
     };
     waveSync();
     new MutationObserver(waveSync).observe(d.documentElement, { attributes: true, attributeFilter: ['lang'] });
+    // Paused while off the screen (style.css .wave--off), all at once, so the letters stay in step: their animations
+    // cost the main thread every frame, which a phone needs for what does move (the home page's switch).
+    if (window.IntersectionObserver) new IntersectionObserver(function (es) {
+      wave.classList.toggle('wave--off', !es[es.length - 1].isIntersecting);
+    }).observe(wave);
   }
 
   var leave = null;

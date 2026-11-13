@@ -375,6 +375,7 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 /* 3.2s a wave, 0.15s a letter (site.js): one hump about 21 letters long. */
 .wave { display: inline-block; animation: wave 3.2s ease-in-out infinite; }
 @keyframes wave { 50% { transform: translateY(-3px); } }
+.wave--off .wave { animation-play-state: paused; }
 /* A link's underline skips its inline-block letters: each letter has its own, so it waves with them. */
 .ft__by a, .ft__by a .wave { text-decoration: underline; text-underline-offset: 3px; }
 /* A space in the link (site.js): kept, or an inline-block would drop it, and so underlined. */
