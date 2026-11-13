@@ -1063,9 +1063,10 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 :is(.fade, .faded) .lists {
   --mask: linear-gradient(rgb(0 0 0 / calc(1 - .2 * var(--hide))), rgb(0 0 0 / calc(1 - var(--hide))) var(--end, 100px));
   -webkit-mask-image: var(--mask); mask-image: var(--mask);
-  /* The rise: nearly all of it at once, then a slow settle. */
-  transition: --hide .5s ease-out, translate .5s cubic-bezier(.1, .7, .2, 1);
 }
+/* The rise: nearly all of it at once, then a slow settle. Only at the reveal: until then --drop follows Studije's
+   height at once (search.html), so the peek stays put on the screen. */
+.faded .lists { transition: --hide .5s ease-out, translate .5s cubic-bezier(.1, .7, .2, 1); }
 .fade .lists { --hide: 1; translate: 0 var(--drop, 100vh); }
 /* The source tags (cent, ie, teams…) without their colours until the reveal: the row's background, the line's text. */
 :is(.fade, .faded) .lists .src { transition: background-color .5s ease-out, color .5s ease-out; }
