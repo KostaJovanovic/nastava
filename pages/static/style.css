@@ -1058,7 +1058,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 }
 /* The rise: nearly all of it at once, then a slow settle. Only at the reveal: until then --drop follows Studije's
    height at once (search.html), so the peek stays put on the screen. */
-.faded .lists { transition: --hide .5s ease-out, translate .5s cubic-bezier(.1, .7, .2, 1); }
+/* .falling: back down to the peek ("Samo moji predmeti" switched off, search.html). */
+:is(.faded, .falling) .lists { transition: --hide .5s ease-out, translate .5s cubic-bezier(.1, .7, .2, 1); }
 /* will-change: their own layer, so --drop following Studije's animation (search.html) moves them, not repaints them. */
 .fade .lists { --hide: 1; translate: 0 var(--drop, 100vh); will-change: translate; }
 /* The source tags (cent, ie, teams…) without their colours until the reveal: the row's background, the line's text. */
