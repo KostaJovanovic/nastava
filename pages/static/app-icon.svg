@@ -3,6 +3,6 @@
      square, inside the middle 80% circle a maskable icon keeps. The PNGs are drawn from it with pages/icons.py. -->
 <rect width="40" height="40" fill="#0076b1" stroke="none"/>
 <mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#fff" stroke="none"/><path d="M25 1 13 39" stroke="#000" stroke-width="7"/></mask>
-<mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#fff" stroke="none"/><path d="M4.8 27.8Q10 16 17.3 7.8L15.5 30Q24 14 33.4 4L26 34.5" stroke="#000" stroke-width="7"/></mask>
-<g transform="translate(6 6) scale(.7)"><rect x="3" y="11" width="34" height="21.5" rx="6.5" mask="url(#cut)"/><path d="M25 1 13 39" mask="url(#m)"/><path d="M4.8 27.8Q10 16 17.3 7.8L15.5 30Q24 14 33.4 4L26 34.5"/></g>
+<mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#fff" stroke="none"/><path d="M4.8 27.8C9 19 13 11 16.3 7.9c1-.9 1.6-.6 1.5.6L15.5 30q.4 1.6 1.3 0C21 21 27 11 31.9 5c1-1.2 1.9-1 1.7.3L26 34.5" stroke="#000" stroke-width="7"/></mask>
+<g transform="translate(6 6) scale(.7)"><rect x="3" y="11" width="34" height="21.5" rx="6.5" mask="url(#cut)"/><path d="M25 1 13 39" mask="url(#m)"/><path d="M4.8 27.8C9 19 13 11 16.3 7.9c1-.9 1.6-.6 1.5.6L15.5 30q.4 1.6 1.3 0C21 21 27 11 31.9 5c1-1.2 1.9-1 1.7.3L26 34.5"/></g>
 </svg>
