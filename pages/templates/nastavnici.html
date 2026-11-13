@@ -9,11 +9,13 @@
 {% block title %}{{ name }}{% endblock %}
 {% block description %}{% if archive %}Nastavnici Mašinskog fakulteta u Beogradu koji više nisu na spisku fakulteta: zvanja, katedre, predmeti i objave na forumu nastave.{% elif researchers %}Istraživači Inovacionog centra i demonstratori Mašinskog fakulteta u Beogradu, koji nisu na spisku nastavnika.{% else %}Nastavnici i saradnici Mašinskog fakulteta u Beogradu po katedrama i zvanjima: konsultacije, kabineti, mejlovi, predmeti i objave na forumu nastave.{% endif %}{% endblock %}
 {% block og %}-{{ 'arhiva' if archive else 'nastavnici' }}{% endblock %}
+{#- The first frame waits for a screen of the list only (its 30th card). -#}
+{% block paint %}paint{% endblock %}
 {% block crumbs %}{% if archive or researchers %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endif %}{% endblock %}
 
-{%- macro card(t) %}
+{%- macro card(t, id='') %}
   {#- The grey corner: a departed teacher, on the archive page and in the list's search. -#}
-  <li class="pc{% if t.gone %} pc--gone{% if t.last_seen[:4] == '0000' %} pc--undated{% endif %}" style="--p: {{ t.age }}%{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
+  <li{% if id %} id="{{ id }}"{% endif %} class="pc{% if t.gone %} pc--gone{% if t.last_seen[:4] == '0000' %} pc--undated{% endif %}" style="--p: {{ t.age }}%{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
     {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
     <div class="pc__t">
@@ -64,8 +66,8 @@
     {%- for z in teachers | map(attribute='title') | select | unique | sort %}<option value="{{ z | slug }}" data-label="{{ z }}">{{ z }}</option>{% endfor %}
   </select>
   <span class="fbar__n">prikazano <b data-shown>{{ teachers | length }}</b></span>
-  {#- Grouping and order need site.js; without it the list stays in the page's order. -#}
-  <div class="arrange" data-arrange hidden>
+  {#- Grouping and order need site.js; without it the whole bar is hidden (style.css). -#}
+  <div class="arrange" data-arrange>
     <label class="pick">Grupiši
     <select id="t-g" name="grupa" data-group>
       <option value="">bez grupa</option>
@@ -92,7 +94,7 @@
     <h2 class="sg__h">Godina odlaska nepoznata <span>· {{ teachers | selectattr('last_seen', 'equalto', '0000') | list | length }}</span></h2>
     <p>Izvori iz istorije fakulteta ih pominju, ali bez godine.</p>
   </li>
-  {%- endif %}{{ card(t) }}
+  {%- endif %}{{ card(t, 'paint' if loop.index == 30 else '') }}
   {%- endfor %}
 </ol>
 </div>

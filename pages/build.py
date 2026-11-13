@@ -932,6 +932,18 @@ def split_page(html):
             f'<html lang="sr">{html[t0:t1]}{HEAD_END}{html[m0:m1]}</html>')
 
 
+# A section's pages count as its side panel link: a teacher under Nastavnici, an archived schedule page under Raspored,
+# a news post under Vesti (site.js has the same rule).
+SECTION = {"/nastavnik/": "/nastavnici/", "/studije/": "/raspored/", "/vest/": "/vesti/"}
+snav = []  # the side panel's links (sidebar.html), set by main()
+
+
+def snav_href(path, hrefs):
+    """The link of hrefs that the page at path is under: "/" only for itself, another for the paths it starts."""
+    here = next((to + path[len(fr):] for fr, to in SECTION.items() if path.startswith(fr)), path)
+    return next((h for h in hrefs if (here == "/" if h == "/" else here.startswith(h))), None)
+
+
 def write(path, html, index=True, canonical=None):
     """Write only the page's fragment: every page but the home and 404 pages shares shell.html. Its canonical link:
     its URL on the main domain, for search engines (also for its copy on github.io), or that of the page canonical
@@ -943,8 +955,11 @@ def write(path, html, index=True, canonical=None):
         return
     page_shell, fragment = split_page(html)
     assert page_shell == shell, f"{path}: the page differs from shell.html outside its head and <main>"
-    url = SITE_URL + (canonical or f"/{path.parent.relative_to(site_dir).as_posix()}/")
+    url = SITE_URL + (canonical or own)
     head = f'<link rel="canonical" href="{escape(url)}">'
+    # join() marks that link aria-current, so the page's first frame shows it (site.js marked it after).
+    if h := snav_href(own, snav):
+        head += f'<meta name="snav" content="{h}">'
     if index:
         urls.add(url)
         end = fragment.rindex("</html>")
@@ -1573,8 +1588,9 @@ def load_book(db, subjects, teachers):
             names, p["variants"] = p.pop("names"), []
             for n in names if len(names) > 1 else []:
                 t = by_area.get((s["id"], fold(n)))
+                # own: what only this area's row has; the subject's find is the page's once (predmeti.html #finds).
                 p["variants"].append(dict(s, name=n, id=f"{s['id']}-{slug(n)}", holder_t=t,
-                                          find=fold(f"{n} {t['name'] if t else ''}") + " " + s["find"]))
+                                          own=fold(f"{n} {t['name'] if t else ''}")))
     return book
 
 
@@ -1646,7 +1662,7 @@ def render_book(site, book):
             s=s, page=book_page(s["html"]), source_url=f"{STUDY_SITE}studije/predmeti/{s['id']}"))
     listed = [s for s in book if not s["gone"]]
     write(site / "predmeti" / "index.html", env.get_template("predmeti.html").render(
-        plans=plan_groups(book), n=len(listed), katedre=sorted({s["katedra"] for s in listed if s["katedra"]}),
+        plans=plan_groups(book), n=len(listed), finds={s["id"]: s["find"] for s in listed}, katedre=sorted({s["katedra"] for s in listed if s["katedra"]}),
         programs=[p for p in PROGRAMS if any(s["program"] == p for s in listed)]))
 
 
@@ -1917,7 +1933,7 @@ def render_home(topics, smerovi, side, n_teachers, vesti):
     live = [m for m in smerovi.values() if m.get("live")]
     live.sort(key=lambda m: HOME_ORDER.index(m["key"]) if m["key"] in HOME_ORDER else len(HOME_ORDER))
     return env.get_template("search.html").render(
-        smerovi=live, recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
+        home=True, smerovi=live, recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
         stats=dict(posts=side["total"], topics=len(topics), teachers=n_teachers),
         years_json=json.dumps([y for y, _ in side["year_hist"]]))
 
@@ -2005,6 +2021,10 @@ def main(db_path, out, dev_mode=False):
     global shell, site_dir
     shell, site_dir = split_page(str(env.get_template("base.html").render()))[0], site
     (site / "shell.html").write_text(versioned(shell), encoding="utf-8")
+    nav = shell[shell.index('<nav class="snav"'):]
+    snav[:] = re.findall(r'<a href="([^"]+)"', nav[:nav.index("</nav>")])
+    # join() marks the shell's first <a href="..."> with the link's href: that one must be in .snav.
+    assert all(shell.index(f'<a href="{h}"') > shell.index('<nav class="snav"') for h in snav), "a link before .snav"
     # The faculty's subject code often differs from the board's: a subject of the same name the teacher posted in wins.
     posted = defaultdict(dict)
     for it in items:
@@ -2069,11 +2089,13 @@ if __name__ == "__main__":
     assert acronyms("Понашање заварених спојева у експлоатацији") == {"pzsue", "pzse"}
     assert acronyms("Биомедицинска инструментација и опрема", ["BMIO - испит", "ДОМАЋИ 2", "ОМ ПРВИ ДЕО", "ММ1 рок"]) == {
         "biio", "bio", "bmio"}
-    asset_v["icons.svg"] = "ab"
-    assert versioned('<use href="/static/icons.svg#i-x"> `/static/icons.svg#${k}` /static/icons.svg?v=ab /static/sw.js '
-                     '/static/site.js') == ('<use href="/static/icons.svg?v=ab#i-x"> `/static/icons.svg?v=ab#${k}` '
-                                            '/static/icons.svg?v=ab /static/sw.js /static/site.js')
+    asset_v["site.js"] = "ab"
+    assert versioned('<script src="/static/site.js"> `/static/site.js#${k}` /static/site.js?v=ab /static/sw.js '
+                     '/static/site.json') == ('<script src="/static/site.js?v=ab"> `/static/site.js?v=ab#${k}` '
+                                              '/static/site.js?v=ab /static/sw.js /static/site.json')
     asset_v.clear()
+    assert snav_href("/nastavnik/x/", ["/", "/nastavnici/", "/vesti/"]) == "/nastavnici/"
+    assert snav_href("/", ["/", "/vesti/"]) == "/" and snav_href("/tema/1/", ["/", "/vesti/"]) is None
     assert slug(" Душан Љ. Ђукић ") == "dusan-lj-djukic" and slug(short_smer("основне академске студије - МИ")) == "oas-mi"
     _r = [dict(id=1, n="Мата 1"), dict(id=7, n="Mata 1"), dict(id=9, n="Друго")]
     set_hrefs(_r, lambda r: f"/p/{slug(r['n'])}/")

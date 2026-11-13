@@ -7,7 +7,7 @@
 		[c, "a b v g d đ e ž z i j k l lj m n nj o p r s t ć u f h c č dž š".split(" ")[i]]));
 	const C = Object.fromEntries(Object.entries(L).map(([c, l]) => [l, c]));
 	// Elements whose text stays as it is: code, the hidden search copy (.pf), and the switch itself.
-	const SKIP = "script, style, textarea, code, .pf, [data-notx]";
+	const SKIP = "head, script, style, textarea, code, .pf, [data-notx]";
 	const ATTRS = ["placeholder", "title", "aria-label"];
 
 	function toLat(s) {
@@ -39,13 +39,19 @@
 	let mode = "lat";
 	try { mode = localStorage.getItem(KEY) || mode; } catch (e) {}
 	const text = new WeakMap();
+	const shown = new WeakMap();
 	const attrs = new WeakMap();
 	const convert = (s) => (mode === "cyr" ? toCyr(s) : toLat(s));
 
 	function convertNode(n) {
-		if (!text.has(n)) text.set(n, n.nodeValue);
+		const s = shown.get(n);
+		if (s === undefined) text.set(n, n.nodeValue);
+		// The parser added to it after it was converted (its text came in two network chunks): the new end is original
+		// too. Changed some other way: that is the original now.
+		else if (n.nodeValue !== s) text.set(n, n.nodeValue.startsWith(s) ? text.get(n) + n.nodeValue.slice(s.length) : n.nodeValue);
 		const v = convert(text.get(n));
 		if (n.nodeValue !== v) n.nodeValue = v;
+		shown.set(n, v);
 	}
 
 	function apply(root) {
@@ -86,27 +92,38 @@
 	const MODES = Object.keys(LABEL);
 	if (!LABEL[mode]) mode = "lat";
 
+	// The header's button as the mode has it: also run before the first frame, from sidebar.html (head.js showSaved).
+	window.pismoButton = () => {
+		const b = document.getElementById("pismo");
+		// base.html has the Latin one.
+		if (!b || b.dataset.pismo === mode) return;
+		const [short, rest] = LABEL[mode];
+		b.dataset.pismo = mode;
+		b.innerHTML = `${short}<span>${rest}</span>`;
+		b.setAttribute("aria-label", "Pismo: " + short + rest);
+	};
+
 	const title = document.title;
+	const lang = () => { document.documentElement.lang = mode === "cyr" ? "sr-Cyrl" : "sr-Latn"; };
 	function set(m) {
 		mode = m;
 		try { localStorage.setItem(KEY, m); } catch (e) {}
-		document.documentElement.lang = m === "cyr" ? "sr-Cyrl" : "sr-Latn";
+		lang();
 		document.title = convert(title);
 		apply(document.body);
-		const b = document.getElementById("pismo");
-		if (!b) return;
-		const [short, rest] = LABEL[m];
-		b.dataset.pismo = m;
-		b.innerHTML = `${short}<span>${rest}</span>`;
-		b.setAttribute("aria-label", "Pismo: " + short + rest);
+		window.pismoButton();
 	}
 
+	// Loaded in <head> (base.html): each node is converted as the parser adds it, before any frame shows it (an
+	// observer's callback runs first), so neither script flashes. Then the whole page once more, when it is parsed.
 	// Our own changes are to text (characterData), which this does not watch, so it cannot loop.
 	new MutationObserver((records) => {
 		for (const r of records) for (const n of r.addedNodes) apply(n);
-	}).observe(document.body, { childList: true, subtree: true });
+	}).observe(document.documentElement, { childList: true, subtree: true });
 	document.addEventListener("click", (e) => {
 		if (e.target.closest("#pismo")) set(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
 	});
-	set(mode);
+	lang();
+	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => set(mode));
+	else set(mode);
 })();

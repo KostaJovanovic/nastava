@@ -17,6 +17,7 @@ shell.html, as the Worker (pages/src/index.js join) does on the live site.
 import ctypes
 import os
 import posixpath
+import re
 import socket
 import subprocess
 import sys
@@ -35,8 +36,8 @@ SITE = HERE / ".build" / "site"
 DEV = HERE / ".build" / "dev"  # dev mode's build.py out dir: its site/ has the small files, no pages
 DB = HERE.parent / "nastava.db"
 FRAGMENT = '<html lang="sr"><title>'
-# What dev mode's data comes from: a change restarts it. build.py imports the three modules; the icons are in the
-# pages (build.py sprite). The database's -wal: a sync writes there first.
+# What dev mode's data comes from: a change restarts it. build.py imports the three modules; the pages link the icons
+# with their hash (build.py VERSIONED). The database's -wal: a sync writes there first.
 WATCH = [HERE / "build.py", HERE / "static" / "icons.svg", *(HERE.parent / f for f in (
     "studije.py", "nastavnici.py", "mail.py", "nastava.db", "nastava.db-wal", "verzije.md"))]
 build = None  # dev mode: the build module, its pages loaded (dev())
@@ -44,6 +45,9 @@ build = None  # dev mode: the build module, its pages loaded (dev())
 
 def join(shell, fragment):
     head, _, main = fragment[fragment.index("<title>"):fragment.rindex("</html>")].partition("<!--/head-->")
+    if snav := re.search(r'<meta name="snav" content="([^"]+)">', head):
+        a = f'<a href="{snav[1]}"'
+        shell = shell.replace(a, a + ' aria-current="page"', 1)
     return shell.replace("<title></title>", head, 1).replace("<!--main-->", main, 1)
 
 
@@ -124,6 +128,8 @@ def lan_ip():
 
 if __name__ == "__main__":
     assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title><meta><!--/head-->$& M</html>") == "<title>T</title><meta><b>$& M</b>"
+    assert join('<title></title><a href="/x/">X</a><a href="/x/"><!--main-->', f'{FRAGMENT}T</title><meta name="snav" content="/x/"><!--/head-->M</html>') == (
+        '<title>T</title><meta name="snav" content="/x/"><a href="/x/" aria-current="page">X</a><a href="/x/">M')
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     port = int(args[0]) if args else 15497  # server.bat's PORT, drawn at random
     if "--child" in sys.argv:

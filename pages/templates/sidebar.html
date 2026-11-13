@@ -3,8 +3,10 @@
     (build.py side_panel). -#}
 <aside class="side" aria-label="Meni i filteri">
   {#- Wide screens: a list. Phone: a tab bar at the bottom of the screen, with the shorter label. -#}
+  {#- The current page's link has aria-current: the home page (a whole page) here, the rest when joined to the shell
+      (build.py write, pages/src/index.js join). -#}
   <nav class="snav" aria-label="Stranice">
-    <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Početna</a>
+    <a href="/"{% if home %} aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Početna</a>
     <a href="/raspored/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg><span class="snav__long">Kalendar i rasporedi</span><span class="snav__short">Raspored</span></a>
     <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
     <a href="/link/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-link"></use></svg>Linkovi</a>
@@ -46,4 +48,6 @@
       <span class="hcard__n"><span><b>{{ side.total | n }}</b> {{ side.total | pl('post') }}</span><span><b>{{ side.downloads | n }}</b> {{ side.downloads | pl('preuzimanje') }}</span></span>
     </a>
   </div>
+  {#- The saved choices (head.js showSaved), before the first frame (base.html rel=expect). -#}
+  <script>showSaved()</script>
 </aside>

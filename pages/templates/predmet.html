@@ -14,6 +14,8 @@
   <div class="mh__top">
     <h1 id="title">{{ subj.name }}</h1>
     <button type="button" class="btn star" data-star="{{ subj.href }}" data-name="{{ subj.name }}" aria-pressed="false" title="Najnovije objave praćenih predmeta su na početnoj strani" hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Prati</span></button>
+    {#- Followed or not, before the first frame (base.html rel=expect). -#}
+    <script>showStar()</script>
   </div>
   <p class="mh__sub">{{ subj.topics | n }} {{ subj.topics | pl('objava') }} · {{ subj.count | n }} {{ subj.count | pl('post') }}{% if subj.codes %} · šifre {{ subj.codes | join(', ') }}{% endif %}{% if subj.info %} · <a href="{{ subj.info.href }}">opis predmeta</a>{% endif %}{% if subj.site %} · <a href="{{ subj.site }}" rel="noopener" target="_blank">sajt predmeta <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
   {%- if subj.elsewhere %}

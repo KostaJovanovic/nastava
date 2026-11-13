@@ -62,6 +62,8 @@
   <div class="prose prose--html">{{ lectures_html | safe }}</div>
   {%- endif %}
 </section>
+{#- The program picked last time, as tabs, before the first frame (base.html rel=expect). -#}
+<script>rsPick()</script>
 
 {%- if exams_html %}
 <section class="panel rs" aria-labelledby="ri-h">

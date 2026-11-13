@@ -1,5 +1,5 @@
 // Runs in <head>, before the first paint (base.html): the saved theme, so a dark choice does not flash light.
-// site.js has the button.
+// site.js has the button's click.
 try {
 	const t = localStorage.getItem("tema");
 	if (t) document.documentElement.dataset.tema = t;
@@ -41,6 +41,66 @@ window.moji = function () {
 	style.textContent = css;
 	// For style.css: a list cut short (.fb--short) shows all of what is left.
 	document.documentElement.classList.toggle("moji-only", only);
-	return { only, has: (h) => list.includes(h) };
+	return { only, n: list.length, has: (h) => list.includes(h) };
 };
 window.mojiNow = window.moji();
+
+// The page's parts that show a saved choice, set before the first frame by a script right after them (the side panel's
+// last, sidebar.html; predmet.html's star; raspored.html's programs) and again by site.js when the choice changes.
+
+// The side panel's "Obaveštenja" (the subjects followed, the switch "Samo moji predmeti", the link to the picker) and
+// the header's theme and script buttons.
+window.showSaved = function () {
+	const d = document, n = window.mojiNow.n, iz = d.querySelector("[data-izbor]");
+	if (iz) {
+		iz.hidden = false;
+		const count = iz.querySelector("[data-moji-n]");
+		if (count.textContent !== String(n || "")) count.textContent = n || "";
+		iz.querySelector("[data-moji-scope]").hidden = !n;
+		let all = false;
+		try { all = localStorage.getItem("sve") === "1"; } catch (e) {}
+		iz.querySelector("[data-moji-only]").checked = !all;
+		// The followed subjects are not listed here: the link says that some are, and opens them.
+		const open = iz.querySelector("[data-moji-open]");
+		if (open.classList.contains("is-set") !== n > 0) {
+			open.classList.toggle("is-set", n > 0);
+			open.querySelector("span").textContent = n ? "Izmeni predmete" : "Izaberi predmete";
+		}
+	}
+	const tb = d.getElementById("tema"), dark = d.documentElement.dataset.tema === "dark";
+	if (tb) {
+		tb.querySelector("use").setAttribute("href", dark ? "/static/icons.svg#i-moon" : "/static/icons.svg#i-sun");
+		tb.setAttribute("aria-label", "Tema: " + (dark ? "tamna" : "svetla"));
+	}
+	if (window.pismoButton) window.pismoButton();
+};
+
+// A subject page's star (predmet.html): followed or not.
+window.showStar = function () {
+	const star = document.querySelector("[data-star]");
+	if (!star) return;
+	const on = window.mojiNow.has(star.dataset.star);
+	star.hidden = false;
+	star.setAttribute("aria-pressed", on);
+	star.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (on ? "-on" : ""));
+	star.querySelector("span").textContent = on ? "Pratiš" : "Prati";
+};
+
+// The lecture schedule (/raspored/): one program at a time, picked by its tab. key: the program (else the #, else the
+// one picked last time, else the first); keep: remember it, for the next visit and in the URL. Without scripts the
+// tabs are links to the programs one under the other.
+window.rsPick = function (key, keep) {
+	const rs = document.querySelector("[data-rs]"), progs = rs ? [...rs.querySelectorAll("[data-prog]")] : [];
+	if (!progs.length) return;
+	if (key === undefined) {
+		key = decodeURIComponent(location.hash.slice(1));
+		try { key = key || localStorage.getItem("raspored"); } catch (e) {}
+	}
+	if (!progs.some((p) => p.id === key)) key = progs[0].id;
+	rs.classList.add("rs--tabs");
+	progs.forEach((p) => { p.hidden = p.id !== key; });
+	rs.querySelectorAll("[data-rs-tab]").forEach((t) => t.setAttribute("aria-current", t.hash === "#" + key));
+	if (!keep) return;
+	try { localStorage.setItem("raspored", key); } catch (e) {}
+	history.replaceState(null, "", "#" + key);
+};

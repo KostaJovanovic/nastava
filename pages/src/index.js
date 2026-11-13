@@ -9,13 +9,18 @@ const FRAGMENT = '<html lang="sr"><title>';
 const ENTRY = /^\/pagefind\/pagefind[^/]*\.(js|json|css)$/;
 const YEAR = 31536000;
 
-function cacheControl(path) {
+function cacheControl(url) {
+	const path = url.pathname;
 	// An asset never changes: a changed file is a new path, so a new asset (mail.py asset_name).
 	if (path.startsWith("/files/")) return `public, max-age=${YEAR}, immutable`;
 	if (path.startsWith("/pagefind/") && !ENTRY.test(path)) return `public, max-age=${YEAR}, immutable`;
 	// An item or a news post rarely changes, but its side panel (counts, links) and an edited post do: a day, at the
 	// edge too.
 	if (path.startsWith("/item/") || path.startsWith("/vest/")) return "public, max-age=86400";
+	// A /static/ file the pages link with ?v=<its hash> (build.py VERSIONED: the icons, CSS, JS): a changed file is a
+	// new URL. shortcut: a request in the minute GitHub Pages still serves the old file keeps it a year under the new
+	// hash; if a deploy ever shows that, check the body's hash here before caching.
+	if (path.startsWith("/static/") && url.searchParams.has("v")) return `public, max-age=${YEAR}, immutable`;
 	// The home page, /static/ and the Pagefind entry files change with each deploy.
 	return "public, max-age=300";
 }
@@ -66,6 +71,9 @@ export function join(shell, fragment) {
 	const mark = fragment.indexOf(HEAD_END);
 	const head = fragment.slice(fragment.indexOf("<title>"), mark);
 	const main = fragment.slice(mark + HEAD_END.length, fragment.lastIndexOf("</html>"));
+	// The side panel's link this page is under (build.py write): its first <a href> in the shell.
+	const snav = head.match(/<meta name="snav" content="([^"]+)">/);
+	if (snav) shell = shell.replace(`<a href="${snav[1]}"`, (a) => `${a} aria-current="page"`);
 	// Function replacements: a "$&" in a post must stay as it is.
 	return shell.replace("<title></title>", () => head).replace("<!--main-->", () => main);
 }
@@ -170,7 +178,7 @@ export default {
 		if (cached) {
 			// The zone's Browser Cache TTL replaces Cache-Control on a cached response, so set it again.
 			const response = new Response(cached.body, cached);
-			response.headers.set("Cache-Control", cacheControl(url.pathname));
+			response.headers.set("Cache-Control", cacheControl(url));
 			return response;
 		}
 		const origin = url.pathname.startsWith("/files/") ? await releaseFile(url.pathname) : await page(url);
@@ -179,7 +187,7 @@ export default {
 		if (origin.status !== 200) return origin;
 		const response = new Response(origin.body, origin);
 		response.headers.delete("Expires");
-		response.headers.set("Cache-Control", cacheControl(url.pathname));
+		response.headers.set("Cache-Control", cacheControl(url));
 		ctx.waitUntil(caches.default.put(key, response.clone()));
 		return response;
 	},

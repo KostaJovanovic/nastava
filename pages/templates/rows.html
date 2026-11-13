@@ -114,7 +114,7 @@
   <div class="fb__h"><h2>{% if more %}<a href="{{ more }}">{{ title }}</a>{% else %}{{ title }}{% endif %}</h2><span>Kategorija</span><span>Datum</span></div>
   <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for v in vesti %}
-    <li class="fr"{% if filter %} data-find="{{ v.find }}" data-k="{{ v.cat_keys }}"{% endif %}>
+    <li class="fr"{% if filter %} data-find="{{ v.find }}" data-k="{{ v.cat_keys }}"{% if loop.index == 20 %} id="paint"{% endif %}{% endif %}>
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-news"></use></svg></span>
       <div class="fr__t"><a class="fr__a" href="{{ v.href }}">{{ v.title }}</a>{% if v.gone %}<span class="gone">uklonjeno sa sajta vesti</span>{% endif %}</div>
       <div class="fr__more"><span class="fr__s">{{ v.cats | join(', ') }}</span><time class="fr__d" datetime="{{ v.date or '' }}">{{ v.date | dmy }}</time></div>

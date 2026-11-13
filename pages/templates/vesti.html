@@ -8,6 +8,8 @@
 {% block title %}Vesti{% if not _newest %} {{ year }}{% endif %}{% endblock %}
 {% block description %}Vesti Mašinskog fakulteta u Beogradu iz {{ year }}. godine, sa vesti.mas.bg.ac.rs, i one koje je fakultet uklonio.{% endblock %}
 {% block og %}-vesti{% endblock %}
+{#- The first frame waits for a screen of the list only (rows.html vest_rows: its 20th row). -#}
+{% block paint %}paint{% endblock %}
 {% block crumbs %}{% if not _newest %}{{ crumb('/vesti/', 'Vesti') }}{% endif %}{% endblock %}
 
 {% block main %}

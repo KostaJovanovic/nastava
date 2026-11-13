@@ -3,21 +3,24 @@
 
 {% block title %}Predmeti{% endblock %}
 {% block og %}-predmeti{% endblock %}
+{#- The first frame waits for a screen of the list only (the first plan's second semester). -#}
+{% block paint %}paint{% endblock %}
 {% block description %}Svi predmeti Mašinskog fakulteta u Beogradu po studijskim programima, modulima i semestrima, sa izbornim blokovima, ESPB, nastavnicima i objavama sa foruma.{% endblock %}
 
 {#- One row of the list. The data-* are what site.js filters, groups and sorts by: k katedra, p program (Latin slugs,
-    as in the URL; the filter's option has the name), n name,
-    e ECTS, c forum topics, i the place in the plans. A subject in several plans (master modules) has a row in each;
-    data-id tells site.js they are one subject. data-pid: the subject as "Moji predmeti" name it (build.py picker: its
-    board page when it has topics, else this list's page), for head.js. -#}
+    as in the URL; the filter's option has the name), e ECTS, c forum topics (the name sorts by the link's text).
+    A subject in several plans (master modules) has a row in each; data-id tells site.js they are one subject, and
+    its search text is in #finds once, not on each row: an area of Završni predmet (id "<subject>-<area>") has only its
+    own part as data-find. data-pid: the subject as "Moji predmeti" name it (build.py picker: its board page when it
+    has topics, else this list's page), for head.js. -#}
 {% macro srow(s) -%}
-<li class="sr" data-pid="{{ s.forum.href if s.forum else s.href }}" data-id="{{ s.id }}" data-find="{{ s.find }}" data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-n="{{ s.name }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
+<li class="sr" data-pid="{{ s.forum.href if s.forum else s.href }}" data-id="{{ s.id }}"{% if s.own %} data-find="{{ s.own }}"{% endif %} data-k="{{ s.katedra | slug }}" data-p="{{ s.program | slug }}" data-e="{{ s.ects or 0 }}" data-c="{{ s.forum.topics if s.forum else 0 }}">
   {#- Its own site (build.py load_cent), beside the name. -#}
   <span class="sr__n"><a class="sr__a" href="{{ s.href }}">{{ s.name }}</a>
     {%- if s.forum and s.forum.site %}<a class="sr__w" href="{{ s.forum.site }}" rel="noopener" target="_blank" title="Sajt predmeta">sajt <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</span>
   <span class="sr__h">{% if s.holder_t %}{{ s.holder_t.shown }}{% endif %}</span>
   <span class="sr__e">{% if s.ects %}{{ s.ects }} ESPB{% endif %}</span>
-  <span class="sr__c">{% if s.forum %}<a href="{{ s.forum.href }}" title="Objave na forumu">{{ s.forum.topics | n }} {{ s.forum.topics | pl('objava') }}</a>{% endif %}</span>
+  <span class="sr__c">{% if s.forum %}<a href="{{ s.forum.href }}">{{ s.forum.topics | n }} {{ s.forum.topics | pl('objava') }}</a>{% endif %}</span>
 </li>
 {%- endmacro %}
 
@@ -40,8 +43,8 @@
     {%- for k in katedre %}<option value="{{ k | slug }}" data-label="{{ k }}">{{ k | katedra | capitalize }}</option>{% endfor %}
   </select>
   <span class="fbar__n">prikazano <b data-shown>{{ n }}</b></span>
-  {#- Grouping and order need site.js; without it the list stays as the plans have it. -#}
-  <div class="arrange" data-arrange hidden>
+  {#- Grouping and order need site.js; without it the whole bar is hidden (style.css). -#}
+  <div class="arrange" data-arrange>
     <label class="pick">Grupiši
     <select id="s-g" name="grupa" data-group>
       <option value="">po nastavnom planu</option>
@@ -62,14 +65,17 @@
     with rows while a filter is set. Its count is its rows (site.js keeps it). A semester is one box: the required
     subjects, then each elective slot as a band of rows; a long slot shows 5 until "Prikaži još" (a checkbox, no
     script; style.css). sg--off: the subjects in no plan, after their program, muted. -#}
+{#- Each subject's folded search text by its id (build.py: name, acronyms, code, katedra, program, teachers, modules). -#}
+<script type="application/json" id="finds">{{ finds | tojson }}</script>
 <div class="groups groups--plan" data-groups>
   {%- for g in plans %}
+  {%- set first_plan = loop.first %}
   {%- set ns = namespace(n=0) %}
   {%- for sem in g.sems %}{% set ns.n = ns.n + sem.req | length %}{% for slot in sem.slots %}{% set ns.n = ns.n + slot.rows | length %}{% endfor %}{% endfor %}
   <details class="sg sg--plan{% if g.module == 'ван наставног плана' %} sg--off{% endif %}"{% if loop.first %} open{% endif %}>
     <summary class="sg__h">{{ g.program }}{% if g.module %} <span>· {{ g.module }}</span>{% endif %}<span class="sg__n">{{ ns.n }}</span></summary>
     {%- for sem in g.sems %}
-    <div class="sg__s">
+    <div class="sg__s"{% if first_plan and loop.index == 2 %} id="paint"{% endif %}>
     {%- if sem.sem %}<h3 class="sg__sem">{{ (sem.sem + 1) // 2 }}. godina · {{ sem.sem }}. semestar</h3>{% endif %}
     <div class="sg__box">
     {%- if sem.req %}

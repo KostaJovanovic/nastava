@@ -178,28 +178,15 @@
     });
   }
 
-  /* The lecture schedule (/raspored/): a program at a time, picked by its tab; the choice is kept for the next visit
-     and in the URL (#program). Without this, the tabs are links to the programs one under the other. */
-  var rs = d.querySelector('[data-rs]'), progs = rs ? [].slice.call(rs.querySelectorAll('[data-prog]')) : [];
-  if (progs.length) {
-    var tabs = [].slice.call(rs.querySelectorAll('[data-rs-tab]'));
-    var pick = function (key, keep) {
-      if (!progs.some(function (p) { return p.id === key; })) key = progs[0].id;
-      progs.forEach(function (p) { p.hidden = p.id !== key; });
-      tabs.forEach(function (t) { t.setAttribute('aria-current', t.hash === '#' + key); });
-      if (!keep) return;
-      try { localStorage.setItem('raspored', key); } catch (e) {}
-      history.replaceState(null, '', '#' + key);
-    };
-    tabs.forEach(function (t) {
-      t.addEventListener('click', function (e) { e.preventDefault(); pick(t.hash.slice(1), true); });
+  /* The lecture schedule (/raspored/): a program at a time, picked by its tab (head.js rsPick; raspored.html picks the
+     first before the first frame). */
+  var rs = d.querySelector('[data-rs]');
+  if (rs && rs.querySelector('[data-prog]')) {
+    [].forEach.call(rs.querySelectorAll('[data-rs-tab]'), function (t) {
+      t.addEventListener('click', function (e) { e.preventDefault(); window.rsPick(t.hash.slice(1), true); });
     });
-    var saved = null;
-    try { saved = localStorage.getItem('raspored'); } catch (e) {}
-    rs.classList.add('rs--tabs');
-    pick(decodeURIComponent(location.hash.slice(1)) || saved, false);
     // A link to another program on the same page changes only the #.
-    window.addEventListener('hashchange', function () { pick(decodeURIComponent(location.hash.slice(1)), true); });
+    window.addEventListener('hashchange', function () { window.rsPick(decodeURIComponent(location.hash.slice(1)), true); });
   }
 
   /* The word cloud (/statistika/, stats.html): the biggest word in the middle, each next one at the first place on a
@@ -237,11 +224,10 @@
      searches only them (search.js); off ("sve" = '1' in localStorage), all. 'moji' redraws what depends on it;
      registered first, so the others see the new state. */
   var only = d.querySelector('[data-moji-only]');
+  // The side panel shows the new state too (head.js showSaved: the count, the switch, the picker's link).
   d.addEventListener('moji', function () {
     if (window.moji) window.mojiNow = window.moji();
-    var all = false;
-    try { all = localStorage.getItem('sve') === '1'; } catch (e) {}
-    if (only) only.checked = !all;
+    window.showSaved();
   });
   d.dispatchEvent(new Event('moji'));
   if (only) only.addEventListener('change', function () {
@@ -259,6 +245,13 @@
   if (bar) {
     var rows = [].slice.call(d.querySelectorAll('[data-rows] > li:not([data-sep])')), sep = d.querySelector('[data-sep]');
     var ctl = [].slice.call(bar.querySelectorAll('[data-f]'));
+    // The subjects' list keeps each subject's search text once (predmeti.html #finds), by the row's id before any '-'.
+    var finds = d.getElementById('finds');
+    finds = finds ? JSON.parse(finds.textContent) : null;
+    var field = function (r, f) {
+      var v = r.dataset[f] || '';
+      return f === 'find' && finds ? v + ' ' + (finds[r.dataset.id.split('-')[0]] || '') : v;
+    };
     var findBox = bar.querySelector('[data-f="find"]');
     if (findBox) findBox.addEventListener('keydown', function (e) {
       var v = findBox.value.trim();
@@ -328,8 +321,10 @@
       }
       if (s) {
         var key = s.replace('-', '');
+        // No data-n (the subjects): the name is the row's link text.
+        var val = function (r) { return r.dataset[key] || (key === 'n' ? r.querySelector('a').textContent : ''); };
         var cmp = s[0] === '-' ? function (a, b) { return b.dataset[key] - a.dataset[key]; }
-          : function (a, b) { return a.dataset[key].localeCompare(b.dataset[key], 'sr'); };
+          : function (a, b) { return val(a).localeCompare(val(b), 'sr'); };
         [].forEach.call((made || box).querySelectorAll('[data-rows]'), function (ol) {
           [].slice.call(ol.children).sort(cmp).forEach(function (r) { ol.appendChild(r); });
         });
@@ -340,7 +335,7 @@
       ctl.concat([gsel, ssel]).forEach(function (c) { if (c && c.value.trim()) p.set(c.name, c.value.trim()); });
       rows.forEach(function (r, i) {
         var ok = ctl.every(function (c) {
-          var v = c.value.trim(), have = r.dataset[c.dataset.f] || '';
+          var v = c.value.trim(), have = field(r, c.dataset.f);
           if (!v) return true;
           if (c.tagName === 'SELECT') return ('|' + have + '|').indexOf('|' + v + '|') > -1;
           return fold(v).split(/\s+/).every(function (w) { return have.indexOf(w) > -1; });
@@ -395,8 +390,6 @@
       if (c.selectedIndex < 0) c.selectedIndex = 0;
       c.addEventListener('change', function () { arrange(); runRows(); });
     });
-    var ar = bar.querySelector('[data-arrange]');
-    if (ar) ar.hidden = false;
     if (String(p)) arrange();
     if (String(p) || (window.mojiNow && window.mojiNow.only)) runRows();
     d.addEventListener('moji', runRows);
@@ -413,40 +406,17 @@
   };
   var star = d.querySelector('[data-star]');
   if (star) {
-    var showStar = function () {
-      var on = mine().some(function (s) { return s.href === star.dataset.star; });
-      star.setAttribute('aria-pressed', on);
-      star.querySelector('use').setAttribute('href', '/static/icons.svg#i-star' + (on ? '-on' : ''));
-      star.querySelector('span').textContent = on ? 'Pratiš' : 'Prati';
-    };
     star.addEventListener('click', function () {
       var list = mine(), rest = list.filter(function (s) { return s.href !== star.dataset.star; });
       keepMine(rest.length < list.length ? rest : list.concat([{ href: star.dataset.star, name: star.dataset.name }]));
       star.classList.toggle('star--pop', rest.length === list.length);
     });
     star.addEventListener('animationend', function () { star.classList.remove('star--pop'); });
-    star.hidden = false;
-    showStar();
-    d.addEventListener('moji', showStar);
+    // Shown and set before the first frame (predmet.html, head.js showStar); again when the list changes.
+    d.addEventListener('moji', window.showStar);
   }
 
-
-  /* The side panel's "Obaveštenja": how many subjects are followed, the switches, and the link to the picker. */
-  var iz = d.querySelector('[data-izbor]'), mp = d.querySelector('[data-mp]');
-  var syncSide = function () {
-    var n = mine().length;
-    iz.querySelector('[data-moji-n]').textContent = n || '';
-    iz.querySelector('[data-moji-scope]').hidden = !n;
-    // The followed subjects are not listed here: the link says that some are, and opens them.
-    var open = iz.querySelector('[data-moji-open]');
-    open.classList.toggle('is-set', n > 0);
-    open.querySelector('span').textContent = n ? 'Izmeni predmete' : 'Izaberi predmete';
-  };
-  if (iz) {
-    iz.hidden = false;
-    syncSide();
-    d.addEventListener('moji', syncSide);
-  }
+  var mp = d.querySelector('[data-mp]');
 
   /* The picker, /mojipredmeti/ (mojipredmeti.html; /izbor.json from build.py picker), in two steps.
      1, the subjects: a tab per program, a row of chips per level under it (a master's module, a year), and the year's
@@ -864,11 +834,8 @@
   var root = d.documentElement, tb = d.getElementById('tema');
   var THEMES = { light: ['sun', 'svetla'], dark: ['moon', 'tamna'] };
   var theme = function () { return THEMES[root.dataset.tema] ? root.dataset.tema : 'light'; };
-  var showTheme = function () {
-    var v = THEMES[theme()];
-    tb.querySelector('use').setAttribute('href', '/static/icons.svg#i-' + v[0]);
-    tb.setAttribute('aria-label', 'Tema: ' + v[1]);
-  };
+  // The button's icon and label (head.js showSaved; sidebar.html set them before the first frame).
+  var showTheme = window.showSaved;
   var setTheme = function (t) {
     root.dataset.tema = t;
     d.querySelector('meta[name="theme-color"]').content = t === 'dark' ? '#011321' : '#0076b1';
@@ -924,7 +891,6 @@
         if (vtNow === vt) delete root.dataset.vt;
       });
     });
-    showTheme();
   }
 
   /* Font menu: the Konami code (↑↑↓↓←→←→BA) opens it at the bottom right. While it is open, localStorage 'font' holds
