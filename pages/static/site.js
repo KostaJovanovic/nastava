@@ -243,8 +243,8 @@
   /* The home page's Studije as the switch flips: head.js swaps its rows' style at once (greyed smerovi are one short
      line); then each row, icon and title glides from where it was on the screen, by transform only (FLIP), so a phone
      keeps up; only the card's height is laid out each frame. A row that changed fades its icon and text out and in
-     (no resizing). Called before the
-     change, it measures; what it returns animates after it. A flip mid-way starts from where things are. */
+     (no resizing); one that changes places fades in where it lands. Called before the change, it measures; what it
+     returns animates after it. A flip mid-way starts from where things are. */
   var flipAnims = [];
   var flipStudije = function () {
     var card = d.querySelector('#res > .fb--forums');
@@ -253,14 +253,21 @@
     var before = els.map(function (e) { return e.getBoundingClientRect(); }), h0 = card.getBoundingClientRect().height;
     flipAnims.forEach(function (a) { a.cancel(); });
     return function () {
-      var opt = { duration: 350, easing: 'cubic-bezier(.2, .8, .2, 1)' }, rows = new Map();
+      var opt = { duration: 350, easing: 'cubic-bezier(.2, .8, .2, 1)' }, rows = new Map(), jump = new Set(), other = false;
       flipAnims = [card.animate({ height: [h0 + 'px', card.getBoundingClientRect().height + 'px'] }, opt)];
+      // The rows that change places (head.js mojiSort): a followed smer built below one that is not. Sliding past the
+      // others reads as a shuffle, so they fade in where they land; the others only close and open the gaps.
+      (card.querySelector('.fb__rows').built || []).forEach(function (r) {
+        if (!(r.dataset.pids || '').split(' ').some(window.mojiNow.has)) other = true;
+        else if (other) jump.add(r);
+      });
       els.forEach(function (e, i) {
         var a = before[i], b = e.getBoundingClientRect(), row = e.closest('.fr'), dx = a.left - b.left, dy = a.top - b.top;
         // An icon of another size: from its old centre, not its corner.
         if (e.classList.contains('fr__i')) { dx += (a.width - b.width) / 2; dy += (a.height - b.height) / 2; }
         if (e === row) {
           rows.set(row, [dx, dy]);
+          if (jump.has(row)) { flipAnims.push(row.animate({ opacity: [0, 1] }, opt)); return; }
           // A row that changed: its text out at once, then in for the rest, both on the move's own curve, so the fade
           // settles as the move does. A wide screen's columns: style.css.
           if (b.height !== a.height) row.querySelectorAll('.fr__i, .fr__t, .fr__more').forEach(function (n) {
