@@ -727,8 +727,14 @@ body:has(#res) .filters--years { display: none; }
 .mp__foot span { margin-right: auto; }
 .mp__foot[hidden], .mp__foot [hidden] { display: none; }
 @media (max-width: 899px) {
-  /* Not fixed on a phone: with the header and the tab bar, it left the list half the screen. The steps above go on. */
-  .mp__foot { position: static; }
+  /* A slim bar over the tab bar (.snav, 64px), once a subject is picked: Dalje in reach without scrolling the list
+     to its end. No "Poništi izbor" there (the selection stays one tap from gone otherwise). */
+  .mp__foot { position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 14; margin: 0;
+    padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); background: var(--card); box-shadow: 0 -2px 8px rgba(0, 0, 0, .08); }
+  .mp__foot .btn { min-height: 36px; }
+  .mp__foot [data-mp-reset] { display: none; }
+  .mp__foot--idle { display: none; }
+  body:has(.mp__foot:not([hidden], .mp__foot--idle)) { padding-bottom: calc(64px + 49px + env(safe-area-inset-bottom)); }
   /* The page's own: no statistics card under it, no subtitle (the steps say it). */
   body:has(.mp) .filters--years, .mp .mh__sub { display: none; }
 }
@@ -736,10 +742,13 @@ body:has(#res) .filters--years { display: none; }
   .mp__cards { grid-template-columns: 1fr; gap: 6px; }
   /* A picked program hides the other programs; pressing it again brings them back. The years stay. */
   .mp__tabs:has([aria-pressed="true"]) > [aria-pressed="false"] { display: none; }
-  /* The programs and the years each one row that scrolls sideways (top room for the badges). */
-  .mp__tabs, .mp__chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 8px 8px 2px 0; margin-top: -8px; }
-  .mp__tabs::-webkit-scrollbar, .mp__chips::-webkit-scrollbar { display: none; }
-  .mp__tab { flex: none; white-space: nowrap; }
+  /* The programs and the years wrap (a sideways scroll looked cut off); a count inside its button, not on its corner. */
+  .mp__nav .mp__tabs, .mp__nav .mp__chips { gap: 6px; }
+  .mp__nav .mp__tab { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .mp__nav .mp__badge { position: static; border: 0; }
+  /* The year's heading says it: its first list (the required ones) without its own. */
+  .mp__year + .mp__group h3 { display: none; }
+  .mp__year + .mp__group { margin-top: 8px; }
   /* Smaller cards: "Svi nastavnici" one line, the photos smaller. */
   .mp__card { padding: 8px 12px; }
   .mp__card:not(.mp__card--t)[data-t] small { display: none; }

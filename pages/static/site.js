@@ -687,6 +687,8 @@
       mp.querySelector('[data-mp-back]').hidden = !two;
       mp.querySelector('[data-mp-next]').hidden = two || !n;
       mp.querySelector('[data-mp-done]').hidden = !two && n > 0;
+      // Step 1 with nothing picked: no foot on a phone (style.css), where it is a bar over the list.
+      mp.querySelector('[data-mp-foot]').classList.toggle('mp__foot--idle', !two && !n);
     };
     // A step is the address's hash, so the back button goes from the teachers to the subjects.
     var step = function () {
