@@ -29,14 +29,15 @@ window.moji = function () {
 		const pid = list.map((h) => `:not([data-pid=${q(h)}])`).join("");
 		const pids = list.map((h) => `:not([data-pids~=${q(h)}])`).join("");
 		const any = list.map((h) => `[data-pid=${q(h)}],[data-pids~=${q(h)}]`).join(",");
-		// Studije's greyed smerovi; on a phone also without their last post, a half-size icon (centred where the 32px
-		// ones are) and less padding: one short line each. The last post collapses rather than going, so the switch can
-		// animate it (style.css #res [data-pids]).
+		// Studije's greyed smerovi: without their last post (and a wide screen's subject count), a half-size icon
+		// (centred where the 32px ones are) and less padding: one short line each. What goes collapses rather than
+		// going, so the switch can animate it (style.css #res [data-pids]); a phone's last post is all of .fr__more.
 		const grey = `#res [data-pids]${pids}`;
 		css = `[data-pid]${pid},[data-pids]${pids}:not(#res *),:is(.fb,.sg,.sg__s,.sg__slot):not(#res *):has([data-pid],[data-pids]):not(:has(${any}))`
-			+ `{display:none!important}${grey}{opacity:.45}`
-			+ `@container main (max-width:759.98px){${grey}{padding-block:2px;row-gap:0}${grey} .fr__more{max-height:0;opacity:0;overflow:hidden}`
-			+ `${grey} .fr__i{width:16px;height:16px;margin-left:8px}${grey} .fr__i .i{width:12px;height:12px}}`;
+			+ `{display:none!important}${grey}{opacity:.45;padding-block:2px;row-gap:0}`
+			+ `${grey} :is(.fr__sub,.fr__last>*){max-height:0;opacity:0;overflow:hidden}${grey} .fr__last{min-height:0}`
+			+ `@container main (max-width:759.98px){${grey} .fr__more{max-height:0;opacity:0;overflow:hidden}}`
+			+ `${grey} .fr__i{width:16px;height:16px;translate:8px 0}${grey} .fr__i .i{width:12px;height:12px}`;
 	}
 	let style = document.getElementById("moji-css");
 	if (!style) {
