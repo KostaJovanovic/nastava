@@ -246,7 +246,8 @@
      or taller than what shows in it for long: its bottom moves one way, with the fade out. A flip mid-way starts from
      what is on the screen. Elsewhere, or with reduced motion, change() at once. */
   var studijeAnims = [];
-  var fadeStudije = function (change) {
+  // h1: the card's height after the change, if measured already (at the click, before anything moves: a page-wide restyle).
+  var fadeStudije = function (change, h1) {
     var card = d.querySelector('#res > .fb--forums'), ol = card && card.querySelector('.fb__rows');
     if (!ol || !ol.built || card.closest('.searching') || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
     // The card moves for all of it; the rows fade out for its first part and in for the rest, so both end together.
@@ -257,8 +258,8 @@
     // From what is on the screen: a flip mid-way starts where the last one got to.
     var from = rows.map(function (r) { return getComputedStyle(r).opacity; }), h0 = card.getBoundingClientRect().height;
     studijeAnims.forEach(function (a) { a.cancel(); });
-    // The card's height after the change (the new choice is saved already), now.
-    var h1 = window.mojiAhead(function () { return card.getBoundingClientRect().height; });
+    // Else the card's height after the change (the new choice is saved already), now.
+    if (h1 == null) h1 = window.mojiAhead(function () { return card.getBoundingClientRect().height; });
     var move = card.animate({ height: [h0 + 'px', h1 + 'px'] }, { duration: all, easing: 'cubic-bezier(.4, 0, .2, 1)' });
     var outs = rows.map(function (r, i) { return r.animate({ opacity: [from[i], 0] }, out); });
     studijeAnims = outs.concat(move);
@@ -277,11 +278,14 @@
     try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
     // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows. at: the click's
     // time, for what is timed from it (search.html: the lists under Studije).
-    var at = performance.now(), on = only.checked;
+    var at = performance.now(), on = only.checked, card = d.querySelector('#res > .fb--forums'), h1;
     // Off: the lists under Studije fall back to their peek first (search.html fallFirst), then Studije changes; unless
-    // the switch went back on meanwhile.
+    // the switch went back on meanwhile. Studije's height after it is measured now, at the click, not mid-fall: a
+    // page-wide restyle there stalls the fall on a phone. Not while Studije still moves (a flip mid-way): fadeStudije
+    // measures it then, after stopping it.
+    if (!on && card && !card.getAnimations({ subtree: true }).length) h1 = window.mojiAhead(function () { return card.getBoundingClientRect().height; });
     (on || !window.fallFirst ? Promise.resolve() : window.fallFirst()).then(function () {
-      if (only.checked === on) fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); });
+      if (only.checked === on) fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); }, h1);
     });
   });
 

@@ -77,18 +77,20 @@
       // site.js changes Studije and their rows. The fall is the rise's .5s and curve (style.css .faded); Studije's
       // change starts 100 ms in, when the fall's curve has done ~70% of the way. Their
       // place on the screen follows that curve each frame, whatever Studije's height does meanwhile (a transition
-      // would be re-aimed by each frame of its growth); the clock is an empty animation with the curve. At once if
-      // they do not fall (scrolled, a search on view).
+      // would be re-aimed by each frame of its growth); the clock is an empty animation with the curve. Light for a
+      // phone: each frame writes only their own translate (their layer moves; --drop would restyle all in them), the
+      // mask's end is set once, the edge and the gap read once. At once if they do not fall (scrolled, a search on view).
       window.fallFirst = () => new Promise((done) => {
         if (cl.contains("fade") || scrollY || cl.contains("searching")) return done();
-        const y0 = lists().getBoundingClientRect().top;
+        const l = lists(), y0 = l.getBoundingClientRect().top, b = edge(), gap = under() - s.getBoundingClientRect().bottom;
         arm(true);
-        const clock = lists().animate([], { duration: 500, easing: "cubic-bezier(.1, .7, .2, 1)" });
+        l.style.setProperty("--end", "72px");
+        const clock = l.animate([], { duration: 500, easing: "cubic-bezier(.1, .7, .2, 1)" });
         const step = () => {
           const p = clock.effect.getComputedTiming().progress;
-          if (p == null || !cl.contains("fade")) return cl.remove("falling"), place();
-          const b = edge(), top = under(), y = y0 + (Math.max(b - 72, top) - y0) * p;
-          set(y - top, Math.max(b - y, 50));
+          if (p == null || !cl.contains("fade")) return (l.style.translate = ""), cl.remove("falling"), place();
+          const top = s.getBoundingClientRect().bottom + gap;
+          l.style.translate = "0 " + ((y0 + (Math.max(b - 72, top) - y0) * p) - top) + "px";
           requestAnimationFrame(step);
         };
         step();
