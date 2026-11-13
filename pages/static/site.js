@@ -257,13 +257,8 @@
     // From what is on the screen: a flip mid-way starts where the last one got to.
     var from = rows.map(function (r) { return getComputedStyle(r).opacity; }), h0 = card.getBoundingClientRect().height;
     studijeAnims.forEach(function (a) { a.cancel(); });
-    // The card's height after the change, now: head.js's style for the new choice (already saved), a layout, the old
-    // style back; nothing is painted between.
-    var st = d.getElementById('moji-css'), css0 = st.textContent, only0 = d.documentElement.classList.contains('moji-only');
-    window.moji();
-    var h1 = card.getBoundingClientRect().height;
-    st.textContent = css0;
-    d.documentElement.classList.toggle('moji-only', only0);
+    // The card's height after the change (the new choice is saved already), now.
+    var h1 = window.mojiAhead(function () { return card.getBoundingClientRect().height; });
     var move = card.animate({ height: [h0 + 'px', h1 + 'px'] }, { duration: all, easing: 'cubic-bezier(.4, 0, .2, 1)' });
     var outs = rows.map(function (r, i) { return r.animate({ opacity: [from[i], 0] }, out); });
     studijeAnims = outs.concat(move);

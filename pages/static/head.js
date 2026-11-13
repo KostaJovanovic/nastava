@@ -56,6 +56,17 @@ window.moji = function () {
 };
 window.mojiNow = window.moji();
 
+// The page as the saved choice will show it, for fn to measure (site.js fadeStudije, search.html fallFirst): moji()'s
+// style for it, fn, then the style on the page back; nothing is painted between.
+window.mojiAhead = function (fn) {
+	const st = document.getElementById("moji-css"), css = st.textContent, only = document.documentElement.classList.contains("moji-only");
+	window.moji();
+	const v = fn();
+	st.textContent = css;
+	document.documentElement.classList.toggle("moji-only", only);
+	return v;
+};
+
 // The home page's Studije: the smerovi with followed subjects first while only they show (mojiNow.only), else as
 // built. Moved in the page, not by CSS order, so the stripes and the tab order follow. search.html calls it right
 // after Studije (before the first paint), site.js on each change (its fadeStudije hides the move).

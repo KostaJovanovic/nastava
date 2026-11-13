@@ -33,7 +33,13 @@
     let s = document.currentScript.previousElementSibling;
     while (s && !s.matches(".fb")) s = s.previousElementSibling;
     if (s) {
-      const place = () => { const bar = document.querySelector(".snav"), b = bar && getComputedStyle(bar).position == "fixed" ? bar.getBoundingClientRect().top : innerHeight, top = s.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(s.parentElement).rowGap) || 0), drop = Math.max(0, b - 72 - top), l = s.parentElement.querySelector(":scope > .lists") || h; l.style.setProperty("--drop", drop + "px"); l.style.setProperty("--end", Math.max(b - top - drop, 50) + "px"); };
+      // The screen's bottom (or the phone's tab bar's top); the lists' top as laid out (under Studije, without --drop).
+      const edge = () => { const bar = document.querySelector(".snav"); return bar && getComputedStyle(bar).position == "fixed" ? bar.getBoundingClientRect().top : innerHeight; };
+      const under = () => s.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(s.parentElement).rowGap) || 0);
+      const lists = () => s.parentElement.querySelector(":scope > .lists") || h;
+      const set = (drop, end) => { const l = lists(); l.style.setProperty("--drop", drop + "px"); l.style.setProperty("--end", end + "px"); };
+      // Pinned 72px above the edge. Not while falling: fallFirst moves them itself.
+      const place = () => { if (cl.contains("falling")) return; const b = edge(), top = under(), drop = Math.max(0, b - 72 - top); set(drop, Math.max(b - top - drop, 50)); };
       const ro = new ResizeObserver(place);
       let y0 = 0;
       const down = { scroll: () => scrollY > 0, wheel: e => e.deltaY > 0, touchstart: e => (y0 = e.touches[0].clientY, false), touchmove: e => e.touches[0].clientY < y0, keydown: e => ["ArrowDown", "PageDown", "End", " "].includes(e.key) && !e.target.closest("input, select, textarea") };
@@ -68,12 +74,25 @@
         });
       });
       // The switch off (site.js): first the lists fall back to the peek, their rows still the followed subjects'; then
-      // site.js changes Studije and their rows, the peek pinned under it (place). Resolves when the fall ends (300 ms,
-      // style.css .falling); at once if they do not fall (scrolled, a search on view).
+      // site.js changes Studije and their rows. The switch on's timing the other way round: the fall is the rise's .5s
+      // and curve (style.css .faded), and resolves 240 ms in, as the rise starts 240 ms into Studije's change. Their
+      // place on the screen follows that curve each frame, whatever Studije's height does meanwhile (a transition
+      // would be re-aimed by each frame of its growth); the clock is an empty animation with the curve. At once if
+      // they do not fall (scrolled, a search on view).
       window.fallFirst = () => new Promise((done) => {
         if (cl.contains("fade") || scrollY || cl.contains("searching")) return done();
+        const y0 = lists().getBoundingClientRect().top;
         arm(true);
-        setTimeout(() => (cl.remove("falling"), done()), 300);
+        const clock = lists().animate([], { duration: 500, easing: "cubic-bezier(.1, .7, .2, 1)" });
+        const step = () => {
+          const p = clock.effect.getComputedTiming().progress;
+          if (p == null || !cl.contains("fade")) return cl.remove("falling"), place();
+          const b = edge(), top = under(), y = y0 + (Math.max(b - 72, top) - y0) * p;
+          set(y - top, Math.max(b - y, 50));
+          requestAnimationFrame(step);
+        };
+        step();
+        setTimeout(done, 240);
       });
       // The rise or the fall over (style.css): the lists' own transitions only.
       document.addEventListener("transitionend", (e) => e.target.matches(".lists") && e.propertyName == "--hide" && cl.remove("faded", "falling"));
