@@ -731,6 +731,8 @@ body:has(#res) .filters--years { display: none; }
 }
 .mp__foot span { margin-right: auto; }
 .mp__foot[hidden], .mp__foot [hidden] { display: none; }
+/* The picker is a tool, not a page to read: no site footer under it. */
+body:has(.mp) .ft { display: none; }
 @media (max-width: 899px) {
   /* A slim bar over the tab bar (.snav, 64px), once a subject is picked: Dalje in reach without scrolling the list
      to its end. No "Poništi izbor" there (the selection stays one tap from gone otherwise). */
