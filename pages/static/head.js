@@ -29,8 +29,13 @@ window.moji = function () {
 		const pid = list.map((h) => `:not([data-pid=${q(h)}])`).join("");
 		const pids = list.map((h) => `:not([data-pids~=${q(h)}])`).join("");
 		const any = list.map((h) => `[data-pid=${q(h)}],[data-pids~=${q(h)}]`).join(",");
+		// Studije's greyed smerovi; on a phone also without their last post, a half-size icon (centred where the 32px
+		// ones are) and less padding: one short line each.
+		const grey = `#res [data-pids]${pids}`;
 		css = `[data-pid]${pid},[data-pids]${pids}:not(#res *),:is(.fb,.sg,.sg__s,.sg__slot):not(#res *):has([data-pid],[data-pids]):not(:has(${any}))`
-			+ `{display:none!important}#res [data-pids]${pids}{opacity:.45}`;
+			+ `{display:none!important}${grey}{opacity:.45}`
+			+ `@container main (max-width:759.98px){${grey}{padding-block:2px}${grey} .fr__more{display:none}`
+			+ `${grey} .fr__i{width:16px;height:16px;margin-left:8px;grid-row:auto}${grey} .fr__i .i{width:12px;height:12px}}`;
 	}
 	let style = document.getElementById("moji-css");
 	if (!style) {
