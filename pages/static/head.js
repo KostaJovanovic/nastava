@@ -101,10 +101,9 @@ window.showSaved = function () {
 			open.querySelector("span").textContent = n ? "Izmeni predmete" : "Izaberi predmete";
 			open.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (n ? "-on" : ""));
 		}
-		// A phone's chip (style.css): "17 predmeta".
-		const c = n ? n + (n % 10 === 1 && n % 100 !== 11 ? " predmet" : " predmeta") : "";
-		const chip = open.querySelector("[data-moji-c]");
-		if (chip.textContent !== c) chip.textContent = c;
+		// A phone's switch has the count too, the heading being hidden there (style.css).
+		const chip = iz.querySelector("[data-moji-c]");
+		if (chip.textContent !== String(n || "")) chip.textContent = n || "";
 	}
 	const tb = d.getElementById("tema"), dark = d.documentElement.dataset.tema === "dark";
 	if (tb) {

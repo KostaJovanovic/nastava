@@ -26,11 +26,14 @@
       <div class="fgroup" role="group" aria-labelledby="moji-h" data-izbor hidden>
         <p class="sec" id="moji-h">Obaveštenja <span data-moji-n></span></p>
         <div data-moji-scope hidden>
-          <label class="tgl"><span>Samo moji<span class="tgl__more"> predmeti</span></span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
+          <label class="tgl"><span>Samo moji<span class="tgl__more"> predmeti</span> <span class="tgl__n" data-moji-c></span></span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
+          {#- The notifications switch, as on /mojipredmeti/ (site.js): a phone's is a bell. Greyed where the browser
+              can't send them or has them blocked. -#}
+          <label class="tgl tgl--push" data-push hidden><span>Obaveštenja o novim objavama</span><input type="checkbox" role="switch" data-push-on><i class="tgl__s" aria-hidden="true"></i><svg class="i tgl__bell" aria-hidden="true"><use href="/static/icons.svg#i-bell"></use></svg><svg class="i tgl__bell tgl__bell--on" aria-hidden="true"><use href="/static/icons.svg#i-bell-on"></use></svg></label>
         </div>
         {#- The picker's page (mojipredmeti.html). With subjects followed, it reads "Izmeni predmete", in the accent
-            colour (head.js); a phone shows "17 predmeta ✎" in its place, beside the switch (style.css). -#}
-        <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Izaberi predmete</span><span class="moji__c" data-moji-c></span><svg class="i moji__edit" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg></a></div>
+            colour (head.js); a phone shows only the pencil, joined to the switch (style.css). -#}
+        <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Izaberi predmete</span><svg class="i moji__edit" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg></a></div>
       </div>
 
     </div>

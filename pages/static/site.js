@@ -731,10 +731,21 @@
      browser's subscription with the subjects' pages, and ci/push.py sends after each deploy. Only a subject with topics
      (/predmet/) gets posts. An iPhone has web push only for the site opened from the home screen. */
   var PUSH_PUBLIC = 'BPumbbNmB0El3blUr_wKj4PWrpCq0b6pSakijI6H3gtrlgxAqz4abQ63IIwe9EEq50gJNhGDay-Mdb28hsUCSqE';
-  // The switch is on /mojipredmeti/ (mojipredmeti.html); every page keeps the subscription's subjects up to date (a
-  // subject page's star changes them too).
-  var pushBox = d.querySelector('[data-push]'), pushMsg = d.querySelector('[data-push-msg]');
-  var said = function (text) { pushMsg.textContent = text; pushMsg.hidden = !text; };
+  // The switches: the side panel's (sidebar.html) and /mojipredmeti/'s (mojipredmeti.html), kept alike. Every page
+  // keeps the subscription's subjects up to date (a subject page's star changes them too).
+  var pushBoxes = [].slice.call(d.querySelectorAll('[data-push]')), pushMsg = d.querySelector('[data-push-msg]');
+  var pushOns = pushBoxes.map(function (b) { return b.querySelector('input'); });
+  var said = function (text) { if (pushMsg) { pushMsg.textContent = text; pushMsg.hidden = !text; } };
+  // Shown either way; greyed (with the reason on hover) where notifications can't be made.
+  var showPush = function (on, why) {
+    pushBoxes.forEach(function (b, i) {
+      pushOns[i].checked = on;
+      pushOns[i].disabled = !!why;
+      if (why) b.title = why; else b.removeAttribute('title');
+      b.hidden = false;
+    });
+  };
+  var blocked = 'Pregledač ne dozvoljava obaveštenja ovom sajtu (podešavanja sajta).';
   var withPosts = function () {
     return mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; });
   };
@@ -764,13 +775,13 @@
       clearTimeout(timer);
       timer = setTimeout(resave, 3000);
     });
-    var pushOn = pushBox && pushBox.querySelector('input');
-    if (pushOn) current().then(function (sub) {
-      pushOn.checked = !!sub && Notification.permission === 'granted';
-      pushBox.hidden = false;
+    var denied = function () { return Notification.permission === 'denied' ? blocked : ''; };
+    current().then(function (sub) {
+      showPush(!!sub && Notification.permission === 'granted', denied());
     }).catch(function () {});
-    if (pushOn) pushOn.addEventListener('change', function () {
+    pushOns.forEach(function (pushOn) { pushOn.addEventListener('change', function () {
       var on = pushOn.checked;
+      showPush(on, '');
       said('');
       (on ? Notification.requestPermission().then(function (p) {
         if (p !== 'granted') throw new Error('dozvola');
@@ -781,14 +792,16 @@
       }) : current().then(function (sub) {
         if (sub) return save(sub, []).then(function () { return sub.unsubscribe(); });
       })).catch(function (e) {
-        pushOn.checked = !on;
-        said(e.message === 'dozvola' ? 'Pregledač ne dozvoljava obaveštenja ovom sajtu (podešavanja sajta).' : 'Nije uspelo, pokušaj ponovo.');
+        showPush(!on, denied());
+        said(e.message === 'dozvola' ? blocked : 'Nije uspelo, pokušaj ponovo.');
         // Subscribed in the browser but not kept by the Worker: undone, so the switch shows the truth next time.
         if (on) current().then(function (sub) { if (sub) sub.unsubscribe(); }).catch(function () {});
       });
-    });
-  } else if (pushMsg && navigator.standalone === false) {
-    said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
+    }); });
+  } else {
+    var iphone = navigator.standalone === false;
+    showPush(false, iphone ? 'Na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.' : 'Ovaj pregledač ne može da prima obaveštenja.');
+    if (iphone) said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
   }
 
   /* The followed subjects' feeds as one OPML file, which a feed reader imports. Made on the click, from the list now. */
