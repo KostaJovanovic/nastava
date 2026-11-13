@@ -768,7 +768,7 @@
       noPush.querySelector('button').focus();
     });
   });
-  var blocked = 'Pregledač ne dozvoljava obaveštenja ovom sajtu (podešavanja sajta).';
+  var blocked = 'Browser ne dozvoljava obaveštenja ovom sajtu (podešavanja sajta).';
   var withPosts = function () {
     return mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; });
   };
@@ -811,7 +811,7 @@
         var key = Uint8Array.from(atob(PUSH_PUBLIC.replace(/-/g, '+').replace(/_/g, '/')), function (c) { return c.charCodeAt(0); });
         return reg.then(function (r) { return r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }); });
       }).then(function (sub) { return save(sub, withPosts()); }).then(function () {
-        said('Stižu kad arhiva preuzme nove objave sa foruma. Sajt čuva samo adresu obaveštenja ovog pregledača i spisak predmeta.');
+        said('Stižu kad arhiva preuzme nove objave sa foruma. Sajt čuva samo adresu obaveštenja ovog browsera i spisak predmeta.');
       }) : current().then(function (sub) {
         if (sub) return save(sub, []).then(function () { return sub.unsubscribe(); });
       })).catch(function (e) {
@@ -823,7 +823,7 @@
     }); });
   } else {
     var iphone = navigator.standalone === false;
-    showPush(false, iphone ? 'Na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.' : 'Ovaj pregledač ne može da prima obaveštenja.');
+    showPush(false, iphone ? 'Na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.' : 'Ovaj browser ne može da prima obaveštenja.');
     if (iphone) said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
   }
 
