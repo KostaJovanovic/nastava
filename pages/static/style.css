@@ -992,9 +992,10 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 @media (prefers-reduced-motion: no-preference) {
   #res [data-pids], #res [data-pids] :is(.fr__i, .fr__i .i, .fr__more, .fr__more > *, .fr__sub, .fr__last > *) { transition: .35s cubic-bezier(.2, .8, .2, 1); transition-property: opacity, padding, row-gap, width, height, translate, max-height, min-height, border-color; }
 }
-/* shortcut: the collapse animates to 3em, not each line's own height; fine while each is one line. */
-#res [data-pids] :is(.fr__sub, .fr__last > *) { max-height: 3em; }
-@container main (max-width: 759.98px) { #res [data-pids] .fr__more { max-height: 3em; } }
+/* The collapse from each line's own height (1lh), so it moves from the first frame to the last.
+   shortcut: one line each (a name, a date, a count); a line that wraps would spill over the next, redo if that comes. */
+#res [data-pids] :is(.fr__sub, .fr__last > *) { max-height: 1lh; }
+@container main (max-width: 759.98px) { #res [data-pids] .fr__more { max-height: 1lh; } }
 .fr__s { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
 .fr__s .s2 { color: var(--dim); }
 
