@@ -18,6 +18,7 @@ import sys
 import unicodedata
 from collections import Counter, defaultdict
 from datetime import date, datetime
+from functools import lru_cache
 from html import unescape
 from pathlib import Path
 from urllib.parse import quote, unquote, urljoin, urlsplit
@@ -25,7 +26,7 @@ from xml.etree import ElementTree
 
 import nh3
 from bs4 import BeautifulSoup
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader, Template, select_autoescape
 from jinja2.utils import htmlsafe_json_dumps
 from markupsafe import Markup, escape
 
@@ -89,6 +90,7 @@ def katedra(k):
 env.filters["katedra"] = katedra
 
 
+@lru_cache(maxsize=1 << 16)  # the same names are folded again and again (subjects, teachers, authors)
 def fold(s):
     """Serbian Cyrillic to Latin, no diacritics, lower case. search.js folds the query the same way."""
     s = "".join(CYR.get(ch, ch) for ch in (s or "").lower()).replace("đ", "dj")
@@ -831,7 +833,10 @@ def pagefind_tags(it):
 
 
 def mark_for_pagefind(page, it):
-    """Index only a folded copy of the title and text (one copy, so the excerpt does not repeat the title)."""
+    """Index only a folded copy of the title and text (one copy, so the excerpt does not repeat the title). Dev mode
+    has no Pagefind: the page as it is."""
+    if dev:
+        return page
     assert page.count("</article>") == 1, it["id"]
     folded = escape(fold(f"{it['title']}\n{it['body'] or ''}"))
     return page.replace("</article>", f'<div class="pf" data-pagefind-body>{pagefind_tags(it)}{folded}</div></article>', 1)
@@ -884,6 +889,38 @@ def version_static(static):
         asset_v[name] = hashlib.sha256(f.read_bytes()).hexdigest()[:10]
 
 
+# Dev mode (pages/serve.py; main(dev=True)): no page is rendered while main() runs. Each one keeps its template's
+# name and data (Lazy) in pages, under its address, and serve.py renders the one asked for from the templates as they
+# are then: a template's edit shows on the next reload, with no build. Nothing for Pagefind, no sitemap.
+dev = False
+pages = {}  # dev: "/nastavnici/" -> the page (Lazy); the 404 page under "/404.html"
+
+
+class Lazy:
+    """A page not rendered yet: its template's name and the data it was given."""
+
+    def __init__(self, name, data):
+        self.name, self.data = name, data
+
+    def __str__(self):
+        return Template.render(env.get_template(self.name), **self.data)
+
+
+class LazyTemplate(Template):
+    """Dev mode's templates: render() keeps what to render (Lazy), str() of it renders."""
+
+    def render(self, *args, **kwargs):
+        return Lazy(self.name, dict(*args, **kwargs))
+
+
+def write_page(path, html):
+    """A page that is not a fragment of shell.html, whole (the home and 404 pages)."""
+    if dev:
+        pages["/" + path.relative_to(site_dir).as_posix().removesuffix("index.html")] = html
+        return
+    path.write_text(versioned(html), encoding="utf-8")
+
+
 def split_page(html):
     """A page -> (shell, fragment). The shell is the page with an empty <title> (in place of the page's own head, from
     <title> to <!--/head-->: base.html) and <!--main--> for the main part; the fragment is the page's head, <!--/head-->
@@ -899,7 +936,11 @@ def write(path, html, index=True, canonical=None):
     """Write only the page's fragment: every page but the home and 404 pages shares shell.html. Its canonical link:
     its URL on the main domain, for search engines (also for its copy on github.io), or that of the page canonical
     names (a site path) that shows the same. index=False: search engines leave it out (the posts, which name
-    students; their subjects' pages are indexed), and so does the sitemap."""
+    students; their subjects' pages are indexed), and so does the sitemap. Dev mode: kept for serve.py, whole."""
+    own = f"/{path.parent.relative_to(site_dir).as_posix()}/"
+    if dev:
+        pages[own] = html
+        return
     page_shell, fragment = split_page(html)
     assert page_shell == shell, f"{path}: the page differs from shell.html outside its head and <main>"
     url = SITE_URL + (canonical or f"/{path.parent.relative_to(site_dir).as_posix()}/")
@@ -985,6 +1026,7 @@ def render_places(site, topics, smerovi, subjects):
         write(site / s["href"].strip("/") / "index.html",
               env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet))
         # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
+        (site / s["href"].strip("/")).mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
         (site / s["href"].strip("/") / "novo.json").write_text(json.dumps(
             {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},
             ensure_ascii=False), encoding="utf-8")
@@ -1861,6 +1903,7 @@ def render_vesti(site, vesti):
         cats = sorted({c for v in rows for c in v["cats"]}, key=fold)
         write(site / year_href[y].strip("/") / "index.html", env.get_template("vesti.html").render(
             vesti=rows, year=y, years=years, year_href=year_href, cats=cats, total=len(vesti)))
+    (site / "vesti").mkdir(exist_ok=True)  # dev mode writes no page there
     (site / "vesti" / "feed.xml").write_text(atom("Vesti · Mašinski fakultet", "/vesti/", vesti[:FEED_ALL]), encoding="utf-8")
 
 
@@ -1923,7 +1966,13 @@ def load_verzije(text):
     return days
 
 
-def main(db_path, out):
+def main(db_path, out, dev_mode=False):
+    global dev
+    dev = dev_mode
+    if dev:  # see Lazy
+        env.template_class = LazyTemplate
+        env.cache.clear()
+        pages.clear()
     site = Path(out) / "site"
     shutil.rmtree(site, ignore_errors=True)
     shutil.copytree(HERE / "static", site / "static")
@@ -1954,7 +2003,7 @@ def main(db_path, out):
     except sqlite3.OperationalError:
         env.globals["forum_checked"] = None
     global shell, site_dir
-    shell, site_dir = split_page(env.get_template("base.html").render())[0], site
+    shell, site_dir = split_page(str(env.get_template("base.html").render()))[0], site
     (site / "shell.html").write_text(versioned(shell), encoding="utf-8")
     # The faculty's subject code often differs from the board's: a subject of the same name the teacher posted in wins.
     posted = defaultdict(dict)
@@ -2001,9 +2050,10 @@ def main(db_path, out):
     write(site / "verzije" / "index.html", env.get_template("verzije.html").render(days=days))
     vesti = load_vesti(db)
     render_vesti(site, vesti)
-    (site / "index.html").write_text(versioned(render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("aside") for t in teachers),
-                                                           vesti)), encoding="utf-8")
-    (site / "404.html").write_text(versioned(env.get_template("error.html").render()), encoding="utf-8")
+    write_page(site / "index.html", render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("aside") for t in teachers), vesti))
+    write_page(site / "404.html", env.get_template("error.html").render())
+    if dev:
+        return
     write_sitemap(site)
     print(f"{len(items)} items, {len(topics)} topics, {len(subjects)} subjects, "
           f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti", flush=True)
