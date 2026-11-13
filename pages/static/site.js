@@ -274,16 +274,31 @@
       }));
     }, function () {});
   };
+  // Studije's height with the switch the other way, measured ahead, a second after the page or a change has settled
+  // (a page-wide restyle; at the click it stalls the first frames on a phone). Again after each change and resize;
+  // null until then, and while things move (then fadeStudije measures).
+  var studijeNext = null, nextWait = 0;
+  var measureNext = function () {
+    studijeNext = null;
+    clearTimeout(nextWait);
+    nextWait = setTimeout(function () {
+      var card = d.querySelector('#res > .fb--forums');
+      if (!card || !only || card.getAnimations({ subtree: true }).length || d.documentElement.classList.contains('falling')) return;
+      studijeNext = window.mojiAhead(function () { return card.getBoundingClientRect().height; }, only.checked ? '1' : '');
+    }, 1000);
+  };
+  d.addEventListener('moji', measureNext);
+  window.addEventListener('resize', measureNext);
+  if (d.fonts) d.fonts.ready.then(measureNext);
+  measureNext();
   if (only) only.addEventListener('change', function () {
     try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
     // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows. at: the click's
     // time, for what is timed from it (search.html: the lists under Studije).
-    var at = performance.now(), on = only.checked, card = d.querySelector('#res > .fb--forums'), h1;
+    var at = performance.now(), on = only.checked, h1 = studijeNext;
+    studijeNext = null;
     // Off: the lists under Studije fall back to their peek first (search.html fallFirst), then Studije changes; unless
-    // the switch went back on meanwhile. Studije's height after it is measured now, at the click, not mid-fall: a
-    // page-wide restyle there stalls the fall on a phone. Not while Studije still moves (a flip mid-way): fadeStudije
-    // measures it then, after stopping it.
-    if (!on && card && !card.getAnimations({ subtree: true }).length) h1 = window.mojiAhead(function () { return card.getBoundingClientRect().height; });
+    // the switch went back on meanwhile.
     (on || !window.fallFirst ? Promise.resolve() : window.fallFirst()).then(function () {
       if (only.checked === on) fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); }, h1);
     });

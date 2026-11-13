@@ -15,12 +15,13 @@ try {
 // [data-pid] is a row of a subject or of a topic in one, [data-pids] a smer's row (its subjects); a box or group left
 // without such a row goes too. The home page (#res) keeps its boxes: Studije greys its other smerovi, and Najnovije
 // objave shows the followed subjects' newest (site.js fillMine). site.js calls it again when the choice or the subjects
-// change; it returns {only, has(href)} for the list counts.
-window.moji = function () {
+// change; it returns {only, has(href)} for the list counts. sve: the switch as given ("1" off, "" on), not as saved
+// (mojiAhead).
+window.moji = function (sve) {
 	let list = [], all = false;
 	try {
 		list = (JSON.parse(localStorage.getItem("moji")) || []).map((s) => s.href);
-		all = localStorage.getItem("sve") === "1";
+		all = (sve === undefined ? localStorage.getItem("sve") : sve) === "1";
 	} catch (e) {}
 	const only = list.length > 0 && !all;
 	const q = (h) => `"${h.replace(/["\\]/g, "\\$&")}"`;
@@ -56,11 +57,11 @@ window.moji = function () {
 };
 window.mojiNow = window.moji();
 
-// The page as the saved choice will show it, for fn to measure (site.js fadeStudije, search.html fallFirst): moji()'s
-// style for it, fn, then the style on the page back; nothing is painted between.
-window.mojiAhead = function (fn) {
+// The page as the saved choice will show it (or the switch as sve gives it, moji()), for fn to measure (site.js):
+// moji()'s style for it, fn, then the style on the page back; nothing is painted between.
+window.mojiAhead = function (fn, sve) {
 	const st = document.getElementById("moji-css"), css = st.textContent, only = document.documentElement.classList.contains("moji-only");
-	window.moji();
+	window.moji(sve);
 	const v = fn();
 	st.textContent = css;
 	document.documentElement.classList.toggle("moji-only", only);
