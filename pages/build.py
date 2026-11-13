@@ -1503,6 +1503,7 @@ def render_teachers(site, teachers, items, book):
         ago = date.today().year - int(t["last_seen"][:4]) if t["gone"] and t["last_seen"][:4] != "0000" else 0
         t["age"] = round(100 * min(1, max(0, ago) / (date.today().year - 1900)))
         t["span"] = gone_span(t, first_list)
+        t["biblio"] = bibliography(t["html"], (t.get("history") or {}).get("works"), t["name"])
     for t in teachers:
         source = base = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
         name = "mas.bg.ac.rs"
@@ -1523,6 +1524,8 @@ def render_teachers(site, teachers, items, book):
                            or (v if t.get("source") and v.startswith("/") and not v.startswith("//") else None))
         # The profile repeats the name as its first heading and the photo; the page has both above it.
         html = re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S)
+        # Its bibliography is the page's own section (bibliography); clean_html closes what this leaves open.
+        html = re.sub(r'<h2[^>]*id="библиографија".*?(?=<h2|$)', "", html, flags=re.S)
         # base: the profile's relative links are the faculty's (or masinac.org's), even when shown from the Wayback copy.
         html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), base, local)
         write(site / t["href"].strip("/") / "index.html",
@@ -1557,6 +1560,46 @@ def department_intro(html):
     text = re.sub(r"<h1[^>]*>.*?</h1>", "", text[:m.start()] + text[m.end():] if m else text, count=1, flags=re.S)
     text = clean_html(text).strip()
     return text if strip_tags(text) else "", own and unescape(own[1])
+
+
+# The faculty profile's bibliography headings, as a short kind ('ван SCI' before 'SCI').
+BIB_KINDS = [("конференциј", "konferencija"), ("ван SCI", "časopis"), ("SCI", "SCI časopis"), ("Поглавља", "poglavlje"),
+             ("Књиге", "knjiga")]
+
+
+def bibliography(html, works, name):
+    """A teacher's works as one list, newest first: the faculty profile's bibliography (each entry 'Authors (year).
+    <a>Title</a>, venue.<br/> publisher, ISSN, <a>DOI</a>, M21.') and the repository's works (nastavnici-istorija.jsonl),
+    the same work once (by its repository link, else its title). An entry: kind, authors [(name, is them)], year,
+    title, url, venue, doi, m (the ministry's category)."""
+    sur = set(fold(name).replace("-", " ").split()[1:]) if name else set()  # 'Татјана М. Лазовић-Капор': lazovic, kapor
+    first = fold(name)[:1]
+    out, seen = [], set()
+    start = (html or "").find('id="nastavnici-bibliografija"')
+    for m in re.finditer(r"<h3[^>]*>(.*?)</h3>(.*?)(?=<h3|$)", (html or "")[start:] if start >= 0 else "", re.S):
+        kind = next((k for key, k in BIB_KINDS if key in m[1]), None)
+        for p in re.findall(r"<p>(.*?)</p>", m[2], re.S):
+            head, _, tail = p.partition("<br/>")
+            e = re.match(r"\s*(.*?)\s*\((\d{4})\)\.\s*(.*)", head, re.S)
+            if not e:
+                continue
+            link = LINK.search(e[3])
+            title = strip_tags(link[2]) if link else strip_tags(e[3]).split(", ")[0]
+            venue = strip_tags(e[3][link.end():] if link else ", ".join(strip_tags(e[3]).split(", ")[1:])).strip(" ,.")
+            doi = re.search(r'href="https?://(?:dx\.)?doi\.org/([^"]+)"', tail)
+            mc = re.search(r"\b(M\d+[a-z]?)\.?\s*$", strip_tags(tail))
+            # 'Lazović Tatjana', 'Spasojević Brkić Vesna', 'Momčilović Dejan B.': surname first, then the given name.
+            me = lambda w: bool(w) and w[0] in sur and any(x[:1] == first for x in w[1:])
+            authors = [(a, me(fold(a).replace("-", " ").split())) for a in strip_tags(e[1]).split(", ") if a]
+            out.append(dict(kind=kind, authors=authors, year=int(e[2]), title=title, url=link and unescape(link[1]),
+                            venue=venue, doi=doi and unescape(doi[1]), m=mc and mc[1]))
+    for e in out:
+        seen |= {e["url"], fold(e["title"])}
+    for w in works or ():
+        if w["url"] not in seen and fold(w["title"]) not in seen:
+            out.append(dict(kind=None, authors=[], year=w.get("year"), title=w["title"], url=w["url"],
+                            venue=w.get("source") or "", doi=None, m=None))
+    return sorted(out, key=lambda e: -(e["year"] or 0))
 
 
 # A katedra's own site that its faculty page does not link (the Linkovi page has them; mat.mas.bg.ac.rs is down).
@@ -2251,6 +2294,14 @@ if __name__ == "__main__":
           '<a href="http://x.mas.bg.ac.rs/" class="urlextern"> веб сајт</a></p></div><p>Текст.</p></div>'
           '<div class="plugin_include_content x"><h2>Наставници</h2></div>')
     assert department_intro(_d) == ('<div><p>Текст.</p></div>', "http://x.mas.bg.ac.rs/"), department_intro(_d)
+    _b = bibliography('<div id="nastavnici-bibliografija"><h3>Радови у часописима ван SCI и SCIe листа</h3><div><p>\n'
+                      'Marić Ana, Lazović Tatjana M. (2014). <a href="https://m/h/1"> Wear</a>, Tribology, 3(2).<br/>\n'
+                      'ISSN: 1, <a href="https://dx.doi.org/10.1/x">10.1/x</a>, M24.\n</p></div></div>',
+                      [dict(title="Wear", year=2014, url="https://m/h/1"), dict(title="Old", year=1999, url="https://m/h/2")],
+                      "Татјана М. Лазовић-Капор")
+    assert _b == [dict(kind="časopis", authors=[("Marić Ana", False), ("Lazović Tatjana M.", True)], year=2014, title="Wear",
+                       url="https://m/h/1", venue="Tribology, 3(2)", doi="10.1/x", m="M24"),
+                  dict(kind=None, authors=[], year=1999, title="Old", url="https://m/h/2", venue="", doi=None, m=None)], _b
     # An ie notice is a post of the subject its page's h1 names, punctuation aside; its written links are links, its
     # files a post's; the page's "Literatura" is the subject's material; a page no subject has is left out.
     assert file_rows([("javascript:alert(1)", "x.pdf", None)]) == "" and "https://a/b.pdf" in file_rows([("https://a/b.pdf", "b", None)])

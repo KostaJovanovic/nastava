@@ -117,27 +117,39 @@
   {%- endfor %}
   {%- if ns.i > 10 %}<label class="tp__more"><input type="checkbox"><span>Prikaži još {{ ns.i - 10 }}</span></label>{% endif %}
   {%- else %}
-  {{ empty('msgs', 'Nema postova na forumu nastave.' if t.username else 'Nije povezan ni sa jednim nalogom na forumu.', '#radovi' if h and h.works else none, 'Pogledaj radove') }}
+  {{ empty('msgs', 'Nema postova na forumu nastave.' if t.username else 'Nije povezan ni sa jednim nalogom na forumu.', '#bibliografija' if t.biblio else none, 'Pogledaj bibliografiju') }}
   {%- endif %}
 </section>
 {%- endif %}
 
-{%- if h and h.works %}
-{#- Their works in the faculty's repository (machinery.mas.bg.ac.rs), by year, newest first. -#}
-<section class="tp__sec" id="radovi">
+{%- if t.biblio %}
+{#- Their works (build.py bibliography: the faculty profile's list and the repository's), by year, newest first: the
+    title, the authors with them in bold, then where it was published, its kind and category, the DOI. The newest 10;
+    the rest behind the toggle, as the posts. -#}
+<section class="tp__sec" id="bibliografija">
   <div class="tp__h">
-    <h2>Radovi <span>{{ h.works | length | n }}</span></h2>
+    <h2>Bibliografija <span>{{ t.biblio | length | n }}</span></h2>
     <a href="https://machinery.mas.bg.ac.rs/" rel="noopener" target="_blank">Repozitorijum fakulteta</a>
   </div>
-  {%- for year, rows in h.works | groupby('year', default=0) | reverse %}
-  <h3 class="tp__yr">{{ year or 'bez godine' }}</h3>
-  <ol class="tp__posts tp__works">
-    {%- for w in rows %}
-    <li><a href="{{ w.url }}" rel="noopener" target="_blank">{{ w.title }}</a>
-      {%- if w.source or w.type %}<span class="tp__smer">{{ w.source or w.type }}</span>{% endif %}</li>
+  {%- set ns = namespace(i=0) %}
+  {%- for year, rows in t.biblio | groupby('year', default=0) | reverse %}
+  {%- set more = ' data-more' if ns.i >= 10 else '' %}
+  <h3 class="tp__yr"{{ more }}>{{ year or 'bez godine' }}</h3>
+  <ol class="bib"{{ more }}>
+    {%- for e in rows %}{% set ns.i = ns.i + 1 %}
+    {%- set href = e.url or (e.doi and 'https://doi.org/' ~ e.doi) %}
+    <li{{ ' data-more' if ns.i > 10 else '' }}>
+      {%- if href %}<a class="bib__t" href="{{ href }}" rel="noopener" target="_blank">{{ e.title }}</a>{% else %}<span class="bib__t">{{ e.title }}</span>{% endif %}
+      {%- if e.authors %}<p class="bib__a" data-notx>{% for a, me in e.authors %}{% if me %}<b>{{ a }}</b>{% else %}{{ a }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+      <p class="bib__m">{% if e.venue %}<span data-notx>{{ e.venue }}</span>{% endif %}
+        {%- if e.kind %}<span>{{ e.kind }}</span>{% endif %}
+        {%- if e.m %}<span class="bib__c" title="Kategorija rada (Ministarstvo nauke)">{{ e.m }}</span>{% endif %}
+        {%- if e.doi %}<a href="https://doi.org/{{ e.doi }}" rel="noopener" target="_blank" data-notx>DOI</a>{% endif %}</p>
+    </li>
     {%- endfor %}
   </ol>
   {%- endfor %}
+  {%- if ns.i > 10 %}<label class="tp__more"><input type="checkbox"><span>Prikaži još {{ ns.i - 10 }}</span></label>{% endif %}
 </section>
 {%- endif %}
 
