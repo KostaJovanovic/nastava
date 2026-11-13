@@ -236,6 +236,7 @@
   // The side panel shows the new state too (head.js showSaved: the count, the switch, the picker's link).
   d.addEventListener('moji', function () {
     if (window.moji) window.mojiNow = window.moji();
+    if (window.mojiSort) window.mojiSort();
     window.showSaved();
   });
   d.dispatchEvent(new Event('moji'));
@@ -703,6 +704,7 @@
   fillMine();
   // search.js puts the home page back when the search is cleared, as built: without these rows.
   d.addEventListener('pocetna', fillMine);
+  d.addEventListener('pocetna', function () { window.mojiSort(); });
   d.addEventListener('moji', fillMine);
 
   /* Notifications: web push of the followed subjects' new posts. static/sw.js shows them; the Worker (/push) keeps this

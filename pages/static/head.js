@@ -56,6 +56,17 @@ window.moji = function () {
 };
 window.mojiNow = window.moji();
 
+// The home page's Studije: the smerovi with followed subjects first while only they show (mojiNow.only), else as
+// built. Moved in the page, not by CSS order, so the stripes and the tab order follow. search.html calls it right
+// after Studije (before the first paint), site.js on each change (its flipStudije animates the move).
+window.mojiSort = function () {
+	const ol = document.querySelector("#res > .fb--forums .fb__rows");
+	if (!ol) return;
+	const rows = ol.built || (ol.built = [...ol.children]), m = window.mojiNow;
+	const mine = (r) => m.only && (r.dataset.pids || "").split(" ").some(m.has);
+	ol.append(...rows.filter(mine), ...rows.filter((r) => !mine(r)));
+};
+
 // The page's parts that show a saved choice, set before the first frame by a script right after them (the side panel's
 // last, sidebar.html; predmet.html's star; raspored.html's programs) and again by site.js when the choice changes.
 
