@@ -254,17 +254,26 @@
     var parts = [];
     ol.built.slice(k).forEach(function (r) { parts.push.apply(parts, r.querySelectorAll('.fr__i, .fr__t, .fr__more')); });
     clearTimeout(studijeWait);
-    // From the opacity on the screen: a flip mid-way fades out from where the last fade in got to.
-    studijeAnims = studijeAnims.concat(parts.map(function (n) {
-      return n.animate({ opacity: [getComputedStyle(n).opacity, 0] }, { duration: out, easing: 'ease-in', fill: 'forwards' });
-    }));
+    // From what is on the screen: a flip mid-way starts where the last one got to.
+    var from = parts.map(function (n) { return getComputedStyle(n).opacity; }), h0 = card.getBoundingClientRect().height;
+    studijeAnims.forEach(function (a) { a.cancel(); });
+    // The card's height after the change, now: head.js's style for the new choice (already saved), a layout, the old
+    // style back; nothing is painted between. So the card moves from the first frame, with the fade.
+    var st = d.getElementById('moji-css'), css0 = st.textContent, only0 = d.documentElement.classList.contains('moji-only');
+    window.moji();
+    var h1 = card.getBoundingClientRect().height;
+    st.textContent = css0;
+    d.documentElement.classList.toggle('moji-only', only0);
+    // Over the fade out and in both, evenly (quickest mid-way), so neither is over before the other.
+    var move = card.animate({ height: [h0 + 'px', h1 + 'px'] }, { duration: out + opt.duration, easing: 'cubic-bezier(.4, 0, .2, 1)' });
+    var outs = parts.map(function (n, i) {
+      return n.animate({ opacity: [from[i], 0] }, { duration: out, easing: 'ease-in', fill: 'forwards' });
+    });
+    studijeAnims = outs.concat(move);
     studijeWait = setTimeout(function () {
-      var h0 = card.getBoundingClientRect().height;
-      studijeAnims.forEach(function (a) { a.cancel(); });
+      outs.forEach(function (a) { a.cancel(); });
       change();
-      studijeAnims = [card.animate({ height: [h0 + 'px', card.getBoundingClientRect().height + 'px'] }, opt)].concat(parts.map(function (n) {
-        return n.animate({ opacity: [0, 1] }, opt);
-      }));
+      studijeAnims = [move].concat(parts.map(function (n) { return n.animate({ opacity: [0, 1] }, opt); }));
     }, out);
   };
   if (only) only.addEventListener('change', function () {
