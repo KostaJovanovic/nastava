@@ -241,7 +241,8 @@
   d.dispatchEvent(new Event('moji'));
   /* The home page's Studije as the switch flips: head.js swaps its rows' style at once (greyed smerovi are one short
      line); then each row, icon and title glides from where it was on the screen, by transform only (FLIP), so a phone
-     keeps up; only the card's height is laid out each frame. A row that grows fades its new line in. Called before the
+     keeps up; only the card's height is laid out each frame. A row that changed fades its icon and text out and in
+     (no resizing). Called before the
      change, it measures; what it returns animates after it. A flip mid-way starts from where things are. */
   var flipAnims = [];
   var flipStudije = function () {
@@ -255,21 +256,22 @@
       flipAnims = [card.animate({ height: [h0 + 'px', card.getBoundingClientRect().height + 'px'] }, opt)];
       els.forEach(function (e, i) {
         var a = before[i], b = e.getBoundingClientRect(), row = e.closest('.fr'), dx = a.left - b.left, dy = a.top - b.top;
+        // An icon of another size: from its old centre, not its corner.
+        if (e.classList.contains('fr__i')) { dx += (a.width - b.width) / 2; dy += (a.height - b.height) / 2; }
         if (e === row) {
           rows.set(row, [dx, dy]);
           // A row that changed: its text out at once, then in for the rest, both on the move's own curve, so the fade
           // settles as the move does. A wide screen's columns: style.css.
-          if (b.height !== a.height) row.querySelectorAll('.fr__t, .fr__more').forEach(function (n) {
+          if (b.height !== a.height) row.querySelectorAll('.fr__i, .fr__t, .fr__more').forEach(function (n) {
             flipAnims.push(n.animate([{ opacity: 1, easing: opt.easing }, { opacity: 0, offset: .12, easing: opt.easing }, { opacity: 1 }], { duration: opt.duration }));
           });
         } else {
-          // Inside its row, which moves too: only the rest; the icon from its old size (origin: its top left).
+          // Inside its row, which moves too: only the rest. An icon keeps its new size: it fades (above).
           var r = rows.get(row);
           dx -= r[0]; dy -= r[1];
         }
-        if (!dx && !dy && a.width === b.width) return;
-        var from = 'translate(' + dx + 'px, ' + dy + 'px)' + (e.classList.contains('fr__i') ? ' scale(' + a.width / b.width + ')' : '');
-        flipAnims.push(e.animate({ transform: [from, 'none'], transformOrigin: ['0 0', '0 0'] }, opt));
+        if (!dx && !dy) return;
+        flipAnims.push(e.animate({ transform: ['translate(' + dx + 'px, ' + dy + 'px)', 'none'] }, opt));
       });
     };
   };
