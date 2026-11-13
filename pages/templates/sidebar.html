@@ -24,13 +24,13 @@
           followed, the switch "Samo moji predmeti" applies to the whole site (head.js) and the search; off, all show. -#}
       {#- A div, not a fieldset: Safari keeps a legend out of the phone's grid (style.css), floated or not. -#}
       <div class="fgroup" role="group" aria-labelledby="moji-h" data-izbor hidden>
-        <p class="sec" id="moji-h">Obaveštenja</p>
+        <p class="sec" id="moji-h">Obaveštenja <span data-moji-n></span></p>
         <div data-moji-scope hidden>
-          <label class="tgl"><span class="tgl__l">Samo moji predmeti <span class="tgl__n" data-moji-n></span></span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
+          <label class="tgl"><span>Samo moji<span class="tgl__more"> predmeti</span></span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
         </div>
         {#- The picker's page (mojipredmeti.html). With subjects followed, it reads "Izmeni predmete", in the accent
-            colour (head.js); on a phone then only the pencil, beside the switch (style.css). -#}
-        <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><svg class="i moji__edit" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg><span>Izaberi predmete</span></a></div>
+            colour (head.js); a phone shows "★ 17 predmeta ✎" in its place, beside the switch (style.css). -#}
+        <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Izaberi predmete</span><span class="moji__c" data-moji-c></span><svg class="i moji__edit" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg></a></div>
       </div>
 
     </div>

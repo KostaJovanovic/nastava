@@ -99,7 +99,12 @@ window.showSaved = function () {
 		if (open.classList.contains("is-set") !== n > 0) {
 			open.classList.toggle("is-set", n > 0);
 			open.querySelector("span").textContent = n ? "Izmeni predmete" : "Izaberi predmete";
+			open.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (n ? "-on" : ""));
 		}
+		// A phone's chip (style.css): "17 predmeta".
+		const c = n ? n + (n % 10 === 1 && n % 100 !== 11 ? " predmet" : " predmeta") : "";
+		const chip = open.querySelector("[data-moji-c]");
+		if (chip.textContent !== c) chip.textContent = c;
 	}
 	const tb = d.getElementById("tema"), dark = d.documentElement.dataset.tema === "dark";
 	if (tb) {
