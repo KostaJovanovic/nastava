@@ -257,10 +257,10 @@
         var a = before[i], b = e.getBoundingClientRect(), row = e.closest('.fr'), dx = a.left - b.left, dy = a.top - b.top;
         if (e === row) {
           rows.set(row, [dx, dy]);
-          // A row that changed: its text out at once, then in while the move settles (opt's curve does most of the
-          // move early). A wide screen's columns: style.css.
+          // A row that changed: its text out at once, then in for the rest, both on the move's own curve, so the fade
+          // settles as the move does. A wide screen's columns: style.css.
           if (b.height !== a.height) row.querySelectorAll('.fr__t, .fr__more').forEach(function (n) {
-            flipAnims.push(n.animate([{ opacity: 1 }, { opacity: 0, offset: .12 }, { opacity: 1, offset: .6 }, { opacity: 1 }], { duration: 350 }));
+            flipAnims.push(n.animate([{ opacity: 1, easing: opt.easing }, { opacity: 0, offset: .12, easing: opt.easing }, { opacity: 1 }], { duration: opt.duration }));
           });
         } else {
           // Inside its row, which moves too: only the rest; the icon from its old size (origin: its top left).
