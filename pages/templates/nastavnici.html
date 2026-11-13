@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% set origin = 'https://www.mas.bg.ac.rs/fakultet/nastavnici/start' %}
 {% from "rows.html" import crumb, empty %}
+{% from "cards.html" import card %}
 {#- Three pages: the faculty's teachers today (/nastavnici/); with archive, the ones no longer on its list
     (/nastavnici/arhiva/); with researchers, the researchers and demonstrators with a page here, on no list of teachers
     (/nastavnici/istrazivaci/, build.py OTHER_TEACHERS). -#}
@@ -12,31 +13,6 @@
 {#- The first frame waits for a screen of the list only (its 30th card). -#}
 {% block paint %}paint{% endblock %}
 {% block crumbs %}{% if archive or researchers %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endif %}{% endblock %}
-
-{%- macro card(t, id='') %}
-  {#- The grey corner: a departed teacher, on the archive page and in the list's search. -#}
-  <li{% if id %} id="{{ id }}"{% endif %} class="pc{% if t.gone %} pc--gone{% if t.last_seen[:4] == '0000' %} pc--undated{% endif %}" style="--p: {{ t.age }}%{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
-    {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
-    {%- else %}{% set w = t.name.split() %}<span class="pc__img pc__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>{% endif %}
-    <div class="pc__t">
-      <a class="pc__a" href="{{ t.href }}">{{ t.shown }}</a>
-      <p>{{ t.title }}</p>
-      {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra | capitalize }}</p>
-      {#- title: the name on hover; the text above already says it, so the icon is hidden from screen readers. -#}
-      <span class="pc__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
-      {#- .pc__p: the post count, shown only while the list is ordered by it (style.css). -#}
-      {%- set office = t.office and not t.gone %}
-      <p class="pc__m">{% if office %}kabinet {{ t.office }}{% endif %}{% if t.posts %}<span class="pc__p">{% if office %}, {% endif %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}</span>{% endif %}</p>
-    </div>
-    {#- Their years at the faculty, bottom right; '~' and a dimmer year where no source says it (an estimate). -#}
-    {%- set s = t.span %}
-    {%- if s and s.to %}
-    <p class="pc__yrs"><span class="pc__yl">na fakultetu</span>
-      {%- if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }}</p>
-    {%- endif %}
-  </li>
-{%- endmacro %}
-{%- macro est(y, guess) %}{% if guess %}<span class="est" title="procena">~{{ y }}</span>{% else %}{{ y }}{% endif %}{% endmacro %}
 
 {% block main %}
 <div class="mh">

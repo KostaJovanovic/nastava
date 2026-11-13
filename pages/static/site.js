@@ -90,7 +90,7 @@
       })
         .map(function (k) {
           var n = k[3] % 10 === 1 && k[3] % 100 !== 11 ? ' nastavnik' : ' nastavnika';
-          return ['', k[1], k[3] + n, '/nastavnici/?katedra=' + k[2], icon(k[2])];
+          return ['', k[1], k[3] + n, k[4] || '/nastavnici/?katedra=' + k[2], icon(k[2])];
         }));
       // A researcher or demonstrator (build.py OTHER_TEACHERS, aside): their page, with their title.
       section('istrazivaci', 'Istraživači i demonstratori',(data.istrazivaci || []).filter(function (r) { return has(fold(r[0])); })
@@ -168,7 +168,7 @@
 
   /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
      (a teacher's page is under Nastavnici, an archived schedule page under Raspored, a news post under Vesti). */
-  var here = location.pathname.replace(/^\/nastavnik\//, '/nastavnici/').replace(/^\/studije\//, '/raspored/')
+  var here = location.pathname.replace(/^\/(nastavnik|katedra)\//, '/nastavnici/').replace(/^\/studije\//, '/raspored/')
     .replace(/^\/vest\//, '/vesti/');
   [].forEach.call(d.querySelectorAll('.snav a'), function (a) {
     if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');

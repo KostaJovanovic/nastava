@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb, forum_rows, topic_rows %}
+{% from "cards.html" import card %}
+{#- A katedra (build.py render_katedre): the faculty's text about it, a link to its own site, its teachers, its
+    subjects by smer and the newest topics in them. -#}
+{%- set origin = source %}
+
+{% block title %}{{ k }}{% endblock %}
+{% block og %}-nastavnici{% endblock %}
+{% block description %}{{ k }}, Mašinski fakultet u Beogradu: {{ teachers | length | n }} {{ teachers | length | pl('nastavnik') }}, {{ n_subjects | n }} {{ n_subjects | pl('predmet') }} i najnovije objave sa foruma nastave.{% endblock %}
+{% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% endblock %}
+
+{%- macro ext(href, text) %}<a href="{{ href }}" rel="noopener" target="_blank">{{ text }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endmacro %}
+
+{% block main %}
+<div class="mh mh--card">
+  <div class="mh__row">
+    <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ k | slug }}"></use></svg></span>
+    <div>
+      <h1 id="title">{{ k }}</h1>
+      <p class="mh__stats"><span><b>{{ teachers | length | n }}</b> {{ teachers | length | pl('nastavnik') }}</span><span><b>{{ n_subjects | n }}</b> {{ n_subjects | pl('predmet') }}</span>
+        {%- if own %}<span>{{ ext(own, 'sajt katedre') }}</span>{% endif %}</p>
+    </div>
+  </div>
+</div>
+
+{%- if intro %}
+<section class="tp__sec" aria-labelledby="o-h">
+  <div class="tp__h"><h2 id="o-h">O katedri</h2>{% if source %}{{ ext(source, 'mas.bg.ac.rs') }}{% endif %}</div>
+  <div class="prose prose--html">{{ intro | safe }}</div>
+</section>
+{%- endif %}
+
+<section class="tp__sec" aria-labelledby="n-h">
+  <div class="tp__h"><h2 id="n-h">Nastavnici <span>{{ teachers | length | n }}</span></h2><a href="/nastavnici/?katedra={{ k | slug }}">Na spisku svih nastavnika</a></div>
+  <ol class="people">{% for t in teachers %}{{ card(t) }}{% endfor %}</ol>
+</section>
+
+{%- if topics %}
+{{ topic_rows('Najnovije objave', topics, place=true, short=true) }}
+{%- endif %}
+
+{%- for label, subs in groups %}
+{{ forum_rows(label, subs, 'book') }}
+{%- endfor %}
+{% endblock %}

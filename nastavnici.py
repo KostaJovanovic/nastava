@@ -7,6 +7,7 @@
 Usage: nastavnici.py sync
        nastavnici.py history   (once: teachers who left before, from the Wayback Machine and masinac.org)
        nastavnici.py photos    (the photos not stored yet; sync and history end with it)
+       nastavnici.py departments   (only the department pages, for their pages here; sync reads them too)
 
 One row per teacher (the newest version of the profile) and one row per subject the teacher has.
 A teacher who leaves the list stays, marked gone unless a department page still lists them. The forum username is the part of the e-mail before @.
@@ -28,6 +29,7 @@ create table if not exists teachers (id text primary key, name text, full_name t
 	first_seen text, last_seen text, gone integer default 0, photo text);
 create table if not exists teacher_subjects (teacher text, code text, name text, primary key (teacher, code, name));
 create table if not exists photos (url text primary key, data blob, type text, fetched text);
+create table if not exists departments (id integer primary key, name text, html text, first_seen text, last_seen text);
 '''
 
 
@@ -174,19 +176,38 @@ def save(db, row, now):
 		+ ', '.join(f'{c} = excluded.{c}' for c in cols if c != 'first_seen'), list(row.values()))
 
 
-def sync(db):
+def page(path):
+	"""The page's HTML, or None for a 404."""
 	from nastava import DELAY, session
+	time.sleep(DELAY)
+	r = session().get(SITE + path, timeout=60)
+	if r.status_code == 404:
+		return None
+	r.raise_for_status()
+	return r.text
+
+
+def save_department(db, k, name, html, now):
+	"""A department page (organizacija/katedre/<k>) as the wiki shows it, for its page here (build.py): its text and
+	its own site's link."""
+	m = re.search(r'<!-- wikipage start -->(.*?)<!-- wikipage stop -->', html, re.S)
+	db.execute('insert into departments values (?,?,?,?,?) on conflict(id) do update set name = excluded.name, '
+		'html = excluded.html, last_seen = excluded.last_seen', (k, name, (m[1] if m else html).strip(), now, now))
+
+
+def departments(db):
+	"""Only the department pages (sync reads them too)."""
 	now = datetime.now(timezone.utc).isoformat(timespec='seconds')
+	for k, name in db.execute('select distinct katedra_id, katedra from teachers where katedra_id is not null and not gone').fetchall():
+		html = page(f'organizacija/katedre/{k}')
+		if html:
+			save_department(db, k, name, html, now)
+	db.commit()
+	print(db.execute('select count(*) from departments').fetchone()[0], 'departments', flush=True)
 
-	def page(path):
-		"""The page's HTML, or None for a 404."""
-		time.sleep(DELAY)
-		r = session().get(SITE + path, timeout=60)
-		if r.status_code == 404:
-			return None
-		r.raise_for_status()
-		return r.text
 
+def sync(db):
+	now = datetime.now(timezone.utc).isoformat(timespec='seconds')
 	listed = parse_list(page(LIST) or '')
 	if len(listed) < 50:
 		raise RuntimeError(f'only {len(listed)} teachers in the list, the site changed')
@@ -215,6 +236,8 @@ def sync(db):
 	katedre = dict(db.execute('select katedra_id, katedra from teachers where katedra_id is not null and not gone'))
 	for k, name in katedre.items():
 		html = page(f'organizacija/katedre/{k}')
+		if html:
+			save_department(db, k, name, html, now)
 		for key, title in (parse_katedra(html) if html else {}).items():
 			staff[key] = title
 			if key in missing and not title:
@@ -464,7 +487,7 @@ def main():
 	from nastava import connect
 	sys.stdout.reconfigure(encoding='utf-8')
 	cmd = sys.argv[1] if len(sys.argv) > 1 else 'sync'
-	commands = dict(sync=sync, history=history, photos=store_photos)
+	commands = dict(sync=sync, history=history, photos=store_photos, departments=departments)
 	if cmd not in commands:
 		sys.exit(__doc__)
 	db = connect()

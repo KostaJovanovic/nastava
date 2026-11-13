@@ -20,6 +20,7 @@ from collections import Counter, defaultdict
 from datetime import date, datetime
 from functools import lru_cache
 from html import unescape
+from itertools import groupby
 from pathlib import Path
 from urllib.parse import quote, unquote, urljoin, urlsplit
 from xml.etree import ElementTree
@@ -88,6 +89,16 @@ def katedra(k):
 
 
 env.filters["katedra"] = katedra
+# The katedre with a page of their own (render_katedre): the ones with listed teachers, set by main() before any page.
+katedra_pages = set()
+
+
+def katedra_href(k):
+    """A katedra's link: its page, or for one without (only departed teachers) the archive's list of them."""
+    return f"/katedra/{slug(katedra(k))}/" if k in katedra_pages else f"/nastavnici/arhiva/?katedra={slug(k)}"
+
+
+env.filters["katedra_href"] = katedra_href
 
 
 @lru_cache(maxsize=1 << 16)  # the same names are folded again and again (subjects, teachers, authors)
@@ -935,7 +946,7 @@ def split_page(html):
 
 # A section's pages count as its side panel link: a teacher under Nastavnici, an archived schedule page under Raspored,
 # a news post under Vesti (site.js has the same rule).
-SECTION = {"/nastavnik/": "/nastavnici/", "/studije/": "/raspored/", "/vest/": "/vesti/"}
+SECTION = {"/nastavnik/": "/nastavnici/", "/katedra/": "/nastavnici/", "/studije/": "/raspored/", "/vest/": "/vesti/"}
 snav = []  # the side panel's links (sidebar.html), set by main()
 
 
@@ -1537,6 +1548,46 @@ def render_teachers(site, teachers, items, book):
                                                      researchers=True))
 
 
+def department_intro(html):
+    """A department page of the faculty's wiki (nastavnici.py departments) as (its text, its own site): the text
+    before its staff list, without the title; the site is the link in its side box ('веб сајт катедре')."""
+    m = re.search(r'<div class="wrap_related[^"]*"[^>]*>(.*?)</div>', html, re.S)
+    own = LINK.search(m[1]) if m else None
+    text = html.split('<div class="plugin_include_content', 1)[0]
+    text = re.sub(r"<h1[^>]*>.*?</h1>", "", text[:m.start()] + text[m.end():] if m else text, count=1, flags=re.S)
+    text = clean_html(text).strip()
+    return text if strip_tags(text) else "", own and unescape(own[1])
+
+
+# A katedra's own site that its faculty page does not link (the Linkovi page has them; mat.mas.bg.ac.rs is down).
+OWN_SITES = {"Катедра за информационе технологије у машинству": "https://it0.mas.bg.ac.rs/",
+             "Катедра за пољопривредно машинство": "https://ppm.mas.bg.ac.rs/"}
+
+
+def render_katedre(site, db, teachers, subjects, topics):
+    """A page per katedra with listed teachers (/katedra/<name>/): the faculty's text about it and its own site,
+    its teachers' cards, its subjects (those whose row has its icon, build.py row_katedra) by smer, and the newest
+    topics in them."""
+    dept = {}
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name = 'departments'").fetchone():
+        dept = {r["name"]: r for r in db.execute("SELECT * FROM departments")}
+    listed = [t for t in teachers if not t["gone"] and not t.get("aside")]
+    newest = defaultdict(list)
+    for t in topics:  # newest first
+        if t["subj"] and t["subj"].get("katedra") and len(newest[t["subj"]["katedra"]]) < 15:
+            newest[t["subj"]["katedra"]].append(t)
+    for k in sorted(katedra_pages):
+        d = dept.get(k)
+        intro, own = department_intro(d["html"]) if d else ("", None)
+        subs = sorted((s for s in subjects.values() if s.get("katedra") == k),
+                      key=lambda s: (HOME_ORDER.index(s["smer"]["key"]) if s["smer"].get("key") in HOME_ORDER else 99,
+                                     -s["topics"], fold(s["name"])))
+        groups = [(m["label"], list(rows)) for m, rows in groupby(subs, key=lambda s: s["smer"])]
+        write(site / katedra_href(k).strip("/") / "index.html", env.get_template("katedra.html").render(
+            k=k, intro=intro, own=own or OWN_SITES.get(k), source=d and f"{STUDY_SITE}organizacija/katedre/{d['id']}",
+            teachers=[t for t in listed if t["katedra"] == k], groups=groups, n_subjects=len(subs), topics=newest[k]))
+
+
 # The programs in the order of the faculty's studies; a subject book program not here goes last.
 PROGRAMS = ["Основне академске студије — МИ", "Основне академске студије — ИТМ", "Мастер академске студије — МИ",
             "Мастер академске студије — Индустрија 4.0", "Докторске студије — МИ"]
@@ -1755,8 +1806,8 @@ def picker(subjects, book, teachers, items=()):
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
                 # The listed teachers first, then the ones who left (the header search shows them where there is room).
                 people=[person(t) for t in people],
-                # [full name, short name, ?katedra= slug, listed teachers]: a katedra has no page, its teachers' list is it.
-                katedre=[[k, katedra(k).capitalize(), slug(k), n] for k, n in sorted(listed.items(), key=lambda x: azbuka(x[0]))])
+                # [full name, short name, icon slug, listed teachers, its page (render_katedre)].
+                katedre=[[k, katedra(k).capitalize(), slug(k), n, katedra_href(k)] for k, n in sorted(listed.items(), key=lambda x: azbuka(x[0]))])
 
 
 def write_bytes(path, data):
@@ -1912,7 +1963,7 @@ def archive_stats(items, topics, teachers):
                       posting=len(posting), share=round(by_teachers / (len(posts) or 1) * 100),
                       titles=[(r, n) for r in RANKS if (n := sum(1 for t in listed if t["title"] == r))],
                       katedre=ranking(Counter(t["katedra"] for t in listed if t["katedra"]),
-                                      lambda k: (env.filters["katedra"](k).capitalize(), f"/nastavnici/?katedra={slug(k)}", None))))
+                                      lambda k: (env.filters["katedra"](k).capitalize(), katedra_href(k), None))))
 
 
 def render_vesti(site, vesti):
@@ -2013,6 +2064,8 @@ def main(db_path, out, dev_mode=False):
     teachers = load_teachers(db, subjects)
     if teachers:
         write_photos(db, site)
+    katedra_pages.clear()
+    katedra_pages.update(t["katedra"] for t in teachers if not t["gone"] and not t.get("aside") and t["katedra"])
     # A board author is a teacher when the username is the teacher's e-mail before @. When two rows share it (a
     # teacher who became emeritus), the one still listed comes last and wins.
     teacher_of = {t["username"]: t for t in sorted(teachers, key=lambda t: not t["gone"]) if t["username"]}
@@ -2064,6 +2117,7 @@ def main(db_path, out, dev_mode=False):
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it), index=False)
     render_teachers(site, teachers, items, book)
+    render_katedre(site, db, teachers, subjects, topics)
     render_book(site, book)
     raspored = render_study_pages(site, db)
     (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored,
@@ -2187,7 +2241,16 @@ if __name__ == "__main__":
     assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [
         ["Н", "/n/", "/foto/n.jpg", "доцент · математика"], ["Г", "/g/", None, "доцент · ~1950–1980", 40],
         ["Ж", "/z/", None, "do 1990", None]], _p["people"]
-    assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1]], _p["katedre"]
+    assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1,
+                              katedra_href("Катедра за математику")]], _p["katedre"]
+    katedra_pages.add("Катедра за математику")
+    assert katedra_href("Катедра за математику") == "/katedra/matematika/", katedra_href("Катедра за математику")
+    katedra_pages.clear()
+    assert katedra_href("Катедра за моторе") == "/nastavnici/arhiva/?katedra=katedra-za-motore"
+    _d = ('<h1 id="k">Катедра за x</h1><div class="level1"><div class="wrap_related wrap_right plugin_wrap"><p>'
+          '<a href="http://x.mas.bg.ac.rs/" class="urlextern"> веб сајт</a></p></div><p>Текст.</p></div>'
+          '<div class="plugin_include_content x"><h2>Наставници</h2></div>')
+    assert department_intro(_d) == ('<div><p>Текст.</p></div>', "http://x.mas.bg.ac.rs/"), department_intro(_d)
     # An ie notice is a post of the subject its page's h1 names, punctuation aside; its written links are links, its
     # files a post's; the page's "Literatura" is the subject's material; a page no subject has is left out.
     assert file_rows([("javascript:alert(1)", "x.pdf", None)]) == "" and "https://a/b.pdf" in file_rows([("https://a/b.pdf", "b", None)])

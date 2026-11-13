@@ -12,10 +12,10 @@
 <div class="mh mh--card">
   {#- The star needs site.js (the followed subjects are kept in the browser); without it, it stays hidden. -#}
   <div class="mh__top">
-    {#- Its katedra's icon (build.py row_katedra), linking its teachers; else the book, as its row has. -#}
+    {#- Its katedra's icon (build.py row_katedra), linking its page; else the book, as its row has. -#}
     {%- set k = subj.katedra if subj.katedra and (subj.katedra | slug).startswith('katedra-') else none %}
     {%- set ki %}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ k | slug if k else 'book' }}"></use></svg>{% endset %}
-    {%- if k %}<a class="mh__ki" href="/nastavnici/?katedra={{ k | slug }}" title="{{ k }}" aria-label="{{ k }}">{{ ki }}</a>{% else %}<span class="mh__ki">{{ ki }}</span>{% endif %}
+    {%- if k %}<a class="mh__ki" href="{{ k | katedra_href }}" title="{{ k }}" aria-label="{{ k }}">{{ ki }}</a>{% else %}<span class="mh__ki">{{ ki }}</span>{% endif %}
     <h1 id="title">{{ subj.name }}</h1>
     <button type="button" class="btn star" data-star="{{ subj.href }}" data-name="{{ subj.name }}" aria-pressed="false" title="Najnovije objave praćenih predmeta su na početnoj strani" hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Prati</span></button>
     {#- Followed or not, before the first frame (base.html rel=expect). -#}
