@@ -57,18 +57,22 @@
         ro.disconnect();
       };
       const go = (e) => down[e.type](e) && open();
-      // The switch: on brings the lists up, off lets them fall back, from the end of Studije's own animation to 740 ms
-      // after the click (on) or 750 ms (off; site.js gives the click's time): --move, style.css, dropped once there.
-      document.addEventListener("moji", (e) => queueMicrotask(() => Promise.all(s.getAnimations({ subtree: true }).map((a) => a.finished)).then(() => {
-        const only = window.mojiNow.only;
-        if (e.detail) s.parentElement.querySelector(":scope > .lists").style.setProperty("--move", Math.max(150, e.detail.at + (only ? 740 : 750) - performance.now()) + "ms");
-        only ? open() : arm(true);
-      }, () => {})));
+      // The switch: on brings the lists up, off lets them fall back, in their usual .5s (style.css), ending 740 ms after
+      // the click (on) or 750 ms (off; site.js gives the click's time), over the end of Studije's own animation. A flip
+      // mid-way cancels the wait. Without a click (site.js's first 'moji'): at once.
+      let wait = 0;
+      document.addEventListener("moji", (e) => {
+        clearTimeout(wait);
+        queueMicrotask(() => {
+          const only = window.mojiNow.only;
+          wait = setTimeout(() => (only ? open() : arm(true)), e.detail ? e.detail.at + (only ? 740 : 750) - 500 - performance.now() : 0);
+        });
+      });
       addEventListener("load", place);
       if (!cl.contains("moji-only")) arm();
     }
   }</script>
-  <div class="lists" ontransitionend="event.propertyName == '--hide' && (document.documentElement.classList.remove('faded', 'falling'), this.style.removeProperty('--move'))">
+  <div class="lists" ontransitionend="event.propertyName == '--hide' && document.documentElement.classList.remove('faded', 'falling')">
   {{ topic_rows('Najnovije objave', recent, place=true, short=true, mine=true, more='/objave/') }}
   {%- if vesti %}{{ vest_rows('Vesti fakulteta', vesti, more='/vesti/') }}{% endif %}
   </div>

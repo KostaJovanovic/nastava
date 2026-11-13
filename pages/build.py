@@ -1450,8 +1450,8 @@ def load_teachers(db, subjects):
 
 
 # Teachers shown without their second surname, except on their own page (the user's choice): Vasić-Milovanović,
-# Lazović-Kapor, Milošević-Mitić, Mutavdžić-Đukić, Sretenović-Dobrić.
-SHORT_SURNAME = {"30", "90", "115", "494", "191"}
+# Lazović-Kapor, Milošević-Mitić, Sretenović-Dobrić.
+SHORT_SURNAME = {"30", "90", "115", "191"}
 RANKS = ["професор емеритус", "редовни професор", "ванредни професор", "доцент", "асистент са докторатом", "асистент"]
 AZBUKA = {c: i for i, c in enumerate("абвгдђежзијклљмнњопрстћуфхцчџш")}
 
