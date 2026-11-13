@@ -30,12 +30,13 @@ window.moji = function () {
 		const pids = list.map((h) => `:not([data-pids~=${q(h)}])`).join("");
 		const any = list.map((h) => `[data-pid=${q(h)}],[data-pids~=${q(h)}]`).join(",");
 		// Studije's greyed smerovi; on a phone also without their last post, a half-size icon (centred where the 32px
-		// ones are) and less padding: one short line each.
+		// ones are) and less padding: one short line each. The last post collapses rather than going, so the switch can
+		// animate it (style.css #res [data-pids]).
 		const grey = `#res [data-pids]${pids}`;
 		css = `[data-pid]${pid},[data-pids]${pids}:not(#res *),:is(.fb,.sg,.sg__s,.sg__slot):not(#res *):has([data-pid],[data-pids]):not(:has(${any}))`
 			+ `{display:none!important}${grey}{opacity:.45}`
-			+ `@container main (max-width:759.98px){${grey}{padding-block:2px}${grey} .fr__more{display:none}`
-			+ `${grey} .fr__i{width:16px;height:16px;margin-left:8px;grid-row:auto}${grey} .fr__i .i{width:12px;height:12px}}`;
+			+ `@container main (max-width:759.98px){${grey}{padding-block:2px;row-gap:0}${grey} .fr__more{max-height:0;opacity:0;overflow:hidden}`
+			+ `${grey} .fr__i{width:16px;height:16px;margin-left:8px}${grey} .fr__i .i{width:12px;height:12px}}`;
 	}
 	let style = document.getElementById("moji-css");
 	if (!style) {
