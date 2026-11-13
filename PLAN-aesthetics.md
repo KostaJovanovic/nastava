@@ -6,8 +6,8 @@ Decided with the user, one question at a time. Done items are marked.
 2. [x] Header search: subject rows show their katedra's icon, katedre found by initials (7b4a1c3).
    [ ] Subjects with no katedra icon show the book icon.
 3. Teacher page:
-   [~] Biography section (nastavnici-sazetak.jsonl; batch 1 = OMK, 12 teachers, ecfc5c5; sources dumped with
-       %TEMP%\bios\dossier.py <repo> <katedra part>; next batches by katedra after the user reviews) above the forum posts: ~2 paragraphs per teacher, written by Claude once from the
+   [x] Biography section (nastavnici-sazetak.jsonl: all 214 current teachers, batches 1–10; departed teachers not
+       done, not decided) above the forum posts: ~2 paragraphs per teacher, written by Claude once from the
        teacher's sources (monograph, faculty profile, old-site card, history), saved to a JSONL, done in batches the
        user reviews. Example accepted for Tatjana Lazović-Kapor (education/career; research/teaching/books/awards).
    [x] (5fffaf7) Bibliography as its own section: the repository's Radovi and the faculty profile's Bibliografija merged into
