@@ -241,40 +241,42 @@
   });
   d.dispatchEvent(new Event('moji'));
   /* The home page's Studije as the switch flips: the rows that will change (moved by head.js mojiSort, or greyed and
-     made one short line by head.js) fade out where they are, are rearranged while unseen (change()), and fade in where
-     they land. Nothing slides past anything: only the card's bottom moves, one way. A flip mid-way starts from what
-     is on the screen. Elsewhere, or with reduced motion, change() at once. */
-  var studijeAnims = [], studijeWait = 0;
+     made one short line by head.js) fade out whole, backgrounds too, while the card takes its new height; unseen, they
+     are rearranged (change()) and fade in where they land. Nothing slides past anything, and the card is never shorter
+     or taller than what shows in it for long: its bottom moves one way, with the fade out. A flip mid-way starts from
+     what is on the screen. Elsewhere, or with reduced motion, change() at once. */
+  var studijeAnims = [];
   var fadeStudije = function (change) {
     var card = d.querySelector('#res > .fb--forums'), ol = card && card.querySelector('.fb__rows');
     if (!ol || !ol.built || card.closest('.searching') || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
-    var opt = { duration: 300, easing: 'cubic-bezier(.2, .8, .2, 1)' }, out = 90, k = 0;
+    var out = { duration: 200, easing: 'cubic-bezier(.4, 0, .2, 1)', fill: 'forwards' }, k = 0;
     // The rows that stay as they are: the followed smerovi already first as built (first in both orders).
     while (k < ol.built.length && (ol.built[k].dataset.pids || '').split(' ').some(window.mojiNow.has)) k++;
-    var parts = [];
-    ol.built.slice(k).forEach(function (r) { parts.push.apply(parts, r.querySelectorAll('.fr__i, .fr__t, .fr__more')); });
-    clearTimeout(studijeWait);
+    var rows = ol.built.slice(k);
     // From what is on the screen: a flip mid-way starts where the last one got to.
-    var from = parts.map(function (n) { return getComputedStyle(n).opacity; }), h0 = card.getBoundingClientRect().height;
+    var from = rows.map(function (r) { return getComputedStyle(r).opacity; }), h0 = card.getBoundingClientRect().height;
     studijeAnims.forEach(function (a) { a.cancel(); });
     // The card's height after the change, now: head.js's style for the new choice (already saved), a layout, the old
-    // style back; nothing is painted between. So the card moves from the first frame, with the fade.
+    // style back; nothing is painted between.
     var st = d.getElementById('moji-css'), css0 = st.textContent, only0 = d.documentElement.classList.contains('moji-only');
     window.moji();
     var h1 = card.getBoundingClientRect().height;
     st.textContent = css0;
     d.documentElement.classList.toggle('moji-only', only0);
-    // Over the fade out and in both, evenly (quickest mid-way), so neither is over before the other.
-    var move = card.animate({ height: [h0 + 'px', h1 + 'px'] }, { duration: out + opt.duration, easing: 'cubic-bezier(.4, 0, .2, 1)' });
-    var outs = parts.map(function (n, i) {
-      return n.animate({ opacity: [from[i], 0] }, { duration: out, easing: 'ease-in', fill: 'forwards' });
-    });
-    studijeAnims = outs.concat(move);
-    studijeWait = setTimeout(function () {
+    studijeAnims = [card.animate({ height: [h0 + 'px', h1 + 'px'] }, out)].concat(rows.map(function (r, i) {
+      return r.animate({ opacity: [from[i], 0] }, out);
+    }));
+    // The change once all that has ended (not a timer: it waits for a slow phone's frames too). A flip mid-way
+    // cancels these, and so this.
+    var outs = studijeAnims;
+    Promise.all(outs.map(function (a) { return a.finished; })).then(function () {
       outs.forEach(function (a) { a.cancel(); });
       change();
-      studijeAnims = [move].concat(parts.map(function (n) { return n.animate({ opacity: [0, 1] }, opt); }));
-    }, out);
+      // Each row to its own opacity now (a greyed smer's .45, head.js).
+      studijeAnims = rows.map(function (r) {
+        return r.animate({ opacity: [0, getComputedStyle(r).opacity] }, { duration: 250, easing: 'cubic-bezier(.2, .8, .2, 1)' });
+      });
+    }, function () {});
   };
   if (only) only.addEventListener('change', function () {
     try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
