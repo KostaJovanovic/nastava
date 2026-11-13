@@ -39,9 +39,10 @@ FRAGMENT = '<html lang="sr"><title>'
 # What dev mode's data comes from: a change restarts it. build.py imports the three modules. The database's -wal: a
 # sync writes there first. Not the icons: their link's ?v= hash goes stale after an edit, but every reply here is
 # no-cache (end_headers), so a reload fetches the new file anyway. Not verzije.md: /verzije/ reads it at each render
-# (build.py Lazy.fresh).
+# (build.py Lazy.fresh). The teachers' files of history, photos and biographies: build.py reads them at the start.
 WATCH = [HERE / "build.py", *(HERE.parent / f for f in (
-    "studije.py", "nastavnici.py", "mail.py", "nastava.db", "nastava.db-wal"))]
+    "studije.py", "nastavnici.py", "mail.py", "nastava.db", "nastava.db-wal", "nastavnici-istorija.jsonl",
+    "nastavnici-foto.jsonl", "nastavnici-biografije.jsonl", "nastavnici-sazetak.jsonl"))]
 build = None  # dev mode: the build module, its pages loaded (dev())
 
 

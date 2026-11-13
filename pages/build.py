@@ -1360,6 +1360,9 @@ HISTORY = Path(__file__).resolve().parent.parent / "nastavnici-istorija.jsonl"
 FOTOS = HISTORY.with_name("nastavnici-foto.jsonl")
 # Biographies from the faculty's 2023 monograph, its own words: page id, the paragraphs about them, each with its page.
 BIOS = HISTORY.with_name("nastavnici-biografije.jsonl")
+# A short biography of each teacher, about two paragraphs, written once (by Claude, reviewed) from that teacher's
+# sources on this site: page id, name, the paragraphs.
+SUMMARIES = HISTORY.with_name("nastavnici-sazetak.jsonl")
 
 
 def load_history(teachers):
@@ -1412,12 +1415,15 @@ def load_teachers(db, subjects):
     local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
     fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
     bios = {b["id"]: b["paras"] for b in map(json.loads, BIOS.read_text(encoding="utf-8").splitlines())} if BIOS.exists() else {}
+    sums = ({b["id"]: b["paras"] for b in map(json.loads, SUMMARIES.read_text(encoding="utf-8").splitlines())}
+            if SUMMARIES.exists() else {})
     # The last day the teachers' list was read: one not on it then (gone, or a department's staff nastavnici.py keeps)
     # has no profile at the faculty.
     listed_day = max((t["last_seen"] for t in teachers if not t["gone"] and not t.get("source")), default="")
     for t in teachers:
         t["off_list"] = t["gone"] or t["last_seen"] < listed_day
         t["bio"] = bios.pop(t["id"], None)
+        t["summary"] = sums.pop(t["id"], None)
         # The photo from our copy (write_photos); a listed teacher's not copied yet from the faculty, one off the
         # list none (the faculty took it down).
         thumb, photo = photo_urls(t["html"], t.get("photo"))
@@ -1433,7 +1439,7 @@ def load_teachers(db, subjects):
         t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
         t["rank"] = RANKS.index(t["title"]) if t["title"] in RANKS else 9
-    for name, left in (("nastavnici-foto.jsonl", fotos), ("nastavnici-biografije.jsonl", bios)):
+    for name, left in (("nastavnici-foto.jsonl", fotos), ("nastavnici-biografije.jsonl", bios), (SUMMARIES.name, sums)):
         if left:
             print(f"{name}: no page for {', '.join(left)}", file=sys.stderr)
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).

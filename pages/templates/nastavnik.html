@@ -88,9 +88,24 @@
   {%- endfor %}
   <p class="tp__src">Iz monografije „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“, {% for p in t.bio | unique(attribute='page') %}<a href="{{ p.url }}" rel="noopener" target="_blank">str. {{ p.page }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>
 {%- endmacro %}
+{#- The short biography (nastavnici-sazetak.jsonl), written from the sources this page has, above everything else. -#}
+{%- if t.summary %}
+<section class="tp__sec" id="o-nastavniku">
+  <div class="tp__h"><h2>Biografija</h2></div>
+  <div class="tp__biotext tp__sum">
+    {%- for p in t.summary %}<p>{{ p }}</p>{% endfor %}
+    {%- set from = [] %}
+    {%- if html %}{% set _ = from.append('profil sa sajta fakulteta') %}{% endif %}
+    {%- if t.bio %}{% set _ = from.append('monografija fakulteta') %}{% endif %}
+    {%- if h and h.sources %}{% set _ = from.append('izvori o istoriji fakulteta') %}{% endif %}
+    {%- if t.biblio %}{% set _ = from.append('bibliografija') %}{% endif %}
+    <p class="tp__src">Sažetak, napisan iz izvora na ovoj strani{% if from %}: {{ from | join(', ') }}{% endif %}.</p>
+  </div>
+</section>
+{%- endif %}
 {%- if t.bio and past %}
 <section class="tp__sec" id="biografija">
-  <div class="tp__h"><h2>Biografija</h2></div>
+  <div class="tp__h"><h2>{{ 'Iz monografije fakulteta' if t.summary else 'Biografija' }}</h2></div>
   <div class="tp__biotext">{{ bio_body() }}</div>
 </section>
 {%- endif %}
