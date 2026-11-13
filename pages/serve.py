@@ -6,7 +6,7 @@
 
 Dev mode (the default): no build. build.py reads nastava.db in dev mode (main(dev=True), ~15 s) and keeps each page's
 template and data; a page is rendered when asked for, from the templates as they are then, so an edit to a template,
-the CSS or the JS shows on the next reload. A change to nastava.db, build.py or the icons restarts the server (a
+the CSS, the JS or the icons shows on the next reload. A change to nastava.db or build.py restarts the server (a
 child process: the parent watches them). /static/ is pages/static; the small files the build writes (izbor.json,
 novo.json, the feeds, the photos) are in pages/.build/dev; the text search (Pagefind) is the last real build's.
 build.py's devcheck.py checks that dev mode renders what a build writes.
@@ -36,9 +36,10 @@ SITE = HERE / ".build" / "site"
 DEV = HERE / ".build" / "dev"  # dev mode's build.py out dir: its site/ has the small files, no pages
 DB = HERE.parent / "nastava.db"
 FRAGMENT = '<html lang="sr"><title>'
-# What dev mode's data comes from: a change restarts it. build.py imports the three modules; the pages link the icons
-# with their hash (build.py VERSIONED). The database's -wal: a sync writes there first.
-WATCH = [HERE / "build.py", HERE / "static" / "icons.svg", *(HERE.parent / f for f in (
+# What dev mode's data comes from: a change restarts it. build.py imports the three modules. The database's -wal: a
+# sync writes there first. Not the icons: their link's ?v= hash goes stale after an edit, but every reply here is
+# no-cache (end_headers), so a reload fetches the new file anyway.
+WATCH = [HERE / "build.py", *(HERE.parent / f for f in (
     "studije.py", "nastavnici.py", "mail.py", "nastava.db", "nastava.db-wal", "verzije.md"))]
 build = None  # dev mode: the build module, its pages loaded (dev())
 
