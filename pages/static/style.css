@@ -281,15 +281,21 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 .cmd__p.pc--undated::before { mask: linear-gradient(225deg, #000 0, transparent 90px); }
 
 /* The script button (pismo.js: lat ↔ ćir) and the theme button (site.js: light ↔ dark). */
-.hd__ctl { grid-area: pismo; justify-self: end; display: flex; gap: 6px; }
+/* In a card as the search bar, the buttons as its Traži: same height, corners, colours, padding. */
+.hd__ctl {
+  grid-area: pismo; justify-self: end; display: flex; align-items: center; gap: 4px;
+  height: 42px; padding: 0 4px;
+  border: 1px solid light-dark(#ffffff, var(--slate)); border-radius: var(--r);
+  background: light-dark(#ffffff, #132f45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+}
 .tg {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 34px; min-height: 32px; padding: 0 10px;
-  border: 1px solid light-dark(rgba(255, 255, 255, .6), rgba(90, 122, 147, .45)); border-radius: 8px;
-  background: transparent; color: var(--head-fg);
+  min-width: 34px; height: 32px; padding: 0 14px;
+  border: 0; border-radius: 7px; background: var(--go); color: #fff;
   font: 400 12px var(--mono); cursor: pointer;
 }
-.tg:hover { background: light-dark(rgba(0, 0, 0, .14), rgba(240, 235, 231, .11)); }
+.tg:hover { background: var(--go-2); }
 .tg .i { width: 16px; height: 16px; }
 #tema { padding: 0 8px; }
 .tg span { display: none; }
@@ -312,8 +318,7 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
   .brand__mark svg { stroke: #ffffff; }
   .cmd { border: 1px solid #ffffff; background: #ffffff; }
   .cmd:focus-within { border-color: #ffffff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .45); }
-  .tg { border: 1px solid rgba(255, 255, 255, .6); }
-  .tg:hover { background: rgba(0, 0, 0, .14); }
+  .hd__ctl { border: 1px solid #ffffff; background: #ffffff; }
 }
 
 @media (min-width: 760px) {
