@@ -476,7 +476,9 @@ body:has(#res) .filters--years { display: none; }
 /* The calendar: a banner in the header's colour, unlike the cards under it. */
 .rs-cal {
   display: flex; align-items: center; gap: 14px; padding: 16px 18px;
-  border-radius: var(--r); background: var(--head); color: var(--head-fg); text-decoration: none;
+  border: 1px solid light-dark(var(--head), var(--slate)); border-radius: var(--r);
+  /* The dark header's ink is the page's own there: the search bar's lighter ink instead, so it still stands out. */
+  background: light-dark(var(--head), #132f45); color: var(--head-fg); text-decoration: none;
 }
 .rs-cal:focus-visible { outline: 3px solid var(--accent-t); outline-offset: 2px; }
 .rs-cal__i { flex: none; width: 30px; height: 30px; }
@@ -488,9 +490,10 @@ body:has(#res) .filters--years { display: none; }
   border-radius: 8px; background: var(--card); color: var(--fg); font-size: 13.5px; font-weight: 800;
 }
 .rs-cal__go .i { width: 15px; height: 15px; }
-/* Hover: the text keeps the header's colour (a:hover's red clashes with the blue), the button fills like Traži. */
+/* Hover: the text keeps the header's colour (a:hover's red clashes with the blue); the button fills like Traži in
+   the light theme, and only lightens in the dark one (its red Traži was a jump from the ink). */
 .rs-cal:hover { color: var(--head-fg); }
-.rs-cal:hover .rs-cal__go { background: var(--go); color: #fff; }
+.rs-cal:hover .rs-cal__go { background: light-dark(var(--go), #2b4a63); color: #fff; }
 @media (max-width: 520px) { .rs-cal { flex-wrap: wrap; } .rs-cal__go { width: 100%; justify-content: center; } }
 
 /* The lecture schedule: a tab per program (site.js; without it, links to the programs one under the other). */
