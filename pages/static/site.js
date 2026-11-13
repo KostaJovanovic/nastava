@@ -1072,6 +1072,11 @@
   };
   // A page prerendered on hover (base.html's speculation rules) sees the tab's sessionStorage only once shown.
   if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
+  // Nor does it go to its #fragment once shown (a topic opened at its newest post, rows.html topic_row): there it goes.
+  if (d.prerendering) d.addEventListener('prerenderingchange', function () {
+    var t = location.hash && d.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (t) t.scrollIntoView();
+  }, { once: true });
 
   /* Visitor counter: every page tells the Worker (/visit, each IP once in three days); only /statistika/ shows the
      total. A prerendered page counts once shown. */
