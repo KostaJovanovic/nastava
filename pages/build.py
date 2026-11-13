@@ -1687,6 +1687,10 @@ def picker(subjects, book, teachers, items=()):
     live = list(subjects.values())
     entries = [[s["href"], s["name"]] for s in live]
     acr = [" ".join(sorted(s.get("acr", ()))) for s in live]
+    # ki: each subject's katedra icon (icons.svg i-<slug>), as its row on the forum has (row_katedra), for the header search.
+    # Only a katedra has one (the Katedre forum's 'Laboratorija CIAH' does not).
+    icon = lambda k: slug(k) if k and slug(k).startswith("katedra-") else ""
+    ki = [icon(s.get("katedra")) for s in live]
     at = {("f", s["id"]): i for i, s in enumerate(live)}
     tree, placed = {}, set()
 
@@ -1698,6 +1702,7 @@ def picker(subjects, book, teachers, items=()):
             at[key] = len(entries)
             entries.append([b["href"], b["name"], 0])
             acr.append(" ".join(sorted(b.get("acr", ()))))
+            ki.append(icon(b.get("katedra")))
         placed.add(key)
         return at[key]
 
@@ -1745,7 +1750,7 @@ def picker(subjects, book, teachers, items=()):
         if ("f", s) in at:
             posters[at[("f", s)]].append([who[t], n])
     # acr: each subject's acronyms (acronyms), for the searches.
-    return dict(subjects=entries, acr=acr, tree=nodes(tree), posters=posters,
+    return dict(subjects=entries, acr=acr, ki=ki, tree=nodes(tree), posters=posters,
                 teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
                           for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
                 # The listed teachers first, then the ones who left (the header search shows them where there is room).

@@ -51,9 +51,22 @@
           m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
         }
       };
+      // A katedra's icon (icons.svg) left of the row: a katedra's, and a subject's katedra's (build.py picker ki).
+      var icon = function (id) {
+        return id && function (a) {
+          var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
+          svg.setAttribute('class', 'i cmd__img');
+          svg.setAttribute('aria-hidden', 'true');
+          use.setAttribute('href', '/static/icons.svg#i-' + id);
+          a.className = 'cmd__p';
+          a.insertBefore(svg, a.firstChild).appendChild(use);
+        };
+      };
       var subj = [];
       studije.forEach(function (s) {
-        s[1].forEach(function (i) { if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0]]); });
+        s[1].forEach(function (i) {
+          if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0], icon((data.ki || [])[i])]);
+        });
       });
       section('predmeti', 'Predmeti', subj);
       // A teacher as on /nastavnici/: the photo (or the initials), the title; one who left under its own subheading,
@@ -71,17 +84,13 @@
           }];
         }));
       // A katedra: its icon, and its teachers' list.
-      section('katedre', 'Katedre', (data.katedre || []).filter(function (k) { return has(fold(k[0])); })
+      // Found by its short name's initials too ('omk': Opšte mašinske konstrukcije).
+      section('katedre', 'Katedre', (data.katedre || []).filter(function (k) {
+        return has(fold(k[0]) + ' ' + fold(k[1]).split(/\s+/).map(function (x) { return x[0]; }).join(''));
+      })
         .map(function (k) {
           var n = k[3] % 10 === 1 && k[3] % 100 !== 11 ? ' nastavnik' : ' nastavnika';
-          return ['', k[1], k[3] + n, '/nastavnici/?katedra=' + k[2], function (a) {
-            var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
-            svg.setAttribute('class', 'i cmd__img');
-            svg.setAttribute('aria-hidden', 'true');
-            use.setAttribute('href', '/static/icons.svg#i-' + k[2]);
-            a.className = 'cmd__p';
-            a.insertBefore(svg, a.firstChild).appendChild(use);
-          }];
+          return ['', k[1], k[3] + n, '/nastavnici/?katedra=' + k[2], icon(k[2])];
         }));
       // A researcher or demonstrator (build.py OTHER_TEACHERS, aside): their page, with their title.
       section('istrazivaci', 'Istraživači i demonstratori',(data.istrazivaci || []).filter(function (r) { return has(fold(r[0])); })
