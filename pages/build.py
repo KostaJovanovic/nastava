@@ -2035,6 +2035,21 @@ def render_vesti(site, vesti):
     (site / "vesti" / "feed.xml").write_text(atom("Vesti · Mašinski fakultet", "/vesti/", vesti[:FEED_ALL]), encoding="utf-8")
 
 
+def render_objave(site, topics):
+    """All the board's topics, newest last post first, as /vesti/: a list per year of the last post (the newest year
+    at /objave/, each other at /objave/<year>/), with a filter. The home page's Najnovije objave link here."""
+    years = sorted({t["last"]["year"] for t in topics if t["last"]["year"]}, reverse=True)
+    if not years:
+        return
+    year_href = {y: "/objave/" if y == years[0] else f"/objave/{y}/" for y in years}
+    for y in years:
+        rows = [t for t in topics if t["last"]["year"] == y]
+        authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]
+                          if r["author"] and not r["author"].startswith("Student #")}.items(), key=lambda a: fold(a[1] or a[0]))
+        write(site / year_href[y].strip("/") / "index.html", env.get_template("objave.html").render(
+            topics=rows, year=y, years=years, year_href=year_href, authors=authors, total=len(topics)))
+
+
 # The home page's smerovi, by level then program (their URL slugs); any other after them, in the board's order. Each
 # has its icon in icons.svg, i-<key> (rows.html, smer.html); another smer has the folder.
 HOME_ORDER = ["oas-mi", "oas-itm", "mas-mi", "mas-industrija-4-0", "doktorske-studije-mi", "katedre", "moduli"]
@@ -2188,6 +2203,7 @@ def main(db_path, out, dev_mode=False):
     write(site / "verzije" / "index.html", page)
     vesti = load_vesti(db)
     render_vesti(site, vesti)
+    render_objave(site, topics)
     write_page(site / "index.html", render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("aside") for t in teachers), vesti))
     write_page(site / "404.html", env.get_template("error.html").render())
     if dev:

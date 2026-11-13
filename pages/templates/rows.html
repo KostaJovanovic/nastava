@@ -93,12 +93,13 @@
 {#- Topics, newest last post first. short: the first five, the rest after a tap on the toggle under them (a checkbox,
     no script; style.css .fb--short, which has the five). -#}
 {#- mine: the home page's newest. While "Samo moji predmeti" is on, its rows give way to the followed subjects'
-    newest, which site.js (fillMine) puts in [data-mine] from each subject's novo.json (style.css .moji-only). -#}
-{%- macro topic_rows(title, topics, place=false, filter=false, short=false, mine=false) -%}
+    newest, which site.js (fillMine) puts in [data-mine] from each subject's novo.json (style.css .moji-only).
+    more: the list's link on the heading (the home page's, to /objave/). -#}
+{%- macro topic_rows(title, topics, place=false, filter=false, short=false, mine=false, more=none) -%}
 {%- set short = short and topics | length > 5 %}
 <section class="fb fb--topics{% if short %} fb--short{% endif %}">
   {%- if caller is defined %}{{ caller() }}{% endif %}
-  <div class="fb__h"><h2>{{ title }}</h2><span>Odgovori</span><span>Poslednji post</span></div>
+  <div class="fb__h"><h2>{% if more %}<a href="{{ more }}">{{ title }}</a>{% else %}{{ title }}{% endif %}</h2><span>Odgovori</span><span>Poslednji post</span></div>
   <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for t in topics %}
     {{ topic_row(t, place, filter) }}
