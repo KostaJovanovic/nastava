@@ -578,8 +578,8 @@ body:has(#res) .filters--years { display: none; }
 .tgl input:checked + .tgl__s::after { transform: translateX(14px); }
 @media (prefers-reduced-motion: reduce) { .tgl__s, .tgl__s::after { transition: none; } }
 /* Greyed: notifications that this browser can't send, or has blocked (site.js, the reason in its title). */
-.tgl:has(input:disabled) { opacity: .45; cursor: not-allowed; }
-.tgl:has(input:disabled):hover { background: none; }
+.tgl:has(input[aria-disabled="true"]) { opacity: .45; }
+.tgl:has(input[aria-disabled="true"]):hover { background: none; }
 .tgl__bell { display: none; }
 
 /* "Moji predmeti" in the side panel: the button that opens the picker, a plain one (the switch shows the state). */
@@ -614,8 +614,8 @@ body:has(#res) .filters--years { display: none; }
   .fgroup[data-izbor] .tgl--push:has(input:checked) .tgl__bell--on { display: block; }
   .fgroup[data-izbor] .tgl--push:has(input:checked) { color: var(--accent-t); }
   /* Greyed: the cell keeps its frame, only the bell fades. */
-  .fgroup[data-izbor] .tgl--push:has(input:disabled) { opacity: 1; }
-  .fgroup[data-izbor] .tgl--push:has(input:disabled) .tgl__bell { opacity: .4; }
+  .fgroup[data-izbor] .tgl--push:has(input[aria-disabled="true"]) { opacity: 1; }
+  .fgroup[data-izbor] .tgl--push:has(input[aria-disabled="true"]) .tgl__bell { opacity: .4; }
   .fgroup[data-izbor] .btn.is-set { width: 44px; min-height: 44px; padding: 0; border-color: var(--line); border-radius: 0 8px 8px 0; color: var(--fg); }
   .fgroup[data-izbor] .btn.is-set:hover { background: var(--hover); color: var(--accent-t); }
   .fgroup[data-izbor] .btn.is-set:active { transform: none; }

@@ -736,15 +736,38 @@
   var pushBoxes = [].slice.call(d.querySelectorAll('[data-push]')), pushMsg = d.querySelector('[data-push-msg]');
   var pushOns = pushBoxes.map(function (b) { return b.querySelector('input'); });
   var said = function (text) { if (pushMsg) { pushMsg.textContent = text; pushMsg.hidden = !text; } };
-  // Shown either way; greyed (with the reason on hover) where notifications can't be made.
+  // Shown either way; greyed where notifications can't be made, and a click says why (the reason also on hover).
+  // aria-disabled, not disabled: a disabled switch takes no click.
   var showPush = function (on, why) {
     pushBoxes.forEach(function (b, i) {
       pushOns[i].checked = on;
-      pushOns[i].disabled = !!why;
-      if (why) b.title = why; else b.removeAttribute('title');
+      if (why) { pushOns[i].setAttribute('aria-disabled', 'true'); b.title = why; }
+      else { pushOns[i].removeAttribute('aria-disabled'); b.removeAttribute('title'); }
       b.hidden = false;
     });
   };
+  // The reason, in a dialog like the one for leaving the archive (.leave).
+  var noPush = null;
+  pushBoxes.forEach(function (b, i) {
+    b.addEventListener('click', function (e) {
+      if (pushOns[i].getAttribute('aria-disabled') !== 'true') return;
+      e.preventDefault();
+      if (!noPush) {
+        noPush = d.createElement('dialog');
+        noPush.className = 'leave';
+        noPush.setAttribute('aria-labelledby', 'nopush-h');
+        noPush.innerHTML = '<div class="leave__in"><h2 id="nopush-h">Obaveštenja nisu dostupna</h2><p></p>'
+          + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
+        d.body.appendChild(noPush);
+        noPush.addEventListener('click', function (e) {
+          if (e.target === noPush || e.target.closest('button')) noPush.close();
+        });
+      }
+      noPush.querySelector('p').textContent = b.title;
+      noPush.showModal();
+      noPush.querySelector('button').focus();
+    });
+  });
   var blocked = 'Pregledač ne dozvoljava obaveštenja ovom sajtu (podešavanja sajta).';
   var withPosts = function () {
     return mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; });
