@@ -240,55 +240,37 @@
     window.showSaved();
   });
   d.dispatchEvent(new Event('moji'));
-  /* The home page's Studije as the switch flips: head.js swaps its rows' style at once (greyed smerovi are one short
-     line); then each row, icon and title glides from where it was on the screen, by transform only (FLIP), so a phone
-     keeps up; only the card's height is laid out each frame. A row that changed fades its icon and text out and in
-     (no resizing); one that changes places fades in where it lands. Called before the change, it measures; what it
-     returns animates after it. A flip mid-way starts from where things are. */
-  var flipAnims = [];
-  var flipStudije = function () {
-    var card = d.querySelector('#res > .fb--forums');
-    if (!card || card.closest('.searching') || matchMedia('(prefers-reduced-motion: reduce)').matches) return function () {};
-    var els = [].slice.call(card.querySelectorAll('.fr, .fr__i, .fr__t'));
-    var before = els.map(function (e) { return e.getBoundingClientRect(); }), h0 = card.getBoundingClientRect().height;
-    flipAnims.forEach(function (a) { a.cancel(); });
-    return function () {
-      var opt = { duration: 350, easing: 'cubic-bezier(.2, .8, .2, 1)' }, rows = new Map(), jump = new Set(), other = false;
-      flipAnims = [card.animate({ height: [h0 + 'px', card.getBoundingClientRect().height + 'px'] }, opt)];
-      // The rows that change places (head.js mojiSort): a followed smer built below one that is not. Sliding past the
-      // others reads as a shuffle, so they fade in where they land; the others only close and open the gaps.
-      (card.querySelector('.fb__rows').built || []).forEach(function (r) {
-        if (!(r.dataset.pids || '').split(' ').some(window.mojiNow.has)) other = true;
-        else if (other) jump.add(r);
-      });
-      els.forEach(function (e, i) {
-        var a = before[i], b = e.getBoundingClientRect(), row = e.closest('.fr'), dx = a.left - b.left, dy = a.top - b.top;
-        // An icon of another size: from its old centre, not its corner.
-        if (e.classList.contains('fr__i')) { dx += (a.width - b.width) / 2; dy += (a.height - b.height) / 2; }
-        if (e === row) {
-          rows.set(row, [dx, dy]);
-          if (jump.has(row)) { flipAnims.push(row.animate({ opacity: [0, 1] }, opt)); return; }
-          // A row that changed: its text out at once, then in for the rest, both on the move's own curve, so the fade
-          // settles as the move does. A wide screen's columns: style.css.
-          if (b.height !== a.height) row.querySelectorAll('.fr__i, .fr__t, .fr__more').forEach(function (n) {
-            flipAnims.push(n.animate([{ opacity: 1, easing: opt.easing }, { opacity: 0, offset: .12, easing: opt.easing }, { opacity: 1 }], { duration: opt.duration }));
-          });
-        } else {
-          // Inside its row, which moves too: only the rest. An icon keeps its new size: it fades (above).
-          var r = rows.get(row);
-          dx -= r[0]; dy -= r[1];
-        }
-        if (!dx && !dy) return;
-        flipAnims.push(e.animate({ transform: ['translate(' + dx + 'px, ' + dy + 'px)', 'none'] }, opt));
-      });
-    };
+  /* The home page's Studije as the switch flips: the rows that will change (moved by head.js mojiSort, or greyed and
+     made one short line by head.js) fade out where they are, are rearranged while unseen (change()), and fade in where
+     they land. Nothing slides past anything: only the card's bottom moves, one way. A flip mid-way starts from what
+     is on the screen. Elsewhere, or with reduced motion, change() at once. */
+  var studijeAnims = [], studijeWait = 0;
+  var fadeStudije = function (change) {
+    var card = d.querySelector('#res > .fb--forums'), ol = card && card.querySelector('.fb__rows');
+    if (!ol || !ol.built || card.closest('.searching') || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
+    var opt = { duration: 300, easing: 'cubic-bezier(.2, .8, .2, 1)' }, out = 90, k = 0;
+    // The rows that stay as they are: the followed smerovi already first as built (first in both orders).
+    while (k < ol.built.length && (ol.built[k].dataset.pids || '').split(' ').some(window.mojiNow.has)) k++;
+    var parts = [];
+    ol.built.slice(k).forEach(function (r) { parts.push.apply(parts, r.querySelectorAll('.fr__i, .fr__t, .fr__more')); });
+    clearTimeout(studijeWait);
+    // From the opacity on the screen: a flip mid-way fades out from where the last fade in got to.
+    studijeAnims = studijeAnims.concat(parts.map(function (n) {
+      return n.animate({ opacity: [getComputedStyle(n).opacity, 0] }, { duration: out, easing: 'ease-in', fill: 'forwards' });
+    }));
+    studijeWait = setTimeout(function () {
+      var h0 = card.getBoundingClientRect().height;
+      studijeAnims.forEach(function (a) { a.cancel(); });
+      change();
+      studijeAnims = [card.animate({ height: [h0 + 'px', card.getBoundingClientRect().height + 'px'] }, opt)].concat(parts.map(function (n) {
+        return n.animate({ opacity: [0, 1] }, opt);
+      }));
+    }, out);
   };
   if (only) only.addEventListener('change', function () {
     try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
     // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows.
-    var play = flipStudije();
-    d.dispatchEvent(new Event('moji'));
-    play();
+    fadeStudije(function () { d.dispatchEvent(new Event('moji')); });
   });
 
 

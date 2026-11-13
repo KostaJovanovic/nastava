@@ -31,7 +31,7 @@ window.moji = function () {
 		const any = list.map((h) => `[data-pid=${q(h)}],[data-pids~=${q(h)}]`).join(",");
 		// Studije's greyed smerovi: without their last post (and a wide screen's subject count), a half-size icon
 		// (centred where the 32px ones are) and less padding: one short line each; a phone's last post is all of
-		// .fr__more. The switch animates the change after it is made (site.js flipStudije).
+		// .fr__more. The switch fades the change in (site.js fadeStudije).
 		const grey = `#res [data-pids]${pids}`;
 		css = `[data-pid]${pid},[data-pids]${pids}:not(#res *),:is(.fb,.sg,.sg__s,.sg__slot):not(#res *):has([data-pid],[data-pids]):not(:has(${any}))`
 			+ `{display:none!important}${grey}{opacity:.45;padding-block:2px;row-gap:0}`
@@ -58,7 +58,7 @@ window.mojiNow = window.moji();
 
 // The home page's Studije: the smerovi with followed subjects first while only they show (mojiNow.only), else as
 // built. Moved in the page, not by CSS order, so the stripes and the tab order follow. search.html calls it right
-// after Studije (before the first paint), site.js on each change (its flipStudije animates the move).
+// after Studije (before the first paint), site.js on each change (its fadeStudije hides the move).
 window.mojiSort = function () {
 	const ol = document.querySelector("#res > .fb--forums .fb__rows");
 	if (!ol) return;

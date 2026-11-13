@@ -987,8 +987,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   #res .fr__last > span:has(> .src) { display: none; }
   .fr__last .src { margin-right: 6px; }
 }
-/* Studije's smerovi greying as "Samo moji predmeti" flips (head.js), and back; their moves and sizes are site.js's
-   (flipStudije). No transition at load: head.js styles them before the first paint. */
+/* Studije's smerovi greying as "Samo moji predmeti" flips (head.js), and back; their text fades out and in around the change
+   (site.js fadeStudije). No transition at load: head.js styles them before the first paint. */
 @media (prefers-reduced-motion: no-preference) {
   #res [data-pids], #res [data-pids] .fr__more > * { transition: .35s cubic-bezier(.2, .8, .2, 1); transition-property: opacity, border-color; }
 }
