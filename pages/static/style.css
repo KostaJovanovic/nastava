@@ -476,9 +476,9 @@ body:has(#res) .filters--years { display: none; }
 /* The calendar: a banner in the header's colour, unlike the cards under it. */
 .rs-cal {
   display: flex; align-items: center; gap: 14px; padding: 16px 18px;
-  border: 1px solid light-dark(var(--head), var(--slate)); border-radius: var(--r);
-  /* The dark header's ink is the page's own there: the search bar's lighter ink instead, so it still stands out. */
-  background: light-dark(var(--head), #132f45); color: var(--head-fg); text-decoration: none;
+  border-radius: var(--r);
+  /* The dark header's ink is the page's own there: the light theme's blue, deepened, so it still stands out. */
+  background: light-dark(var(--head), #0b4363); color: var(--head-fg); text-decoration: none;
 }
 .rs-cal:focus-visible { outline: 3px solid var(--accent-t); outline-offset: 2px; }
 .rs-cal__i { flex: none; width: 30px; height: 30px; }
@@ -487,13 +487,13 @@ body:has(#res) .filters--years { display: none; }
 .rs-cal__t b { font: 800 16.5px/1.3 var(--sans); }
 .rs-cal__go {
   display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 36px; padding: 0 14px;
-  border-radius: 8px; background: var(--card); color: var(--fg); font-size: 13.5px; font-weight: 800;
+  border-radius: 8px; background: light-dark(var(--card), rgba(255, 255, 255, .14)); color: light-dark(var(--fg), #fff); font-size: 13.5px; font-weight: 800;
 }
 .rs-cal__go .i { width: 15px; height: 15px; }
 /* Hover: the text keeps the header's colour (a:hover's red clashes with the blue); the button fills like Traži in
-   the light theme, and only lightens in the dark one (its red Traži was a jump from the ink). */
+   the light theme, and only brightens in the dark one (its red Traži clashed with the blue). */
 .rs-cal:hover { color: var(--head-fg); }
-.rs-cal:hover .rs-cal__go { background: light-dark(var(--go), #2b4a63); color: #fff; }
+.rs-cal:hover .rs-cal__go { background: light-dark(var(--go), rgba(255, 255, 255, .26)); color: #fff; }
 @media (max-width: 520px) { .rs-cal { flex-wrap: wrap; } .rs-cal__go { width: 100%; justify-content: center; } }
 
 /* The lecture schedule: a tab per program (site.js; without it, links to the programs one under the other). */
