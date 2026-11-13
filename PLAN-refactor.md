@@ -1,14 +1,16 @@
-# Plan: refactor (untangle the code)
+# Plan: refactor (untangle the code, cut the waste)
 
-Status: agreed 2026-11-13, nothing built. One commit per step, in order. The site's output must not change: every
-step ends with the check below. Run it while no other session edits the repo (the moves touch most files).
+Status: agreed 2026-11-13, revised the same day (the waste list folded in), nothing built. One commit per step, in
+order. Part A must not change the site's output; part B changes what the build or the browser does, each step with
+its own check. Run it while no other session edits the repo (the moves touch most files).
 
-## The check (after every step)
+## The check
 
-Before step 1, build `main` as it is into a reference folder: `uv run pages/build.py nastava.db %TEMP%/ref`, never
+Before step A1, build `main` as it is into a reference folder: `uv run pages/build.py nastava.db %TEMP%/ref`, never
 into `pages/.build`. After each step build the same `nastava.db` into `%TEMP%/new` and `diff -r` the two `site/`
-folders: no difference outside `pagefind/`. Also: every test in `test/` (no network ones), `node --test
+folders: no difference outside `pagefind/`. Also: every no-network test in `test/`, `node --test
 test/worker_test.mjs`, `pages/devcheck.py` (dev mode = build), and `uv run pages/serve.py <port>` serves a page.
+Part B says per step where the output may differ and how that is checked instead.
 
 ## What is tangled (audit 2026-11-13)
 
@@ -24,7 +26,19 @@ test/worker_test.mjs`, `pages/devcheck.py` (dev mode = build), and `uv run pages
 - Asserts in `__main__` of 13 files (~170), run on each build or run.
 - `site.js`: one 1,039-line IIFE on every page; most of it serves three pages.
 
-## Steps
+## Where the time goes (profiled 2026-11-13)
+
+Shares of dev mode's start-up (`uv run pages/serve.py`, ~15 s; cProfile, which doubles the times); a build spends
+the same on these:
+
+| What | Share | Step |
+|---|---|---|
+| `archive_stats` (`post_words` over all 24k posts), for `/statistika/` only | ~26% | B1 |
+| `lat()`: a Python call per Cyrillic letter, 4.5M calls | ~18% | A2 |
+| `write()`, though dev mode only stores the page: not explained yet | ~18% | A5 |
+| `clean_html` (nh3) of every post up front | ~14% | B2 |
+
+## Part A: output stays the same
 
 1. **Format.** `ruff format` every Python file: spaces, double quotes, line length 140 (`ruff.toml`). Its hash into
    `.git-blame-ignore-revs`. No other change in this commit.
@@ -32,6 +46,8 @@ test/worker_test.mjs`, `pages/devcheck.py` (dev mode = build), and `uv run pages
    crawl), `instrument`, `now`, `get`, `FILE`, and the one Cyrillic→Latin table; `fold`, `lat`, `to_cyr` and
    teams' name regexes build on it. No scraper imports another scraper. `pismo.js` keeps its own copy (browser),
    with a comment naming `common.py`.
+   `lat` becomes a `str.translate` table instead of a call per letter, with the Љ/Њ/Џ capital rule kept (an all-caps
+   word: "LJ", else "Lj"; a pass for those three after the table). Same output: the check's diff proves it.
 3. **Layout.**
    ```
    scrapers/     nastava vesti cent katedre studije nastavnici predmeti mail teams documents site_files common
@@ -59,51 +75,51 @@ test/worker_test.mjs`, `pages/devcheck.py` (dev mode = build), and `uv run pages
    - `render.py`: render_places, render_teachers, render_book, render_vesti, render_home, picker
    - `known.py`: the hand-kept data
    `serve.py` (dev mode) and `devcheck.py` import from the package; check both.
+   While moving `write()` into `output.py`, find its ~18% (profile once more: `path.parent.relative_to` 33k times?
+   arguments built eagerly?) and fix it if the output stays the same; else note it for part B.
 6. **Tests.** Every inline assert to `test/<module>_test.py` (plain asserts, no framework), the build's ones split
    by module. `deploy.sh`'s `tests` step runs every no-network test; the browser ones stay manual.
 7. **Front end.** `site.js` keeps what every page needs (header search, menus, side panel); the picker and
    `/mojipredmeti/` steps, and the list grouping and filters (predmeti, nastavnici, the archive) become their own
    files, loaded only by their templates, added to `VERSIONED` in `output.py`. `style.css` stays one file,
    reordered into commented sections (base, header, side panel, lists, subject, teacher, stats, …).
+   Check also in a browser: the pages that lost code still filter, group and pick.
 8. **Done plans.** Delete `PLAN-sync.md` and `PLAN-cent.md`, only after asking the user at this step; fix the
    README and `PLAN.md` links to them.
 
-## Waste to cut (found 2026-11-13, after the steps above)
+## Part B: less work, same pages
 
-These change what the build does, so they come after the output-neutral steps, each with its own check. Start-up
-shares are of dev mode's load (`uv run pages/serve.py`, ~15 s; profiled with cProfile, which doubles the times).
+1. **The word cloud at most weekly** (the user's call; keep it simple). `nastava.db`'s `meta` table keeps it:
+   `words` (the counts as JSON) and `words_at` (the date). A small writer (`uv run pages/build.py words nastava.db`)
+   computes them when `words_at` is missing or 7+ days old, else does nothing. `ci/deploy.sh` runs it after the
+   scrapers and before the fingerprint check, so `ci/state.sh push` saves it to the `state` release with the rest.
+   The build stays read-only: it uses `meta.words` when there, else computes in memory (an old database, dev mode
+   on a copy never written). `meta` is not in `ci/plan.py fingerprint`, so a run that changed nothing else does not
+   save a new cloud; the next run makes it again (a few seconds, rarely). Check: `/statistika/` the same as the reference
+   on the day the cloud is made; later it lags the posts by up to 7 days, by design.
+2. **`clean_html` per page in dev mode.** The build cleans every post as now (the pages and the search need it);
+   dev mode cleans a post only when its page is rendered (the post list needs no html). Same function both ways:
+   `devcheck.py` must still find dev mode = build.
+3. **`pismo.js` converts each page once.** Now it converts as the parser adds nodes, then `set(mode)` walks the
+   whole body again at DOMContentLoaded, only to catch text the parser grew after its first conversion (split
+   across network chunks). Let that walk skip a node whose text is still what was shown (`shown`). The switch (a
+   click) still converts everything. Check: `test/pismo_test.py` on a long page.
+4. **The Worker caches `shell.html`** (`pages/src/index.js`). It now fetches the shell from GitHub Pages for every
+   page not in its edge cache: one extra request each. Keep it in the edge cache, keyed by the deploy (the shell's
+   own asset versions, `?v=`), so a deploy brings the new shell. Minor; `test/worker_test.mjs` gets a case, then
+   `wrangler deploy`.
 
-1. **The word cloud once a week.** `archive_stats` (`post_words` over all 24k posts) is ~26% of each start-up and
-   build, for `/statistika/` alone. The user's call: recompute it at most weekly. Keep the result with the date it was
-   made; on each build or dev start, use it while it is under 7 days old, else compute it again and save it with the
-   new date. Where it lives: CI builds from a fresh checkout (`ci/deploy.sh`: `ci/state.sh pull`, build, `state.sh
-   push` to the "runs" release), so a file only in the working tree is lost each run; keep it with the saved state
-   (or in the database's `meta` table, which the build now opens read-only). Not important to the user: keep it
-   simple.
-2. **`lat()` letter by letter.** `build.py` `lat` calls a Python function per Cyrillic letter (4.5M calls, ~18% of
-   start-up). A `str.translate` table, with the Љ/Њ/Џ capital rule kept (all-caps word: "LJ", else "Lj"), does the
-   same faster. Step 2's `common.py` table is the place.
-   Open question for the user (asked, not answered): build everything in Latin and keep only the Cyrillic button?
-   Gain: a Latin reader's page needs no conversion at all (`pismo.js` would only act on a click). Loss: the Cyrillic
-   view becomes Latin→Cyrillic of the Latin, which `toCyr` cannot always undo: "nj"/"lj"/"dž" across a word's parts
-   ("injekcija" → инјекција, not ињекција; "nadživeti" → надживети, not наџивети), so a post first written in Cyrillic
-   no longer shows exactly as written. Text first written in Latin is already converted this way today.
-3. **HTML cleaning up front in dev mode.** `clean_html` (nh3, ~14% of start-up) makes each forum post's HTML safe and
-   local: drops scripts and unsafe tags or attributes, rewrites links. Needed (a post must not run code on the site),
-   but dev mode needs it only for the post page opened: do it at render there.
-4. **`write()` costs ~18% of the dev start-up** though it only stores the page in dev mode. Not explained yet: find out
-   (`path.parent.relative_to` 33k times? arguments evaluated eagerly?).
-5. **`pismo.js` converts each page twice**: once as the parser adds nodes, then `set(mode)` walks the whole body again
-   at DOMContentLoaded. The second walk is only for text the parser grew after its first conversion (split across
-   network chunks); let it skip a node whose text is still what was shown (`shown`), converting only the grown ones.
-   The script switch (a click) still converts everything.
-6. **The shell fetched per page.** Most pages are stored as a fragment (their head and `<main>`); the frame every page
-   shares (header, side panel, footer, scripts) is one `shell.html`. The Worker (`pages/src/index.js`) joins them, and
-   fetches `shell.html` from GitHub Pages for every page not in its cache: one extra request each. Cache the shell in
-   the Worker (by deploy) instead. Minor.
+## Open question (for the user, asked, not answered)
+
+Build every page in Latin and keep only the Cyrillic button? Gain: a Latin reader's page needs no conversion at all
+(`pismo.js` would act only on a click), and `lat` at build time mostly goes. Loss: the Cyrillic view becomes
+Latin→Cyrillic of the Latin, which `toCyr` cannot always undo: "nj"/"lj"/"dž" across a word's parts ("injekcija" →
+инјекција, not ињекција; "nadživeti" → надживети, not наџивети), so a post first written in Cyrillic no longer
+shows exactly as written. Text first written in Latin is already converted this way today. Not in any step until
+answered.
 
 ## Not changed
 
 The Teams `CLASSES` list stays in both `teams.py` and `teams-files.js` (a console script cannot read the repo), each
-with a comment naming the other. The database schema, the Worker, the templates' output, and what any scraper
-fetches.
+with a comment naming the other. The database schema (only new `meta` keys), what any scraper fetches, and the
+Worker beyond step B4.
