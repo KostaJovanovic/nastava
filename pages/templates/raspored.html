@@ -35,7 +35,7 @@
   {#- Without site.js the tabs are links to the programs below. -#}
   <nav class="mp__tabs rs__tabs" aria-label="Studijski program">
     {%- for p in lectures.programs %}
-    <a class="mp__tab" href="#{{ p.key }}" data-rs-tab>{% if p.name %}<small>{{ p.level }}</small><span>{{ p.name }}</span>{% else %}<span>{{ p.level }}</span>{% endif %}</a>
+    <a class="mp__tab" href="#{{ p.key }}" data-rs-tab title="{{ p.level }}{% if p.name %} — {{ p.name }}{% endif %}"><span>{{ p.short }}</span></a>
     {%- endfor %}
   </nav>
   {%- for p in lectures.programs %}

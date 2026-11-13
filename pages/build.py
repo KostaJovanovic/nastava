@@ -1164,6 +1164,12 @@ def parse_lectures(html):
             else:
                 p["cards"] += [(*schedule_card(text, t), h) for t, h in links]
         out["programs"].append(p)
+    # The tabs' labels: 'OAS - MI', 'MAS - IND4.0', and the level alone where it has one program ('DAS').
+    initials = lambda s: "".join(w[0] for w in s.split() if len(w) > 1).upper()
+    for p in out["programs"]:
+        name = "IND4.0" if fold(p["name"]).startswith("industrija 4") else initials(p["name"])
+        alone = sum(q["level"] == p["level"] for q in out["programs"]) == 1
+        p["short"] = initials(p["level"]) + ("" if alone or not name else f" - {name}")
     return out if out["programs"] else None
 
 
@@ -2252,7 +2258,9 @@ if __name__ == "__main__":
         "Raspored 2026", "Jesenji semestar", ["osnovne-akademske-studije-masinsko-inzenjerstvo", "master-akademske-studije-industrija-4-0", "doktorske"])
     assert _l["programs"][0] == dict(key=_l["programs"][0]["key"], level="Osnovne akademske studije", name="Mašinsko inženjerstvo",
         cards=[("1", "1. godina", "/f/1.pdf"), ("2", "2. godina", "/f/2.pdf")], electives=[("5.4", "/f/54.pdf"), ("5.5", "/f/55.pdf")],
-        rooms=[("324", "/f/3.pdf")], notes=[]), _l["programs"][0]
+        rooms=[("324", "/f/3.pdf")], notes=[], short="OAS"), _l["programs"][0]
+    assert [p["short"] for p in parse_lectures(_pr.replace("DOKTORSKE", "MASTER AKADEMSKE STUDIJE - MAŠINSKO INŽENjERSTVO"))["programs"]] == [
+        "OAS", "MAS - IND4.0", "MAS - MI"]
     assert _l["programs"][1]["cards"] == [("BMI", "Biomedicina", "/f/b.pdf"), ("3", "3. godina", "/f/i.pdf")]
     assert _l["programs"][2]["notes"] == ["Biće objavljen!"] and parse_lectures("<p>x</p>") is None
     _at = attachments(clean_html('<dl class="attachbox"><dt>Attachments</dt><dd><dl class="file"><dt><span class="imageset"></span> '
