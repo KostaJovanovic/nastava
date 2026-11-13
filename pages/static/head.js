@@ -30,13 +30,13 @@ window.moji = function () {
 		const pids = list.map((h) => `:not([data-pids~=${q(h)}])`).join("");
 		const any = list.map((h) => `[data-pid=${q(h)}],[data-pids~=${q(h)}]`).join(",");
 		// Studije's greyed smerovi: without their last post (and a wide screen's subject count), a half-size icon
-		// (centred where the 32px ones are) and less padding: one short line each. What goes collapses rather than
-		// going, so the switch can animate it (style.css #res [data-pids]); a phone's last post is all of .fr__more.
+		// (centred where the 32px ones are) and less padding: one short line each; a phone's last post is all of
+		// .fr__more. The switch animates the change after it is made (site.js flipStudije).
 		const grey = `#res [data-pids]${pids}`;
 		css = `[data-pid]${pid},[data-pids]${pids}:not(#res *),:is(.fb,.sg,.sg__s,.sg__slot):not(#res *):has([data-pid],[data-pids]):not(:has(${any}))`
 			+ `{display:none!important}${grey}{opacity:.45;padding-block:2px;row-gap:0}`
-			+ `${grey} :is(.fr__sub,.fr__last>*){max-height:0;opacity:0;overflow:hidden}${grey} .fr__last{min-height:0}`
-			+ `@container main (max-width:759.98px){${grey} .fr__more{max-height:0;opacity:0;overflow:hidden}}`
+			+ `${grey} :is(.fr__sub,.fr__last>*){display:none}${grey} .fr__last{min-height:0}`
+			+ `@container main (max-width:759.98px){${grey} .fr__more{display:none}}`
 			// A wide screen: the name over the whole row; the columns stay in their places under it, faded and unclickable.
 			+ `@container main (min-width:760px){${grey} .fr__t{grid-area:1/2/2/-1}`
 			+ `${grey} .fr__more>*{grid-row:1;opacity:0;border-left-color:transparent;pointer-events:none}`

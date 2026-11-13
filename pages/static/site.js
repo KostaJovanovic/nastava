@@ -239,10 +239,45 @@
     window.showSaved();
   });
   d.dispatchEvent(new Event('moji'));
+  /* The home page's Studije as the switch flips: head.js swaps its rows' style at once (greyed smerovi are one short
+     line); then each row, icon and title glides from where it was on the screen, by transform only (FLIP), so a phone
+     keeps up; only the card's height is laid out each frame. A row that grows fades its new line in. Called before the
+     change, it measures; what it returns animates after it. A flip mid-way starts from where things are. */
+  var flipAnims = [];
+  var flipStudije = function () {
+    var card = d.querySelector('#res > .fb--forums');
+    if (!card || card.closest('.searching') || matchMedia('(prefers-reduced-motion: reduce)').matches) return function () {};
+    var els = [].slice.call(card.querySelectorAll('.fr, .fr__i, .fr__t'));
+    var before = els.map(function (e) { return e.getBoundingClientRect(); }), h0 = card.getBoundingClientRect().height;
+    flipAnims.forEach(function (a) { a.cancel(); });
+    return function () {
+      var opt = { duration: 350, easing: 'cubic-bezier(.2, .8, .2, 1)' }, rows = new Map();
+      flipAnims = [card.animate({ height: [h0 + 'px', card.getBoundingClientRect().height + 'px'] }, opt)];
+      els.forEach(function (e, i) {
+        var a = before[i], b = e.getBoundingClientRect(), row = e.closest('.fr'), dx = a.left - b.left, dy = a.top - b.top;
+        if (e === row) {
+          rows.set(row, [dx, dy]);
+          // Mostly hidden early, while the next rows still overlap it (a wide screen's columns: style.css).
+          if (b.height > a.height) row.querySelectorAll('.fr__more, .fr__sub').forEach(function (n) {
+            flipAnims.push(n.animate({ opacity: [0, 1] }, { duration: 350, easing: 'ease-in' }));
+          });
+        } else {
+          // Inside its row, which moves too: only the rest; the icon from its old size (origin: its top left).
+          var r = rows.get(row);
+          dx -= r[0]; dy -= r[1];
+        }
+        if (!dx && !dy && a.width === b.width) return;
+        var from = 'translate(' + dx + 'px, ' + dy + 'px)' + (e.classList.contains('fr__i') ? ' scale(' + a.width / b.width + ')' : '');
+        flipAnims.push(e.animate({ transform: [from, 'none'], transformOrigin: ['0 0', '0 0'] }, opt));
+      });
+    };
+  };
   if (only) only.addEventListener('change', function () {
     try { localStorage.setItem('sve', only.checked ? '' : '1'); } catch (e) {}
     // A search on view runs again (search.js); elsewhere the page only shows more or fewer rows.
+    var play = flipStudije();
     d.dispatchEvent(new Event('moji'));
+    play();
   });
 
 

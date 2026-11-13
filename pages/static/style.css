@@ -987,15 +987,11 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   #res .fr__last > span:has(> .src) { display: none; }
   .fr__last .src { margin-right: 6px; }
 }
-/* Studije's smerovi greying and shrinking as "Samo moji predmeti" flips (head.js), and back. No transition at load:
-   head.js styles them before the first paint. */
+/* Studije's smerovi greying as "Samo moji predmeti" flips (head.js), and back; their moves and sizes are site.js's
+   (flipStudije). No transition at load: head.js styles them before the first paint. */
 @media (prefers-reduced-motion: no-preference) {
-  #res [data-pids], #res [data-pids] :is(.fr__i, .fr__i .i, .fr__more, .fr__more > *, .fr__sub, .fr__last > *) { transition: .35s cubic-bezier(.2, .8, .2, 1); transition-property: opacity, padding, row-gap, width, height, translate, max-height, min-height, border-color; }
+  #res [data-pids], #res [data-pids] .fr__more > * { transition: .35s cubic-bezier(.2, .8, .2, 1); transition-property: opacity, border-color; }
 }
-/* The collapse from each line's own height (1lh), so it moves from the first frame to the last.
-   shortcut: one line each (a name, a date, a count); a line that wraps would spill over the next, redo if that comes. */
-#res [data-pids] :is(.fr__sub, .fr__last > *) { max-height: 1lh; }
-@container main (max-width: 759.98px) { #res [data-pids] .fr__more { max-height: 1lh; } }
 .fr__s { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
 .fr__s .s2 { color: var(--dim); }
 
