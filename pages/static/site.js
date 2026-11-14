@@ -1180,14 +1180,18 @@
   }, { once: true });
 
   /* Visitor counter: every page tells the Worker (/visit, each IP once in three days); only /statistika/ shows the
-     total. A prerendered page counts once shown. */
+     total, and asks (?push) for the browsers with notifications on too. A prerendered page counts once shown. */
   var visit = function () {
     if (!window.fetch) return;
-    fetch('/visit', { method: 'POST' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
-      var li = d.getElementById('posete');
-      if (!li || !v) return;
-      li.firstChild.textContent = v.n.toLocaleString('de-DE'); // 23.692, as build.py's n filter
-      li.hidden = false;
+    var stats = d.getElementById('posete');
+    fetch(stats ? '/visit?push' : '/visit', { method: 'POST' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+      if (!stats || !v) return;
+      [['posete', v.n], ['pretplate', v.push]].forEach(function (p) {
+        var li = d.getElementById(p[0]);
+        if (!li || typeof p[1] !== 'number') return;
+        li.firstChild.textContent = p[1].toLocaleString('de-DE'); // 23.692, as build.py's n filter
+        li.hidden = false;
+      });
     }).catch(function () {});
   };
   if (d.prerendering) d.addEventListener('prerenderingchange', visit, { once: true }); else visit();

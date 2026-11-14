@@ -14,3 +14,9 @@ CREATE TABLE IF NOT EXISTS visit_total (
 );
 
 INSERT OR IGNORE INTO visit_total (id, n) VALUES (1, 0);
+
+-- The browsers with notifications on, for /statistika/'s count: a row per subscription (the subscription itself is in
+-- KV). Added on subscribe and by each /push/subs listing (ci/push.py), deleted when one is turned off or gone.
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint TEXT PRIMARY KEY
+);

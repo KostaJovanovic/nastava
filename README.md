@@ -97,7 +97,8 @@ pipeline and site, with new scrapers for phpBB.
   switch, per subject the teachers whose posts notify (none: all), and the subjects' feeds as one OPML file.
 - Notifications (web push): the switch on `/mojipredmeti/` subscribes the browser (`pages/static/sw.js` shows them; an
   iPhone only from the home screen). The Worker keeps each subscription with its subjects and picked teachers in KV,
-  and it goes with the switch off. Besides it the site keeps only a visitor's IP, three days, for the visitor counter on
+  and it goes with the switch off; for `/statistika/`'s count of them, D1 keeps each one's push address too
+  (`push_subs`, gone with it). Besides it the site keeps only a visitor's IP, three days, for the visitor counter on
   `/statistika/` (D1, `pages/schema.sql`; counted like valjdakosta.com's, each IP once per three days). After a deploy with a scrape, `ci/deploy.sh`
   runs `ci/push.py send`: once the new posts are on the site, each browser gets one notification for those in its
   subjects. The keys are in `push-secret.json` (git-ignored) and, for sync.yml, in the repository secret `PUSH_SECRET`
