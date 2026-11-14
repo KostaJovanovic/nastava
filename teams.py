@@ -12,6 +12,7 @@ The export and the zips come from Teams in the browser (README: "To add Teams po
 Usage: teams.py add <teams-export.json> <folder of the classes' library zips>
   add   a post already here is skipped; a class's material is written again.
 """
+
 import hashlib
 import json
 import re
@@ -93,8 +94,17 @@ NAMED = ["Jovan Geratovic"]
 LAT = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s".split()))
 # A letter of a name without diacritics, as it can be written: with them, or in Cyrillic.
 LATIN = {"dj": "(?:dj|đ)", "dz": "(?:dz|dž)", "c": "[cčć]", "s": "[sš]", "z": "[zž]", "d": "[dđ]"}
-CYRIL = {**{v: k for k, v in LAT.items() if v not in ("c", "s", "z", "d", "dj", "lj", "nj", "dz")},
-         "dj": "(?:ђ|дј)", "lj": "(?:љ|лј)", "nj": "(?:њ|нј)", "dz": "(?:џ|дж|дз)", "c": "[цчћ]", "s": "[сш]", "z": "[зж]", "d": "[дђ]"}
+CYRIL = {
+    **{v: k for k, v in LAT.items() if v not in ("c", "s", "z", "d", "dj", "lj", "nj", "dz")},
+    "dj": "(?:ђ|дј)",
+    "lj": "(?:љ|лј)",
+    "nj": "(?:њ|нј)",
+    "dz": "(?:џ|дж|дз)",
+    "c": "[цчћ]",
+    "s": "[сш]",
+    "z": "[зж]",
+    "d": "[дђ]",
+}
 
 
 def plain(name):
@@ -146,9 +156,11 @@ def body(m, label, students, name_re):
     for img in soup.find_all("img"):
         img.decompose()
     student = who(m) not in TEACHERS
+
     def named(n):
         acct = students.get(name_key(n[0]))
         return label(acct) if acct else "Student"
+
     for node in soup.find_all(string=True):
         text = name_re.sub(named, str(node)) if name_re else str(node)
         # A teacher's post too: a list of results names students who never posted (name_re does not know them).
@@ -208,6 +220,7 @@ def add(export, zips):
                     if account not in numbers:
                         numbers[account] = len(numbers) + 1
                     return f"Student #{numbers[account]}"
+
                 for m in thread[1:]:
                     if who(m) not in TEACHERS:
                         label(who(m))
@@ -236,12 +249,18 @@ def add(export, zips):
                         (out / name).write_bytes(z.read(path))
                         names.append(name)
                     out.mkdir(parents=True, exist_ok=True)
-                    post = dict(id=mid, refs=[] if m is root else [root_key], page=page,
-                                author=TEACHERS[who(m)] if teacher else label(who(m)),
-                                posted=sent.isoformat(), when=f"{sent.astimezone(TZ):%d.%m.%Y. %H:%M}",
-                                title=title if m is root else f"Re: {title}",
-                                html=body(m, label, student_ids, name_re), files=names,
-                                sizes={f: (out / f).stat().st_size for f in names})
+                    post = dict(
+                        id=mid,
+                        refs=[] if m is root else [root_key],
+                        page=page,
+                        author=TEACHERS[who(m)] if teacher else label(who(m)),
+                        posted=sent.isoformat(),
+                        when=f"{sent.astimezone(TZ):%d.%m.%Y. %H:%M}",
+                        title=title if m is root else f"Re: {title}",
+                        html=body(m, label, student_ids, name_re),
+                        files=names,
+                        sizes={f: (out / f).stat().st_size for f in names},
+                    )
                     (out / "post.json").write_text(json.dumps(post, ensure_ascii=False, indent=1), encoding="utf-8")
                     added += 1
         material(t, page, archives, posted_files, student_files)
@@ -255,8 +274,9 @@ def material(t, page, archives, posted_files, student_files):
     student's post, the recordings, the files about the students, nor a copy of a file listed already (a folder the
     teacher copied)."""
     known = posted_files | student_files
-    z = next((z for z in archives if Path(z.filename).stem == t["groupId"][:8]), None) or \
-        max(archives, key=lambda z: len(known & set(z.namelist())), default=None)
+    z = next((z for z in archives if Path(z.filename).stem == t["groupId"][:8]), None) or max(
+        archives, key=lambda z: len(known & set(z.namelist())), default=None
+    )
     if not z or not (known & set(z.namelist()) or Path(z.filename).stem == t["groupId"][:8]):
         print(f"no library zip for {t['name']}", file=sys.stderr)
         return
@@ -273,13 +293,16 @@ def material(t, page, archives, posted_files, student_files):
         rest.append(p)
     if not rest:
         return print(f"{t['name']}: every file is on a post")
-    (out / "material.json").write_text(json.dumps(dict(page=page, name=t["name"], files=rest), ensure_ascii=False, indent=1),
-                                       encoding="utf-8")
+    (out / "material.json").write_text(
+        json.dumps(dict(page=page, name=t["name"], files=rest), ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     print(f"{t['name']}: {len(rest)} files of material")
 
 
 def check():
-    assert redact("Ana, 385-2023, ana@x.rs, 2023/2024") == "████ ████████, ████████, 2023/2024", redact("Ana, 385-2023, ana@x.rs, 2023/2024")
+    assert redact("Ana, 385-2023, ana@x.rs, 2023/2024") == "████ ████████, ████████, 2023/2024", redact(
+        "Ana, 385-2023, ana@x.rs, 2023/2024"
+    )
     assert redact("nema me na spisku. Milošević Nemanja 12/2024") == "nema me na spisku. █████████ ███████ ███████"
     assert redact("prijavljujem 1. kolokvijum, 7/2024 Đorđe Ilić.") == "prijavljujem 1. kolokvijum, ██████ █████ ████."
     r = names_pattern(["Petar Petrovic", "Jovan", "Đorđe Ilić"])
@@ -289,11 +312,17 @@ def check():
     # A teacher's results list: the names and numbers go; times, school years and the teacher's address stay.
     assert redact("Matija Stepanović   175/2023  15.6", teacher=True) == "██████ ██████████   ████████  15.6"
     assert redact("Ana Ilić, 20-2024; ana.ilic@studenti.mas.bg.ac.rs", teacher=True) == "███ █████ ███████; " + "█" * 30
-    assert redact("Konsultacije Utorkom 10-12h, 2024/25, pera@mas.bg.ac.rs, dizajn@gmail.com", teacher=True) == \
-        "Konsultacije Utorkom 10-12h, 2024/25, pera@mas.bg.ac.rs, dizajn@gmail.com"
-    m = dict(messagetype="RichText/Html", **{"from": "x/8:orgid:s1"}, content='<p>Hvala <span itemtype="http://schema.skype.com/Mention" '
-             'itemid="0">Mirko</span> <img src="a">— Petar Petrović 12/2024</p>', properties=dict(mentions=json.dumps(
-                 [dict(itemid=0, mri="8:orgid:t9")])))
+    assert (
+        redact("Konsultacije Utorkom 10-12h, 2024/25, pera@mas.bg.ac.rs, dizajn@gmail.com", teacher=True)
+        == "Konsultacije Utorkom 10-12h, 2024/25, pera@mas.bg.ac.rs, dizajn@gmail.com"
+    )
+    m = dict(
+        messagetype="RichText/Html",
+        **{"from": "x/8:orgid:s1"},
+        content='<p>Hvala <span itemtype="http://schema.skype.com/Mention" '
+        'itemid="0">Mirko</span> <img src="a">— Petar Petrović 12/2024</p>',
+        properties=dict(mentions=json.dumps([dict(itemid=0, mri="8:orgid:t9")])),
+    )
     n = {}
     label = lambda a: n.setdefault(a, f"Student #{len(n) + 1}")
     ids, pat = {"petar petrovic": "8:orgid:s1"}, names_pattern(["Petar Petrović"])

@@ -7,6 +7,7 @@ lacks, a column it lacks, and every row it lacks (a page, a file, a post scraped
 either copy is deleted. Then the result goes into nastava.db through SQLite's backup, not over the file: a running
 dev server (pages/serve.py) keeps it and its WAL open, and Windows neither deletes nor replaces an open file.
 """
+
 import os
 import sqlite3
 import sys
@@ -22,14 +23,15 @@ def merge(state, local):
     """Add to the database at state what the one at local has and it lacks (see above). Returns how many rows."""
     db = sqlite3.connect(state)
     db.execute("ATTACH ? AS l", (local,))
-    have = {n for n, in db.execute("SELECT name FROM main.sqlite_master WHERE type = 'table'")}
+    have = {n for (n,) in db.execute("SELECT name FROM main.sqlite_master WHERE type = 'table'")}
     tables = db.execute("SELECT name, sql FROM l.sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").fetchall()
     for name, sql in tables:
         q = '"' + name.replace('"', '""') + '"'
         if name not in have:
             db.execute(sql)
-            for (index,) in db.execute("SELECT sql FROM l.sqlite_master WHERE type = 'index' AND tbl_name = ? AND sql IS NOT NULL",
-                                       (name,)).fetchall():
+            for (index,) in db.execute(
+                "SELECT sql FROM l.sqlite_master WHERE type = 'index' AND tbl_name = ? AND sql IS NOT NULL", (name,)
+            ).fetchall():
                 db.execute(index)
         elif name in WHOLE and db.execute(f"SELECT 1 FROM main.{q} LIMIT 1").fetchone():
             continue
@@ -70,24 +72,32 @@ def _test():
     with tempfile.TemporaryDirectory() as tmp:
         s, l = os.path.join(tmp, "s.db"), os.path.join(tmp, "l.db")
         a = sqlite3.connect(s)
-        a.executescript("CREATE TABLE posts (id integer primary key, html text);"
-                        "INSERT INTO posts VALUES (1, 'state'), (3, 'new');"
-                        "CREATE TABLE log (x text); INSERT INTO log VALUES ('a');"
-                        "CREATE TABLE subject_places (subject text); INSERT INTO subject_places VALUES ('now');")
+        a.executescript(
+            "CREATE TABLE posts (id integer primary key, html text);"
+            "INSERT INTO posts VALUES (1, 'state'), (3, 'new');"
+            "CREATE TABLE log (x text); INSERT INTO log VALUES ('a');"
+            "CREATE TABLE subject_places (subject text); INSERT INTO subject_places VALUES ('now');"
+        )
         a.commit()
         b = sqlite3.connect(l)
-        b.executescript("CREATE TABLE posts (id integer primary key, html text, extra text);"
-                        "INSERT INTO posts VALUES (1, 'old here', NULL), (2, 'only here', 'e');"
-                        "CREATE TABLE log (x text); INSERT INTO log VALUES ('a'), ('b');"
-                        "CREATE TABLE subject_places (subject text); INSERT INTO subject_places VALUES ('dropped');"
-                        "CREATE TABLE wiki_pages (path text, sha text, primary key (path, sha)); CREATE INDEX w ON wiki_pages (sha);"
-                        "INSERT INTO wiki_pages VALUES ('upis/start', 'x');")
+        b.executescript(
+            "CREATE TABLE posts (id integer primary key, html text, extra text);"
+            "INSERT INTO posts VALUES (1, 'old here', NULL), (2, 'only here', 'e');"
+            "CREATE TABLE log (x text); INSERT INTO log VALUES ('a'), ('b');"
+            "CREATE TABLE subject_places (subject text); INSERT INTO subject_places VALUES ('dropped');"
+            "CREATE TABLE wiki_pages (path text, sha text, primary key (path, sha)); CREATE INDEX w ON wiki_pages (sha);"
+            "INSERT INTO wiki_pages VALUES ('upis/start', 'x');"
+        )
         b.commit()
         b.close()
         a.close()
         assert merge(s, l) == 3  # post 2, log 'b', the wiki page
         m = sqlite3.connect(s)
-        assert m.execute("SELECT id, html, extra FROM posts ORDER BY id").fetchall() == [(1, "state", None), (2, "only here", "e"), (3, "new", None)]
+        assert m.execute("SELECT id, html, extra FROM posts ORDER BY id").fetchall() == [
+            (1, "state", None),
+            (2, "only here", "e"),
+            (3, "new", None),
+        ]
         assert m.execute("SELECT x FROM log ORDER BY x").fetchall() == [("a",), ("b",)]
         assert m.execute("SELECT * FROM subject_places").fetchall() == [("now",)]
         assert m.execute("SELECT * FROM wiki_pages").fetchall() == [("upis/start", "x")]

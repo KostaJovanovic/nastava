@@ -8,6 +8,7 @@ Builds twice into a temporary folder, as a deploy does (Pagefind skipped) and in
 both ways. A page differs when build.py changes its data after writing it: dev mode renders the data as it is at the
 end. The search's hidden copy (mark_for_pagefind) is in the build's item and news pages only.
 """
+
 import re
 import sys
 import tempfile
@@ -22,13 +23,15 @@ PF = re.compile(r'<div class="pf" data-pagefind-body>.*?</div>(?=</article>)', r
 def main(db):
     built = {}
     write, write_page = build.write, build.write_page
+
     def keep(path, html, index=True, canonical=None):
         built[f"/{path.parent.relative_to(build.site_dir).as_posix()}/"] = html
         path.parent.mkdir(parents=True, exist_ok=True)
 
     build.write = keep
     build.write_page = lambda path, html: built.__setitem__(
-        "/" + path.relative_to(build.site_dir).as_posix().removesuffix("index.html"), html)
+        "/" + path.relative_to(build.site_dir).as_posix().removesuffix("index.html"), html
+    )
     build.write_sitemap = lambda site: None
     build.shutil.which = lambda name: "npx"
     build.subprocess.run = build.strip_pagefind = lambda *a, **k: None
@@ -45,7 +48,7 @@ def main(db):
     for u in kinds.values():
         a, b = PF.sub("", built[u]), str(build.pages[u])
         i = next(i for i in range(min(len(a), len(b)) + 1) if i == min(len(a), len(b)) or a[i] != b[i])
-        print(f"\n{u} at {i}:\n  build: {a[max(0, i - 150):i + 150]!r}\n  dev:   {b[max(0, i - 150):i + 150]!r}")
+        print(f"\n{u} at {i}:\n  build: {a[max(0, i - 150) : i + 150]!r}\n  dev:   {b[max(0, i - 150) : i + 150]!r}")
     return not bad
 
 

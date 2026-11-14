@@ -11,6 +11,7 @@ Usage: plan.py morning|noon|afternoon|evening|late | check | fingerprint
 Today is the UTC date (the runs are at 6:17 to 21:17 UTC, the same day in Belgrade); TODAY=2027-01-11 overrides it for
 a test.
 """
+
 import datetime as dt
 import hashlib
 import io
@@ -22,8 +23,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DB = Path(os.getenv("DB", ROOT / "nastava.db"))
-AFTER = 7          # days after an exam period that stay hot: results and oral exams come then
-YEARLY = (10, 1)   # teachers and subjects: the school year's first day
+AFTER = 7  # days after an exam period that stay hot: results and oral exams come then
+YEARLY = (10, 1)  # teachers and subjects: the school year's first day
 # "18.1.-31.1.", "3.2. и 4.2.", "(2.11.-4.11.)"
 RANGE = re.compile(r"(\d{1,2})\.(\d{1,2})\.\s*(?:-|–|и|i)\s*(\d{1,2})\.(\d{1,2})\.")
 
@@ -53,6 +54,7 @@ def school_year(d):
 def calendars(db):
     """{school year: windows} of every calendar PDF the state has (studije.py archives them), newest version each."""
     from pypdf import PdfReader
+
     out = {}
     rows = db.execute("select path, data from study_files where path like 'studije/kalendar%.pdf' order by first_seen")
     for path, data in rows:
@@ -103,11 +105,15 @@ def fingerprint(db):
         "select count(*), max(id), sum(gone), total(length(html)), total(length(title)) from posts",
         "select count(*), sum(gone), total(length(title)) from topics",
         "select count(*), sum(gone) from vesti",
-        "select count(*) from study_pages", "select count(*) from study_files",
+        "select count(*) from study_pages",
+        "select count(*) from study_files",
         "select count(*), sum(gone), total(length(html)) from wiki_pages",
-        "select count(*), sum(gone), total(length(html)) from teachers", "select count(*) from teacher_subjects",
-        "select count(*), sum(gone), total(length(html)) from subjects", "select count(*) from subject_places",
-        "select count(*), sum(gone), total(length(html)) from cent_notices", "select count(*), sum(gone) from cent_pages",
+        "select count(*), sum(gone), total(length(html)) from teachers",
+        "select count(*) from teacher_subjects",
+        "select count(*), sum(gone), total(length(html)) from subjects",
+        "select count(*) from subject_places",
+        "select count(*), sum(gone), total(length(html)) from cent_notices",
+        "select count(*), sum(gone) from cent_pages",
         "select count(*), sum(gone) from katedre_pages",
         "select count(*), total(length(html)) from departments",
     ]
@@ -140,22 +146,31 @@ if __name__ == "__main__":
     D = dt.date
     _w = windows(_t, 2026)
     assert _w == [
-        ("prijave", D(2027, 1, 11), D(2027, 1, 13)), ("rok", D(2027, 1, 18), D(2027, 1, 31)),
-        ("prijave", D(2027, 2, 3), D(2027, 2, 4)), ("rok", D(2027, 2, 8), D(2027, 2, 21)),
-        ("prijave", D(2027, 5, 31), D(2027, 6, 2)), ("rok", D(2027, 6, 7), D(2027, 6, 20)),
-        ("prijave", D(2027, 6, 23), D(2027, 6, 24)), ("rok", D(2027, 6, 28), D(2027, 7, 11)),
-        ("prijave", D(2027, 8, 16), D(2027, 8, 18)), ("rok", D(2027, 8, 23), D(2027, 9, 5)),
-        ("prijave", D(2027, 9, 8), D(2027, 9, 9)), ("rok", D(2027, 9, 13), D(2027, 9, 26))], _w
+        ("prijave", D(2027, 1, 11), D(2027, 1, 13)),
+        ("rok", D(2027, 1, 18), D(2027, 1, 31)),
+        ("prijave", D(2027, 2, 3), D(2027, 2, 4)),
+        ("rok", D(2027, 2, 8), D(2027, 2, 21)),
+        ("prijave", D(2027, 5, 31), D(2027, 6, 2)),
+        ("rok", D(2027, 6, 7), D(2027, 6, 20)),
+        ("prijave", D(2027, 6, 23), D(2027, 6, 24)),
+        ("rok", D(2027, 6, 28), D(2027, 7, 11)),
+        ("prijave", D(2027, 8, 16), D(2027, 8, 18)),
+        ("rok", D(2027, 8, 23), D(2027, 9, 5)),
+        ("prijave", D(2027, 9, 8), D(2027, 9, 9)),
+        ("rok", D(2027, 9, 13), D(2027, 9, 26)),
+    ], _w
     _p = lambda slot, *ymd: parts(slot, D(*ymd), _w)
     assert _p("morning", 2027, 1, 18) == "forum studije" and _p("afternoon", 2027, 1, 18) == "forum"  # an exam period starts
     assert _p("morning", 2027, 3, 1) == "forum studije" and _p("noon", 2027, 3, 1) == "forum"  # the 1st: morning only
-    assert _p("morning", 2026, 11, 10) == "forum" and _p("late", 2027, 3, 30) == "forum"    # every run scrapes
+    assert _p("morning", 2026, 11, 10) == "forum" and _p("late", 2027, 3, 30) == "forum"  # every run scrapes
     assert _p("evening", 2026, 12, 5) == "forum" and _p("late", 2027, 3, 1) == "forum"
     assert _p("morning", 2027, 1, 11) == "forum studije" and _p("noon", 2027, 1, 11) == "forum"  # registration opens
     assert _p("noon", 2027, 2, 2) == "forum" and _p("morning", 2027, 2, 1) == "forum studije"  # after January's; the 1st
     assert _p("morning", 2027, 10, 1) == "forum studije nastavnici predmeti"  # the 1st, 1 October
     assert _p("noon", 2026, 10, 1) == "forum"
-    assert hot(D(2026, 10, 3), [("rok", D(2026, 9, 13), D(2026, 9, 26))]) and not hot(D(2026, 10, 4), [("rok", D(2026, 9, 13), D(2026, 9, 26))])
+    assert hot(D(2026, 10, 3), [("rok", D(2026, 9, 13), D(2026, 9, 26))]) and not hot(
+        D(2026, 10, 4), [("rok", D(2026, 9, 13), D(2026, 9, 26))]
+    )
     _c = {2026: _w}
     assert for_year(_c, 2027)[0] == ("prijave", D(2028, 1, 11), D(2028, 1, 13)) and for_year(_c, 2026) == _w and for_year({}, 2026) == []
     assert for_year({2027: [("rok", D(2028, 2, 15), D(2028, 2, 29))]}, 2028) == [("rok", D(2029, 2, 15), D(2029, 2, 28))]
@@ -170,7 +185,9 @@ if __name__ == "__main__":
             print(f"calendar {y}/{y + 1}: {n} windows; have {sorted(cals)}")
             # The faculty may publish it late: no alarm before 15 October.
             if n < 12 and today >= D(y, 10, 15):
-                sys.exit(f"no readable calendar for {y}/{y + 1} on www.mas.bg.ac.rs (kalendar nastave): the extra runs use the nearest year's dates")
+                sys.exit(
+                    f"no readable calendar for {y}/{y + 1} on www.mas.bg.ac.rs (kalendar nastave): the extra runs use the nearest year's dates"
+                )
         case [("morning" | "noon" | "afternoon" | "evening" | "late") as slot]:
             cals = calendars(sqlite3.connect(f"file:{DB}?mode=ro", uri=True))
             print(parts(slot, today, for_year(cals, school_year(today))))

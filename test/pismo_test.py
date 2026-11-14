@@ -3,91 +3,92 @@
 # dependencies = ["playwright", "jinja2==3.1.6", "nh3==0.3.2"]
 # ///
 """Script switch and side panel checks in Edge: uv run test/pismo_test.py <base url> <item path> <out dir>."""
+
 import re
 import sys
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'pages'))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pages"))
 from build import fold  # noqa: E402
 
-base, item, out = sys.argv[1].rstrip('/'), sys.argv[2], sys.argv[3]
-sys.stdout.reconfigure(encoding='utf-8')
-CYR = re.compile(r'[Ѐ-ӿ]')
-LAT_WORD = re.compile(r'\b[a-zčćšžđ]{4,}\b')
+base, item, out = sys.argv[1].rstrip("/"), sys.argv[2], sys.argv[3]
+sys.stdout.reconfigure(encoding="utf-8")
+CYR = re.compile(r"[Ѐ-ӿ]")
+LAT_WORD = re.compile(r"\b[a-zčćšžđ]{4,}\b")
 
 
 def main_text(page):
-	return page.inner_text('main')
+    return page.inner_text("main")
 
 
 def pismo(page, mode):
-	"""Click the script button (it switches lat ↔ cyr) until it is on mode."""
-	for _ in range(2):
-		if page.get_attribute('#pismo', 'data-pismo') == mode:
-			return
-		page.click('#pismo')
-	assert page.get_attribute('#pismo', 'data-pismo') == mode, mode
+    """Click the script button (it switches lat ↔ cyr) until it is on mode."""
+    for _ in range(2):
+        if page.get_attribute("#pismo", "data-pismo") == mode:
+            return
+        page.click("#pismo")
+    assert page.get_attribute("#pismo", "data-pismo") == mode, mode
 
 
 with sync_playwright() as p:
-	browser = p.chromium.launch(channel='msedge')
-	page = browser.new_page(viewport={'width': 1366, 'height': 900})
-	errors = []
-	page.on('pageerror', lambda e: errors.append(str(e)))
+    browser = p.chromium.launch(channel="msedge")
+    page = browser.new_page(viewport={"width": 1366, "height": 900})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
 
-	page.goto(f'{base}/{item}/')
-	page.wait_for_load_state('networkidle')
-	# The browser folds the query (pismoFold) as build.py folds the index; when they differ, a search misses.
-	words = ['Ђачки распоред, Čas', 'ЏЕМПЕР Љиљана Њива', 'ŠĐŽČĆ šđžčć', 'Ђорђе Đorđe', 'naïve Ñandú', 'Йод ӂ ё']
-	assert page.evaluate('w => w.map(pismoFold)', words) == [fold(w) for w in words]
-	print('pismoFold = build.py fold')
-	lat = main_text(page)
-	print('default latin, cyrillic letters left in main:', len(CYR.findall(lat)), '| button:', page.get_attribute('#pismo', 'data-pismo'))
-	assert not CYR.findall(lat), lat[:300]
-	page.screenshot(path=f'{out}/pismo-lat.png')
+    page.goto(f"{base}/{item}/")
+    page.wait_for_load_state("networkidle")
+    # The browser folds the query (pismoFold) as build.py folds the index; when they differ, a search misses.
+    words = ["Ђачки распоред, Čas", "ЏЕМПЕР Љиљана Њива", "ŠĐŽČĆ šđžčć", "Ђорђе Đorđe", "naïve Ñandú", "Йод ӂ ё"]
+    assert page.evaluate("w => w.map(pismoFold)", words) == [fold(w) for w in words]
+    print("pismoFold = build.py fold")
+    lat = main_text(page)
+    print("default latin, cyrillic letters left in main:", len(CYR.findall(lat)), "| button:", page.get_attribute("#pismo", "data-pismo"))
+    assert not CYR.findall(lat), lat[:300]
+    page.screenshot(path=f"{out}/pismo-lat.png")
 
-	pismo(page, 'cyr')
-	cyr = main_text(page)
-	print('cyrillic: latin words left:', LAT_WORD.findall(cyr.lower())[:8], '| title:', page.title())
-	page.screenshot(path=f'{out}/pismo-cyr.png')
+    pismo(page, "cyr")
+    cyr = main_text(page)
+    print("cyrillic: latin words left:", LAT_WORD.findall(cyr.lower())[:8], "| title:", page.title())
+    page.screenshot(path=f"{out}/pismo-cyr.png")
 
-	pismo(page, 'lat')
-	assert main_text(page) == lat, 'switching back to latin gave a different text'
-	print('back to latin: identical')
+    pismo(page, "lat")
+    assert main_text(page) == lat, "switching back to latin gave a different text"
+    print("back to latin: identical")
 
-	# A year on /statistika/ opens the search with that year.
-	page.goto(f'{base}/statistika/')
-	page.click('.ch--years a[href*="from=2024"]')
-	page.wait_for_url(re.compile(r'from=2024'))
-	page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('rezultat')")
-	page.wait_for_load_state('networkidle')
-	print('year from /statistika/ ->', page.url.split('?')[1][:80], '|', page.inner_text('#res-h'))
-	page.screenshot(path=f'{out}/pismo-search.png')
+    # A year on /statistika/ opens the search with that year.
+    page.goto(f"{base}/statistika/")
+    page.click('.ch--years a[href*="from=2024"]')
+    page.wait_for_url(re.compile(r"from=2024"))
+    page.wait_for_function("document.querySelector('#res-h')?.textContent.includes('rezultat')")
+    page.wait_for_load_state("networkidle")
+    print("year from /statistika/ ->", page.url.split("?")[1][:80], "|", page.inner_text("#res-h"))
+    page.screenshot(path=f"{out}/pismo-search.png")
 
-	# The choice is remembered on the next page.
-	pismo(page, 'cyr')
-	page.goto(f'{base}/')
-	print('remembered on the next page:', page.get_attribute('#pismo', 'data-pismo') == 'cyr', '| heading:', page.inner_text('#res-h'))
-	pismo(page, 'lat')
+    # The choice is remembered on the next page.
+    pismo(page, "cyr")
+    page.goto(f"{base}/")
+    print("remembered on the next page:", page.get_attribute("#pismo", "data-pismo") == "cyr", "| heading:", page.inner_text("#res-h"))
+    pismo(page, "lat")
 
-	# The theme button: from the system's scheme (light here) to dark, then light; remembered on the next page.
-	scheme = lambda: page.evaluate("getComputedStyle(document.documentElement).colorScheme")
-	themes = []
-	for _ in range(2):
-		page.click('#tema')
-		themes.append((page.get_attribute('html', 'data-tema'), scheme(), page.get_attribute('#tema', 'aria-label')))
-	print('theme clicks:', themes)
-	assert themes == [('dark', 'dark', 'Tema: tamna'), ('light', 'light', 'Tema: svetla')], themes
-	page.click('#tema')
-	page.goto(f'{base}/')
-	assert page.get_attribute('html', 'data-tema') == 'dark'
-	page.click('#tema')
+    # The theme button: from the system's scheme (light here) to dark, then light; remembered on the next page.
+    scheme = lambda: page.evaluate("getComputedStyle(document.documentElement).colorScheme")
+    themes = []
+    for _ in range(2):
+        page.click("#tema")
+        themes.append((page.get_attribute("html", "data-tema"), scheme(), page.get_attribute("#tema", "aria-label")))
+    print("theme clicks:", themes)
+    assert themes == [("dark", "dark", "Tema: tamna"), ("light", "light", "Tema: svetla")], themes
+    page.click("#tema")
+    page.goto(f"{base}/")
+    assert page.get_attribute("html", "data-tema") == "dark"
+    page.click("#tema")
 
-	phone = browser.new_page(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True)
-	phone.goto(f'{base}/{item}/')
-	phone.wait_for_load_state('networkidle')
-	phone.screenshot(path=f'{out}/pismo-phone.png')
-	print('page errors:', errors or 'none')
-	browser.close()
+    phone = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True)
+    phone.goto(f"{base}/{item}/")
+    phone.wait_for_load_state("networkidle")
+    phone.screenshot(path=f"{out}/pismo-phone.png")
+    print("page errors:", errors or "none")
+    browser.close()

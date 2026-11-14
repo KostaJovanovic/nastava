@@ -10,6 +10,7 @@ Usage: cent.py sync
   sync   list the pages (REST API, 3 requests), fetch each new or changed one (the list's "modified") and every
          notices page, store new versions and notices; a page or notice no longer there is marked gone.
 """
+
 import copy
 import hashlib
 import json
@@ -60,8 +61,9 @@ def list_pages(s):
     """Every published page: id, parent, menu_order, slug, title, link, modified (the REST API, 100 a request)."""
     out, page = [], 1
     while True:
-        r = get(s, f"{SITE}/wp-json/wp/v2/pages", params=dict(per_page=100, page=page,
-                _fields="id,parent,menu_order,slug,title,link,modified"))
+        r = get(
+            s, f"{SITE}/wp-json/wp/v2/pages", params=dict(per_page=100, page=page, _fields="id,parent,menu_order,slug,title,link,modified")
+        )
         out += r.json()
         if page >= int(r.headers.get("X-WP-TotalPages", 1)):
             return out
@@ -101,8 +103,7 @@ def name_icons(soup, page_url):
         if a.get_text(strip=True):
             continue
         path = unquote(urlsplit(href).path)
-        name = (path.rsplit("/", 1)[-1] if FILE.search(path) else "video" if VIDEO.search(href)
-                else (a.img and a.img.get("alt")) or "link")
+        name = path.rsplit("/", 1)[-1] if FILE.search(path) else "video" if VIDEO.search(href) else (a.img and a.img.get("alt")) or "link"
         a.clear()
         a.append(name)
 
@@ -120,8 +121,9 @@ def parse(html, page_url):
     head = main.select_one("#brzilinkovi")
     m = head and re.search(r"\bID:\s*(\d{3,4})\b", head.get_text(" ", strip=True))
     code = m[1] if m else None
-    body = [x for x in sections if x is not head and x.get_text(" ", strip=True) != FOOTER
-            and (x.get_text(strip=True) or x.select("a[href]"))]
+    body = [
+        x for x in sections if x is not head and x.get_text(" ", strip=True) != FOOTER and (x.get_text(strip=True) or x.select("a[href]"))
+    ]
     for x in body:
         name_icons(x, page_url)
         for t in x.find_all(["script", "style", "noscript"]):
@@ -135,10 +137,14 @@ def parse(html, page_url):
         el = copy.copy(it)  # the page's copy keeps its title and date
         for t in el.select(".vesti_predmeta_title, .vesti_predmeta_date"):
             t.decompose()
-        notices.append(dict(title=title.get_text(" ", strip=True) if title else "",
-                            date=f"{d[3]}-{int(d[2]):02d}-{int(d[1]):02d}" if d else None,
-                            files=[a["href"] for a in it.select(".vesti_predmeta_files a[href]")],
-                            html=el.decode_contents().strip()))
+        notices.append(
+            dict(
+                title=title.get_text(" ", strip=True) if title else "",
+                date=f"{d[3]}-{int(d[2]):02d}-{int(d[1]):02d}" if d else None,
+                files=[a["href"] for a in it.select(".vesti_predmeta_files a[href]")],
+                html=el.decode_contents().strip(),
+            )
+        )
     return code, page, notices
 
 
@@ -149,13 +155,16 @@ def store_page(db, p, code, html, seen):
     last = db.execute("select sha from cent_pages where id = ? order by last_seen desc limit 1", (p["id"],)).fetchone()
     if db.execute("select 1 from cent_pages where id = ? and sha = ?", (p["id"], sha)).fetchone():
         # The newest again, or back to an older version (that one becomes the newest).
-        db.execute("update cent_pages set last_seen = ?, modified = ?, parent = ?, menu_order = ?, title = ?, link = ?, "
-                   "code = ?, gone = 0 where id = ? and sha = ?",
-                   (seen, p["modified"], p["parent"], p["menu_order"], title, p["link"], code, p["id"], sha))
+        db.execute(
+            "update cent_pages set last_seen = ?, modified = ?, parent = ?, menu_order = ?, title = ?, link = ?, "
+            "code = ?, gone = 0 where id = ? and sha = ?",
+            (seen, p["modified"], p["parent"], p["menu_order"], title, p["link"], code, p["id"], sha),
+        )
         return last[0] != sha
-    db.execute("insert into cent_pages values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
-               (p["id"], sha, p["parent"], p["menu_order"], p["slug"], title, p["link"], p["modified"], code, html,
-                seen, seen))
+    db.execute(
+        "insert into cent_pages values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
+        (p["id"], sha, p["parent"], p["menu_order"], p["slug"], title, p["link"], p["modified"], code, html, seen, seen),
+    )
     return True
 
 
@@ -173,12 +182,13 @@ def store_notices(db, page_id, notices, seen):
         old = db.execute("select nid, html, files, last_seen from cent_notices where key = ?", (key,)).fetchone()
         if old and (old[1], old[2]) != (n["html"], json.dumps(n["files"])):
             db.execute("insert into cent_notice_old values (?, ?, ?, ?)", old)
-        db.execute("insert into cent_notices (key, page, title, date, html, files, first_seen, last_seen) "
-                   "values (?, ?, ?, ?, ?, ?, ?, ?) on conflict (key) do update set html = excluded.html, "
-                   "files = excluded.files, last_seen = excluded.last_seen, gone = 0",
-                   (key, page_id, n["title"], n["date"], n["html"], json.dumps(n["files"]), seen, seen))
-    db.execute(f"update cent_notices set gone = 1 where page = ? and key not in ({','.join('?' * len(keys))})",
-               (page_id, *keys))
+        db.execute(
+            "insert into cent_notices (key, page, title, date, html, files, first_seen, last_seen) "
+            "values (?, ?, ?, ?, ?, ?, ?, ?) on conflict (key) do update set html = excluded.html, "
+            "files = excluded.files, last_seen = excluded.last_seen, gone = 0",
+            (key, page_id, n["title"], n["date"], n["html"], json.dumps(n["files"]), seen, seen),
+        )
+    db.execute(f"update cent_notices set gone = 1 where page = ? and key not in ({','.join('?' * len(keys))})", (page_id, *keys))
 
 
 def sync():
@@ -186,15 +196,19 @@ def sync():
     db.executescript(SCHEMA)
     s, seen = session(), now()
     pages = list_pages(s)
-    known = dict(db.execute("select id, modified from cent_pages c where last_seen = "
-                            "(select max(last_seen) from cent_pages where id = c.id)"))
+    known = dict(
+        db.execute("select id, modified from cent_pages c where last_seen = (select max(last_seen) from cent_pages where id = c.id)")
+    )
     fetched = new = 0
     for p in pages:
         # The notices pages every time: a notice may not change the page's "modified".
         if known.get(p["id"]) == p["modified"] and "obavestenja" not in p["slug"]:
             # gone = 0: a page one listing missed and marked gone is back (as katedre.store does).
-            db.execute("update cent_pages set last_seen = ?, gone = 0 where id = ? and last_seen = "
-                       "(select max(last_seen) from cent_pages where id = ?)", (seen, p["id"], p["id"]))
+            db.execute(
+                "update cent_pages set last_seen = ?, gone = 0 where id = ? and last_seen = "
+                "(select max(last_seen) from cent_pages where id = ?)",
+                (seen, p["id"], p["id"]),
+            )
             continue
         code, html, notices = parse(get(s, p["link"]).text, p["link"])
         fetched += 1

@@ -8,6 +8,7 @@ One request at a time (8 of the sites are one server, as katedre.py); a file alr
 
 Usage: site_files.py list | download
 """
+
 import json
 import os
 import sqlite3
@@ -39,9 +40,14 @@ def links(db):
         for h in filter(None, hrefs):
             url = urljoin(base, h.strip()).split("#")[0]
             parts = urlsplit(url)
-            if parts.scheme in ("http", "https") and parts.hostname and parts.hostname.endswith("mas.bg.ac.rs") \
-                    and FILE.search(unquote(parts.path)):
+            if (
+                parts.scheme in ("http", "https")
+                and parts.hostname
+                and parts.hostname.endswith("mas.bg.ac.rs")
+                and FILE.search(unquote(parts.path))
+            ):
                 found.add(url)
+
     for url, html in db.execute("SELECT url, html FROM katedre_pages"):
         add(url, html)
     for url, html, files in db.execute("SELECT url, html, files FROM katedre_notices"):
@@ -92,7 +98,10 @@ def download(urls):
 
 
 if __name__ == "__main__":
-    assert target("https://ie.mas.bg.ac.rs/data_store/upload/1815_R%C5%A0 2.docx") == OUT / "ie.mas.bg.ac.rs" / "data_store" / "upload" / "1815_RŠ 2.docx"
+    assert (
+        target("https://ie.mas.bg.ac.rs/data_store/upload/1815_R%C5%A0 2.docx")
+        == OUT / "ie.mas.bg.ac.rs" / "data_store" / "upload" / "1815_RŠ 2.docx"
+    )
     assert target("https://cent.mas.bg.ac.rs/a/../x.pdf?id=3").name == "x.pdf_id=3"
     if sys.argv[1:] not in (["list"], ["download"]):
         sys.exit(__doc__)
@@ -100,6 +109,7 @@ if __name__ == "__main__":
     urls = links(db)
     if sys.argv[1] == "list":
         from collections import Counter
+
         print(len(urls), "files:", dict(Counter(urlsplit(u).hostname for u in urls).most_common()))
     else:
         download(urls)

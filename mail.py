@@ -13,6 +13,7 @@ Usage: mail.py add <folder of .eml files> <subject page, as /predmet/oas-mi/pump
   add     a mail already here (by Message-ID) is skipped.
   upload  upload the files of mail/ that the release has not yet (gh, signed in).
 """
+
 import email
 import hashlib
 import json
@@ -44,11 +45,24 @@ def upload():
     gh = lambda *a: subprocess.run(["gh", *a], check=True, capture_output=True, text=True).stdout
     try:
         rid = json.loads(gh("api", f"repos/{REPO}/releases/tags/{TAG}"))["id"]
-        have = set(gh("api", "--paginate", f"repos/{REPO}/releases/{rid}/assets?per_page=100", "-q",
-                      '.[] | select(.state == "uploaded") | .name').split())
+        have = set(
+            gh(
+                "api", "--paginate", f"repos/{REPO}/releases/{rid}/assets?per_page=100", "-q", '.[] | select(.state == "uploaded") | .name'
+            ).split()
+        )
     except subprocess.CalledProcessError:
-        gh("release", "create", TAG, "-R", REPO, "--latest=false", "--title", "Mails and Teams files",
-           "--notes", "The files of mail/ (mail.py, teams.py). An asset's name is a hash of its path in mail/.")
+        gh(
+            "release",
+            "create",
+            TAG,
+            "-R",
+            REPO,
+            "--latest=false",
+            "--title",
+            "Mails and Teams files",
+            "--notes",
+            "The files of mail/ (mail.py, teams.py). An asset's name is a hash of its path in mail/.",
+        )
         have = set()
     todo = {asset_name(p.relative_to(MAIL).as_posix()): p for p in MAIL.rglob("*") if p.is_file() and p.suffix != ".json"}
     todo = {name: p for name, p in todo.items() if name not in have}
@@ -57,7 +71,7 @@ def upload():
         names = list(todo)
         for i in range(0, len(names), 20):
             batch = []
-            for name in names[i:i + 20]:
+            for name in names[i : i + 20]:
                 (Path(tmp) / name).write_bytes(todo[name].read_bytes())
                 batch.append(str(Path(tmp) / name))
             gh("release", "upload", TAG, "-R", REPO, "--clobber", *batch)
@@ -104,18 +118,28 @@ def add(folder, page):
             (out / name).write_bytes(a.get_payload(decode=True) or b"")
             files.append(name)
         refs = list(dict.fromkeys(re.findall(r"<[^>]+>", f"{m['References'] or ''} {m['In-Reply-To'] or ''}")))
-        post = dict(id=mid, refs=refs, page=page, author=parseaddr(str(m["From"]))[1].split("@")[0].lower(),
-                    posted=sent.astimezone(timezone.utc).isoformat(), when=f"{sent:%d.%m.%Y. %H:%M}",
-                    title=str(m["Subject"] or ""), html=text_of(m), files=files,
-                    sizes={f: (out / f).stat().st_size for f in files})
+        post = dict(
+            id=mid,
+            refs=refs,
+            page=page,
+            author=parseaddr(str(m["From"]))[1].split("@")[0].lower(),
+            posted=sent.astimezone(timezone.utc).isoformat(),
+            when=f"{sent:%d.%m.%Y. %H:%M}",
+            title=str(m["Subject"] or ""),
+            html=text_of(m),
+            files=files,
+            sizes={f: (out / f).stat().st_size for f in files},
+        )
         (out / "post.json").write_text(json.dumps(post, ensure_ascii=False, indent=1), encoding="utf-8")
         added += 1
     print(f"{added} mails added to {MAIL}")
 
 
 def check():
-    q = ('<div dir="ltr">Novo<br></div><div class="gmail_quote gmail_quote_container"><div class="gmail_attr">On Mon '
-         'wrote:</div><blockquote class="gmail_quote">Staro</blockquote></div>')
+    q = (
+        '<div dir="ltr">Novo<br></div><div class="gmail_quote gmail_quote_container"><div class="gmail_attr">On Mon '
+        'wrote:</div><blockquote class="gmail_quote">Staro</blockquote></div>'
+    )
     pasted = '<div><div class="gmail_quote"><div dir="ltr">Prepisano</div></div></div>'
     mk = lambda html: email.message_from_string(f"Content-Type: text/html; charset=utf-8\n\n{html}", policy=policy.default)
     assert text_of(mk(q)) == '<div dir="ltr">Novo<br/></div>', text_of(mk(q))

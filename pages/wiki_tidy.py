@@ -3,6 +3,7 @@ sanitizes them: DokuWiki's ALL-CAPS in sentence case, its rules and spacer lines
 headings and highlights, date-and-time paragraphs as a timeline, dash lines as lists, "label: number" lists as rows,
 "на линку" links named, lists of links as cards. That much works on any page; tune() adds what only one page has and
 warns when that page changed under it, leaving the generic look."""
+
 import re
 import sys
 from collections import Counter, defaultdict
@@ -10,9 +11,19 @@ from collections import Counter, defaultdict
 from bs4 import BeautifulSoup, Comment, NavigableString, Tag
 
 # The classes tidy() gives, the only ones clean_html keeps on these pages (style.css .wt-…).
-CLASSES = {"ol": {"wt-tl"}, "li": {"wt-tl__i"}, "b": {"wt-tl__d"}, "span": {"wt-tl__h", "wt-amt"},
-           "strong": {"wt-hl"}, "p": {"wt-note", "wt-lbl"}, "ul": {"wt-links", "wt-tl__l"}, "dl": {"wt-kv"},
-           "div": {"wt-box", "wt-card", "wt-cards"}, "a": {"wt-go"}, "table": {"wt-mod"}}
+CLASSES = {
+    "ol": {"wt-tl"},
+    "li": {"wt-tl__i"},
+    "b": {"wt-tl__d"},
+    "span": {"wt-tl__h", "wt-amt"},
+    "strong": {"wt-hl"},
+    "p": {"wt-note", "wt-lbl"},
+    "ul": {"wt-links", "wt-tl__l"},
+    "dl": {"wt-kv"},
+    "div": {"wt-box", "wt-card", "wt-cards"},
+    "a": {"wt-go"},
+    "table": {"wt-mod"},
+}
 
 WORD = re.compile(r"[^\W\d_]+")
 MONTHS = "јануар фебруар март април мај јун јул август септемб октоб новемб децемб".split()
@@ -23,8 +34,11 @@ MONEY = re.compile(r"\d{1,3}(?:\.\d{3})*(?:,\d{2})?\s*(?:динара|евра|�
 KV = re.compile(r"^(.{3,160}?):\s*(\d[\d.,]*(?:\s*\S{1,8})?)\s*$")
 # A link whose text says only where it is ("на линку", "овде"), and the words around it that say the same.
 BARE = re.compile(r"^\s*(?:на\s+)?(?:следећем\s+)?(?:линку|линк|овде|link|ovde)\s*[.:]?\s*$", re.I)
-FILLER = re.compile(r"\s*(?:Детаљно\s+можете\s+прочитати|можете\s+погледати|налаз[еи]\s+се)?\s*(?:на\s+)?(?:следећем\s+)?"
-                    r"(?:линку|овде)?\s*[.:]?\s*$", re.I)
+FILLER = re.compile(
+    r"\s*(?:Детаљно\s+можете\s+прочитати|можете\s+погледати|налаз[еи]\s+се)?\s*(?:на\s+)?(?:следећем\s+)?"
+    r"(?:линку|овде)?\s*[.:]?\s*$",
+    re.I,
+)
 RED = re.compile(r"color:\s*(?:#f00\b|#ff0000|red\b|#e[0-9a-f]0000|#c00\b|#cc0000)", re.I)
 COLOR = re.compile(r"color:\s*#?[0-9a-z]+", re.I)
 LARGE = re.compile(r"font-size:\s*(?:large|x+-large|larger|1[.,][2-9]em|[2-9]em)", re.I)
@@ -58,8 +72,7 @@ def lexicon(texts):
 def recase(text, lex, first):
     """ALL-CAPS text in the wiki's usual spelling; first: it starts a sentence."""
     # A one-letter word (У, И) is a preposition or a conjunction, never an acronym.
-    out = WORD.sub(lambda m: m[0].lower() if len(m[0]) == 1 else lex.get(m[0].lower(), m[0].lower())
-                   if m[0].isupper() else m[0], text)
+    out = WORD.sub(lambda m: m[0].lower() if len(m[0]) == 1 else lex.get(m[0].lower(), m[0].lower()) if m[0].isupper() else m[0], text)
     if first:
         out = re.sub(r"^(\W*)(\w)", lambda m: m[1] + m[2].upper(), out, count=1)
     return out
@@ -67,7 +80,7 @@ def recase(text, lex, first):
 
 def shouting(text):
     letters = [c for c in text if c.isalpha()]
-    return len(letters) >= 4 and sum(c.isupper() for c in letters) / len(letters) > .8
+    return len(letters) >= 4 and sum(c.isupper() for c in letters) / len(letters) > 0.8
 
 
 def lines(p):
@@ -80,8 +93,7 @@ def lines(p):
         else:
             cur.append(node)
     out.append(cur)
-    return [ln for ln in out if text_of(ln).strip() or any(isinstance(n, Tag) and (n.name == "img" or n.find("img"))
-                                                           for n in ln)]
+    return [ln for ln in out if text_of(ln).strip() or any(isinstance(n, Tag) and (n.name == "img" or n.find("img")) for n in ln)]
 
 
 def text_of(nodes):
@@ -146,10 +158,10 @@ def tidy(html, path, lex):
         parts, last, bold = [], 0, s.find_parent(["strong", "b", "h2", "h3", "h4", "h5", "h6"]) is not None
         for m in re.finditer(r"(?:\b[^\W\d_a-zа-шђјљњћџ]{2,}\b[\s,]*){2,}|\b[^\W\d_a-zа-шђјљњћџ]{6,}\b", str(s)):
             run = m[0].rstrip(" ,")
-            fixed = recase(run, lex, not str(s)[:m.start()].strip() and s.previous_sibling is None)
+            fixed = recase(run, lex, not str(s)[: m.start()].strip() and s.previous_sibling is None)
             if fixed == run:
                 continue
-            parts += [str(s)[last:m.start()], (fixed,)]
+            parts += [str(s)[last : m.start()], (fixed,)]
             last = m.start() + len(run)
         if not parts:
             continue
@@ -178,8 +190,14 @@ def tidy(html, path, lex):
             continue
         head = ls[0]
         first = [n for n in head if not (isinstance(n, NavigableString) and not n.strip())]
-        if (len(ls) > 1 and len(first) == 1 and isinstance(first[0], Tag) and first[0].name in ("strong", "b")
-                and DATE.search(first[0].get_text()) and all(TIME.match(text_of(ln)) for ln in ls[1:])):
+        if (
+            len(ls) > 1
+            and len(first) == 1
+            and isinstance(first[0], Tag)
+            and first[0].name in ("strong", "b")
+            and DATE.search(first[0].get_text())
+            and all(TIME.match(text_of(ln)) for ln in ls[1:])
+        ):
             li = new("li", "wt-tl__i")
             d = new("b", "wt-tl__d")
             d.string = first[0].get_text(" ", strip=True)
@@ -190,8 +208,7 @@ def tidy(html, path, lex):
                 h = new("span", "wt-tl__h")
                 h.string = t[1].strip()
                 rest = new("span")  # one grid cell, bold words and all
-                rest.append(BeautifulSoup(re.sub(r"^\s*" + re.escape(t[0].strip()) + r"\s*", "", html_of(ln), count=1),
-                                          "html.parser"))
+                rest.append(BeautifulSoup(re.sub(r"^\s*" + re.escape(t[0].strip()) + r"\s*", "", html_of(ln), count=1), "html.parser"))
                 row.extend([h, rest])
                 ul.append(row)
             li.extend([d, ul])
@@ -208,9 +225,15 @@ def tidy(html, path, lex):
             p.replace_with(ul)
             continue
         # A person or an office: a bold name over lines with an e-mail address, a card.
-        if (len(ls) > 1 and first and isinstance(first[0], Tag) and first[0].name in ("strong", "b") and len(first) == 1
-                and len(p.get_text()) < 400 and (p.find("a", href=re.compile(r"^mailto:"))
-                                                 or all(text_of(ln).strip() in ("-", "–") for ln in ls[1:]))):
+        if (
+            len(ls) > 1
+            and first
+            and isinstance(first[0], Tag)
+            and first[0].name in ("strong", "b")
+            and len(first) == 1
+            and len(p.get_text()) < 400
+            and (p.find("a", href=re.compile(r"^mailto:")) or all(text_of(ln).strip() in ("-", "–") for ln in ls[1:]))
+        ):
             p.name, p["class"] = "div", "wt-card"
             br = first[0].find_next_sibling()
             if br is not None and br.name == "br":  # the name is a block already
@@ -342,7 +365,7 @@ def tidy(html, path, lex):
         for m in MONEY.finditer(str(s)):
             b = new("span", "wt-amt")
             b.string = m[0]
-            parts += [NavigableString(str(s)[last:m.start()]), b]
+            parts += [NavigableString(str(s)[last : m.start()]), b]
             last = m.end()
         parts.append(NavigableString(str(s)[last:]))
         s.replace_with(*parts)
@@ -371,8 +394,14 @@ def tune(root, path, new):
     """What only one page has. A page the faculty reworded keeps the generic look, with a warning."""
     if path == "upis/mas":
         # The master's modules, "1. Аутоматско управљање (САУ) 24 кандидата" in one block: a table.
-        block = next((el for el in root.find_all(["div", "p", "ol", "ul"])
-                      if len(MODULE.findall(el.get_text(" "))) >= 5 and not el.find(["div", "p"])), None)
+        block = next(
+            (
+                el
+                for el in root.find_all(["div", "p", "ol", "ul"])
+                if len(MODULE.findall(el.get_text(" "))) >= 5 and not el.find(["div", "p"])
+            ),
+            None,
+        )
         if block is None:
             return warn(path, "the list of modules")
         table = new("table", "wt-mod")
@@ -395,17 +424,23 @@ def tune(root, path, new):
 if __name__ == "__main__":
     lex = lexicon(["Упис на Машински факултет у Београду, ОАС и МАС. Пријава у Служби за студентске послове."])
     assert recase("УПИС НА ОАС У БЕОГРАДУ", lex, True) == "Упис на ОАС у Београду", recase("УПИС НА ОАС У БЕОГРАДУ", lex, True)
-    out = tidy('<div class="page"><h1>НАСЛОВ</h1><h2>ПРИЈАВА</h2><p><strong>16. септембар 2026. године</strong><br/>'
-               '12:00 – 14:00 — Пријављивање кандидата.<br/>до 17:00 — Објављивање.</p>'
-               '<p><strong>17. септембар 2026. године</strong><br/>10:00 — Испит.</p>'
-               '<p>Број:<br/>-број студената са инвалидитетом: 4<br/>-број студената Рома: 2</p>'
-               '<p><strong>Важни датуми</strong> налазе се на <a href="/x">линку.</a></p>'
-               '<p>Упис страних студената Детаљно можете прочитати на <a href="/y">линку</a>.</p>'
-               '<p>Школарина износи 111.000,00 динара.</p><p><img src="/a.png" width="650"/></p>'
-               '<p><a href="/b"><img src="/b.png"/></a><br/></p></div>', "x", lex)
+    out = tidy(
+        '<div class="page"><h1>НАСЛОВ</h1><h2>ПРИЈАВА</h2><p><strong>16. септембар 2026. године</strong><br/>'
+        "12:00 – 14:00 — Пријављивање кандидата.<br/>до 17:00 — Објављивање.</p>"
+        "<p><strong>17. септембар 2026. године</strong><br/>10:00 — Испит.</p>"
+        "<p>Број:<br/>-број студената са инвалидитетом: 4<br/>-број студената Рома: 2</p>"
+        '<p><strong>Важни датуми</strong> налазе се на <a href="/x">линку.</a></p>'
+        '<p>Упис страних студената Детаљно можете прочитати на <a href="/y">линку</a>.</p>'
+        '<p>Школарина износи 111.000,00 динара.</p><p><img src="/a.png" width="650"/></p>'
+        '<p><a href="/b"><img src="/b.png"/></a><br/></p></div>',
+        "x",
+        lex,
+    )
     assert '<img src="/a.png" width="650"/>' in out and '<img src="/b.png"/>' in out, out
-    assert '<h2>Пријава</h2>' in out and out.count('class="wt-tl__i"') == 2 and out.count('<ol class="wt-tl">') == 1, out
+    assert "<h2>Пријава</h2>" in out and out.count('class="wt-tl__i"') == 2 and out.count('<ol class="wt-tl">') == 1, out
     assert '<span class="wt-tl__h">12:00 – 14:00</span>' in out and '<dl class="wt-kv">' in out, out
-    assert '<a class="wt-go" href="/x">Важни датуми</a>' in out and 'Упис страних студената <a class="wt-go" href="/y">Детаљније</a>' in out, out
+    assert (
+        '<a class="wt-go" href="/x">Важни датуми</a>' in out and 'Упис страних студената <a class="wt-go" href="/y">Детаљније</a>' in out
+    ), out
     assert '<span class="wt-amt">111.000,00 динара</span>' in out, out
     print("ok")

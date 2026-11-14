@@ -17,6 +17,7 @@ Usage: runs.py snap | save EXIT ARGS... | report [--last N] [--file runs.jsonl] 
             it; quiet: the rest; plan.py hot); --delay: minutes GitHub starts a run late, added to every run. The
             candidates are every hour's :52, as sync.yml. Times in UTC and in Belgrade (winter +1, summer +2).
 """
+
 import bisect
 import datetime as dt
 import itertools
@@ -38,8 +39,7 @@ import plan  # noqa: E402
 DB = Path(os.getenv("DB", plan.ROOT / "nastava.db"))
 BG = ZoneInfo("Europe/Belgrade")
 # The schedule in use (pages/wrangler.toml crons, src/index.js SLOTS): UTC minute of day -> its slot, every day.
-NOW = {6 * 60 + 17: "morning", 10 * 60 + 17: "noon", 14 * 60 + 17: "afternoon", 18 * 60 + 17: "evening",
-       21 * 60 + 17: "late"}
+NOW = {6 * 60 + 17: "morning", 10 * 60 + 17: "noon", 14 * 60 + 17: "afternoon", 18 * 60 + 17: "evening", 21 * 60 + 17: "late"}
 BIN = 10  # minutes: the optimizer's histogram
 
 
@@ -59,6 +59,7 @@ def seasons(db):
         if y not in wins:
             wins[y] = plan.for_year(cals, y)
         return "hot" if plan.hot(d, wins[y]) else "quiet"
+
     return season
 
 
@@ -112,8 +113,7 @@ def stats(ws):
         return "no posts"
     a = np.sort(np.array(ws))
     f = lambda m: f"{int(m // 60)}h{int(m % 60):02}"
-    return (f"mean {f(a.mean())}, median {f(np.median(a))}, 95% within {f(np.percentile(a, 95))}, "
-            f"{(a <= 180).mean():.0%} within 3h")
+    return f"mean {f(a.mean())}, median {f(np.median(a))}, 95% within {f(np.percentile(a, 95))}, {(a <= 180).mean():.0%} within 3h"
 
 
 def best(posts, season, n, delay=0, top=3):
@@ -144,11 +144,12 @@ def schedule(since, delay):
     if not posts:
         sys.exit(f"no posts since {since}")
     per = Counter(s for _, s in posts)
-    days = Counter(season(posts[0][0].date() + dt.timedelta(days=i))
-                   for i in range((posts[-1][0].date() - posts[0][0].date()).days + 1))
-    print(f"{len(posts)} posts since {since}: {per['hot']} on {days['hot']} hot days "
-          f"({per['hot'] / max(days['hot'], 1):.1f} a day), {per['quiet']} on {days['quiet']} quiet days "
-          f"({per['quiet'] / max(days['quiet'], 1):.1f} a day)\n")
+    days = Counter(season(posts[0][0].date() + dt.timedelta(days=i)) for i in range((posts[-1][0].date() - posts[0][0].date()).days + 1))
+    print(
+        f"{len(posts)} posts since {since}: {per['hot']} on {days['hot']} hot days "
+        f"({per['hot'] / max(days['hot'], 1):.1f} a day), {per['quiet']} on {days['quiet']} quiet days "
+        f"({per['quiet'] / max(days['quiet'], 1):.1f} a day)\n"
+    )
 
     # When posts appear (Belgrade time): the share per hour, per season.
     print("Posts by hour, Belgrade time (% of the season's posts):")
@@ -157,8 +158,12 @@ def schedule(since, delay):
         n = sum(h.values()) or 1
         print(f"  {s:5} " + " ".join(f"{x:02}:{100 * h[x] / n:4.1f}" for x in range(24)))
     wd = Counter((t.astimezone(BG).weekday(), s) for t, s in posts)
-    print("Posts by weekday (Mon..Sun), hot | quiet: "
-          + " ".join(f"{wd[d, 'hot']}" for d in range(7)) + " | " + " ".join(f"{wd[d, 'quiet']}" for d in range(7)))
+    print(
+        "Posts by weekday (Mon..Sun), hot | quiet: "
+        + " ".join(f"{wd[d, 'hot']}" for d in range(7))
+        + " | "
+        + " ".join(f"{wd[d, 'quiet']}" for d in range(7))
+    )
     mon = Counter(t.astimezone(BG).month for t, _ in posts)
     print("Posts by month (Jan..Dec): " + " ".join(str(mon[m]) for m in range(1, 13)) + "\n")
 
@@ -185,8 +190,19 @@ def schedule(since, delay):
 REPO = os.getenv("GITHUB_REPOSITORY", "KostaJovanovic/nastava")
 RUN_DIR = Path(os.getenv("RUN_DIR") or ".")
 # What a scraper adds: a new row (a post, a page's new version) has a rowid above the snapshot's.
-TABLES = ["posts", "vesti", "cent_notices", "cent_pages", "katedre_pages", "study_pages", "study_files", "teachers",
-          "subjects", "wiki_pages", "departments"]
+TABLES = [
+    "posts",
+    "vesti",
+    "cent_notices",
+    "cent_pages",
+    "katedre_pages",
+    "study_pages",
+    "study_files",
+    "teachers",
+    "subjects",
+    "wiki_pages",
+    "departments",
+]
 UTC = lambda s: dt.datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(dt.timezone.utc)
 iso = lambda t: t.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -239,8 +255,7 @@ def scrapers(path):
         return out
     for line in path.read_text(encoding="utf-8").splitlines():
         r = json.loads(line)
-        x = out.setdefault(r["scraper"], dict(requests=0, seconds=0.0, bytes=0, retries=0, errors={}, slowest=[],
-                                               hosts={}))
+        x = out.setdefault(r["scraper"], dict(requests=0, seconds=0.0, bytes=0, retries=0, errors={}, slowest=[], hosts={}))
         h = x["hosts"].setdefault(r["host"], dict(n=0, s=0.0, errors=0, etag=0, modified=0))
         bad = not isinstance(r["status"], int) or r["status"] >= 400
         x["requests"] += 1
@@ -268,8 +283,11 @@ def steps(path):
     if path.exists():
         for line in path.read_text(encoding="utf-8").splitlines():
             name, a, b, rc = line.split("\t")
-            out.append(dict(name=name, start=iso(dt.datetime.fromtimestamp(float(a), dt.timezone.utc)),
-                            s=round(float(b) - float(a), 1), rc=int(rc)))
+            out.append(
+                dict(
+                    name=name, start=iso(dt.datetime.fromtimestamp(float(a), dt.timezone.utc)), s=round(float(b) - float(a), 1), rc=int(rc)
+                )
+            )
     return out
 
 
@@ -281,8 +299,9 @@ def found(db, before, at):
     new = {t: after[t] - before.get(t, 0) for t in TABLES if after[t] > before.get(t, 0)}
     out = dict(new=new)
     if new.get("katedre_pages"):
-        out["katedre"] = dict(db.execute("select site, count(*) from katedre_pages where rowid > ? group by site",
-                                         (before["katedre_pages"],)))
+        out["katedre"] = dict(
+            db.execute("select site, count(*) from katedre_pages where rowid > ? group by site", (before["katedre_pages"],))
+        )
     waits = []
     for (p,) in db.execute("select posted from posts where rowid > ?", (before.get("posts", 0),)):
         m = (at - UTC(p)).total_seconds() / 60
@@ -308,11 +327,21 @@ def save(code, args):
     plan_line = (RUN_DIR / "plan.txt").read_text().strip() if (RUN_DIR / "plan.txt").exists() else None
     today = now.date()
     entry = dict(
-        v=1, started=st[0]["start"] if st else iso(now), ended=iso(now), where="github" if os.getenv("GITHUB_ACTIONS") else "local",
+        v=1,
+        started=st[0]["start"] if st else iso(now),
+        ended=iso(now),
+        where="github" if os.getenv("GITHUB_ACTIONS") else "local",
         commit=subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip(),
-        args=args, plan=plan_line, season=seasons(db)(today), weekday=today.weekday(), exit=int(code),
+        args=args,
+        plan=plan_line,
+        season=seasons(db)(today),
+        weekday=today.weekday(),
+        exit=int(code),
         failed=(RUN_DIR / "failed.txt").read_text().split() if (RUN_DIR / "failed.txt").exists() else [],
-        github=github(), steps=st, scrapers=scrapers(RUN_DIR / "requests.jsonl"))
+        github=github(),
+        steps=st,
+        scrapers=scrapers(RUN_DIR / "requests.jsonl"),
+    )
     if before:
         nastava_end = next((s for s in st if s["name"] == "nastava"), None)
         at = UTC(nastava_end["start"]) + dt.timedelta(seconds=nastava_end["s"]) if nastava_end else now
@@ -324,10 +353,13 @@ def save(code, args):
             extra = (UTC(push["live"]) - at).total_seconds() / 60
             entry["found"]["post_live"] = [round(w + extra) for w in entry["found"]["post_waits"]]
     site = plan.ROOT / "pages" / ".build" / "site"
-    entry["sizes"] = dict(db=size(DB), site_tar=int((RUN_DIR / "site_tar").read_text()) if (RUN_DIR / "site_tar").exists() else None,
-                          state=int((RUN_DIR / "state").read_text()) if (RUN_DIR / "state").exists() else None,
-                          pages=sum(1 for _ in site.rglob("index.html")) if site.exists() else None,
-                          pagefind=size(site / "pagefind"))
+    entry["sizes"] = dict(
+        db=size(DB),
+        site_tar=int((RUN_DIR / "site_tar").read_text()) if (RUN_DIR / "site_tar").exists() else None,
+        state=int((RUN_DIR / "state").read_text()) if (RUN_DIR / "state").exists() else None,
+        pages=sum(1 for _ in site.rglob("index.html")) if site.exists() else None,
+        pagefind=size(site / "pagefind"),
+    )
     entry["down"] = sorted(h for x in entry["scrapers"].values() for h, v in x["hosts"].items() if v["errors"] == v["n"])
     line = json.dumps(entry, ensure_ascii=False)
     (RUN_DIR / "run.json").write_text(line, encoding="utf-8")
@@ -339,8 +371,18 @@ def save(code, args):
     # a lock (or one asset per run) if that ever matters.
     d = Path(tempfile.mkdtemp())
     if gh("release", "view", "runs", "-R", REPO).returncode:
-        gh("release", "create", "runs", "-R", REPO, "--latest=false", "--title", "runs",
-           "--notes", "The scrape runs' log (ci/runs.py): one JSON line a run.")
+        gh(
+            "release",
+            "create",
+            "runs",
+            "-R",
+            REPO,
+            "--latest=false",
+            "--title",
+            "runs",
+            "--notes",
+            "The scrape runs' log (ci/runs.py): one JSON line a run.",
+        )
     gh("release", "download", "runs", "-R", REPO, "-p", "runs.jsonl", "-D", str(d))
     with open(d / "runs.jsonl", "a", encoding="utf-8") as f:
         f.write(line + "\n")
@@ -355,17 +397,28 @@ def mins(s):
 def summary(e):
     """The run page's summary on GitHub (markdown)."""
     g = e.get("github") or {}
-    out = [f"### Run {e['started']} · {e['plan'] or ' '.join(e['args'])} · {e['season']} · exit {e['exit']}"
-           + (f" · failed: {', '.join(e['failed'])}" if e["failed"] else ""), ""]
+    out = [
+        f"### Run {e['started']} · {e['plan'] or ' '.join(e['args'])} · {e['season']} · exit {e['exit']}"
+        + (f" · failed: {', '.join(e['failed'])}" if e["failed"] else ""),
+        "",
+    ]
     if g.get("due") and g.get("created"):
-        out.append(f"GitHub started it {mins((UTC(g['created']) - UTC(g['due'])).total_seconds())} late"
-                   + (f"; setup {mins((UTC(e['steps'][0]['start']) - UTC(g['job_started'])).total_seconds())}"
-                      if g.get("job_started") and e["steps"] else "") + ".\n")
+        out.append(
+            f"GitHub started it {mins((UTC(g['created']) - UTC(g['due'])).total_seconds())} late"
+            + (
+                f"; setup {mins((UTC(e['steps'][0]['start']) - UTC(g['job_started'])).total_seconds())}"
+                if g.get("job_started") and e["steps"]
+                else ""
+            )
+            + ".\n"
+        )
     out += ["| step | time | exit |", "|---|---:|---:|"] + [f"| {s['name']} | {mins(s['s'])} | {s['rc']} |" for s in e["steps"]]
     if e["scrapers"]:
         out += ["", "| scraper | requests | network | MB | errors | retries |", "|---|---:|---:|---:|---|---:|"]
-        out += [f"| {k} | {x['requests']} | {mins(x['seconds'])} | {x['bytes'] / 1e6:.1f} | {x['errors'] or ''} | {x['retries']} |"
-                for k, x in e["scrapers"].items()]
+        out += [
+            f"| {k} | {x['requests']} | {mins(x['seconds'])} | {x['bytes'] / 1e6:.1f} | {x['errors'] or ''} | {x['retries']} |"
+            for k, x in e["scrapers"].items()
+        ]
     f = e.get("found") or {}
     if f.get("new"):
         out += ["", "New: " + ", ".join(f"{k} {n}" for k, n in f["new"].items())]
@@ -391,16 +444,25 @@ def report(last, file):
         rs = [r for r in runs if r["where"] == where]
         if not rs:
             continue
-        print(f"\n== {where}: {len(rs)} runs, {sum(r['exit'] != 0 for r in rs)} red"
-              + (f" ({', '.join(f'{k} {n}' for k, n in Counter(f for r in rs for f in r['failed']).most_common())})"
-                 if any(r["failed"] for r in rs) else ""))
-        late = [(UTC(r["github"]["created"]) - UTC(r["github"]["due"])).total_seconds() / 60
-                for r in rs if (r.get("github") or {}).get("due")]
+        print(
+            f"\n== {where}: {len(rs)} runs, {sum(r['exit'] != 0 for r in rs)} red"
+            + (
+                f" ({', '.join(f'{k} {n}' for k, n in Counter(f for r in rs for f in r['failed']).most_common())})"
+                if any(r["failed"] for r in rs)
+                else ""
+            )
+        )
+        late = [
+            (UTC(r["github"]["created"]) - UTC(r["github"]["due"])).total_seconds() / 60 for r in rs if (r.get("github") or {}).get("due")
+        ]
         if late:
             print(f"GitHub's delay: median {pct(late, 50):.0f} min, 90% within {pct(late, 90):.0f}, worst {max(late):.0f}")
         # Setup: the job's start to deploy.sh's first step (checkout, uv, the push keys).
-        setup = [(UTC(r["steps"][0]["start"]) - UTC(r["github"]["job_started"])).total_seconds()
-                 for r in rs if (r.get("github") or {}).get("job_started") and r["steps"]]
+        setup = [
+            (UTC(r["steps"][0]["start"]) - UTC(r["github"]["job_started"])).total_seconds()
+            for r in rs
+            if (r.get("github") or {}).get("job_started") and r["steps"]
+        ]
         if setup:
             print(f"GitHub's setup before the first step: median {mins(pct(setup, 50))}, worst {mins(max(setup))}")
         print("Steps (median / worst):")
@@ -419,8 +481,10 @@ def report(last, file):
             err = Counter()
             for x in xs:
                 err.update(x["errors"])
-            print(f"  {k:12} {pct([x['requests'] for x in xs], 50):5.0f} req, {mins(pct([x['seconds'] for x in xs], 50)):>7}"
-                  f", {sum(x['retries'] for x in xs)} retries, errors {dict(err) or 0}")
+            print(
+                f"  {k:12} {pct([x['requests'] for x in xs], 50):5.0f} req, {mins(pct([x['seconds'] for x in xs], 50)):>7}"
+                f", {sum(x['retries'] for x in xs)} retries, errors {dict(err) or 0}"
+            )
         hosts = defaultdict(lambda: Counter())
         for r in rs:
             for x in r["scrapers"].values():
@@ -428,8 +492,10 @@ def report(last, file):
                     hosts[h].update(v)
         print("Sites (requests, mean s, errors, ETag, Last-Modified):")
         for h, v in sorted(hosts.items(), key=lambda x: -x[1]["n"]):
-            print(f"  {h:28} {v['n']:6} {v['s'] / v['n']:5.2f}s {v['errors'] / v['n']:5.1%} err "
-                  f"{v['etag'] / v['n']:4.0%} etag {v['modified'] / v['n']:4.0%} modified")
+            print(
+                f"  {h:28} {v['n']:6} {v['s'] / v['n']:5.2f}s {v['errors'] / v['n']:5.1%} err "
+                f"{v['etag'] / v['n']:4.0%} etag {v['modified'] / v['n']:4.0%} modified"
+            )
         down = Counter(h for r in rs for h in r.get("down", []))
         if down:
             print("Did not answer (runs): " + ", ".join(f"{h} {n}" for h, n in down.most_common()))
@@ -452,22 +518,37 @@ def report(last, file):
             print(f"A post on the site after: {stats(live)}")
         sz = [r["sizes"] for r in rs if r.get("sizes")]
         if sz:
-            print("Sizes, first -> last: " + ", ".join(
-                f"{k} {sz[0][k] / 1e6 if k != 'pages' else sz[0][k]:.0f} -> {sz[-1][k] / 1e6 if k != 'pages' else sz[-1][k]:.0f}"
-                for k in sz[0] if sz[0][k] and sz[-1].get(k)) + " (MB; pages: count)")
+            print(
+                "Sizes, first -> last: "
+                + ", ".join(
+                    f"{k} {sz[0][k] / 1e6 if k != 'pages' else sz[0][k]:.0f} -> {sz[-1][k] / 1e6 if k != 'pages' else sz[-1][k]:.0f}"
+                    for k in sz[0]
+                    if sz[0][k] and sz[-1].get(k)
+                )
+                + " (MB; pages: count)"
+            )
         ps = [r["push"] for r in rs if r.get("push")]
         if ps:
             subs = [p["subscribers"] for p in ps if "subscribers" in p]
-            print(f"Notifications: {sum(p.get('sent', 0) for p in ps)} sent, {sum(p.get('gone', 0) for p in ps)} gone, "
-                  f"{sum(p.get('failed', 0) for p in ps)} failed" + (f"; subscribers {subs[0]} -> {subs[-1]}" if subs else ""))
+            print(
+                f"Notifications: {sum(p.get('sent', 0) for p in ps)} sent, {sum(p.get('gone', 0) for p in ps)} gone, "
+                f"{sum(p.get('failed', 0) for p in ps)} failed" + (f"; subscribers {subs[0]} -> {subs[-1]}" if subs else "")
+            )
 
 
 if __name__ == "__main__":
     # A post at 10:00 waits for 10:52; one after the day's last run for the next day's first.
-    _r = [(dt.datetime(2026, 1, 5, 10, 52, tzinfo=dt.timezone.utc), "noon", "quiet"),
-          (dt.datetime(2026, 1, 6, 10, 52, tzinfo=dt.timezone.utc), "noon", "quiet")]
-    _w, _t, _u = replay([(dt.datetime(2026, 1, 5, 10, 0, tzinfo=dt.timezone.utc), "quiet"),
-                         (dt.datetime(2026, 1, 5, 11, 0, tzinfo=dt.timezone.utc), "quiet")], _r)
+    _r = [
+        (dt.datetime(2026, 1, 5, 10, 52, tzinfo=dt.timezone.utc), "noon", "quiet"),
+        (dt.datetime(2026, 1, 6, 10, 52, tzinfo=dt.timezone.utc), "noon", "quiet"),
+    ]
+    _w, _t, _u = replay(
+        [
+            (dt.datetime(2026, 1, 5, 10, 0, tzinfo=dt.timezone.utc), "quiet"),
+            (dt.datetime(2026, 1, 5, 11, 0, tzinfo=dt.timezone.utc), "quiet"),
+        ],
+        _r,
+    )
     assert [w for w, _ in _w] == [52, 23 * 60 + 52] and _u["noon", "quiet"] == 1, (_w, _u)
     assert hhmm(5 * 60 + 52) == "05:52 UTC (6:52/7:52)" and hhmm(23 * 60 + 52) == "23:52 UTC (0:52/1:52)"
     args = sys.argv[1:]
@@ -475,11 +556,19 @@ if __name__ == "__main__":
     # The parse of requests.jsonl: an answer and a failed request.
     _d = Path(tempfile.mkdtemp())
     (_d / "r.jsonl").write_text(
-        json.dumps(dict(scraper="katedre", url="https://a/x", host="a", status=200, s=1.5, bytes=10, etag=True)) + "\n"
-        + json.dumps(dict(scraper="katedre", url="https://b/y", host="b", status="ConnectTimeout", s=60.0)) + "\n")
+        json.dumps(dict(scraper="katedre", url="https://a/x", host="a", status=200, s=1.5, bytes=10, etag=True))
+        + "\n"
+        + json.dumps(dict(scraper="katedre", url="https://b/y", host="b", status="ConnectTimeout", s=60.0))
+        + "\n"
+    )
     _s = scrapers(_d / "r.jsonl")["katedre"]
     assert (_s["requests"], _s["errors"], _s["hosts"]["a"]["etag"], _s["hosts"]["b"]["errors"], _s["slowest"][0][1]) == (
-        2, {"ConnectTimeout": 1}, 1, 1, "https://b/y"), _s
+        2,
+        {"ConnectTimeout": 1},
+        1,
+        1,
+        "https://b/y",
+    ), _s
     match args:
         case ["snap"]:
             snap()

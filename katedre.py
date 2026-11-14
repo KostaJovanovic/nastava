@@ -12,6 +12,7 @@ Usage: katedre.py sync [site ...]
   sync   fetch each site's announcement pages (or only the named sites'), store new versions and notices; a page or
          notice no longer there is marked gone.
 """
+
 import json
 import hashlib
 import os
@@ -38,21 +39,28 @@ MAX = int(os.getenv("MAX", "400"))  # pages a site, so a calendar or a gallery c
 # Each site: the pages a crawl starts from (read for their links), and the pages it keeps (its announcements; ie's
 # subject pages also have the subject's material): only those are followed and stored.
 SITES = {
-    "ie": (["https://ie.mas.bg.ac.rs/predmeti.php", "https://ie.mas.bg.ac.rs/novosti.php"],
-           r"/(predmeti_p\.php\?SchoolSubjectID=\d+|novosti\.php)$"),
+    "ie": (
+        ["https://ie.mas.bg.ac.rs/predmeti.php", "https://ie.mas.bg.ac.rs/novosti.php"],
+        r"/(predmeti_p\.php\?SchoolSubjectID=\d+|novosti\.php)$",
+    ),
     "meh": (["https://meh.mas.bg.ac.rs/vesti/"], r"/vesti/(page/\d+/)?$"),
     "bmi": (["https://bmi.mas.bg.ac.rs/vesti/"], r"/vesti/$"),
     # Its home page shows the news from these with a script.
-    "pt": (["https://pt.mas.bg.ac.rs/api.php?tip=vesti", "https://pt.mas.bg.ac.rs/api.php?tip=poslovi"],
-           r"/api\.php\?tip=(vesti|poslovi)$"),
+    "pt": (
+        ["https://pt.mas.bg.ac.rs/api.php?tip=vesti", "https://pt.mas.bg.ac.rs/api.php?tip=poslovi"],
+        r"/api\.php\?tip=(vesti|poslovi)$",
+    ),
     "fluidi": (["https://fluidi.mas.bg.ac.rs/"], r"^https://fluidi\.mas\.bg\.ac\.rs/[a-z]+/$"),
     "hidro": (["https://hidro.mas.bg.ac.rs/obavestenja.html"], r"/obavestenja\.html$"),
     "ciah": (["https://ciah.mas.bg.ac.rs/obavestenja"], r"/obavestenja$"),
 }
 # Not pages: WordPress's own, logins, feeds, a Moodle (a login), English copies, a directory listing's sort links, a
 # wiki's actions (log in, edit, history) and a page again in another language.
-SKIP = re.compile(r"/(wp-[a-z]+|feed|login|wp-login\.php|xmlrpc\.php|cdn-cgi|en|moodle)(/|$)|-en\.html$"
-                  r"|[?&](C=|replytocom=|share=|do=|rev=|lang=)", re.I)
+SKIP = re.compile(
+    r"/(wp-[a-z]+|feed|login|wp-login\.php|xmlrpc\.php|cdn-cgi|en|moodle)(/|$)|-en\.html$"
+    r"|[?&](C=|replytocom=|share=|do=|rev=|lang=)",
+    re.I,
+)
 # The part of a page that is its content; else the whole body.
 MAIN = ("main", "#main-content", "#content", ".entry-content", "article")
 KEEP = {"href", "src", "alt", "title", "colspan", "rowspan"}
@@ -81,7 +89,7 @@ def parse(html, url):
     follow = [urljoin(url, a["href"]) for a in soup.find_all("a", href=True)]
     follow += [urljoin(url, f["src"]) for f in soup.find_all(["frame", "iframe"], src=True)]
     for m in soup.find_all("meta", attrs={"http-equiv": re.compile("refresh", re.I)}):
-        if (r := re.search(r"url\s*=\s*['\"]?([^'\"\s;]+)", m.get("content", ""), re.I)):
+        if r := re.search(r"url\s*=\s*['\"]?([^'\"\s;]+)", m.get("content", ""), re.I):
             follow.append(urljoin(url, r[1]))
     main = next((x for sel in MAIN if (x := soup.select_one(sel))), soup.body or soup)
     for t in main.find_all(["script", "style", "noscript", "form", "svg", "nav", "header", "footer"]):
@@ -123,8 +131,9 @@ def store(db, site, url, title, content, seen):
     newest). Returns whether it differs from the newest before."""
     sha = sha_of(content)
     last = db.execute("select sha from katedre_pages where url = ? order by last_seen desc limit 1", (url,)).fetchone()
-    if db.execute("update katedre_pages set last_seen = ?, title = ?, gone = 0 where url = ? and sha = ?",
-                  (seen, title, url, sha)).rowcount:
+    if db.execute(
+        "update katedre_pages set last_seen = ?, title = ?, gone = 0 where url = ? and sha = ?", (seen, title, url, sha)
+    ).rowcount:
         return last[0] != sha
     db.execute("insert into katedre_pages values (?, ?, ?, ?, ?, ?, ?, 0)", (url, sha, site, title, content, seen, seen))
     return True
@@ -143,7 +152,7 @@ def title_of(html):
     skip = lambda x: not x or re.fullmatch(GREETING, x, re.I) or re.fullmatch(SHOUT, x, re.I)
     first = next((x for x in lines if x), "")
     i = lines.index(first)
-    if first and len(first) <= 90 and not skip(first) and any(lines[i + 1:]):
+    if first and len(first) <= 90 and not skip(first) and any(lines[i + 1 :]):
         rest = re.split(LINE, html, maxsplit=i + 1)[-1]
         title, html = first, re.sub(r"^(\s*<br\s*/?>)+", "", rest).strip()
     else:
@@ -188,14 +197,15 @@ def finish(raw):
         title, body = (n["title"], html) if n.get("title") else title_of(html)
         out.append(dict(label=n["label"], date=n.get("date") or day(n["label"]), title=title, html=body, files=n["files"]))
     for i, n in enumerate(out):
-        n["date"] = n["date"] or next((o["date"] for o in out[i + 1:] + out[i::-1] if o["date"]), None)
+        n["date"] = n["date"] or next((o["date"] for o in out[i + 1 :] + out[i::-1] if o["date"]), None)
     return out
 
 
 def files_in(el, only_files=False):
     """[href, text] of the links in el; only_files: those to a file (a pdf, not a page)."""
-    return [[a["href"], a.get_text(strip=True)] for a in el.find_all("a", href=True)
-            if not only_files or FILE.search(urlsplit(a["href"]).path)]
+    return [
+        [a["href"], a.get_text(strip=True)] for a in el.find_all("a", href=True) if not only_files or FILE.search(urlsplit(a["href"]).path)
+    ]
 
 
 def inner(els):
@@ -210,8 +220,13 @@ def ie_notices(soup):
     for d in h1.parent.find_all("div", recursive=False) if h1 else []:
         hs = d.find_all("h2", recursive=False)
         if len(hs) >= 2:
-            raw.append(dict(label=hs[0].get_text(" ", strip=True), html=hs[1].decode_contents(),
-                            files=[f for f in files_in(d) if f not in files_in(hs[1])]))
+            raw.append(
+                dict(
+                    label=hs[0].get_text(" ", strip=True),
+                    html=hs[1].decode_contents(),
+                    files=[f for f in files_in(d) if f not in files_in(hs[1])],
+                )
+            )
     return raw
 
 
@@ -237,8 +252,7 @@ def fluidi_notices(soup):
     for h in soup.find_all("h2"):
         d, p = h.find_next_sibling("div"), h.find_next_sibling("p")
         if d and p and day(d.get_text()):
-            raw.append(dict(label=d.get_text(strip=True), title=h.get_text(" ", strip=True), html=p.decode_contents(),
-                            files=[]))
+            raw.append(dict(label=d.get_text(strip=True), title=h.get_text(" ", strip=True), html=p.decode_contents(), files=[]))
     return raw
 
 
@@ -267,8 +281,14 @@ def hidro_notices(soup):
         if day(i.get_text()) and i.parent.name == "p":
             label, p = i.get_text(strip=True), i.parent
             i.decompose()
-            raw.append(dict(label=label, title=None, html=re.sub(r"\(\s*\)\s*$", "", p.decode_contents().strip()),
-                            files=files_in(p, only_files=True)))
+            raw.append(
+                dict(
+                    label=label,
+                    title=None,
+                    html=re.sub(r"\(\s*\)\s*$", "", p.decode_contents().strip()),
+                    files=files_in(p, only_files=True),
+                )
+            )
     return raw
 
 
@@ -280,8 +300,14 @@ def bmi_notices(soup):
         link = h and h.find("a", href=True)
         if t and h:
             more = f'<p><a href="{link["href"]}">Pročitaj vest</a></p>' if link else ""
-            raw.append(dict(label=t.get_text(strip=True), title=h.get_text(" ", strip=True),
-                            html=inner(p for p in a.find_all("p") if not p.find("time")) + more, files=[]))
+            raw.append(
+                dict(
+                    label=t.get_text(strip=True),
+                    title=h.get_text(" ", strip=True),
+                    html=inner(p for p in a.find_all("p") if not p.find("time")) + more,
+                    files=[],
+                )
+            )
     return raw
 
 
@@ -301,9 +327,10 @@ def meh_notices(soup):
         posted = re.search(r"\s*-\s*датум објаве\s*(" + DATE + r"\.?)\s*$", label)
         when = next((d for m in re.finditer(DATE, strip(html)) if (d := day(m[0], date.today()))), None)
         up = re.search(r"/uploads/(20\d\d)/(\d\d)/", html)
-        title = re.sub(r"^Катедра за механизацију\s*-\s*", "", label[:posted.start()] if posted else label)
-        raw.append(dict(label=label, title=title, html=html, files=[],
-                        date=(posted and day(posted[1])) or when or (up and f"{up[1]}-{up[2]}-01")))
+        title = re.sub(r"^Катедра за механизацију\s*-\s*", "", label[: posted.start()] if posted else label)
+        raw.append(
+            dict(label=label, title=title, html=html, files=[], date=(posted and day(posted[1])) or when or (up and f"{up[1]}-{up[2]}-01"))
+        )
     return raw
 
 
@@ -312,17 +339,33 @@ def pt_notices(text):
     raw = []
     for x in json.loads(text or "[]") or []:
         embed = re.search(r'src="([^"]+)"', x.get("embed") or "")
-        html = (x.get("tekst") or "") + (f'<p><a href="{embed[1]}">{embed[1]}</a></p>' if embed else "") + (
-            f'<p><a href="{x["link_url"]}">{x.get("link_tekst") or x["link_url"]}</a></p>' if x.get("link_url") else "")
-        raw.append(dict(label=x.get("datum") or x.get("naslov") or "", title=x.get("naslov"), html=html,
-                        files=[[x["att_url"], x.get("att_name") or ""]] if x.get("att_url") else []))
+        html = (
+            (x.get("tekst") or "")
+            + (f'<p><a href="{embed[1]}">{embed[1]}</a></p>' if embed else "")
+            + (f'<p><a href="{x["link_url"]}">{x.get("link_tekst") or x["link_url"]}</a></p>' if x.get("link_url") else "")
+        )
+        raw.append(
+            dict(
+                label=x.get("datum") or x.get("naslov") or "",
+                title=x.get("naslov"),
+                html=html,
+                files=[[x["att_url"], x.get("att_name") or ""]] if x.get("att_url") else [],
+            )
+        )
     return raw
 
 
 # Each kept page's reader: its address -> the notices as found (finish makes them notices). pt's is JSON, not a page.
-NOTICES = [(r"ie\.mas\.bg\.ac\.rs/novosti\.php$", ie_novosti), (r"ie\.mas\.bg\.ac\.rs/predmeti_p", ie_notices),
-           (r"fluidi\.", fluidi_notices), (r"ciah\.", ciah_notices), (r"hidro\.", hidro_notices),
-           (r"bmi\.mas\.bg\.ac\.rs/vesti/$", bmi_notices), (r"meh\.", meh_notices), (r"pt\.mas\.bg\.ac\.rs/api\.php", pt_notices)]
+NOTICES = [
+    (r"ie\.mas\.bg\.ac\.rs/novosti\.php$", ie_novosti),
+    (r"ie\.mas\.bg\.ac\.rs/predmeti_p", ie_notices),
+    (r"fluidi\.", fluidi_notices),
+    (r"ciah\.", ciah_notices),
+    (r"hidro\.", hidro_notices),
+    (r"bmi\.mas\.bg\.ac\.rs/vesti/$", bmi_notices),
+    (r"meh\.", meh_notices),
+    (r"pt\.mas\.bg\.ac\.rs/api\.php", pt_notices),
+]
 
 
 def notices_of(url, content):
@@ -342,13 +385,14 @@ def store_notices(db, site, url, notices, seen):
         count[n["label"]] = count.get(n["label"], 0) + 1
         key = hashlib.sha1(f"{url}|{n['label']}|{count[n['label']]}".encode()).hexdigest()
         keys.append(key)
-        db.execute("insert into katedre_notices (key, site, url, title, label, date, html, files, first_seen, last_seen) "
-                   "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict (key) do update set title = excluded.title, "
-                   "date = excluded.date, html = excluded.html, files = excluded.files, last_seen = excluded.last_seen, "
-                   "gone = 0", (key, site, url, n["title"], n["label"], n["date"], n["html"], json.dumps(n["files"]),
-                                seen, seen))
-    db.execute(f"update katedre_notices set gone = 1 where url = ? and key not in ({','.join('?' * len(keys))})",
-               (url, *keys))
+        db.execute(
+            "insert into katedre_notices (key, site, url, title, label, date, html, files, first_seen, last_seen) "
+            "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict (key) do update set title = excluded.title, "
+            "date = excluded.date, html = excluded.html, files = excluded.files, last_seen = excluded.last_seen, "
+            "gone = 0",
+            (key, site, url, n["title"], n["label"], n["date"], n["html"], json.dumps(n["files"]), seen, seen),
+        )
+    db.execute(f"update katedre_notices set gone = 1 where url = ? and key not in ({','.join('?' * len(keys))})", (url, *keys))
 
 
 def fetch(s, url):
@@ -389,17 +433,25 @@ def crawl(db, s, site, starts, keep, seen):
                 store_notices(db, site, url, notices, seen)
             db.commit()
         for u in map(norm, follow):
-            if (urlsplit(u).hostname == host and u not in queued and keep.search(u) and not SKIP.search(u)
-                    and not FILE.search(urlsplit(u).path)):
+            if (
+                urlsplit(u).hostname == host
+                and u not in queued
+                and keep.search(u)
+                and not SKIP.search(u)
+                and not FILE.search(urlsplit(u).path)
+            ):
                 queued.add(u)
                 queue.append(u)
     # A page not reached is gone, unless the crawl stopped early (MAX) or the site did not answer.
     if got and not queue:
-        db.execute(f"update katedre_pages set gone = 1 where site = ? and url not in ({','.join('?' * len(got))})",
-                   (site, *got))
+        db.execute(f"update katedre_pages set gone = 1 where site = ? and url not in ({','.join('?' * len(got))})", (site, *got))
         db.commit()
-    print(f"{site}: {len(got)} pages, {new} new versions" + (f", stopped at {MAX} ({len(queue)} left)" if queue else "")
-          + ("" if got else ", the site did not answer"), flush=True)
+    print(
+        f"{site}: {len(got)} pages, {new} new versions"
+        + (f", stopped at {MAX} ({len(queue)} left)" if queue else "")
+        + ("" if got else ", the site did not answer"),
+        flush=True,
+    )
     return bool(got)
 
 
@@ -417,49 +469,92 @@ def sync(names):
 if __name__ == "__main__":
     assert day("05.11.2026") == "2026-11-05" and day("01.01.1970") is day("16.12.1025") is day("- Bez datuma -") is None
     assert title_of("Konacne ocene<br/>\n<br/>\nVAŽNO") == ("Konacne ocene", "VAŽNO")
-    assert title_of("Poštovani studenti,<br/>Prvi kolokvijum je 12.11.") == ("Prvi kolokvijum je 12.11.", "Poštovani studenti,<br/>Prvi kolokvijum je 12.11.")
-    assert title_of("Poštovani studenti, u prilogu su rezultati.") == ("U prilogu su rezultati.", "Poštovani studenti, u prilogu su rezultati.")
+    assert title_of("Poštovani studenti,<br/>Prvi kolokvijum je 12.11.") == (
+        "Prvi kolokvijum je 12.11.",
+        "Poštovani studenti,<br/>Prvi kolokvijum je 12.11.",
+    )
+    assert title_of("Poštovani studenti, u prilogu su rezultati.") == (
+        "U prilogu su rezultati.",
+        "Poštovani studenti, u prilogu su rezultati.",
+    )
     assert title_of("- Važno -<br/>Upis je u 12h.")[0] == "Upis je u 12h."
-    assert title_of("U prilogu je spisak po grupama za izradu projektnog zadatka. Projekat se realizuje u grupama, a odbrane su 8. i 15. juna.")[0] == "U prilogu je spisak po grupama za izradu projektnog zadatka."
-    assert title_of("Kolokvijum će se održati u sredu, 25. novembra 2026. godine u 14 časova u sali 320, a rezultati biće objavljeni na sajtu.")[0] == "Kolokvijum će se održati u sredu, 25. novembra 2026. godine u 14 časova u sali…"
+    assert (
+        title_of(
+            "U prilogu je spisak po grupama za izradu projektnog zadatka. Projekat se realizuje u grupama, a odbrane su 8. i 15. juna."
+        )[0]
+        == "U prilogu je spisak po grupama za izradu projektnog zadatka."
+    )
+    assert (
+        title_of(
+            "Kolokvijum će se održati u sredu, 25. novembra 2026. godine u 14 časova u sali 320, a rezultati biće objavljeni na sajtu."
+        )[0]
+        == "Kolokvijum će se održati u sredu, 25. novembra 2026. godine u 14 časova u sali…"
+    )
     assert day("25. 9. 2024.") == "2024-09-25" and day("17.06.2026", date(2026, 6, 16)) is None
     _sum = lambda url, html: [(n["label"], n["date"], n["title"], strip(n["html"]), n["files"]) for n in notices_of(url, html)]
-    _n = _sum("https://ie.mas.bg.ac.rs/predmeti_p.php?SchoolSubjectID=5", '<section><div><h1>Vesti</h1>'
-              '<div><h2>09.06.2026</h2><h2>Isto</h2></div><div><h2>09.06.2026</h2><h2>Isto</h2></div>'
-              '<div><h2>16.12.1025</h2><h2>Tema \\\\\\"x\\\\\\"</h2><div><a href="https://ie/f.pdf">f.pdf</a></div></div>'
-              '<div><h2>09.12.2025</h2><h2>Staro</h2></div></div></section>')
-    assert [x[1:3] + x[4:] for x in _n] == [("2026-06-09", "Isto", []), ("2025-12-09", 'Tema "x"', [["https://ie/f.pdf", "f.pdf"]]),
-                                           ("2025-12-09", "Staro", [])], _n
+    _n = _sum(
+        "https://ie.mas.bg.ac.rs/predmeti_p.php?SchoolSubjectID=5",
+        "<section><div><h1>Vesti</h1>"
+        "<div><h2>09.06.2026</h2><h2>Isto</h2></div><div><h2>09.06.2026</h2><h2>Isto</h2></div>"
+        '<div><h2>16.12.1025</h2><h2>Tema \\\\\\"x\\\\\\"</h2><div><a href="https://ie/f.pdf">f.pdf</a></div></div>'
+        "<div><h2>09.12.2025</h2><h2>Staro</h2></div></div></section>",
+    )
+    assert [x[1:3] + x[4:] for x in _n] == [
+        ("2026-06-09", "Isto", []),
+        ("2025-12-09", 'Tema "x"', [["https://ie/f.pdf", "f.pdf"]]),
+        ("2025-12-09", "Staro", []),
+    ], _n
     # The other sites' layouts, from their pages (11.11.2026.).
-    assert _sum("https://ie.mas.bg.ac.rs/novosti.php", '<div><h5>14.10.2019.</h5><p><b> Skup ICES 2019</b><br/><br/>Naši '
-                'studenti,<br/><br/>učestvovali su.</p></div><div><h5>16.03.2020.</h5><p><b> </b><br/><br/>Dragi naši studenti,<br/>'
-                'nastava je obustavljena.</p></div>') == [
+    assert _sum(
+        "https://ie.mas.bg.ac.rs/novosti.php",
+        "<div><h5>14.10.2019.</h5><p><b> Skup ICES 2019</b><br/><br/>Naši "
+        "studenti,<br/><br/>učestvovali su.</p></div><div><h5>16.03.2020.</h5><p><b> </b><br/><br/>Dragi naši studenti,<br/>"
+        "nastava je obustavljena.</p></div>",
+    ) == [
         ("14.10.2019.", "2019-10-14", "Skup ICES 2019", "Naši studenti, učestvovali su.", []),
-        ("16.03.2020.", "2020-03-16", "Nastava je obustavljena.", "Dragi naši studenti, nastava je obustavljena.", [])]
-    assert _sum("https://fluidi.mas.bg.ac.rs/omf/", '<h2> Обавештење о промени учионице </h2><div><span>08.10.2026.</span>'
-                '</div><p>Настава је у учионици <strong>320</strong>.<br/></p><h2> Обавештење </h2><div><span>06.10.2026.</span>'
-                '</div><p><br/></p>') == [("08.10.2026.", "2026-10-08", "Обавештење о промени учионице", "Настава је у учионици 320 .", [])]
-    assert _sum("https://ciah.mas.bg.ac.rs/obavestenja", '<main><h2>Обавештења</h2><p>\n<b>25.7.2022.</b><br/><br/>Обука.</p>'
-                '<p>Пријава <a href="https://ciah/p.doc">ОВДЕ</a> (<a href="https://ciah/multi.html">листа</a>)</p>\n*минимум 5.\n'
-                '<p><b>01.4.2022.</b><br/><br/>Друга.</p></main>') == [
+        ("16.03.2020.", "2020-03-16", "Nastava je obustavljena.", "Dragi naši studenti, nastava je obustavljena.", []),
+    ]
+    assert _sum(
+        "https://fluidi.mas.bg.ac.rs/omf/",
+        "<h2> Обавештење о промени учионице </h2><div><span>08.10.2026.</span>"
+        "</div><p>Настава је у учионици <strong>320</strong>.<br/></p><h2> Обавештење </h2><div><span>06.10.2026.</span>"
+        "</div><p><br/></p>",
+    ) == [("08.10.2026.", "2026-10-08", "Обавештење о промени учионице", "Настава је у учионици 320 .", [])]
+    assert _sum(
+        "https://ciah.mas.bg.ac.rs/obavestenja",
+        "<main><h2>Обавештења</h2><p>\n<b>25.7.2022.</b><br/><br/>Обука.</p>"
+        '<p>Пријава <a href="https://ciah/p.doc">ОВДЕ</a> (<a href="https://ciah/multi.html">листа</a>)</p>\n*минимум 5.\n'
+        "<p><b>01.4.2022.</b><br/><br/>Друга.</p></main>",
+    ) == [
         ("25.7.2022.", "2022-07-25", "Обука.", "Пријава ОВДЕ ( листа ) *минимум 5.", [["https://ciah/p.doc", "ОВДЕ"]]),
-        ("01.4.2022.", "2022-04-01", "Друга.", "Друга.", [])]
-    assert _sum("https://hidro.mas.bg.ac.rs/obavestenja.html", '<p><b>ОБАВЕШТЕЊА</b></p><p>Екскурзија одлаже се за 2027. '
-                'год. (<i>01.09.2026.</i>)</p>') == [("01.09.2026.", "2026-09-01", "Екскурзија одлаже се за 2027. год.",
-                                                     "Екскурзија одлаже се за 2027. год.", [])]
-    assert _sum("https://bmi.mas.bg.ac.rs/vesti/", '<article><div><p><time>25. 9. 2024.</time></p><h2><a href="https://bmi/v/qi/">'
-                "Promocija knjige</a></h2><p>Pozivamo vas.</p></div></article>") == [
-        ("25. 9. 2024.", "2024-09-25", "Promocija knjige", "Pozivamo vas. Pročitaj vest", [])]
-    assert _sum("https://meh.mas.bg.ac.rs/vesti/", '<div><h5>ТУ – <span>резултати</span></h5><p>Колоквијум одржан 11.06.2026. '
-                '<a href="https://meh/wp-content/uploads/2026/06/K3.pdf">овде</a>.</p><hr/><h5>Download</h5><p>Нов материјал '
-                '<a href="https://meh/wp-content/uploads/2025/03/a.pdf">a</a>.</p><hr/><h5>Обавештење</h5><p>Сајт ради.</p><hr/>'
-                '<h5>Катедра за механизацију - Обавештење - датум објаве 31.03.2019.</h5><p>Од 2.4.2019.</p></div>') == [
+        ("01.4.2022.", "2022-04-01", "Друга.", "Друга.", []),
+    ]
+    assert _sum(
+        "https://hidro.mas.bg.ac.rs/obavestenja.html",
+        "<p><b>ОБАВЕШТЕЊА</b></p><p>Екскурзија одлаже се за 2027. год. (<i>01.09.2026.</i>)</p>",
+    ) == [("01.09.2026.", "2026-09-01", "Екскурзија одлаже се за 2027. год.", "Екскурзија одлаже се за 2027. год.", [])]
+    assert _sum(
+        "https://bmi.mas.bg.ac.rs/vesti/",
+        '<article><div><p><time>25. 9. 2024.</time></p><h2><a href="https://bmi/v/qi/">'
+        "Promocija knjige</a></h2><p>Pozivamo vas.</p></div></article>",
+    ) == [("25. 9. 2024.", "2024-09-25", "Promocija knjige", "Pozivamo vas. Pročitaj vest", [])]
+    assert _sum(
+        "https://meh.mas.bg.ac.rs/vesti/",
+        "<div><h5>ТУ – <span>резултати</span></h5><p>Колоквијум одржан 11.06.2026. "
+        '<a href="https://meh/wp-content/uploads/2026/06/K3.pdf">овде</a>.</p><hr/><h5>Download</h5><p>Нов материјал '
+        '<a href="https://meh/wp-content/uploads/2025/03/a.pdf">a</a>.</p><hr/><h5>Обавештење</h5><p>Сајт ради.</p><hr/>'
+        "<h5>Катедра за механизацију - Обавештење - датум објаве 31.03.2019.</h5><p>Од 2.4.2019.</p></div>",
+    ) == [
         ("ТУ – резултати", "2026-06-11", "ТУ – резултати", "Колоквијум одржан 11.06.2026. овде .", []),
-        ("Download", "2025-03-01", "Download", "Нов материјал a .", []), ("Обавештење", "2019-03-31", "Обавештење", "Сајт ради.", []),
-        ("Катедра за механизацију - Обавештење - датум објаве 31.03.2019.", "2019-03-31", "Обавештење", "Од 2.4.2019.", [])]
-    assert _sum("https://pt.mas.bg.ac.rs/api.php?tip=vesti", '[{"naslov": "Procesing", "datum": "02.03.2027.", "tekst": "<p>Kongres.</p>", '
-                '"link_url": "https://procesing.rs", "att_url": "https://pt/a.pdf", "att_name": "Program"}]') == [
-        ("02.03.2027.", "2027-03-02", "Procesing", "Kongres. https://procesing.rs", [["https://pt/a.pdf", "Program"]])]
+        ("Download", "2025-03-01", "Download", "Нов материјал a .", []),
+        ("Обавештење", "2019-03-31", "Обавештење", "Сајт ради.", []),
+        ("Катедра за механизацију - Обавештење - датум објаве 31.03.2019.", "2019-03-31", "Обавештење", "Од 2.4.2019.", []),
+    ]
+    assert _sum(
+        "https://pt.mas.bg.ac.rs/api.php?tip=vesti",
+        '[{"naslov": "Procesing", "datum": "02.03.2027.", "tekst": "<p>Kongres.</p>", '
+        '"link_url": "https://procesing.rs", "att_url": "https://pt/a.pdf", "att_name": "Program"}]',
+    ) == [("02.03.2027.", "2027-03-02", "Procesing", "Kongres. https://procesing.rs", [["https://pt/a.pdf", "Program"]])]
     assert notices_of("https://pt.mas.bg.ac.rs/api.php?tip=poslovi", "[]") == [] and notices_of("https://meh.x/", "") == []
     match sys.argv[1:]:
         case ["sync", *names] if all(n in SITES for n in names):

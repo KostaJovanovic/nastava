@@ -8,6 +8,7 @@ Usage: uv run pages/build.py <nastava.db> <out dir>
 Writes <out>/site, most pages as fragments of shell.html (split_page), runs Pagefind (needs Node's npx) into
 <out>/site/pagefind, then removes the hidden text Pagefind read from the item pages.
 """
+
 import hashlib
 import json
 import re
@@ -37,6 +38,7 @@ from studije import PAGES as STUDY_PAGES, SHOWN, SITE as STUDY_SITE, media_path 
 from nastavnici import photo_urls  # noqa: E402
 from mail import asset_name, TAG as MAIL_TAG  # noqa: E402
 from wiki_tidy import CLASSES as WIKI_CLASSES, lexicon, recase, tidy as wiki_tidy  # noqa: E402
+
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
 KIND = {"post": "obavestenje", "document": "dokument", "vest": "vest", "cent": "obavestenje", "katedra": "obavestenje"}
 RECENT = 20
@@ -50,19 +52,26 @@ SITE_URL = "https://masinci.org"
 PAGEFIND = "pagefind@1.6.0"
 # shortcut: a document page shows and indexes at most this much text; raise it if GitHub Pages' 1 GB allows.
 PAGE_TEXT = 300_000
-CYR = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш",
-               "a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s".split()))
+CYR = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s".split()))
 assert len(CYR) == 30
 
 env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
 # The noun after a number: 1, 21 thread; 2, 3, 4, 22 threada; 5–20, 11–14 threadova.
 # The site's words: a topic is a "thread" (Cyrillic "низ", pismo.js), one post in it a "post".
-FORMS = {"thread": ("thread", "threada", "threadova"), "post": ("post", "posta", "postova"),
-         "odgovor": ("odgovor", "odgovora", "odgovora"), "predmet": ("predmet", "predmeta", "predmeta"),
-         "nastavnik": ("nastavnik", "nastavnika", "nastavnika"), "autor": ("autor", "autora", "autora"),
-         "prilog": ("prilog", "priloga", "priloga"), "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja"),
-         "verzija": ("verzija", "verzije", "verzija"), "čas": ("čas", "časa", "časova"), "poen": ("poen", "poena", "poena"),
-         "rad": ("rad", "rada", "radova")}
+FORMS = {
+    "thread": ("thread", "threada", "threadova"),
+    "post": ("post", "posta", "postova"),
+    "odgovor": ("odgovor", "odgovora", "odgovora"),
+    "predmet": ("predmet", "predmeta", "predmeta"),
+    "nastavnik": ("nastavnik", "nastavnika", "nastavnika"),
+    "autor": ("autor", "autora", "autora"),
+    "prilog": ("prilog", "priloga", "priloga"),
+    "preuzimanje": ("preuzimanje", "preuzimanja", "preuzimanja"),
+    "verzija": ("verzija", "verzije", "verzija"),
+    "čas": ("čas", "časa", "časova"),
+    "poen": ("poen", "poena", "poena"),
+    "rad": ("rad", "rada", "radova"),
+}
 
 
 def plural(n, word):
@@ -76,8 +85,11 @@ env.filters["n"] = lambda n: f"{n:,}".replace(",", ".")
 # An ISO date (2026-11-08...) as the board writes it: 08.11.2026.
 env.filters["dmy"] = lambda iso: ".".join(reversed((iso or "")[:10].split("-"))) + "." if iso else ""
 # The masculine plurals among the katedre; every other name changes only a feminine '-у' (or is neuter).
-KATEDRA_NOM = {"моторе": "мотори", "системе наоружања": "системи наоружања",
-               "хидрауличне машине и енергетске системе": "хидрауличне машине и енергетски системи"}
+KATEDRA_NOM = {
+    "моторе": "мотори",
+    "системе наоружања": "системи наоружања",
+    "хидрауличне машине и енергетске системе": "хидрауличне машине и енергетски системи",
+}
 
 
 def katedra(k):
@@ -123,6 +135,7 @@ def acronyms(name, titles=()):
         a = "".join(w if w[0].isdigit() else w[0] for w in ws)
         out |= {a, re.sub(r"\d+$", "", a)}
     key = "".join(w[0] for w in words if w not in ACR_SKIP and not w[0].isdigit())
+
     def follows(a, b):
         """a's letters in b, in order: 'bmio' in 'biomedicinska...'."""
         rest = iter(b)
@@ -132,8 +145,14 @@ def acronyms(name, titles=()):
         for m in re.finditer(r"(?<!\w)([A-ZА-ЯЂЈЉЊЋЏŠĐČĆŽ]{2,6})(\d?)(?!\w)", title):
             letters, num = fold(m[1]), m[2]
             # Three letters at least: МИ (the smer) is not Механика 3's.
-            if len(letters) > 2 and key and letters[0] == key[0] and follows(key, letters) and follows(letters, "".join(words)) \
-                    and (not num or num in words):
+            if (
+                len(letters) > 2
+                and key
+                and letters[0] == key[0]
+                and follows(key, letters)
+                and follows(letters, "".join(words))
+                and (not num or num in words)
+            ):
                 out.add(letters + num)
     return {a for a in out if len(a) > 1}
 
@@ -159,12 +178,14 @@ LAT = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "
 def lat(s):
     """Serbian Cyrillic to Latin, as pismo.js toLat shows a page by default: for what no script converts (the link
     previews, base.html). Љ is 'LJ' in a word of capitals, 'Lj' otherwise. Escaped text stays escaped (Markup)."""
+
     def letter(m):
         c, l = m[0], LAT.get(m[0].lower())
         if l is None or c == c.lower():
             return l or c
-        after = m.string[m.end():m.end() + 1]
+        after = m.string[m.end() : m.end() + 1]
         return l.upper() if after and after != after.lower() else l[0].upper() + l[1:]
+
     out = re.sub(r"[Ѐ-ӿ]", letter, str(s or ""))
     return Markup(out) if isinstance(s, Markup) else out
 
@@ -209,6 +230,7 @@ def preuzeto(text):
 def clean_html(html, base=BASE, local=lambda value: None, classes=None):
     """Sanitize; a link that local() maps goes to this site, every other relative link to the faculty's page.
     classes: the classes to keep ({tag: {class}}, cent's CENT_CLASSES); none by default."""
+
     def attribute(tag, attr, value):
         if attr not in ("href", "src"):
             return value
@@ -222,18 +244,28 @@ def clean_html(html, base=BASE, local=lambda value: None, classes=None):
 
     # The board's attachment box is in English; in Serbian it reads right in both scripts.
     html = preuzeto(re.sub(r">\s*Attachments\s*<", ">Prilozi<", html or ""))
-    html = nh3.clean(html, tags=nh3.ALLOWED_TAGS | {"tfoot"}, attribute_filter=attribute, allowed_classes=classes,
-                     url_schemes=nh3.ALLOWED_URL_SCHEMES | {"data"}, link_rel="noopener noreferrer")
+    html = nh3.clean(
+        html,
+        tags=nh3.ALLOWED_TAGS | {"tfoot"},
+        attribute_filter=attribute,
+        allowed_classes=classes,
+        url_schemes=nh3.ALLOWED_URL_SCHEMES | {"data"},
+        link_rel="noopener noreferrer",
+    )
     # Kept classes leave the others' attribute empty.
     return (html.replace(' class=""', "") if classes else html) or None
 
 
 # The classes cent_tidy gives cent's pages (style.css .cent-…): the only ones clean_html keeps.
-CENT_CLASSES = {"details": {"cent-acc"}, "summary": {"cent-head"}, "div": {"cent-head", "cent-btns", "cent-c"},
-                "b": {"cent-code"}, "a": {"cent-btn", "cent-file"},
-                # A file's type as on a post's attachments (FILE_KINDS).
-                "span": {"cent-t", "cent-wk", "cent-btn", "att__t"} | {f"att__t--{k}" for k in
-                                                                       ("pdf doc xls ppt zip img file video".split())}}
+CENT_CLASSES = {
+    "details": {"cent-acc"},
+    "summary": {"cent-head"},
+    "div": {"cent-head", "cent-btns", "cent-c"},
+    "b": {"cent-code"},
+    "a": {"cent-btn", "cent-file"},
+    # A file's type as on a post's attachments (FILE_KINDS).
+    "span": {"cent-t", "cent-wk", "cent-btn", "att__t"} | {f"att__t--{k}" for k in ("pdf doc xls ppt zip img file video".split())},
+}
 
 
 def cent_tidy(html):
@@ -262,15 +294,21 @@ def cent_tidy(html):
         links = [a.extract() for a in h.select("a[href]")] if h else []
         mark, title = (h.select_one(".accordion_mark"), h.select_one(".accordion_title")) if h else (None, None)
         d = soup.new_tag("details", attrs={"class": "cent-acc"})
-        d.append(head("summary", txt(mark), txt(title) if title or mark else txt(h), links,
-                      txt(h and h.select_one(".accordion-nedelja"))))
+        d.append(head("summary", txt(mark), txt(title) if title or mark else txt(h), links, txt(h and h.select_one(".accordion-nedelja"))))
         if body := t.select_one(".et_pb_toggle_content"):
             d.append(body.extract())
         t.replace_with(d)
     for row in soup.select(".et_pb_row:has(> #at-col-head)"):
         title = next((txt(c) for c in row.select(":scope > #at-col") if txt(c)), "")
-        row.replace_with(head("div", txt(row.select_one("#at-col-head")), title, row.select("#at-col-attach a[href]"),
-                              txt(row.select_one("#at-col-nedelja"))))
+        row.replace_with(
+            head(
+                "div",
+                txt(row.select_one("#at-col-head")),
+                title,
+                row.select("#at-col-attach a[href]"),
+                txt(row.select_one("#at-col-nedelja")),
+            )
+        )
     for el in soup.select(".et_clickable"):
         # The innermost: a clickable row holds clickable columns, each its own button.
         if el.select_one(".et_clickable") or el.find_parent(class_="cent-btn"):
@@ -279,8 +317,11 @@ def cent_tidy(html):
             el.decompose()
             continue
         a = el.find("a", href=True)
-        b = soup.new_tag("a", attrs={"class": "cent-btn", "href": a["href"]}, string=txt(el)) if a else soup.new_tag(
-            "span", attrs={"class": "cent-btn", "title": "bez linka na sajtu katedre"}, string=txt(el))
+        b = (
+            soup.new_tag("a", attrs={"class": "cent-btn", "href": a["href"]}, string=txt(el))
+            if a
+            else soup.new_tag("span", attrs={"class": "cent-btn", "title": "bez linka na sajtu katedre"}, string=txt(el))
+        )
         row = el.find_parent(class_="et_pb_row")
         if row:
             row["class"] = "cent-btns"
@@ -306,32 +347,47 @@ def cent_tidy(html):
 
 # A board attachment after clean_html: <dl><dt><span></span> <a href>name</a></dt>[<dd>comment</dd>]<dd>(size)
 # preuzeto N puta</dd></dl>.
-ATTACHMENT = re.compile(r'<dl>\s*<dt>(?:<span></span>)?\s*<a href="([^"]+)"[^>]*>([^<]*)</a>\s*</dt>\s*'
-                        r'(?:<dd>((?:(?!</?d[dlt]>).)*)</dd>\s*)?<dd>\(([^)<]*)\)\s*([^<]*)</dd>\s*</dl>', re.S)
+ATTACHMENT = re.compile(
+    r'<dl>\s*<dt>(?:<span></span>)?\s*<a href="([^"]+)"[^>]*>([^<]*)</a>\s*</dt>\s*'
+    r"(?:<dd>((?:(?!</?d[dlt]>).)*)</dd>\s*)?<dd>\(([^)<]*)\)\s*([^<]*)</dd>\s*</dl>",
+    re.S,
+)
 # A file type's colour on its badge (style.css .att__t--*).
-FILE_KINDS = {**dict.fromkeys(["pdf"], "pdf"), **dict.fromkeys(["doc", "docx", "odt", "rtf"], "doc"),
-              **dict.fromkeys(["xls", "xlsx", "ods", "csv"], "xls"), **dict.fromkeys(["ppt", "pptx", "pps", "ppsx", "odp"], "ppt"),
-              **dict.fromkeys(["zip", "rar", "7z"], "zip"), **dict.fromkeys(["jpg", "jpeg", "png", "gif"], "img")}
+FILE_KINDS = {
+    **dict.fromkeys(["pdf"], "pdf"),
+    **dict.fromkeys(["doc", "docx", "odt", "rtf"], "doc"),
+    **dict.fromkeys(["xls", "xlsx", "ods", "csv"], "xls"),
+    **dict.fromkeys(["ppt", "pptx", "pps", "ppsx", "odp"], "ppt"),
+    **dict.fromkeys(["zip", "rar", "7z"], "zip"),
+    **dict.fromkeys(["jpg", "jpeg", "png", "gif"], "img"),
+}
 
 
 def downloads(html):
     """A post's attachments as (attachment id, file name, downloads), from clean_html's output.
     shortcut: the count is as the board showed it when the topic was last fetched (only changed or recent topics are
     fetched again); re-fetch every topic now and then if fresh counts matter."""
-    return [(int(i[1]), unescape(m[2]), int(n[0]) if (n := re.search(r"\d+", m[5])) else 0)
-            for m in ATTACHMENT.finditer(html or "") if (i := re.search(r"file\.php\?id=(\d+)", m[1]))]
+    return [
+        (int(i[1]), unescape(m[2]), int(n[0]) if (n := re.search(r"\d+", m[5])) else 0)
+        for m in ATTACHMENT.finditer(html or "")
+        if (i := re.search(r"file\.php\?id=(\d+)", m[1]))
+    ]
 
 
 def attachments(html):
     """A post's attachments as rows (style.css .att): the file's type as a badge, its name, its comment, its size and
     downloads. It runs on clean_html's output and only moves its parts, which are sanitized already; the type is
     letters only."""
+
     def row(m):
         ext = re.search(r"\.([a-z0-9]{1,5})\s*$", unescape(m[2]).lower())
         ext = ext[1] if ext else ""
         note = f'<span class="att__c">{m[3].strip()}</span>' if m[3] and m[3].strip() else ""
-        return (f'<a class="att" href="{m[1]}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
-                f'{ext.upper() or "FAJL"}</span><span class="att__n">{m[2]}{note}<small>{m[4]} · {m[5].strip()}</small></span></a>')
+        return (
+            f'<a class="att" href="{m[1]}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
+            f'{ext.upper() or "FAJL"}</span><span class="att__n">{m[2]}{note}<small>{m[4]} · {m[5].strip()}</small></span></a>'
+        )
+
     return ATTACHMENT.sub(row, html) if html else html
 
 
@@ -356,9 +412,16 @@ def load_places(db):
             top = forums[top["parent"]]
         # label: the name as shown ('Основне академске студије - Машинско инжењерство'); short: its abbreviation, for
         # URLs and matching; abbr: the name on a phone's home page ('Основне академске студије - МИ', rows.html).
-        smer = smerovi.setdefault(top["id"], {"id": top["id"], "name": top["name"], "short": short_smer(top["name"]),
-                                              "label": smer_label(top["name"]),
-                                              "abbr": smer_abbr(top["name"])})
+        smer = smerovi.setdefault(
+            top["id"],
+            {
+                "id": top["id"],
+                "name": top["name"],
+                "short": short_smer(top["name"]),
+                "label": smer_label(top["name"]),
+                "abbr": smer_abbr(top["name"]),
+            },
+        )
         if f is top:
             place[f["id"]] = (smer, None)
             continue
@@ -386,21 +449,54 @@ def load_items(db, place):
         iso, year = parse_date(p["date"], p["posted"])
         smer, subj = place.get(p["forum"], (None, None))
         html = clean_html(p["html"])
-        items.append(dict(id=f"p{p['id']}", kind="post", title=p["title"], smer=smer, subj=subj,
-                          subject=subj and subj["name"], date=iso, year=year,
-                          topic=p["topic"], num=p["id"], when=p["date"], posted=p["posted"] or "",
-                          author=p["author"], body=preuzeto(p["content"]), html=attachments(html), files=downloads(html), gone=p["gone"],
-                          source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}"))
+        items.append(
+            dict(
+                id=f"p{p['id']}",
+                kind="post",
+                title=p["title"],
+                smer=smer,
+                subj=subj,
+                subject=subj and subj["name"],
+                date=iso,
+                year=year,
+                topic=p["topic"],
+                num=p["id"],
+                when=p["date"],
+                posted=p["posted"] or "",
+                author=p["author"],
+                body=preuzeto(p["content"]),
+                html=attachments(html),
+                files=downloads(html),
+                gone=p["gone"],
+                source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}",
+            )
+        )
     for d in docs.values():
         p = posts.get(d["post"]) or {}
         iso, year = parse_date(p.get("date"), d["uploaded_at"])
         smer, subj = place.get(p.get("forum"), (None, None))
-        items.append(dict(id=f"d{d['id']}", kind="document", title=d["title"] or d["filename"], smer=smer, subj=subj, files=[],
-                          subject=subj and subj["name"], topic=None, when=p.get("date"), posted=p.get("posted") or "",
-                          date=iso, year=year, author=p.get("author"), body=(d["text"] or "")[:PAGE_TEXT], html=None,
-                          source_url=f"{BASE}viewtopic.php?p={d['post']}#p{d['post']}" if d["post"] else None,
-                          doc=dict(filename=d["filename"], size=round((d["size"] or 0) / 1024), uploaded_at=d["uploaded_at"]),
-                          download_url=f"{BASE}download/file.php?id={d['id']}"))
+        items.append(
+            dict(
+                id=f"d{d['id']}",
+                kind="document",
+                title=d["title"] or d["filename"],
+                smer=smer,
+                subj=subj,
+                files=[],
+                subject=subj and subj["name"],
+                topic=None,
+                when=p.get("date"),
+                posted=p.get("posted") or "",
+                date=iso,
+                year=year,
+                author=p.get("author"),
+                body=(d["text"] or "")[:PAGE_TEXT],
+                html=None,
+                source_url=f"{BASE}viewtopic.php?p={d['post']}#p{d['post']}" if d["post"] else None,
+                doc=dict(filename=d["filename"], size=round((d["size"] or 0) / 1024), uploaded_at=d["uploaded_at"]),
+                download_url=f"{BASE}download/file.php?id={d['id']}",
+            )
+        )
     return items
 
 
@@ -411,18 +507,35 @@ def load_vesti(db):
         return []
     cats = dict(db.execute("SELECT id, name FROM vesti_categories"))
     out = []
-    for r in db.execute("SELECT * FROM vesti v WHERE modified = (SELECT max(modified) FROM vesti WHERE id = v.id) "
-                        "ORDER BY date DESC"):
+    for r in db.execute("SELECT * FROM vesti v WHERE modified = (SELECT max(modified) FROM vesti WHERE id = v.id) ORDER BY date DESC"):
         iso, year = parse_date(r["date"])
         names = [cats[c] for c in json.loads(r["categories"]) if c in cats]
         title = unescape(r["title"])
         # upis: in the news site's category Упис (its id 8), the enrollment news (the wiki's upis/vesti lists them).
-        out.append(dict(id=f"v{r['id']}", kind="vest", href=f"/vest/{r['id']}/", title=title, date=iso, year=year,
-                        upis=8 in json.loads(r["categories"]),
-                        posted=f"{r['date_gmt']}Z", cats=names, cat_keys="|".join(slug(c) for c in names),
-                        find=fold(" ".join([title] + names)), html=clean_html(r["html"], VESTI),
-                        body=strip_tags(r["html"])[:PAGE_TEXT], gone=r["gone"], source_url=r["link"],
-                        smer=None, subj=None, subject=None, author=None, who="Mašinski fakultet"))
+        out.append(
+            dict(
+                id=f"v{r['id']}",
+                kind="vest",
+                href=f"/vest/{r['id']}/",
+                title=title,
+                date=iso,
+                year=year,
+                upis=8 in json.loads(r["categories"]),
+                posted=f"{r['date_gmt']}Z",
+                cats=names,
+                cat_keys="|".join(slug(c) for c in names),
+                find=fold(" ".join([title] + names)),
+                html=clean_html(r["html"], VESTI),
+                body=strip_tags(r["html"])[:PAGE_TEXT],
+                gone=r["gone"],
+                source_url=r["link"],
+                smer=None,
+                subj=None,
+                subject=None,
+                author=None,
+                who="Mašinski fakultet",
+            )
+        )
     return out
 
 
@@ -445,8 +558,7 @@ def book_subject(b, smerovi, subjects):
     smer_name = smer_name[:1].lower() + smer_name[1:]
     m = next((m for m in smerovi.values() if fold(m["short"]) == fold(short_smer(smer_name))), None)
     if not m:
-        m = dict(id=f"cent:{program}", name=smer_name, short=short_smer(smer_name), label=smer_label(smer_name),
-                 abbr=smer_abbr(smer_name))
+        m = dict(id=f"cent:{program}", name=smer_name, short=short_smer(smer_name), label=smer_label(smer_name), abbr=smer_abbr(smer_name))
         m["href"] = f"/smer/{slug(m['short'])}/"
         m["key"] = m["href"].strip("/").split("/")[-1]
         smerovi[m["id"]] = m
@@ -467,8 +579,9 @@ def row_katedra(s, topics):
     i = s.get("info") or {}
     if i.get("katedra") or (i.get("holder_t") or {}).get("katedra"):
         return i.get("katedra") or i["holder_t"]["katedra"]
-    c = (Counter(t["katedra"] for t in s.get("teachers", []) + i.get("teachers", []) if t["katedra"])
-         or Counter(p["teacher"]["katedra"] for t in topics for p in t["posts"] if p.get("teacher") and p["teacher"]["katedra"]))
+    c = Counter(t["katedra"] for t in s.get("teachers", []) + i.get("teachers", []) if t["katedra"]) or Counter(
+        p["teacher"]["katedra"] for t in topics for p in t["posts"] if p.get("teacher") and p["teacher"]["katedra"]
+    )
     return c.most_common(1)[0][0] if c else None
 
 
@@ -505,8 +618,11 @@ def load_cent(db, smerovi, subjects):
         if p["code"] and top(p) is p:
             if p["code"] not in roots or (not p["gone"], kids[p["id"]]) > (not roots[p["code"]]["gone"], kids[roots[p["code"]]["id"]]):
                 roots[p["code"]] = p
-    book = {r["id"]: r for r in db.execute("SELECT id, name, program FROM subjects")} if db.execute(
-        "SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone() else {}
+    book = (
+        {r["id"]: r for r in db.execute("SELECT id, name, program FROM subjects")}
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone()
+        else {}
+    )
     book_by_name = {}
     for r in book.values():
         book_by_name.setdefault(fold(r["name"]), r["id"])
@@ -532,11 +648,29 @@ def load_cent(db, smerovi, subjects):
             # Its date is the notice's; its time the one it was first seen, when that was the same day.
             posted = n["first_seen"] if n["first_seen"][:10] == day else f"{day}T10:00:00+00:00"
             html = clean_html(cent_tidy(n["html"]), p["link"], classes=CENT_CLASSES)
-            items.append(dict(id=f"c{n['nid']}", kind="cent", title=n["title"], smer=s["smer"], subj=s, subject=s["name"],
-                              date=day, year=int(day[:4]), topic=f"c{n['nid']}", num=n["nid"],
-                              when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.", posted=posted, author="cent",
-                              site=dict(mark="cent", host="cent.mas.bg.ac.rs", name="Katedra za proizvodno mašinstvo"),
-                              body=strip_tags(html), html=html, files=[], gone=n["gone"], source_url=p["link"]))
+            items.append(
+                dict(
+                    id=f"c{n['nid']}",
+                    kind="cent",
+                    title=n["title"],
+                    smer=s["smer"],
+                    subj=s,
+                    subject=s["name"],
+                    date=day,
+                    year=int(day[:4]),
+                    topic=f"c{n['nid']}",
+                    num=n["nid"],
+                    when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.",
+                    posted=posted,
+                    author="cent",
+                    site=dict(mark="cent", host="cent.mas.bg.ac.rs", name="Katedra za proizvodno mašinstvo"),
+                    body=strip_tags(html),
+                    html=html,
+                    files=[],
+                    gone=n["gone"],
+                    source_url=p["link"],
+                )
+            )
         shown, emptied = [], False
         main = f"{s['href']}cent/{p['slug']}/"
         for i, v in enumerate(versions[p["id"]]):
@@ -544,7 +678,7 @@ def load_cent(db, smerovi, subjects):
             # The page's first heading is its name ("Резултати испита"): the title, not repeated under it.
             m = re.search(r"<h2[^>]*>(.*?)</h2>", html, re.S)
             title = strip_tags(m[1]) if m else v["title"]
-            html = html[:m.start()] + html[m.end():] if m else html
+            html = html[: m.start()] + html[m.end() :] if m else html
             if not strip_tags(html) and "<a " not in html:
                 emptied = emptied or not shown
                 continue
@@ -554,21 +688,26 @@ def load_cent(db, smerovi, subjects):
             href = main if not shown else f"{main}{v['first_seen'][:10]}-{v['sha'][:6]}/"
             shown.append(dict(title=title, href=href, html=html, first_seen=v["first_seen"], last_seen=v["last_seen"]))
             new = i == len(versions[p["id"]]) - 1
-            pushed.append(dict(k="s", id=v["rid"], s=s["href"], n=s["name"], t=f"{title}: {'nova stranica' if new else 'izmenjeno'}",
-                               u=main))
+            pushed.append(
+                dict(k="s", id=v["rid"], s=s["href"], n=s["name"], t=f"{title}: {'nova stranica' if new else 'izmenjeno'}", u=main)
+            )
         if shown:
             s.setdefault("cent", []).append(dict(title=shown[0]["title"], link=p["link"], gone=p["gone"] or emptied, versions=shown))
     return items, pushed
 
 
 # Where a subject's material is besides the board (a post links it): a service's name and its hosts.
-ELSEWHERE = [("Teams", r"^(teams\.microsoft\.com|teams\.live\.com|teams\.cloud\.microsoft)$"),
-             ("Classroom", r"^classroom\.google\.com$"), ("Google Drive", r"^(drive|docs)\.google\.com$"),
-             ("Moodle", r"^elearning\.rcub\.bg\.ac\.rs$"),
-             # The faculty's SharePoint only: another one's is a company's (a software download).
-             ("OneDrive", r"^(onedrive\.live\.com|1drv\.ms|masbgacrs(-my)?\.sharepoint\.com)$"),
-             ("Dropbox", r"(^|\.)dropbox\.com$"), ("Box", r"(^|\.)box\.com$"),
-             ("YouTube", r"^(www\.|m\.)?(youtube\.com|youtu\.be)$")]
+ELSEWHERE = [
+    ("Teams", r"^(teams\.microsoft\.com|teams\.live\.com|teams\.cloud\.microsoft)$"),
+    ("Classroom", r"^classroom\.google\.com$"),
+    ("Google Drive", r"^(drive|docs)\.google\.com$"),
+    ("Moodle", r"^elearning\.rcub\.bg\.ac\.rs$"),
+    # The faculty's SharePoint only: another one's is a company's (a software download).
+    ("OneDrive", r"^(onedrive\.live\.com|1drv\.ms|masbgacrs(-my)?\.sharepoint\.com)$"),
+    ("Dropbox", r"(^|\.)dropbox\.com$"),
+    ("Box", r"(^|\.)box\.com$"),
+    ("YouTube", r"^(www\.|m\.)?(youtube\.com|youtu\.be)$"),
+]
 FILE_HOSTS = {"Google Drive", "OneDrive", "Dropbox", "Box", "YouTube"}
 # A folder, a playlist or a channel on them (a shared OneDrive folder: ':f:').
 FOLDER = r"/folders/|/folder/|/sh/|/scl/fo/|/:f:/|/playlist|/channel/|/@|/c/"
@@ -603,8 +742,11 @@ def mark_elsewhere(items):
             continue
         for url in set(re.findall(r'href="(https?://[^"]+)"', it["html"] or "")):
             if name := service(url):
-                e = it["subj"].setdefault("elsewhere", {}).setdefault(
-                    name, dict(name=name, first=it, last=it, by=Counter(), users=set(), urls=set()))
+                e = (
+                    it["subj"]
+                    .setdefault("elsewhere", {})
+                    .setdefault(name, dict(name=name, first=it, last=it, by=Counter(), users=set(), urls=set()))
+                )
                 e["first"] = min(e["first"], it, key=lambda r: r["posted"])
                 e["last"] = max(e["last"], it, key=lambda r: r["posted"])
                 e["by"][it["who"]] += 1
@@ -623,23 +765,32 @@ def mark_elsewhere(items):
 
 
 # The departments' own sites katedre.py crawls, as the Linkovi page names them.
-SITES = {"ie": "Katedra za industrijsko inženjerstvo", "fluidi": "Katedra za mehaniku fluida",
-         "etc": "Prezentacije nastavnika", "pt": "Katedra za procesnu tehniku", "meh": "Katedra za mehanizaciju",
-         "hidro": "Katedra za hidraulične mašine i energetske sisteme", "motori": "Katedra za motore",
-         "ppm": "Katedra za poljoprivredno mašinstvo", "bmi": "Katedra za biomedicinsko inženjerstvo",
-         "ciah": "Laboratorija CIAH"}
+SITES = {
+    "ie": "Katedra za industrijsko inženjerstvo",
+    "fluidi": "Katedra za mehaniku fluida",
+    "etc": "Prezentacije nastavnika",
+    "pt": "Katedra za procesnu tehniku",
+    "meh": "Katedra za mehanizaciju",
+    "hidro": "Katedra za hidraulične mašine i energetske sisteme",
+    "motori": "Katedra za motore",
+    "ppm": "Katedra za poljoprivredno mašinstvo",
+    "bmi": "Katedra za biomedicinsko inženjerstvo",
+    "ciah": "Laboratorija CIAH",
+}
 
 
 # A department site's name for a subject the board and the book name otherwise (ie shortens some): the book's name,
 # and the smer when the name is in several (ie's "Inženjerska ekonomija" is ITM's; MI has one too).
-SITE_NAMES = {"strucna praksa b iie": ("Стручна пракса Б", None),
-              "menadzment informacionih sistema": ("Менаџмент информациони системи", None),
-              "primena metoda i tehnika ie u brodogradnji": ("Примена метода и техника индустријског инжењерства у бродоградњи", None),
-              "savremeni menadz. i mrezna org. preduzeca": ("Савремени менаџмент и мрежна организација предузећа", None),
-              "interfejsi za interoperabilnost sistema za i4.0": ("Интерфејси за интероперабилност система за Индустрију 4.0", None),
-              "upravljanje kvalitetom i rizikom u i4.0": ("Управљање квалитетом и ризиком у индустрији 4.0", None),
-              "vrednovanje projekata u oblasti it": ("Вредновање пројеката у области информационих технологија", None),
-              "inzenjerska ekonomija": ("Инжењерска економија", "oas-itm")}
+SITE_NAMES = {
+    "strucna praksa b iie": ("Стручна пракса Б", None),
+    "menadzment informacionih sistema": ("Менаџмент информациони системи", None),
+    "primena metoda i tehnika ie u brodogradnji": ("Примена метода и техника индустријског инжењерства у бродоградњи", None),
+    "savremeni menadz. i mrezna org. preduzeca": ("Савремени менаџмент и мрежна организација предузећа", None),
+    "interfejsi za interoperabilnost sistema za i4.0": ("Интерфејси за интероперабилност система за Индустрију 4.0", None),
+    "upravljanje kvalitetom i rizikom u i4.0": ("Управљање квалитетом и ризиком у индустрији 4.0", None),
+    "vrednovanje projekata u oblasti it": ("Вредновање пројеката у области информационих технологија", None),
+    "inzenjerska ekonomija": ("Инжењерска економија", "oas-itm"),
+}
 # A link written as text (ie's): made a link. Not its last dot, comma or bracket (the sentence's).
 BARE_URL = re.compile(r"https?://[^\s<>\"']+[^\s<>\"'.,;:!?)\]]")
 
@@ -651,7 +802,9 @@ def linkify(html):
         if part.startswith("<"):
             inside = bool(re.match(r"<a\b", part)) or (inside and not part.startswith("</a"))
         elif not inside:
-            part = BARE_URL.sub(lambda m: f'<a href="{m[0]}" rel="noopener noreferrer">{m[0] if len(m[0]) <= 60 else m[0][:57] + "…"}</a>', part)
+            part = BARE_URL.sub(
+                lambda m: f'<a href="{m[0]}" rel="noopener noreferrer">{m[0] if len(m[0]) <= 60 else m[0][:57] + "…"}</a>', part
+            )
         out.append(part)
     return "".join(out)
 
@@ -660,15 +813,20 @@ def file_rows(files, title="Prilozi"):
     """Files [(href, name, note)] as a post's attachments (style.css .att): the type's badge, the name, a note under
     it. A file's name loses ie's upload number ("1815_РЕЗУЛТАТИ_2.docx"); one without (katedre.py's "link") is the
     address's."""
+
     def row(href, name, note):
         path = unquote(urlsplit(href).path)
         ext = (re.search(r"\.([a-z0-9]{1,5})$", path.lower()) or [None, ""])[1]
         file = re.sub(r"^\d+_", "", path.rsplit("/", 1)[-1])
         name, note = (file if x in (None, "", "link") or re.fullmatch(r"\d+_.+", x) else x for x in (name, note))
         note = None if note == name else note
-        return (f'<dd><a class="att" href="{escape(href)}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
-                f'{ext.upper() or "FAJL"}</span><span class="att__n">{escape(name)}'
-                + (f"<small>{escape(note)}</small>" if note else "") + "</span></a></dd>")
+        return (
+            f'<dd><a class="att" href="{escape(href)}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
+            f'{ext.upper() or "FAJL"}</span><span class="att__n">{escape(name)}'
+            + (f"<small>{escape(note)}</small>" if note else "")
+            + "</span></a></dd>"
+        )
+
     # The links come from other sites, not through clean_html: a web address or the release's file, no javascript:.
     files = [f for f in files if re.match(r"(https?://|/files/)", f[0], re.I)]
     return f"<dl><dt>{title}</dt>{''.join(row(*f) for f in files)}</dl>" if files else ""
@@ -676,9 +834,15 @@ def file_rows(files, title="Prilozi"):
 
 # A department site's forum on the board (smer "Katedre"): its notices that are no subject's. Made when the board has
 # none (bmi, ciah).
-FORUMS = {"ie": "катедра за индустријско инжењерство", "meh": "катедра за механизацију", "pt": "катедра за процесну технику",
-          "hidro": "катедра за хидрауличне машине и енергетске системе", "fluidi": "катедра за механику флуида",
-          "bmi": "катедра за биомедицинско инжењерство", "ciah": "лабораторија ЦИАХ"}
+FORUMS = {
+    "ie": "катедра за индустријско инжењерство",
+    "meh": "катедра за механизацију",
+    "pt": "катедра за процесну технику",
+    "hidro": "катедра за хидрауличне машине и енергетске системе",
+    "fluidi": "катедра за механику флуида",
+    "bmi": "катедра за биомедицинско инжењерство",
+    "ciah": "лабораторија ЦИАХ",
+}
 # The sites whose pages are each a subject's (ie's subject pages, fluidi's); the others' are the department's.
 SUBJECT_PAGE = re.compile(r"ie\.mas\.bg\.ac\.rs/predmeti_p|fluidi\.mas\.bg\.ac\.rs/[a-z]+/$")
 
@@ -693,8 +857,11 @@ def load_katedre(db, smerovi, subjects):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'katedre_notices'").fetchone():
         return []
     key = lambda name: re.sub(r"[^a-z0-9]", "", fold(name))
-    book = list(db.execute("SELECT id, name, program FROM subjects")) if db.execute(
-        "SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone() else []
+    book = (
+        list(db.execute("SELECT id, name, program FROM subjects"))
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone()
+        else []
+    )
     katedre = next((m for m in smerovi.values() if m.get("key") == "katedre"), None)
 
     def board(name, smer=None):
@@ -711,8 +878,9 @@ def load_katedre(db, smerovi, subjects):
 
     subj_of, department = {}, set()
     # A page gone from its site (or missed by one crawl) too: its notices stay in the archive, as cent's do.
-    for r in db.execute("SELECT url, site, title, html FROM katedre_pages k WHERE last_seen = "
-                        "(SELECT max(last_seen) FROM katedre_pages WHERE url = k.url)"):
+    for r in db.execute(
+        "SELECT url, site, title, html FROM katedre_pages k WHERE last_seen = (SELECT max(last_seen) FROM katedre_pages WHERE url = k.url)"
+    ):
         if r["site"] not in FORUMS:  # a site katedre.py no longer reads (etc, motori, ppm): its old pages
             continue
         if not SUBJECT_PAGE.search(r["url"]):
@@ -726,14 +894,17 @@ def load_katedre(db, smerovi, subjects):
         b = next((b for b in book if key(b["name"]) == key(name)), None)
         s = found[0] if len(found) == 1 else book_subject(b, smerovi, subjects) if b and not found else None
         if not s:
-            print(f"katedre: no subject for {r['url']} ({name}{', ' + str(len(found)) + ' of that name' if found else ''})",
-                  file=sys.stderr)
+            print(
+                f"katedre: no subject for {r['url']} ({name}{', ' + str(len(found)) + ' of that name' if found else ''})", file=sys.stderr
+            )
             continue
         subj_of[r["url"]] = s
         s.setdefault("site", r["url"])
         lit = next((h.parent for h in soup.find_all("h1") if h.get_text(strip=True) == "LITERATURA"), None)
-        files = [(a["href"], (d := a.find_next_sibling("div")) and d.get_text(" ", strip=True), a.get_text(strip=True))
-                 for a in (lit.find_all("a", href=True) if lit else [])]
+        files = [
+            (a["href"], (d := a.find_next_sibling("div")) and d.get_text(" ", strip=True), a.get_text(strip=True))
+            for a in (lit.find_all("a", href=True) if lit else [])
+        ]
         if files:
             s["lit"] = dict(mark=r["site"], n=len(files), html=file_rows(files, "Literatura"))
     items = []
@@ -748,11 +919,29 @@ def load_katedre(db, smerovi, subjects):
         # Its date is the notice's; its time the one it was first seen, when that was the same day.
         posted = n["first_seen"] if n["first_seen"][:10] == day else f"{day}T10:00:00+00:00"
         html = linkify(clean_html(n["html"], n["url"])) + file_rows([(h, f, None) for h, f in json.loads(n["files"]) or []])
-        items.append(dict(id=f"k{n['nid']}", kind="katedra", title=n["title"], smer=s["smer"], subj=s, subject=s["name"],
-                          date=day, year=int(day[:4]), topic=f"k{n['nid']}", num=n["nid"],
-                          when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.", posted=posted, author=n["site"],
-                          site=dict(mark=n["site"], host=f"{n['site']}.mas.bg.ac.rs", name=SITES[n["site"]]),
-                          body=strip_tags(html), html=html, files=[], gone=n["gone"], source_url=n["url"]))
+        items.append(
+            dict(
+                id=f"k{n['nid']}",
+                kind="katedra",
+                title=n["title"],
+                smer=s["smer"],
+                subj=s,
+                subject=s["name"],
+                date=day,
+                year=int(day[:4]),
+                topic=f"k{n['nid']}",
+                num=n["nid"],
+                when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.",
+                posted=posted,
+                author=n["site"],
+                site=dict(mark=n["site"], host=f"{n['site']}.mas.bg.ac.rs", name=SITES[n["site"]]),
+                body=strip_tags(html),
+                html=html,
+                files=[],
+                gone=n["gone"],
+                source_url=n["url"],
+            )
+        )
     return items
 
 
@@ -786,10 +975,29 @@ def load_mail(subjects, folder=MAIL):
         day = m["posted"][:10]
         # Where it came from, as a tag beside the author (rows.html who): a Teams post or a mail to the students.
         via = VIA["teams" if m["id"].startswith("teams:") else "webmail"]
-        items.append(dict(id=f"m{key[m['id']]}", kind="post", title=m["title"], smer=s["smer"], subj=s, subject=s["name"],
-                          date=day, year=int(day[:4]), topic=f"m{key[root]}", num=int(datetime.fromisoformat(m["posted"]).timestamp()),
-                          when=m["when"], posted=m["posted"], author=m["author"], body=strip_tags(html), html=html,
-                          files=[], gone=0, source_url=None, via=via))
+        items.append(
+            dict(
+                id=f"m{key[m['id']]}",
+                kind="post",
+                title=m["title"],
+                smer=s["smer"],
+                subj=s,
+                subject=s["name"],
+                date=day,
+                year=int(day[:4]),
+                topic=f"m{key[root]}",
+                num=int(datetime.fromisoformat(m["posted"]).timestamp()),
+                when=m["when"],
+                posted=m["posted"],
+                author=m["author"],
+                body=strip_tags(html),
+                html=html,
+                files=[],
+                gone=0,
+                source_url=None,
+                via=via,
+            )
+        )
     # teams.py's material: a Teams class's library, beyond its posts' files, in one box on the subject's page; each
     # file with its class's school year and folder. shortcut: a subject with ie's "Literatura" too gets only this box.
     material = defaultdict(list)
@@ -800,8 +1008,14 @@ def load_mail(subjects, folder=MAIL):
             print(f"mail: no subject page {m['page']} ({p.parent.name})", file=sys.stderr)
             continue
         year = (re.search(r"20\d\d/\d+", m["name"]) or [None])[0]
-        material[s["href"]] += [(mail_href(f"{p.parent.name}/{f}"), f.rsplit("/", 1)[-1],
-                                 " · ".join(filter(None, [year, f.rsplit("/", 1)[0] if "/" in f else None]))) for f in m["files"]]
+        material[s["href"]] += [
+            (
+                mail_href(f"{p.parent.name}/{f}"),
+                f.rsplit("/", 1)[-1],
+                " · ".join(filter(None, [year, f.rsplit("/", 1)[0] if "/" in f else None])),
+            )
+            for f in m["files"]
+        ]
     for href, files in material.items():
         by_href[href]["lit"] = dict(mark="teams", title="Materijal sa Teams-a", n=len(files), html=file_rows(files, "Teams"))
     return items
@@ -815,10 +1029,17 @@ def render_cent(site, subjects):
         for p in s.get("cent", []):
             for v in p["versions"]:
                 # Not indexed: a cent page is often exam results, by student.
-                write(site / v["href"].strip("/") / "index.html", page.render(
-                    page=p, v=v, mark="cent", host="cent.mas.bg.ac.rs",
-                    trail=[(s["smer"]["href"], s["smer"]["label"]), (s["href"], s["name"])]), index=False)
-
+                write(
+                    site / v["href"].strip("/") / "index.html",
+                    page.render(
+                        page=p,
+                        v=v,
+                        mark="cent",
+                        host="cent.mas.bg.ac.rs",
+                        trail=[(s["smer"]["href"], s["smer"]["label"]), (s["href"], s["name"])],
+                    ),
+                    index=False,
+                )
 
 
 def pagefind_tags(it):
@@ -865,7 +1086,7 @@ def strip_pagefind(site):
         html = path.read_text(encoding="utf-8")
         if (start := html.find(marker)) >= 0:
             # The copy is escaped text, so its own </div> is the first one after the marker.
-            path.write_text(html[:start] + html[html.index("</div>", start) + 6:], encoding="utf-8")
+            path.write_text(html[:start] + html[html.index("</div>", start) + 6 :], encoding="utf-8")
 
 
 def render_item(it):
@@ -943,20 +1164,21 @@ def split_page(html):
     The Worker (pages/src/index.js join) puts them together again."""
     t0, t1 = html.index("<title>"), html.index(HEAD_END)
     m0, m1 = html.index(MAIN) + len(MAIN), html.rindex("</main>")
-    return (html[:t0] + "<title></title>" + html[t1 + len(HEAD_END):m0] + "<!--main-->" + html[m1:],
-            f'<html lang="sr">{html[t0:t1]}{HEAD_END}{html[m0:m1]}</html>')
+    return (
+        html[:t0] + "<title></title>" + html[t1 + len(HEAD_END) : m0] + "<!--main-->" + html[m1:],
+        f'<html lang="sr">{html[t0:t1]}{HEAD_END}{html[m0:m1]}</html>',
+    )
 
 
 # A section's pages count as its side panel link: a teacher under Nastavnici, an archived schedule page under Raspored,
 # a news post under Vesti, an archived page of the faculty's site under Linkovi (site.js has the same rule).
-SECTION = {"/nastavnik/": "/nastavnici/", "/katedra/": "/nastavnici/", "/studije/": "/raspored/", "/vest/": "/vesti/",
-           "/mf/": "/link/"}
+SECTION = {"/nastavnik/": "/nastavnici/", "/katedra/": "/nastavnici/", "/studije/": "/raspored/", "/vest/": "/vesti/", "/mf/": "/link/"}
 snav = []  # the side panel's links (sidebar.html), set by main()
 
 
 def snav_href(path, hrefs):
     """The link of hrefs that the page at path is under: "/" only for itself, another for the paths it starts."""
-    here = next((to + path[len(fr):] for fr, to in SECTION.items() if path.startswith(fr)), path)
+    here = next((to + path[len(fr) :] for fr, to in SECTION.items() if path.startswith(fr)), path)
     return next((h for h in hrefs if (here == "/" if h == "/" else here.startswith(h))), None)
 
 
@@ -994,17 +1216,27 @@ def breadcrumbs(page, url):
         return ""
     path = [(urljoin(SITE_URL, unescape(h)), strip_tags(t)) for h, t in LINK.findall(nav[0])] + [(url, strip_tags(here[1]))]
     # str: a str + Markup would escape the whole page.
-    return str(env.filters["ld"]({"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
-        {"@type": "ListItem", "position": i, "name": name, "item": u} for i, (u, name) in enumerate(path, 1)]}))
+    return str(
+        env.filters["ld"](
+            {
+                "@context": "https://schema.org",
+                "@type": "BreadcrumbList",
+                "itemListElement": [{"@type": "ListItem", "position": i, "name": name, "item": u} for i, (u, name) in enumerate(path, 1)],
+            }
+        )
+    )
 
 
 def write_sitemap(site):
     """sitemap.xml with every page's canonical URL, and robots.txt naming it (Cloudflare puts its own rules above)."""
     assert len(urls) <= 50_000, "a sitemap holds 50,000 URLs: split it into several under a sitemap index"
-    (site / "sitemap.xml").write_text('<?xml version="1.0" encoding="utf-8"?>\n'
-                                      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-                                      + "".join(f"<url><loc>{escape(u)}</loc></url>" for u in sorted(urls))
-                                      + "</urlset>\n", encoding="utf-8")
+    (site / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + "".join(f"<url><loc>{escape(u)}</loc></url>" for u in sorted(urls))
+        + "</urlset>\n",
+        encoding="utf-8",
+    )
     (site / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n", encoding="utf-8")
 
 
@@ -1018,12 +1250,19 @@ def load_topics(db, items):
     topics = []
     for tid, rows in posts.items():
         rows.sort(key=lambda r: r["num"])
-        t = dict(id=tid, title=titles.get(tid) or rows[0]["title"], posts=rows, first=rows[0],
-                 last=max(rows, key=lambda r: r["posted"]), subj=rows[0]["subj"], smer=rows[0]["smer"],
-                 gone=all(r["gone"] for r in rows),
-                 href=f"/tema/{tid}/" if len(rows) > 1 else f"/item/{rows[0]['id']}/",
-                 authors="|".join(sorted({(r["author"] or "").lower() for r in rows})),
-                 find=fold(" ".join([titles.get(tid) or ""] + [f"{r['title']} {r['who'] or ''}" for r in rows])))
+        t = dict(
+            id=tid,
+            title=titles.get(tid) or rows[0]["title"],
+            posts=rows,
+            first=rows[0],
+            last=max(rows, key=lambda r: r["posted"]),
+            subj=rows[0]["subj"],
+            smer=rows[0]["smer"],
+            gone=all(r["gone"] for r in rows),
+            href=f"/tema/{tid}/" if len(rows) > 1 else f"/item/{rows[0]['id']}/",
+            authors="|".join(sorted({(r["author"] or "").lower() for r in rows})),
+            find=fold(" ".join([titles.get(tid) or ""] + [f"{r['title']} {r['who'] or ''}" for r in rows])),
+        )
         for i, r in enumerate(rows):
             # The posts before and after it in the topic, for a post's own page.
             r["thread"], r["prev"], r["next"] = t, rows[i - 1] if i else None, rows[i + 1] if i + 1 < len(rows) else None
@@ -1032,8 +1271,16 @@ def load_topics(db, items):
 
 
 # A subject page without posts (predmet.html): one of these, in place of the empty list.
-QUIET = ["Ćuti kao zaliven...", "Tih kao miš...", "Mačka mu pojela jezik?", "Ni muk da se čuje...", "Nema žive duše.",
-         "Ni traga, ni glasa...", "Niko ni da pisne", "Ćuti kao kamen."]
+QUIET = [
+    "Ćuti kao zaliven...",
+    "Tih kao miš...",
+    "Mačka mu pojela jezik?",
+    "Ni muk da se čuje...",
+    "Nema žive duše.",
+    "Ni traga, ni glasa...",
+    "Niko ni da pisne",
+    "Ćuti kao kamen.",
+]
 
 
 def render_places(site, topics, smerovi, subjects):
@@ -1050,17 +1297,27 @@ def render_places(site, topics, smerovi, subjects):
         s["topics"], s["count"], s["last"] = len(rows), sum(len(t["posts"]) for t in rows), rows[0]["last"] if rows else None
         # Every subject has a page, an empty one too (predmet.html quiet).
         # Not teams.py's "Student #N": a number within one thread, no one across the page.
-        authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]
-                          if not (r["author"] or "").startswith("Student #")}.items(), key=lambda a: fold(a[1]))
+        authors = sorted(
+            {
+                (r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"] if not (r["author"] or "").startswith("Student #")
+            }.items(),
+            key=lambda a: fold(a[1]),
+        )
         # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
         quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
-        write(site / s["href"].strip("/") / "index.html",
-              env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet))
+        write(
+            site / s["href"].strip("/") / "index.html",
+            env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet),
+        )
         # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
         (site / s["href"].strip("/")).mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
-        (site / s["href"].strip("/") / "novo.json").write_text(json.dumps(
-            {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},
-            ensure_ascii=False), encoding="utf-8")
+        (site / s["href"].strip("/") / "novo.json").write_text(
+            json.dumps(
+                {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m), key=lambda s: fold(s["name"]))
         for s in subs:
@@ -1088,19 +1345,26 @@ def post_href(it):
 def atom(title, path, posts):
     """An Atom feed of the newest posts (newest first) for a feed reader: the whole board, one subject or the news
     (an item with its own href). A reader needs whole URLs, so they are on the main domain."""
+
     def entry(it):
         href, page = it.get("href") or post_href(it), it.get("href") or f"/item/{it['id']}/"
         place = (it["subj"] and it["subj"]["name"]) or (it["smer"] and it["smer"]["label"]) or ", ".join(it.get("cats", []))
-        return (f"<entry><title>{escape(it['title'] or '')}</title><link href=\"{SITE_URL}{escape(href)}\"/>"
-                f"<id>{SITE_URL}{escape(page)}</id><updated>{it['posted']}</updated>"
-                f"<author><name>{escape(it['who'] or '')}</name></author>"
-                + (f"<category term=\"{escape(place)}\"/>" if place else "")
-                + f"<content type=\"html\">{escape(it['html'] or it['body'] or '')}</content></entry>")
-    return ('<?xml version="1.0" encoding="utf-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="sr">'
-            f"<title>{escape(title)}</title><id>{SITE_URL}{escape(path)}</id>"
-            f"<link rel=\"self\" href=\"{SITE_URL}{escape(path)}feed.xml\"/><link href=\"{SITE_URL}{escape(path)}\"/>"
-            f"<updated>{posts[0]['posted'] if posts else '1970-01-01T00:00:00+00:00'}</updated>"
-            + "".join(entry(it) for it in posts) + "</feed>\n")
+        return (
+            f'<entry><title>{escape(it["title"] or "")}</title><link href="{SITE_URL}{escape(href)}"/>'
+            f"<id>{SITE_URL}{escape(page)}</id><updated>{it['posted']}</updated>"
+            f"<author><name>{escape(it['who'] or '')}</name></author>"
+            + (f'<category term="{escape(place)}"/>' if place else "")
+            + f'<content type="html">{escape(it["html"] or it["body"] or "")}</content></entry>'
+        )
+
+    return (
+        '<?xml version="1.0" encoding="utf-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="sr">'
+        f"<title>{escape(title)}</title><id>{SITE_URL}{escape(path)}</id>"
+        f'<link rel="self" href="{SITE_URL}{escape(path)}feed.xml"/><link href="{SITE_URL}{escape(path)}"/>'
+        f"<updated>{posts[0]['posted'] if posts else '1970-01-01T00:00:00+00:00'}</updated>"
+        + "".join(entry(it) for it in posts)
+        + "</feed>\n"
+    )
 
 
 def write_feeds(site, items, subjects, pushed=()):
@@ -1112,16 +1376,33 @@ def write_feeds(site, items, subjects, pushed=()):
         if it["subj"] and len(of[it["subj"]["id"]]) < FEED:
             of[it["subj"]["id"]].append(it)
     for s in subjects.values():
-        (site / s["href"].strip("/") / "feed.xml").write_text(atom(f"{s['name']} · forum nastave", s["href"], of[s["id"]]),
-                                                              encoding="utf-8")
+        (site / s["href"].strip("/") / "feed.xml").write_text(
+            atom(f"{s['name']} · forum nastave", s["href"], of[s["id"]]), encoding="utf-8"
+        )
     # The subjects' newest posts, next to the site (not on it), for ci/push.py: it notifies those newer than a post id.
     # k: "p" a board post, "c" a cent notice, "s" a cent page version; ci/push.py keeps one "before" per kind.
     # a: the teacher who wrote it (their page's slug), for a browser that wants only some teachers' posts of a subject.
     # shortcut: the newest 1000 posts and notices only; a scrape that brings more new posts notifies only these.
-    (site.parent / "push.json").write_text(json.dumps(
-        [dict(k=it["id"][0], id=it["num"], s=it["subj"]["href"], n=it["subj"]["name"], t=it["title"] or "", u=post_href(it),
-              **({"a": it["teacher"]["href"].split("/")[2]} if it.get("teacher") else {}))
-         for it in posts if it["subj"]][:1000] + list(pushed), ensure_ascii=False), encoding="utf-8")
+    (site.parent / "push.json").write_text(
+        json.dumps(
+            [
+                dict(
+                    k=it["id"][0],
+                    id=it["num"],
+                    s=it["subj"]["href"],
+                    n=it["subj"]["name"],
+                    t=it["title"] or "",
+                    u=post_href(it),
+                    **({"a": it["teacher"]["href"].split("/")[2]} if it.get("teacher") else {}),
+                )
+                for it in posts
+                if it["subj"]
+            ][:1000]
+            + list(pushed),
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
 
 def strip_tags(html):
@@ -1155,17 +1436,21 @@ def parse_lectures(html):
     text between <br>s: 'Izborni predmeti: 5.4, 5.5', 'Računarske sale: 324, …', a line with no link is a note,
     any other link a schedule. None when the page has no program: /raspored/ then shows the page as it is."""
     heads = re.findall(r"<h([23])[^>]*>(.*?)</h\1>", html or "", re.S)
-    out = dict(title=next((strip_tags(h) for n, h in heads if n == "2"), ""),
-               semester=next((strip_tags(h) for n, h in heads if n == "3"), ""), programs=[])
+    out = dict(
+        title=next((strip_tags(h) for n, h in heads if n == "2"), ""),
+        semester=next((strip_tags(h) for n, h in heads if n == "3"), ""),
+        programs=[],
+    )
     for part in re.split(r"(?=<h4)", html or "")[1:]:
         head = re.match(r"<h4[^>]*>(.*?)</h4>", part, re.S)
         if not head:
             continue
         # 'OSNOVNE AKADEMSKE STUDIJE - MAŠINSKO INŽENjERSTVO' -> 'Osnovne akademske studije', 'Mašinsko inženjerstvo'
         level, _, name = strip_tags(head[1]).lower().partition(" - ")
-        p = dict(key=slug(strip_tags(head[1])), level=level.capitalize(), name=name.capitalize(),
-                 cards=[], electives=[], rooms=[], notes=[])
-        for line in re.split(r"<br\s*/?>|</?p\b[^>]*>|</?div\b[^>]*>", part[head.end():]):
+        p = dict(
+            key=slug(strip_tags(head[1])), level=level.capitalize(), name=name.capitalize(), cards=[], electives=[], rooms=[], notes=[]
+        )
+        for line in re.split(r"<br\s*/?>|</?p\b[^>]*>|</?div\b[^>]*>", part[head.end() :]):
             text = strip_tags(line)
             links = [(strip_tags(t), unescape(h)) for h, t in LINK.findall(line)]
             if not links:
@@ -1191,9 +1476,11 @@ def parse_lectures(html):
 def drop_empty_tables(html):
     """Leave out a table whose cells are all empty, with the heading right above it: the exam page keeps its forms
     with no rows between terms. The <div>s between the heading and the table stay (their </div> is after it)."""
+
     def table(m):
         cells = re.findall(r"<td\b[^>]*>(.*?)</td>", m[0], re.S)
         return (m[2] or "") if cells and not strip_tags("".join(cells)) else m[0]
+
     return re.sub(r"(?:<h([1-6])[^>]*>(?:(?!</?h[1-6]).)*</h\1>(\s*(?:<div[^>]*>\s*)*))?<table\b.*?</table>", table, html, flags=re.S)
 
 
@@ -1250,19 +1537,30 @@ def render_study_pages(site, db):
             v["href"] = base if i == 0 else f"{base}{v['first_seen'][:10]}-{v['sha'][:6]}/"
         for v in versions:
             when = None if v is versions[0] else v["last_seen"]
+
             def local(value, when=when):
                 url = (p := media_path(value)) and (file_then(p, when) if when else newest.get(p))
                 if url:
                     used.add(url)
                 return url or link(value)
+
             html = drop_empty_tables(clean_html(tidy(v["html"]) if tidy else v["html"], source, local, classes) or "")
             # The page's first heading is usually its title, which the page already has as h1.
             m = re.search(r"<h([12])[^>]*>(.*?)</h\1>", html, re.S)
             if m and fold(re.sub(r"<[^>]+>", "", m[2]).strip()) == fold(v["title"]):
-                html = html[:m.start()] + html[m.end():]
-            write(site / v["href"].strip("/") / "index.html", env.get_template("studije.html").render(
-                page=v, current=versions[0], versions=versions, html=html, source_url=source, crumb_to=crumb,
-                **(newest_only if v is versions[0] else {})))
+                html = html[: m.start()] + html[m.end() :]
+            write(
+                site / v["href"].strip("/") / "index.html",
+                env.get_template("studije.html").render(
+                    page=v,
+                    current=versions[0],
+                    versions=versions,
+                    html=html,
+                    source_url=source,
+                    crumb_to=crumb,
+                    **(newest_only if v is versions[0] else {}),
+                ),
+            )
             if v is versions[0]:
                 newest_html = html
         return newest_html
@@ -1276,88 +1574,117 @@ def render_study_pages(site, db):
     render_wiki_pages(site, db, render)
     for url in used:
         rel, path, sha = stored[url]
-        data, = db.execute("SELECT data FROM study_files WHERE path = ? AND sha = ?", (path, sha)).fetchone()
+        (data,) = db.execute("SELECT data FROM study_files WHERE path = ? AND sha = ?", (path, sha)).fetchone()
         write_bytes(site / "studije" / "files" / rel, data)
     get = lambda slug: now.get(slug, {}).get("html")
     calendar, lectures = first_link(get("kalendar-nastave")), parse_lectures(get("raspored-predavanja"))
-    write(site / "raspored" / "index.html", env.get_template("raspored.html").render(
-        calendar=calendar, lectures=lectures,
-        lectures_html=get("raspored-predavanja"), exams_html=get("raspored-ispita"),
-        sources=[(now[slug]["page"]["href"], title) for slug, title in STUDY_PAGES.items() if slug in now],
-        checked=max((n["page"]["last_seen"] for n in now.values()), default=None)))
+    write(
+        site / "raspored" / "index.html",
+        env.get_template("raspored.html").render(
+            calendar=calendar,
+            lectures=lectures,
+            lectures_html=get("raspored-predavanja"),
+            exams_html=get("raspored-ispita"),
+            sources=[(now[slug]["page"]["href"], title) for slug, title in STUDY_PAGES.items() if slug in now],
+            checked=max((n["page"]["last_seen"] for n in now.values()), default=None),
+        ),
+    )
     return schedule_entries(calendar, lectures, get("raspored-ispita"))
 
 
 # Linkovi's cards (link.html), also found by the header search (izbor.json linkovi): (group, [(name, href, icon from
 # icons.svg, data-domain)]). An href "mf:<path>" is a page of www.mas.bg.ac.rs this site shows (studije.py SHOWN).
 LINKS = [
-    ("Fakultet", [
-        ("Forum nastave", "https://nastava.mas.bg.ac.rs/nastava/", "msgs", None),
-        ("studenti.mas", "https://studenti.mas.bg.ac.rs/", "user", None),
-        ("Studentski webmail", "https://webmail.studenti.mas.bg.ac.rs/", "mail", None),
-        ("Mašinski fakultet", "https://www.mas.bg.ac.rs/", "globe", None),
-        ("Vesti o predmetima", "https://www.mas.bg.ac.rs/studije/vesti", "news", None),
-        ("Raspored ispita", "https://www.mas.bg.ac.rs/studije/raspored-ispita", "calendar", None),
-        ("Vesti fakulteta", "https://vesti.mas.bg.ac.rs/", "news", None),
-        ("Prezentacije nastavnika", "https://etc.mas.bg.ac.rs/", "file", None),
-        ("FSEL (Moodle)", "https://fsel.mas.bg.ac.rs/moodle/", "book", None),
-        ("Biblioteka", "https://www.mas.bg.ac.rs/biblioteka/start", "book", None),
-    ]),
+    (
+        "Fakultet",
+        [
+            ("Forum nastave", "https://nastava.mas.bg.ac.rs/nastava/", "msgs", None),
+            ("studenti.mas", "https://studenti.mas.bg.ac.rs/", "user", None),
+            ("Studentski webmail", "https://webmail.studenti.mas.bg.ac.rs/", "mail", None),
+            ("Mašinski fakultet", "https://www.mas.bg.ac.rs/", "globe", None),
+            ("Vesti o predmetima", "https://www.mas.bg.ac.rs/studije/vesti", "news", None),
+            ("Raspored ispita", "https://www.mas.bg.ac.rs/studije/raspored-ispita", "calendar", None),
+            ("Vesti fakulteta", "https://vesti.mas.bg.ac.rs/", "news", None),
+            ("Prezentacije nastavnika", "https://etc.mas.bg.ac.rs/", "file", None),
+            ("FSEL (Moodle)", "https://fsel.mas.bg.ac.rs/moodle/", "book", None),
+            ("Biblioteka", "https://www.mas.bg.ac.rs/biblioteka/start", "book", None),
+        ],
+    ),
     # Only what no other of these pages links: Upis has OAS, MAS, DAS and the higher years as tabs, each with its
     # dates; the higher years' page links the choice of subjects, the fees, the payments and the student e-mail.
-    ("Upis i studiranje", [
-        ("Upis i obnova godine", "mf:upis/start", "enter", None),
-        ("Prijava ispita", "mf:studenti/prijava-ispita", "calendar", None),
-        ("eduroam", "mf:servisi/eduroam", "globe", None),
-        ("VPN", "mf:servisi/vpn", "globe", None),
-        ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
-        ("Kontakt fakulteta", "mf:fakultet/kontakt", "home", None),
-    ]),
-    ("Studenti", [
-        ("Veliki drajv", "https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU", "cloud", "kosta-onedrive.com"),
-        ("Mašinci", "https://stepen.masinci.org/", "users", None),
-        ("Drumska strela", "https://fsra.stt.org.rs/", "katedra-za-motorna-vozila", None),
-        ("Beoavia", "https://beoavia.org/", "katedra-za-vazduhoplovstvo", None),
-        ("Robotoid", "https://robotoid.stt.org.rs/", "katedra-za-automatsko-upravljanje", None),
-    ]),
-    ("Katedre i programi", [
-        ("Katedra za proizvodno mašinstvo", "https://cent.mas.bg.ac.rs/", "katedra-za-proizvodno-masinstvo", None),
-        ("Industrijsko inženjerstvo", "https://ie.mas.bg.ac.rs/", "katedra-za-industrijsko-inzenjerstvo", None),
-        ("Katedra za procesnu tehniku", "https://pt.mas.bg.ac.rs/", "katedra-za-procesnu-tehniku", None),
-        ("Katedra za motore", "https://motori.mas.bg.ac.rs/", "katedra-za-motore", None),
-        ("Katedra za mehanizaciju", "https://meh.mas.bg.ac.rs/", "katedra-za-mehanizaciju", None),
-        ("Katedra za mehaniku fluida", "https://fluidi.mas.bg.ac.rs/", "katedra-za-mehaniku-fluida", None),
-        ("Katedra za vazduhoplovstvo", "http://vaz.mas.bg.ac.rs/", "katedra-za-vazduhoplovstvo", None),
-        ("Katedra za opšte mašinske konstrukcije", "https://omk.mas.bg.ac.rs/", "katedra-za-opste-masinske-konstrukcije", None),
-        ("Katedra za matematiku", "https://mat.mas.bg.ac.rs/", "katedra-za-matematiku", None),
-        ("Poljoprivredno prehrambeno mašinstvo", "https://ppm.mas.bg.ac.rs/", "katedra-za-poljoprivredno-masinstvo", None),
-        ("Informacione tehnologije u mašinstvu", "https://it0.mas.bg.ac.rs/", "katedra-za-informacione-tehnologije-u-masinstvu", None),
-        ("MF-ITM", "http://cs.mas.bg.ac.rs/", "katedra-za-informacione-tehnologije-u-masinstvu", None),
-        ("Mašinstvo i informacione tehnologije", "http://mit.mas.bg.ac.rs/", "folder", None),
-        ("Industrija 4.0", "https://i40.mas.bg.ac.rs/", "folder", None),
-        ("Modul ZZK", "https://zzk.mas.bg.ac.rs/", "folder", None),
-    ]),
-    ("Ostali sajtovi fakulteta", [
-        ("Sajt na engleskom", "http://www.en.mas.bg.ac.rs/", "globe", None),
-        ("Pretprijava kandidata", "https://pretprijava.mas.bg.ac.rs/", "user", None),
-        ("Probni prijemni testovi", "https://testovi.mas.bg.ac.rs/", "file", None),
-        ("Repozitorijum Machinery", "https://machinery.mas.bg.ac.rs/", "book", None),
-        ("Alumni fondacija", "https://alumni.mas.bg.ac.rs/", "users", None),
-        ("Inovacioni inkubator", "https://inkubator.mas.bg.ac.rs/", "globe", None),
-        ("Laboratorija za toplotne turbomašine", "https://ltt.mas.bg.ac.rs/", "globe", None),
-        ("Mission4.0", "https://mission4-0.mas.bg.ac.rs/", "globe", None),
-        ("LGS", "https://lgs.mas.bg.ac.rs/", "globe", None),
-        ("Geotermal", "https://geotermal.mas.bg.ac.rs/", "globe", None),
-    ]),
-    ("Ovaj sajt", [
-        ("Predmeti", "/predmeti/", "book", None),
-        ("O sajtu", "/o-sajtu/", "file", None),
-        ("Statistika", "/statistika/", "file", None),
-        ("Verzije", "/verzije/", "file", None),
-        ("Kod na GitHub-u", "https://github.com/KostaJovanovic/nastava", "globe", None),
-        ("Prijavi grešku", "https://github.com/KostaJovanovic/nastava/issues", "msg", None),
-        ("Knjiga utisaka", "https://valjdakosta.com/guestbook", "msgs", None),
-    ]),
+    (
+        "Upis i studiranje",
+        [
+            ("Upis i obnova godine", "mf:upis/start", "enter", None),
+            ("Prijava ispita", "mf:studenti/prijava-ispita", "calendar", None),
+            ("eduroam", "mf:servisi/eduroam", "globe", None),
+            ("VPN", "mf:servisi/vpn", "globe", None),
+            ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
+            ("Kontakt fakulteta", "mf:fakultet/kontakt", "home", None),
+        ],
+    ),
+    (
+        "Studenti",
+        [
+            (
+                "Veliki drajv",
+                "https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU",
+                "cloud",
+                "kosta-onedrive.com",
+            ),
+            ("Mašinci", "https://stepen.masinci.org/", "users", None),
+            ("Drumska strela", "https://fsra.stt.org.rs/", "katedra-za-motorna-vozila", None),
+            ("Beoavia", "https://beoavia.org/", "katedra-za-vazduhoplovstvo", None),
+            ("Robotoid", "https://robotoid.stt.org.rs/", "katedra-za-automatsko-upravljanje", None),
+        ],
+    ),
+    (
+        "Katedre i programi",
+        [
+            ("Katedra za proizvodno mašinstvo", "https://cent.mas.bg.ac.rs/", "katedra-za-proizvodno-masinstvo", None),
+            ("Industrijsko inženjerstvo", "https://ie.mas.bg.ac.rs/", "katedra-za-industrijsko-inzenjerstvo", None),
+            ("Katedra za procesnu tehniku", "https://pt.mas.bg.ac.rs/", "katedra-za-procesnu-tehniku", None),
+            ("Katedra za motore", "https://motori.mas.bg.ac.rs/", "katedra-za-motore", None),
+            ("Katedra za mehanizaciju", "https://meh.mas.bg.ac.rs/", "katedra-za-mehanizaciju", None),
+            ("Katedra za mehaniku fluida", "https://fluidi.mas.bg.ac.rs/", "katedra-za-mehaniku-fluida", None),
+            ("Katedra za vazduhoplovstvo", "http://vaz.mas.bg.ac.rs/", "katedra-za-vazduhoplovstvo", None),
+            ("Katedra za opšte mašinske konstrukcije", "https://omk.mas.bg.ac.rs/", "katedra-za-opste-masinske-konstrukcije", None),
+            ("Katedra za matematiku", "https://mat.mas.bg.ac.rs/", "katedra-za-matematiku", None),
+            ("Poljoprivredno prehrambeno mašinstvo", "https://ppm.mas.bg.ac.rs/", "katedra-za-poljoprivredno-masinstvo", None),
+            ("Informacione tehnologije u mašinstvu", "https://it0.mas.bg.ac.rs/", "katedra-za-informacione-tehnologije-u-masinstvu", None),
+            ("MF-ITM", "http://cs.mas.bg.ac.rs/", "katedra-za-informacione-tehnologije-u-masinstvu", None),
+            ("Mašinstvo i informacione tehnologije", "http://mit.mas.bg.ac.rs/", "folder", None),
+            ("Industrija 4.0", "https://i40.mas.bg.ac.rs/", "folder", None),
+            ("Modul ZZK", "https://zzk.mas.bg.ac.rs/", "folder", None),
+        ],
+    ),
+    (
+        "Ostali sajtovi fakulteta",
+        [
+            ("Sajt na engleskom", "http://www.en.mas.bg.ac.rs/", "globe", None),
+            ("Pretprijava kandidata", "https://pretprijava.mas.bg.ac.rs/", "user", None),
+            ("Probni prijemni testovi", "https://testovi.mas.bg.ac.rs/", "file", None),
+            ("Repozitorijum Machinery", "https://machinery.mas.bg.ac.rs/", "book", None),
+            ("Alumni fondacija", "https://alumni.mas.bg.ac.rs/", "users", None),
+            ("Inovacioni inkubator", "https://inkubator.mas.bg.ac.rs/", "globe", None),
+            ("Laboratorija za toplotne turbomašine", "https://ltt.mas.bg.ac.rs/", "globe", None),
+            ("Mission4.0", "https://mission4-0.mas.bg.ac.rs/", "globe", None),
+            ("LGS", "https://lgs.mas.bg.ac.rs/", "globe", None),
+            ("Geotermal", "https://geotermal.mas.bg.ac.rs/", "globe", None),
+        ],
+    ),
+    (
+        "Ovaj sajt",
+        [
+            ("Predmeti", "/predmeti/", "book", None),
+            ("O sajtu", "/o-sajtu/", "file", None),
+            ("Statistika", "/statistika/", "file", None),
+            ("Verzije", "/verzije/", "file", None),
+            ("Kod na GitHub-u", "https://github.com/KostaJovanovic/nastava", "globe", None),
+            ("Prijavi grešku", "https://github.com/KostaJovanovic/nastava/issues", "msg", None),
+            ("Knjiga utisaka", "https://valjdakosta.com/guestbook", "msgs", None),
+        ],
+    ),
 ]
 
 
@@ -1369,9 +1696,18 @@ def link_groups(archived):
     wiki = {h[3:] for _, links in LINKS for _, h, _, _ in links if h.startswith("mf:")}
     assert wiki <= SHOWN, f"LINKS has pages studije.py does not keep: {wiki - SHOWN}"
     mf = lambda path: wiki_href(path) if path in archived else STUDY_SITE + path
-    return [(group, [(name, mf(h[3:]), icon, domain, "www.mas.bg.ac.rs") if h.startswith("mf:") else
-                     (name, h, icon, domain, "OneDrive" if domain else h.split("://")[-1].rstrip("/"))
-                     for name, h, icon, domain in links]) for group, links in LINKS]
+    return [
+        (
+            group,
+            [
+                (name, mf(h[3:]), icon, domain, "www.mas.bg.ac.rs")
+                if h.startswith("mf:")
+                else (name, h, icon, domain, "OneDrive" if domain else h.split("://")[-1].rstrip("/"))
+                for name, h, icon, domain in links
+            ],
+        )
+        for group, links in LINKS
+    ]
 
 
 def archived_wiki(db):
@@ -1407,8 +1743,9 @@ def render_wiki_pages(site, db, render):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'wiki_pages'").fetchone():
         return
     pages = defaultdict(list)
-    for r in db.execute(f"SELECT * FROM wiki_pages WHERE path IN ({','.join('?' * len(SHOWN))}) ORDER BY path, last_seen DESC",
-                        sorted(SHOWN)):
+    for r in db.execute(
+        f"SELECT * FROM wiki_pages WHERE path IN ({','.join('?' * len(SHOWN))}) ORDER BY path, last_seen DESC", sorted(SHOWN)
+    ):
         pages[r["path"]].append(dict(r))
     hrefs = {path: wiki_href(path) for path in pages}
     lex = lexicon(BeautifulSoup(r[0], "html.parser").get_text("\n") for r in db.execute("SELECT html FROM wiki_pages"))
@@ -1417,15 +1754,26 @@ def render_wiki_pages(site, db, render):
         for v in versions:
             v["title"] = wiki_title(v["title"], lex)
         extra = dict(tabs=upis_tabs(versions[0]["html"], pages, shown, hrefs)) if path == UPIS else {}
-        shown[path] = render(versions, hrefs[path], STUDY_SITE + quote(path), ("/link/", "Linkovi"),
-                             link=lambda value: wiki_link(value, hrefs),
-                             tidy=lambda html, path=path: wiki_tidy(html, path, lex), classes=WIKI_CLASSES, **extra)
+        shown[path] = render(
+            versions,
+            hrefs[path],
+            STUDY_SITE + quote(path),
+            ("/link/", "Linkovi"),
+            link=lambda value: wiki_link(value, hrefs),
+            tidy=lambda html, path=path: wiki_tidy(html, path, lex),
+            classes=WIKI_CLASSES,
+            **extra,
+        )
 
 
 UPIS = "upis/start"
 # upis/start's tabs: (short, long name) for the pages it links; another one it links later gets its own title.
-UPIS_TABS = {"upis/oas": ("OAS", "Osnovne akademske studije"), "upis/mas": ("MAS", "Master akademske studije"),
-             "upis/das": ("DAS", "Doktorske akademske studije"), "studenti/start": ("Viša godina", "Upis u više godine ili obnova")}
+UPIS_TABS = {
+    "upis/oas": ("OAS", "Osnovne akademske studije"),
+    "upis/mas": ("MAS", "Master akademske studije"),
+    "upis/das": ("DAS", "Doktorske akademske studije"),
+    "studenti/start": ("Viša godina", "Upis u više godine ili obnova"),
+}
 
 
 def upis_tabs(raw, pages, shown, hrefs):
@@ -1457,8 +1805,7 @@ def upis_tabs(raw, pages, shown, hrefs):
                 rok.append(("", from_timeline(page)))
                 continue
             # A program's link: "МАШИНСКО ИНЖЕЊЕРСТВО и за студије на српском и …", named by its program alone.
-            subs = [(re.split(r"\s+[иi]\s+за\s", s.get_text(" ", strip=True))[0], by_href.get(s["href"]))
-                    for s in page.select("a[href]")]
+            subs = [(re.split(r"\s+[иi]\s+за\s", s.get_text(" ", strip=True))[0], by_href.get(s["href"])) for s in page.select("a[href]")]
             subs = [(t, BeautifulSoup(shown[p], "html.parser")) for t, p in subs if p in shown]
             lines = {str(s.select_one("ol.wt-tl")) for _, s in subs}
             if subs and len(lines) == 1:
@@ -1506,73 +1853,169 @@ def write_photos(db, site):
 FORUM_ACCOUNT = {"sjosipovic": "sgrbic", "nrosic": "narandjelovic"}
 # Teachers who post on the board but are on no list of the faculty's (nastavnici.py), from the faculty's other pages.
 # source: where the profile's facts are from.
-_JOKSIMOVIC = ("https://mas.bg.ac.rs/_media/fakultet/izbori-u-zvanja/referati/2020/"
-               "referat_komisije_-_kandidat_joksimovic_aleksandra.pdf")
-OTHER_TEACHERS = [dict(
-    id="ajoksimovic", name="Александра Д. Јоксимовић", full_name="Александра Д. Јоксимовић", title="асистент",
-    katedra="Катедра за теорију механизама и машина", katedra_id=None, office=None, email=None, username="ajoksimovic",
-    phone=None, hours=None, research=None, emeritus=0, photo=None, first_seen="2026-11-09", last_seen="2026-11-09",
-    gone=0, source=_JOKSIMOVIC, source_name="реферат комисије, mas.bg.ac.rs",
-    html="<p>Мастер инжењер машинства (2017, модул Прехрамбено машинство). На Машинском факултету од 2012. ради на "
-         "предмету Инжењерска графика, од 2015. на предмету Мехатроника. Истраживач-приправник од 2017, изабрана у "
-         "звање асистента на Катедри за теорију механизама и машина 2020. године.</p>"
-         "<p>Није на списку наставника на сајту факултета; ово је из реферата комисије за њен избор у звање асистента "
-         f'(2020): <a href="{_JOKSIMOVIC}">PDF</a>.</p>')]
+_JOKSIMOVIC = "https://mas.bg.ac.rs/_media/fakultet/izbori-u-zvanja/referati/2020/referat_komisije_-_kandidat_joksimovic_aleksandra.pdf"
+OTHER_TEACHERS = [
+    dict(
+        id="ajoksimovic",
+        name="Александра Д. Јоксимовић",
+        full_name="Александра Д. Јоксимовић",
+        title="асистент",
+        katedra="Катедра за теорију механизама и машина",
+        katedra_id=None,
+        office=None,
+        email=None,
+        username="ajoksimovic",
+        phone=None,
+        hours=None,
+        research=None,
+        emeritus=0,
+        photo=None,
+        first_seen="2026-11-09",
+        last_seen="2026-11-09",
+        gone=0,
+        source=_JOKSIMOVIC,
+        source_name="реферат комисије, mas.bg.ac.rs",
+        html="<p>Мастер инжењер машинства (2017, модул Прехрамбено машинство). На Машинском факултету од 2012. ради на "
+        "предмету Инжењерска графика, од 2015. на предмету Мехатроника. Истраживач-приправник од 2017, изабрана у "
+        "звање асистента на Катедри за теорију механизама и машина 2020. године.</p>"
+        "<p>Није на списку наставника на сајту факултета; ово је из реферата комисије за њен избор у звање асистента "
+        f'(2020): <a href="{_JOKSIMOVIC}">PDF</a>.</p>',
+    )
+]
 
 
 def _mentioned(id, name, title, katedra, seen, gone, source, source_name, html, aside=False):
     """A makeshift page: someone the board or the faculty's pages name at their work (exercises, labs, papers), on no
     list of the faculty's; what is known, from where. seen: the last date a source names them. aside: a
     researcher or demonstrator, on /nastavnici/istrazivaci/ and not among the teachers (their list, the searches, the count)."""
-    return dict(id=id, name=name, full_name=name, title=title, katedra=katedra, katedra_id=None, office=None, email=None,
-                username=None, phone=None, hours=None, research=None, emeritus=0, photo=None, first_seen=seen,
-                last_seen=seen, gone=gone, source=source, source_name=source_name, aside=aside or title == "демонстратор",
-                html=html + "<p>Није на списку наставника на сајту факултета: ова страница је састављена из помена.</p>")
+    return dict(
+        id=id,
+        name=name,
+        full_name=name,
+        title=title,
+        katedra=katedra,
+        katedra_id=None,
+        office=None,
+        email=None,
+        username=None,
+        phone=None,
+        hours=None,
+        research=None,
+        emeritus=0,
+        photo=None,
+        first_seen=seen,
+        last_seen=seen,
+        gone=gone,
+        source=source,
+        source_name=source_name,
+        aside=aside or title == "демонстратор",
+        html=html + "<p>Није на списку наставника на сајту факултета: ова страница је састављена из помена.</p>",
+    )
 
 
 _POST = "https://nastava.mas.bg.ac.rs/nastava/viewtopic.php?p={}"
 OTHER_TEACHERS += [
-    _mentioned("mentioned-maslarevic", "Александар Масларевић", "асистент", "Катедра за технологију материјала",
-               "2025-10-28", 0, _POST.format(25454), "форум наставе",
-               '<p>Држао вежбе из Машинских материјала 2 (од 2016, <a href="/item/p3263/">резултати колоквијума</a>), '
-               'а 2025. са проф. Братиславом Рајичићем дежурао на испитима из ММ2 и ПЗСУЕ '
-               '(<a href="/item/p25454/">„др Александар Масларевић“</a>). Коаутор радова наставника Катедре за '
-               'технологију материјала.</p>'),
-    _mentioned("mentioned-opacic", "Мирјана Опачић", "асистент", "Катедра за технологију материјала",
-               "2016-05-31", 1, _POST.format(2533), "форум наставе",
-               '<p>Предметни асистент на лабораторијским вежбама из Машинских материјала 1 у школској 2015/16 '
-               '(<a href="/item/p2348/">резултати колоквијума</a>, <a href="/item/p2533/">поправни колоквијум</a>).</p>'),
-    _mentioned("mentioned-vukojevic", "Филип Вукојевић", "сарадник у настави", "Катедра за математику",
-               "2026-11-07", 0, _POST.format(27977), "форум наставе",
-               '<p>Мастер инжењер, сарадник у настави из математике од 2026, са проф. Јеленом Матовић, Александром '
-               'Пејчевим и Душаном Ђукићем (<a href="/item/p27977/">„предметни асистент“</a>, '
-               '<a href="/item/p29351/">распоред смена</a>).</p>'),
-    _mentioned("mentioned-marajnovic", "Андријана Марајновић", "асистент", "Катедра за математику",
-               "2021-11-13", 1, _POST.format(15483), "форум наставе",
-               '<p>Асистент на математици; припремила материјал о непрекидним расподелама за предавања проф. '
-               'Александра Пејчева (<a href="/item/p15483/">2021</a>).</p>'),
-    _mentioned("mentioned-berdic", "Стефан Бердић", "демонстратор", "Катедра за опште машинске конструкције",
-               "2025-12-01", 0, _POST.format(26454), "форум наставе",
-               '<p>Демонстратор на Машинским елементима, на прегледу пројектних задатака код проф. Ненада Коларевића и '
-               'Александра Димића (<a href="/item/p20558/">2023</a>, <a href="/item/p23229/">2024</a>, '
-               '<a href="/item/p26454/">2025</a>).</p>'),
-    *[_mentioned(f"ic-{slug(lat)}", name, "истраживач", None, "2026-11-12", 0,
-                 f"https://machinery.mas.bg.ac.rs/APP/faces/author.xhtml?author_id=orcid%3A%3A{orcid}",
-                 "machinery.mas.bg.ac.rs",
-                 f"<p>Истраживач Иновационог центра Машинског факултета: {n} радова у збирци „IC – radovi "
-                 "istraživača“ репозиторијума факултета (Machinery).</p>", aside=True)
-      # The repository's most frequent authors of its Innovation Centre collection (2026-11-12): 100+ works each.
-      for name, lat, orcid, n in [("Симон Седмак", "Simon Sedmak", "0000-0002-2674-541X", 222),
-                                  ("Милош Милошевић", "Miloš Milošević", "0000-0002-2418-1032", 194),
-                                  ("Бранислав Ђорђевић", "Branislav Đorđević", "0000-0001-8595-6930", 120),
-                                  ("Алекса Миловановић", "Aleksa Milovanović", "0000-0003-4668-8800", 113),
-                                  ("Снежана Кирин", "Snežana Kirin", "0000-0002-2176-3969", 111)]],
-    _mentioned("mentioned-kovacevic", "Сандра Ковачевић", "", "Катедра за термомеханику",
-               "2026-11-11", 0, "https://vesti.mas.bg.ac.rs/?p=24064", "vesti.mas.bg.ac.rs",
-               '<p>Мастер инжењер машинства (модул за термотехнику). 2023. награђена на Националном студентском '
-               'такмичењу из КГХ (<a href="https://vesti.mas.bg.ac.rs/?p=24064">вест</a>). Коаутор радова '
-               'проф. Милоша Бањца и Бранислава Петровића (2026) и Приручника за обуку енергетских саветника '
-               '(Машински факултет, 2025).</p>'),
+    _mentioned(
+        "mentioned-maslarevic",
+        "Александар Масларевић",
+        "асистент",
+        "Катедра за технологију материјала",
+        "2025-10-28",
+        0,
+        _POST.format(25454),
+        "форум наставе",
+        '<p>Држао вежбе из Машинских материјала 2 (од 2016, <a href="/item/p3263/">резултати колоквијума</a>), '
+        "а 2025. са проф. Братиславом Рајичићем дежурао на испитима из ММ2 и ПЗСУЕ "
+        '(<a href="/item/p25454/">„др Александар Масларевић“</a>). Коаутор радова наставника Катедре за '
+        "технологију материјала.</p>",
+    ),
+    _mentioned(
+        "mentioned-opacic",
+        "Мирјана Опачић",
+        "асистент",
+        "Катедра за технологију материјала",
+        "2016-05-31",
+        1,
+        _POST.format(2533),
+        "форум наставе",
+        "<p>Предметни асистент на лабораторијским вежбама из Машинских материјала 1 у школској 2015/16 "
+        '(<a href="/item/p2348/">резултати колоквијума</a>, <a href="/item/p2533/">поправни колоквијум</a>).</p>',
+    ),
+    _mentioned(
+        "mentioned-vukojevic",
+        "Филип Вукојевић",
+        "сарадник у настави",
+        "Катедра за математику",
+        "2026-11-07",
+        0,
+        _POST.format(27977),
+        "форум наставе",
+        "<p>Мастер инжењер, сарадник у настави из математике од 2026, са проф. Јеленом Матовић, Александром "
+        'Пејчевим и Душаном Ђукићем (<a href="/item/p27977/">„предметни асистент“</a>, '
+        '<a href="/item/p29351/">распоред смена</a>).</p>',
+    ),
+    _mentioned(
+        "mentioned-marajnovic",
+        "Андријана Марајновић",
+        "асистент",
+        "Катедра за математику",
+        "2021-11-13",
+        1,
+        _POST.format(15483),
+        "форум наставе",
+        "<p>Асистент на математици; припремила материјал о непрекидним расподелама за предавања проф. "
+        'Александра Пејчева (<a href="/item/p15483/">2021</a>).</p>',
+    ),
+    _mentioned(
+        "mentioned-berdic",
+        "Стефан Бердић",
+        "демонстратор",
+        "Катедра за опште машинске конструкције",
+        "2025-12-01",
+        0,
+        _POST.format(26454),
+        "форум наставе",
+        "<p>Демонстратор на Машинским елементима, на прегледу пројектних задатака код проф. Ненада Коларевића и "
+        'Александра Димића (<a href="/item/p20558/">2023</a>, <a href="/item/p23229/">2024</a>, '
+        '<a href="/item/p26454/">2025</a>).</p>',
+    ),
+    *[
+        _mentioned(
+            f"ic-{slug(lat)}",
+            name,
+            "истраживач",
+            None,
+            "2026-11-12",
+            0,
+            f"https://machinery.mas.bg.ac.rs/APP/faces/author.xhtml?author_id=orcid%3A%3A{orcid}",
+            "machinery.mas.bg.ac.rs",
+            f"<p>Истраживач Иновационог центра Машинског факултета: {n} радова у збирци „IC – radovi "
+            "istraživača“ репозиторијума факултета (Machinery).</p>",
+            aside=True,
+        )
+        # The repository's most frequent authors of its Innovation Centre collection (2026-11-12): 100+ works each.
+        for name, lat, orcid, n in [
+            ("Симон Седмак", "Simon Sedmak", "0000-0002-2674-541X", 222),
+            ("Милош Милошевић", "Miloš Milošević", "0000-0002-2418-1032", 194),
+            ("Бранислав Ђорђевић", "Branislav Đorđević", "0000-0001-8595-6930", 120),
+            ("Алекса Миловановић", "Aleksa Milovanović", "0000-0003-4668-8800", 113),
+            ("Снежана Кирин", "Snežana Kirin", "0000-0002-2176-3969", 111),
+        ]
+    ],
+    _mentioned(
+        "mentioned-kovacevic",
+        "Сандра Ковачевић",
+        "",
+        "Катедра за термомеханику",
+        "2026-11-11",
+        0,
+        "https://vesti.mas.bg.ac.rs/?p=24064",
+        "vesti.mas.bg.ac.rs",
+        "<p>Мастер инжењер машинства (модул за термотехнику). 2023. награђена на Националном студентском "
+        'такмичењу из КГХ (<a href="https://vesti.mas.bg.ac.rs/?p=24064">вест</a>). Коаутор радова '
+        "проф. Милоша Бањца и Бранислава Петровића (2026) и Приручника за обуку енергетских саветника "
+        "(Машински факултет, 2025).</p>",
+    ),
 ]
 
 
@@ -1602,20 +2045,40 @@ def load_history(teachers):
             s["page"] = m and int(m[1]) - 2
         # The written sources first, the old site's pages last; each kind by its years.
         kinds = ["referat", "in-memoriam", "monografija", "wikipedia", "web", "stari-sajt"]
-        h["sources"].sort(key=lambda s: (kinds.index(s["kind"]) if s["kind"] in kinds else 4, s["page"] or 0,
-                                         re.findall(r"\d{4}", s["years"] or "")))
+        h["sources"].sort(
+            key=lambda s: (kinds.index(s["kind"]) if s["kind"] in kinds else 4, s["page"] or 0, re.findall(r"\d{4}", s["years"] or ""))
+        )
         if h["teacher"]:
             if h["teacher"] in by_id:
                 by_id[h["teacher"]]["history"] = h
             continue
         # last_seen: the last year a source names, so the archive orders them after the recently departed.
         years = re.findall(r"\d{4}", h["years"] or "")
-        new.append(dict(id=f"ist-{slug(h['name'] + ' ' + (h['life'] or ''))}", name=h["name"], full_name=h["name"],
-                        title=h["title"] or "", katedra=h["katedra"], katedra_id=None, office=None, email=None, username=None,
-                        phone=None, hours=None, research=((h.get("card") or {}).get("fields") or {}).get("research"),
-                        emeritus=0, html=None, first_seen=None,
-                        last_seen=max(years) if years else str((h.get("span") or {}).get("to") or "0000"), gone=1, photo=None, subjects=[], history=h,
-                        suffix=h["life"] and slug(h["life"])))
+        new.append(
+            dict(
+                id=f"ist-{slug(h['name'] + ' ' + (h['life'] or ''))}",
+                name=h["name"],
+                full_name=h["name"],
+                title=h["title"] or "",
+                katedra=h["katedra"],
+                katedra_id=None,
+                office=None,
+                email=None,
+                username=None,
+                phone=None,
+                hours=None,
+                research=((h.get("card") or {}).get("fields") or {}).get("research"),
+                emeritus=0,
+                html=None,
+                first_seen=None,
+                last_seen=max(years) if years else str((h.get("span") or {}).get("to") or "0000"),
+                gone=1,
+                photo=None,
+                subjects=[],
+                history=h,
+                suffix=h["life"] and slug(h["life"]),
+            )
+        )
     return new
 
 
@@ -1643,10 +2106,9 @@ def load_teachers(db, subjects):
     placeholder = {u for urls in same.values() if len({u.split("?")[0] for u in urls}) >= 3 for u in urls}
     # So is one URL kept as several departed teachers' photo (masinac.org's nema_slike.jpg).
     placeholder |= {u for u, n in Counter(t.get("photo") for t in teachers if t.get("photo")).items() if n >= 3}
-    fotos ={f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
+    fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
     bios = {b["id"]: b["paras"] for b in map(json.loads, BIOS.read_text(encoding="utf-8").splitlines())} if BIOS.exists() else {}
-    sums = ({b["id"]: b["paras"] for b in map(json.loads, SUMMARIES.read_text(encoding="utf-8").splitlines())}
-            if SUMMARIES.exists() else {})
+    sums = {b["id"]: b["paras"] for b in map(json.loads, SUMMARIES.read_text(encoding="utf-8").splitlines())} if SUMMARIES.exists() else {}
     # The last day the teachers' list was read: one not on it then (gone, or a department's staff nastavnici.py keeps)
     # has no profile at the faculty.
     listed_day = max((t["last_seen"] for t in teachers if not t["gone"] and not t.get("source")), default="")
@@ -1722,8 +2184,7 @@ def render_teachers(site, teachers, items, book):
     # The year the faculty's lists were first read (2014): a teacher on the first one was there before it.
     first_list = min((t["first_seen"][:4] for t in teachers if t["first_seen"]), default="0000")
     subj_pages = {f"/studije/predmeti/{c}": h for c, h in book_href.items()}
-    subj_pages |= {f"/studije/predmeti/{s['code']}": s["subj"]["href"]
-                   for t in teachers for s in t["subjects"] if s["subj"]}
+    subj_pages |= {f"/studije/predmeti/{s['code']}": s["subj"]["href"] for t in teachers for s in t["subjects"] if s["subj"]}
     # A page the plans list under several names (Завршни предмет's areas, load_book): one row per name.
     areas = {s["id"] for s in book for p in s["places"] if p["variants"]}
     for t in teachers:
@@ -1735,14 +2196,26 @@ def render_teachers(site, teachers, items, book):
             archived = s["subj"]
             area = s["code"] in areas
             # One row per name too: a subject the profile lists under two codes ('Трибологија' twice).
-            row = courses.setdefault(archived["id"] if archived and not area else fold(s["name"]),
-                                     dict(name=s["name"], subj=archived, area=area, codes=[], mine=archived and mine[archived["id"]],
-                                          url=book_href.get(s["code"]) or f"{STUDY_SITE}studije/predmeti/{s['code']}"))
+            row = courses.setdefault(
+                archived["id"] if archived and not area else fold(s["name"]),
+                dict(
+                    name=s["name"],
+                    subj=archived,
+                    area=area,
+                    codes=[],
+                    mine=archived and mine[archived["id"]],
+                    url=book_href.get(s["code"]) or f"{STUDY_SITE}studije/predmeti/{s['code']}",
+                ),
+            )
             row["codes"].append(s["code"])
         # Where they post most first; subjects without their posts after, by name.
         t["courses"] = sorted(courses.values(), key=lambda c: (-(c["mine"] or 0), not c["subj"], azbuka(c["name"])))
-        t["find"] = fold(" ".join([t["full_name"], t["title"] or "", t["katedra"] or "", t["email"] or "", t["research"] or "",
-                                   t["office"] or ""] + [s["name"] for s in t["subjects"]]))
+        t["find"] = fold(
+            " ".join(
+                [t["full_name"], t["title"] or "", t["katedra"] or "", t["email"] or "", t["research"] or "", t["office"] or ""]
+                + [s["name"] for s in t["subjects"]]
+            )
+        )
         # How far the grey corner reaches (style.css --p): the longer since they were last at the faculty, the more of
         # the card, evenly by the year, all of it for 1900 and before. No year: none.
         ago = date.today().year - int(t["last_seen"][:4]) if t["gone"] and t["last_seen"][:4] != "0000" else 0
@@ -1765,16 +2238,21 @@ def render_teachers(site, teachers, items, book):
             stamp = re.sub(r"\D", "", t["last_seen"])[:14]
             source = f"https://web.archive.org/web/{stamp}/{source}"
         # A page written here (OTHER_TEACHERS) links this site's own pages ("/item/p3263/"): those stay as they are.
-        local = lambda v: (pages.get(v.split("?")[0]) or subj_pages.get(v.split("?")[0])
-                           or (v if t.get("source") and v.startswith("/") and not v.startswith("//") else None))
+        local = lambda v: (
+            pages.get(v.split("?")[0])
+            or subj_pages.get(v.split("?")[0])
+            or (v if t.get("source") and v.startswith("/") and not v.startswith("//") else None)
+        )
         # The profile repeats the name as its first heading and the photo; the page has both above it.
         html = re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S)
         # Its bibliography is the page's own section (bibliography); clean_html closes what this leaves open.
         html = re.sub(r'<h2[^>]*id="библиографија".*?(?=<h2|$)', "", html, flags=re.S)
         # base: the profile's relative links are the faculty's (or masinac.org's), even when shown from the Wayback copy.
         html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), base, local)
-        write(site / t["href"].strip("/") / "index.html",
-              env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name))
+        write(
+            site / t["href"].strip("/") / "index.html",
+            env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name),
+        )
     listed = [t for t in teachers if not t["gone"] and not t.get("aside")]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
     # Each katedra's icon is a symbol in icons.svg (the cards, nastavnik.html); a new one shows a blank until drawn.
@@ -1783,17 +2261,20 @@ def render_teachers(site, teachers, items, book):
     assert all(f'id="i-{k}"' in sprite for k in HOME_ORDER), "icons.svg: a smer of HOME_ORDER has no icon"
     for k in sorted({t["katedra"] for t in teachers if t["katedra"]}):
         if f'id="i-{slug(k)}"' not in sprite:
-            print(f"[warn] no icon for {k}: add <symbol id=\"i-{slug(k)}\"> to static/icons.svg", file=sys.stderr)
+            print(f'[warn] no icon for {k}: add <symbol id="i-{slug(k)}"> to static/icons.svg', file=sys.stderr)
     # The ones who left, most recent first: a section below the list.
     left = sorted((t for t in teachers if t["gone"]), key=lambda t: t["last_seen"], reverse=True)
-    write(site / "nastavnici" / "index.html",
-          env.get_template("nastavnici.html").render(teachers=listed, katedre=katedre, left=left))
-    write(site / "nastavnici" / "arhiva" / "index.html",
-          env.get_template("nastavnici.html").render(teachers=left, katedre=sorted({t["katedra"] for t in left if t["katedra"]}),
-                                                     archive=True))
-    write(site / "nastavnici" / "istrazivaci" / "index.html",
-          env.get_template("nastavnici.html").render(teachers=[t for t in teachers if t.get("aside")], katedre=[],
-                                                     researchers=True))
+    write(site / "nastavnici" / "index.html", env.get_template("nastavnici.html").render(teachers=listed, katedre=katedre, left=left))
+    write(
+        site / "nastavnici" / "arhiva" / "index.html",
+        env.get_template("nastavnici.html").render(
+            teachers=left, katedre=sorted({t["katedra"] for t in left if t["katedra"]}), archive=True
+        ),
+    )
+    write(
+        site / "nastavnici" / "istrazivaci" / "index.html",
+        env.get_template("nastavnici.html").render(teachers=[t for t in teachers if t.get("aside")], katedre=[], researchers=True),
+    )
 
 
 def department_intro(html):
@@ -1802,14 +2283,19 @@ def department_intro(html):
     m = re.search(r'<div class="wrap_related[^"]*"[^>]*>(.*?)</div>', html, re.S)
     own = LINK.search(m[1]) if m else None
     text = html.split('<div class="plugin_include_content', 1)[0]
-    text = re.sub(r"<h1[^>]*>.*?</h1>", "", text[:m.start()] + text[m.end():] if m else text, count=1, flags=re.S)
+    text = re.sub(r"<h1[^>]*>.*?</h1>", "", text[: m.start()] + text[m.end() :] if m else text, count=1, flags=re.S)
     text = clean_html(text).strip()
     return text if strip_tags(text) else "", own and unescape(own[1])
 
 
 # The faculty profile's bibliography headings, as a short kind ('ван SCI' before 'SCI').
-BIB_KINDS = [("конференциј", "konferencija"), ("ван SCI", "časopis"), ("SCI", "SCI časopis"), ("Поглавља", "poglavlje"),
-             ("Књиге", "knjiga")]
+BIB_KINDS = [
+    ("конференциј", "konferencija"),
+    ("ван SCI", "časopis"),
+    ("SCI", "SCI časopis"),
+    ("Поглавља", "poglavlje"),
+    ("Књиге", "knjiga"),
+]
 
 
 def bibliography(html, works, name):
@@ -1830,26 +2316,41 @@ def bibliography(html, works, name):
                 continue
             link = LINK.search(e[3])
             title = strip_tags(link[2]) if link else strip_tags(e[3]).split(", ")[0]
-            venue = strip_tags(e[3][link.end():] if link else ", ".join(strip_tags(e[3]).split(", ")[1:])).strip(" ,.")
+            venue = strip_tags(e[3][link.end() :] if link else ", ".join(strip_tags(e[3]).split(", ")[1:])).strip(" ,.")
             doi = re.search(r'href="https?://(?:dx\.)?doi\.org/([^"]+)"', tail)
             mc = re.search(r"\b(M\d+[a-z]?)\.?\s*$", strip_tags(tail))
             # 'Lazović Tatjana', 'Spasojević Brkić Vesna', 'Momčilović Dejan B.': surname first, then the given name.
             me = lambda w: bool(w) and w[0] in sur and any(x[:1] == first for x in w[1:])
             authors = [(a, me(fold(a).replace("-", " ").split())) for a in strip_tags(e[1]).split(", ") if a]
-            out.append(dict(kind=kind, authors=authors, year=int(e[2]), title=title, url=link and unescape(link[1]),
-                            venue=venue, doi=doi and unescape(doi[1]), m=mc and mc[1]))
+            out.append(
+                dict(
+                    kind=kind,
+                    authors=authors,
+                    year=int(e[2]),
+                    title=title,
+                    url=link and unescape(link[1]),
+                    venue=venue,
+                    doi=doi and unescape(doi[1]),
+                    m=mc and mc[1],
+                )
+            )
     for e in out:
         seen |= {e["url"], fold(e["title"])}
     for w in works or ():
         if w["url"] not in seen and fold(w["title"]) not in seen:
-            out.append(dict(kind=None, authors=[], year=w.get("year"), title=w["title"], url=w["url"],
-                            venue=w.get("source") or "", doi=None, m=None))
+            out.append(
+                dict(
+                    kind=None, authors=[], year=w.get("year"), title=w["title"], url=w["url"], venue=w.get("source") or "", doi=None, m=None
+                )
+            )
     return sorted(out, key=lambda e: -(e["year"] or 0))
 
 
 # A katedra's own site that its faculty page does not link (the Linkovi page has them; mat.mas.bg.ac.rs is down).
-OWN_SITES = {"Катедра за информационе технологије у машинству": "https://it0.mas.bg.ac.rs/",
-             "Катедра за пољопривредно машинство": "https://ppm.mas.bg.ac.rs/"}
+OWN_SITES = {
+    "Катедра за информационе технологије у машинству": "https://it0.mas.bg.ac.rs/",
+    "Катедра за пољопривредно машинство": "https://ppm.mas.bg.ac.rs/",
+}
 
 
 def render_katedre(site, db, teachers, subjects, topics):
@@ -1867,18 +2368,34 @@ def render_katedre(site, db, teachers, subjects, topics):
     for k in sorted(katedra_pages):
         d = dept.get(k)
         intro, own = department_intro(d["html"]) if d else ("", None)
-        subs = sorted((s for s in subjects.values() if s.get("katedra") == k),
-                      key=lambda s: (HOME_ORDER.index(s["smer"]["key"]) if s["smer"].get("key") in HOME_ORDER else 99,
-                                     -s["topics"], fold(s["name"])))
+        subs = sorted(
+            (s for s in subjects.values() if s.get("katedra") == k),
+            key=lambda s: (HOME_ORDER.index(s["smer"]["key"]) if s["smer"].get("key") in HOME_ORDER else 99, -s["topics"], fold(s["name"])),
+        )
         groups = [(m["label"], list(rows)) for m, rows in groupby(subs, key=lambda s: s["smer"])]
-        write(site / katedra_href(k).strip("/") / "index.html", env.get_template("katedra.html").render(
-            k=k, intro=intro, own=own or OWN_SITES.get(k), source=d and f"{STUDY_SITE}organizacija/katedre/{d['id']}",
-            teachers=[t for t in listed if t["katedra"] == k], groups=groups, n_subjects=len(subs), topics=newest[k]))
+        write(
+            site / katedra_href(k).strip("/") / "index.html",
+            env.get_template("katedra.html").render(
+                k=k,
+                intro=intro,
+                own=own or OWN_SITES.get(k),
+                source=d and f"{STUDY_SITE}organizacija/katedre/{d['id']}",
+                teachers=[t for t in listed if t["katedra"] == k],
+                groups=groups,
+                n_subjects=len(subs),
+                topics=newest[k],
+            ),
+        )
 
 
 # The programs in the order of the faculty's studies; a subject book program not here goes last.
-PROGRAMS = ["Основне академске студије — МИ", "Основне академске студије — ИТМ", "Мастер академске студије — МИ",
-            "Мастер академске студије — Индустрија 4.0", "Докторске студије — МИ"]
+PROGRAMS = [
+    "Основне академске студије — МИ",
+    "Основне академске студије — ИТМ",
+    "Мастер академске студије — МИ",
+    "Мастер академске студије — Индустрија 4.0",
+    "Докторске студије — МИ",
+]
 # The board's smer names end in these abbreviations; the pages spell them out.
 PROGRAM_NAMES = {"МИ": "Машинско инжењерство", "ИТМ": "Информационе технологије у машинству"}
 
@@ -1925,8 +2442,13 @@ def load_book(db, subjects, teachers):
             place["names"].append(name)
     for s in book:
         s["acr"] = acronyms(s["name"]) | (s["forum"] or {}).get("acr", set())
-        s["find"] = fold(" ".join([s["name"], *sorted(s["acr"]), s["id"], s["katedra"] or "", s["program"]]
-                                  + [t["name"] for t in s["teachers"]] + [p["module"] or "" for p in s["places"]]))
+        s["find"] = fold(
+            " ".join(
+                [s["name"], *sorted(s["acr"]), s["id"], s["katedra"] or "", s["program"]]
+                + [t["name"] for t in s["teachers"]]
+                + [p["module"] or "" for p in s["places"]]
+            )
+        )
         if s["forum"]:
             s["forum"].setdefault("info", s)
         # One row per name in the subject list; its own id, so site.js does not take the areas for one subject.
@@ -1935,8 +2457,7 @@ def load_book(db, subjects, teachers):
             for n in names if len(names) > 1 else []:
                 t = by_area.get((s["id"], fold(n)))
                 # own: what only this area's row has; the subject's find is the page's once (predmeti.html #finds).
-                p["variants"].append(dict(s, name=n, id=f"{s['id']}-{slug(n)}", holder_t=t,
-                                          own=fold(f"{n} {t['name'] if t else ''}")))
+                p["variants"].append(dict(s, name=n, id=f"{s['id']}-{slug(n)}", holder_t=t, own=fold(f"{n} {t['name'] if t else ''}")))
     return book
 
 
@@ -1961,9 +2482,20 @@ def plan_groups(book):
     out = []
     # Programs in study order; modules in the order of the master's page; 'not in a plan' last in its program.
     for (program, module), sems in sorted(plans.items(), key=lambda kv: (order.get(kv[0][0], len(order)), first.get(kv[0], 1e9))):
-        out.append(dict(program=program, module=module, sems=[
-            dict(sem=n, req=[s for _, s in sorted(v["req"], key=lambda x: (x[0], azbuka(x[1]["name"])))],
-                 slots=[v["slots"][k] for k in sorted(v["slots"])]) for n, v in sorted(sems.items())]))
+        out.append(
+            dict(
+                program=program,
+                module=module,
+                sems=[
+                    dict(
+                        sem=n,
+                        req=[s for _, s in sorted(v["req"], key=lambda x: (x[0], azbuka(x[1]["name"])))],
+                        slots=[v["slots"][k] for k in sorted(v["slots"])],
+                    )
+                    for n, v in sorted(sems.items())
+                ],
+            )
+        )
     return out
 
 
@@ -1990,26 +2522,43 @@ def book_page(html):
         if len(lines) > 1 and nums == list(range(1, len(lines) + 1)):
             return [NUMBERED.sub("", l, count=1) for l in lines], True
         return [re.sub(r"^[-–•]\s*", "", l) for l in lines], False
+
     return dict(
-        text={h: text(h) for h in ("Циљ", "Исход", "Садржај теоријске наставе", "Садржај практичне наставе",
-                                   "Услов похађања", "Ресурси")},
-        hours=dict(total=total[0][1] if total else None,
-                   groups=[(g, rows) for g in ("Активна настава (теоријска)", "Активна настава (практична)", "Провера знања")
-                           if (rows := [(l, n) for l, n in pairs(sec.get(g, [])) if n])]),
+        text={h: text(h) for h in ("Циљ", "Исход", "Садржај теоријске наставе", "Садржај практичне наставе", "Услов похађања", "Ресурси")},
+        hours=dict(
+            total=total[0][1] if total else None,
+            groups=[
+                (g, rows)
+                for g in ("Активна настава (теоријска)", "Активна настава (практична)", "Провера знања")
+                if (rows := [(l, n) for l, n in pairs(sec.get(g, [])) if n])
+            ],
+        ),
         points=[(l, n) for l, n in points if n and not l.startswith("Услов")],
         pass_min=next((n for l, n in points if l.startswith("Услов")), None),
-        books=[b.strip() for b in " ".join(sec.get("Литература", [])).split(";") if b.strip()])
+        books=[b.strip() for b in " ".join(sec.get("Литература", [])).split(";") if b.strip()],
+    )
 
 
 def render_book(site, book):
     """A list of all subjects with a filter, grouping and sorting, and one page per subject: the faculty's page."""
     for s in book:
-        write(site / s["href"].strip("/") / "index.html", env.get_template("predmet_opis.html").render(
-            s=s, page=book_page(s["html"]), source_url=f"{STUDY_SITE}studije/predmeti/{s['id']}"))
+        write(
+            site / s["href"].strip("/") / "index.html",
+            env.get_template("predmet_opis.html").render(
+                s=s, page=book_page(s["html"]), source_url=f"{STUDY_SITE}studije/predmeti/{s['id']}"
+            ),
+        )
     listed = [s for s in book if not s["gone"]]
-    write(site / "predmeti" / "index.html", env.get_template("predmeti.html").render(
-        plans=plan_groups(book), n=len(listed), finds={s["id"]: s["find"] for s in listed}, katedre=sorted({s["katedra"] for s in listed if s["katedra"]}),
-        programs=[p for p in PROGRAMS if any(s["program"] == p for s in listed)]))
+    write(
+        site / "predmeti" / "index.html",
+        env.get_template("predmeti.html").render(
+            plans=plan_groups(book),
+            n=len(listed),
+            finds={s["id"]: s["find"] for s in listed},
+            katedre=sorted({s["katedra"] for s in listed if s["katedra"]}),
+            programs=[p for p in PROGRAMS if any(s["program"] == p for s in listed)],
+        ),
+    )
 
 
 def picker(subjects, book, teachers, items=()):
@@ -2065,8 +2614,7 @@ def picker(subjects, book, teachers, items=()):
     def nodes(tree):
         # The required subjects first, then the elective blocks in the plan's order.
         keys = sorted((k for k in tree if k is not None), key=lambda k: k != "")
-        return [dict(n=k, c=nodes(tree[k]), s=sorted(set(tree[k].get(None, [])), key=lambda i: azbuka(entries[i][1])))
-                for k in keys]
+        return [dict(n=k, c=nodes(tree[k]), s=sorted(set(tree[k].get(None, [])), key=lambda i: azbuka(entries[i][1]))) for k in keys]
 
     def person(t):
         """[name, page, photo, title · katedra]; one who left: [name, page, photo, title · years, the grey corner's
@@ -2075,8 +2623,9 @@ def picker(subjects, book, teachers, items=()):
             return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], katedra(t["katedra"])]))]
         s = t["span"] or {}
         est = lambda y, guess: f"~{y}" if guess else str(y)
-        years = s.get("to") and ((f"{est(s['from'], s.get('from_est'))}–" if s["from"] != s["to"] else "") if s.get("from")
-                                 else "do ") + est(s["to"], s.get("to_est"))
+        years = s.get("to") and (
+            (f"{est(s['from'], s.get('from_est'))}–" if s["from"] != s["to"] else "") if s.get("from") else "do "
+        ) + est(s["to"], s.get("to_est"))
         undated = t["last_seen"][:4] == "0000"
         return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
 
@@ -2089,13 +2638,22 @@ def picker(subjects, book, teachers, items=()):
         if ("f", s) in at:
             posters[at[("f", s)]].append([who[t], n])
     # acr: each subject's acronyms (acronyms), for the searches.
-    return dict(subjects=entries, acr=acr, ki=ki, tree=nodes(tree), posters=posters,
-                teachers=[[t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
-                          for t in teachers if not t["gone"] and any(c["subj"] for c in t["courses"])],
-                # The listed teachers first, then the ones who left (the header search shows them where there is room).
-                people=[person(t) for t in people],
-                # [full name, short name, icon slug, listed teachers, its page (render_katedre)].
-                katedre=[[k, katedra(k).capitalize(), slug(k), n, katedra_href(k)] for k, n in sorted(listed.items(), key=lambda x: azbuka(x[0]))])
+    return dict(
+        subjects=entries,
+        acr=acr,
+        ki=ki,
+        tree=nodes(tree),
+        posters=posters,
+        teachers=[
+            [t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
+            for t in teachers
+            if not t["gone"] and any(c["subj"] for c in t["courses"])
+        ],
+        # The listed teachers first, then the ones who left (the header search shows them where there is room).
+        people=[person(t) for t in people],
+        # [full name, short name, icon slug, listed teachers, its page (render_katedre)].
+        katedre=[[k, katedra(k).capitalize(), slug(k), n, katedra_href(k)] for k, n in sorted(listed.items(), key=lambda x: azbuka(x[0]))],
+    )
 
 
 def write_bytes(path, data):
@@ -2123,8 +2681,12 @@ def smer_abbr(name):
 def side_panel(items):
     """The counts of the side panel (sidebar.html), the same on every page."""
     years = Counter(r["year"] for r in items if r["year"])
-    return dict(total=len(items), kinds=Counter(KIND[r["kind"]] for r in items),
-                year_hist=sorted(years.items()), downloads=sum(n for n, _ in attachment_files(items).values()))
+    return dict(
+        total=len(items),
+        kinds=Counter(KIND[r["kind"]] for r in items),
+        year_hist=sorted(years.items()),
+        downloads=sum(n for n, _ in attachment_files(items).values()),
+    )
 
 
 def attachment_files(items):
@@ -2147,12 +2709,17 @@ def ranking(counts, row, k=10):
 MONTHS = "jan feb mar apr maj jun jul avg sep okt nov dec".split()
 WEEKDAYS = "pon uto sre čet pet sub ned".split()
 # Words of the posts the word cloud leaves out: frequent, but they say nothing of what a post is about.
-CLOUD_STOP = set("""prof dela posle nakon koji koja koje koju kojima prvi drugi treći prva druga treća prve prvog drugog
+CLOUD_STOP = set(
+    """prof dela posle nakon koji koja koje koju kojima prvi drugi treći prva druga treća prve prvog drugog
     trećeg biće biti bilo bude mogu može možete imaju nisu nije neće samo treba više prema kako isto istom ukoliko tokom
-    jedan preko radi putem zbog svih ovog ovom ovaj takođe""".split())
+    jedan preko radi putem zbog svih ovog ovom ovaj takođe""".split()
+)
 # What in a post's text is not its words: a link, an e-mail, a file's name, an attachment's "(1.2 MiB) preuzeto 5 puta".
-NOT_WORDS = re.compile(r"\S*(?:://|www\.|@)\S*|\S+\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|jpe?g|png|gif|txt|dwg|m)\b"
-                       r"|\([\d.,]+ [KMG]?i?B\) preuzeto \d+ puta", re.I)
+NOT_WORDS = re.compile(
+    r"\S*(?:://|www\.|@)\S*|\S+\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|jpe?g|png|gif|txt|dwg|m)\b"
+    r"|\([\d.,]+ [KMG]?i?B\) preuzeto \d+ puta",
+    re.I,
+)
 
 
 def post_words(it):
@@ -2215,8 +2782,11 @@ def archive_stats(items, topics, teachers):
     smer = lambda h: (by[h]["smer"]["label"], h, None)
     teacher = lambda h: (by[h]["teacher"]["shown"], h, by[h]["teacher"]["title"])
     # A file's note has its post's date too: a teacher uploads a new copy of the same name for each exam.
-    upload = lambda f: (names[f], f"/item/{files[f][1]['id']}/",
-                        " · ".join(filter(None, [files[f][1]["subject"] or files[f][1]["who"], env.filters["dmy"](files[f][1]["date"])])))
+    upload = lambda f: (
+        names[f],
+        f"/item/{files[f][1]['id']}/",
+        " · ".join(filter(None, [files[f][1]["subject"] or files[f][1]["who"], env.filters["dmy"](files[f][1]["date"])])),
+    )
 
     years = Counter(it["year"] for it in dated)
     months = Counter((it["year"], int(it["date"][5:7])) for it in dated)
@@ -2231,27 +2801,49 @@ def archive_stats(items, topics, teachers):
     posting = {t["username"] for t in listed if t["username"] and t["username"] in tally["authors"]}
     by_teachers = sum(1 for it in posts if it["teacher"])
     return dict(
-        first=min(dated, key=lambda it: it["date"], default=None), last=max(dated, key=lambda it: it["date"], default=None),
-        totals=[(len(posts), "post"), (len(topics), "thread"), (len(tally["authors"]), "autor"),
-                (len(tally["subjects"]), "predmet"), (len(files), "prilog"), (sum(tally["files"].values()), "preuzimanje")],
+        first=min(dated, key=lambda it: it["date"], default=None),
+        last=max(dated, key=lambda it: it["date"], default=None),
+        totals=[
+            (len(posts), "post"),
+            (len(topics), "thread"),
+            (len(tally["authors"]), "autor"),
+            (len(tally["subjects"]), "predmet"),
+            (len(files), "prilog"),
+            (sum(tally["files"].values()), "preuzimanje"),
+        ],
         years=bars(sorted(years.items()), lambda y: f"/?from={y}&to={y}"),
-        heat=[dict(year=y, cells=[dict(m=MONTHS[m - 1], n=months[(y, m)], pct=round(months[(y, m)] / top_month * 100))
-                                  for m in range(1, 13)]) for y in sorted(years)],
+        heat=[
+            dict(year=y, cells=[dict(m=MONTHS[m - 1], n=months[(y, m)], pct=round(months[(y, m)] / top_month * 100)) for m in range(1, 13)])
+            for y in sorted(years)
+        ],
         hours=bars([(h, hours[h]) for h in range(24)]),
         days=bars([(d, days[i]) for i, d in enumerate(WEEKDAYS)]),
         busiest=busiest[0] if busiest else None,
         words=sorted(ranking(words, lambda w: (w, f"/?q={quote(fold(w))}", None), k=60), key=lambda r: fold(r["label"])),
-        authors=ranking(tally["authors"], author), subjects=ranking(tally["subjects"], subject),
+        authors=ranking(tally["authors"], author),
+        subjects=ranking(tally["subjects"], subject),
         smerovi=ranking(tally["smerovi"], smer, k=20),
-        files=ranking(tally["files"], upload), teacher_dl=ranking(tally["teacher_dl"], teacher),
-        subject_dl=ranking(tally["subject_dl"], subject), smer_dl=ranking(tally["smer_dl"], smer, k=20),
-        longest=ranking(Counter({t["href"]: len(t["posts"]) for t in topics}),
-                        lambda h: (topic[h]["title"], h, topic[h]["subj"] and topic[h]["subj"]["name"])),
-        teachers=dict(listed=len(listed), emeritus=sum(1 for t in listed if t["emeritus"]), gone=len(teachers) - len(listed),
-                      posting=len(posting), share=round(by_teachers / (len(posts) or 1) * 100),
-                      titles=[(r, n) for r in RANKS if (n := sum(1 for t in listed if t["title"] == r))],
-                      katedre=ranking(Counter(t["katedra"] for t in listed if t["katedra"]),
-                                      lambda k: (env.filters["katedra"](k).capitalize(), katedra_href(k), None))))
+        files=ranking(tally["files"], upload),
+        teacher_dl=ranking(tally["teacher_dl"], teacher),
+        subject_dl=ranking(tally["subject_dl"], subject),
+        smer_dl=ranking(tally["smer_dl"], smer, k=20),
+        longest=ranking(
+            Counter({t["href"]: len(t["posts"]) for t in topics}),
+            lambda h: (topic[h]["title"], h, topic[h]["subj"] and topic[h]["subj"]["name"]),
+        ),
+        teachers=dict(
+            listed=len(listed),
+            emeritus=sum(1 for t in listed if t["emeritus"]),
+            gone=len(teachers) - len(listed),
+            posting=len(posting),
+            share=round(by_teachers / (len(posts) or 1) * 100),
+            titles=[(r, n) for r in RANKS if (n := sum(1 for t in listed if t["title"] == r))],
+            katedre=ranking(
+                Counter(t["katedra"] for t in listed if t["katedra"]),
+                lambda k: (env.filters["katedra"](k).capitalize(), katedra_href(k), None),
+            ),
+        ),
+    )
 
 
 def render_vesti(site, vesti):
@@ -2268,8 +2860,10 @@ def render_vesti(site, vesti):
     for y in years:
         rows = [v for v in vesti if v["year"] == y]
         cats = sorted({c for v in rows for c in v["cats"]}, key=fold)
-        write(site / year_href[y].strip("/") / "index.html", env.get_template("vesti.html").render(
-            vesti=rows, year=y, years=years, year_href=year_href, cats=cats, total=len(vesti)))
+        write(
+            site / year_href[y].strip("/") / "index.html",
+            env.get_template("vesti.html").render(vesti=rows, year=y, years=years, year_href=year_href, cats=cats, total=len(vesti)),
+        )
     (site / "vesti").mkdir(exist_ok=True)  # dev mode writes no page there
     (site / "vesti" / "feed.xml").write_text(atom("Vesti · Mašinski fakultet", "/vesti/", vesti[:FEED_ALL]), encoding="utf-8")
 
@@ -2283,10 +2877,21 @@ def render_objave(site, topics):
     year_href = {y: "/objave/" if y == years[0] else f"/objave/{y}/" for y in years}
     for y in years:
         rows = [t for t in topics if t["last"]["year"] == y]
-        authors = sorted({(r["author"] or "").lower(): r["who"] for t in rows for r in t["posts"]
-                          if r["author"] and not r["author"].startswith("Student #")}.items(), key=lambda a: fold(a[1] or a[0]))
-        write(site / year_href[y].strip("/") / "index.html", env.get_template("objave.html").render(
-            topics=rows, year=y, years=years, year_href=year_href, authors=authors, total=len(topics)))
+        authors = sorted(
+            {
+                (r["author"] or "").lower(): r["who"]
+                for t in rows
+                for r in t["posts"]
+                if r["author"] and not r["author"].startswith("Student #")
+            }.items(),
+            key=lambda a: fold(a[1] or a[0]),
+        )
+        write(
+            site / year_href[y].strip("/") / "index.html",
+            env.get_template("objave.html").render(
+                topics=rows, year=y, years=years, year_href=year_href, authors=authors, total=len(topics)
+            ),
+        )
 
 
 # The home page's smerovi, by level then program (their URL slugs); any other after them, in the board's order. Each
@@ -2299,9 +2904,13 @@ def render_home(topics, smerovi, side, n_teachers, vesti):
     live = [m for m in smerovi.values() if m.get("live")]
     live.sort(key=lambda m: HOME_ORDER.index(m["key"]) if m["key"] in HOME_ORDER else len(HOME_ORDER))
     return env.get_template("search.html").render(
-        home=True, smerovi=live, recent=topics[:RECENT], vesti=vesti[:VESTI_HOME],
+        home=True,
+        smerovi=live,
+        recent=topics[:RECENT],
+        vesti=vesti[:VESTI_HOME],
         stats=dict(posts=side["total"], topics=len(topics), teachers=n_teachers),
-        years_json=json.dumps([y for y, _ in side["year_hist"]]))
+        years_json=json.dumps([y for y, _ in side["year_hist"]]),
+    )
 
 
 # verzije.md's tags: the shown word and the class (style.css .vz__tag--).
@@ -2312,8 +2921,7 @@ VZ_ITEM = re.compile(r"- (?:(\d+(?:–\d+)?(?:, \d+(?:–\d+)?)*) )?(?:\[(\w+)\]
 def load_verzije(text):
     """verzije.md (its own head says how it is written) -> the days of /verzije/, newest first:
     [{date, lead, span, n, parts: [{head, items: [{v, tag, html}]}]}]. Every commit 1..N must be listed exactly once."""
-    inline = lambda s: Markup(re.sub(r"`(.+?)`", r"<span data-notx>\1</span>",
-                                     re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", str(escape(s)))))
+    inline = lambda s: Markup(re.sub(r"`(.+?)`", r"<span data-notx>\1</span>", re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", str(escape(s)))))
     days, seen = [], []
     for block in re.split(r"^## ", text, flags=re.M)[1:]:
         date, *lines = block.rstrip().split("\n")
@@ -2333,9 +2941,9 @@ def load_verzije(text):
                 assert not m[2] or m[2] in VZ_TAGS, f"verzije.md: unknown tag [{m[2]}]"
                 for a, b in spans:
                     day["nums"] += range(a, b + 1)
-                day["parts"][-1]["items"].append(dict(
-                    v=", ".join(f"0.{a}" if a == b else f"0.{a}–0.{b}" for a, b in spans),
-                    tag=VZ_TAGS.get(m[2]), html=inline(m[3])))
+                day["parts"][-1]["items"].append(
+                    dict(v=", ".join(f"0.{a}" if a == b else f"0.{a}–0.{b}" for a, b in spans), tag=VZ_TAGS.get(m[2]), html=inline(m[3]))
+                )
             else:
                 assert not day["lead"], f"verzije.md, {date}: one lead line a day, then the entries"
                 day["lead"] = inline(r)
@@ -2368,12 +2976,12 @@ def css_colors(css):
         if name in seen or not (value.startswith("light-dark(") or re.fullmatch(r"#[0-9a-fA-F]{3,8}", value)):
             continue
         if value.startswith("light-dark("):
-            inner, depth = value[len("light-dark("):-1], 0
+            inner, depth = value[len("light-dark(") : -1], 0
             for i, c in enumerate(inner):  # the comma between the two, not one inside color-mix()
                 depth += (c == "(") - (c == ")")
                 if c == "," and not depth:
                     break
-            seen[name] = (inner[:i].strip(), inner[i + 1:].strip())
+            seen[name] = (inner[:i].strip(), inner[i + 1 :].strip())
         else:
             seen[name] = (value, value)
     return [(n, *v) for n, v in seen.items()]
@@ -2388,15 +2996,18 @@ def stil_data():
     static = HERE / "static"
     sprite = (static / "icons.svg").read_text(encoding="utf-8")
     # Each symbol as an SVG of its own, for its download link (a data: URL: no files to write).
-    icons = [dict(id=i, svg=f'<svg xmlns="http://www.w3.org/2000/svg"{attrs}>{body}</svg>')
-             for i, attrs, body in re.findall(r'<symbol id="([^"]+)"([^>]*)>(.*?)</symbol>', sprite, re.S)]
+    icons = [
+        dict(id=i, svg=f'<svg xmlns="http://www.w3.org/2000/svg"{attrs}>{body}</svg>')
+        for i, attrs, body in re.findall(r'<symbol id="([^"]+)"([^>]*)>(.*?)</symbol>', sprite, re.S)
+    ]
     assert len(icons) == sprite.count("<symbol"), "icons.svg: a symbol /stil/ did not read"
     logos = [dict(name=n, size=png_size(static / n) if n.endswith(".png") else "SVG") for n in STIL_LOGOS]
     posters = sorted(p.name for p in static.iterdir() if p.name.startswith("og") and p.suffix in (".png", ".jpg"))
     fonts = [dict(name=n, family=f, files=files, weights=w, use=u) for n, f, files, w, u in STIL_FONTS]
     assert all((static / "fonts" / f).exists() for t in fonts for f in t["files"]), "STIL_FONTS: a file not in static/fonts"
-    return dict(colors=css_colors((static / "style.css").read_text(encoding="utf-8")), icons=icons, logos=logos,
-                posters=posters, fonts=fonts)
+    return dict(
+        colors=css_colors((static / "style.css").read_text(encoding="utf-8")), icons=icons, logos=logos, posters=posters, fonts=fonts
+    )
 
 
 def main(db_path, out, dev_mode=False):
@@ -2410,7 +3021,7 @@ def main(db_path, out, dev_mode=False):
     shutil.rmtree(site, ignore_errors=True)
     shutil.copytree(HERE / "static", site / "static")
     version_static(site / "static")
-    db =sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
     place, smerovi, subjects = load_places(db)
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
@@ -2440,8 +3051,8 @@ def main(db_path, out, dev_mode=False):
     global shell, site_dir
     shell, site_dir = split_page(str(env.get_template("base.html").render()))[0], site
     (site / "shell.html").write_text(versioned(shell), encoding="utf-8")
-    nav = shell[shell.index('<nav class="snav"'):]
-    snav[:] = re.findall(r'<a href="([^"]+)"', nav[:nav.index("</nav>")])
+    nav = shell[shell.index('<nav class="snav"') :]
+    snav[:] = re.findall(r'<a href="([^"]+)"', nav[: nav.index("</nav>")])
     # join() marks the shell's first <a href="..."> with the link's href: that one must be in .snav.
     assert all(shell.index(f'<a href="{h}"') > shell.index('<nav class="snav"') for h in snav), "a link before .snav"
     # The faculty's subject code often differs from the board's: a subject of the same name the teacher posted in wins.
@@ -2475,12 +3086,21 @@ def main(db_path, out, dev_mode=False):
     render_book(site, book)
     raspored = render_study_pages(site, db)
     links = link_groups(archived_wiki(db))
-    (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored,
-                                                     # The researchers and demonstrators for the header search: [name, page, title].
-                                                     istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")],
-                                                     # Linkovi's cards for it too: [name, second line, href, data-domain].
-                                                     linkovi=[[n, shown, h, d] for _, group in links for n, h, _, d, shown in group]),
-                                                ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    (site / "izbor.json").write_text(
+        json.dumps(
+            dict(
+                picker(subjects, book, teachers, items),
+                raspored=raspored,
+                # The researchers and demonstrators for the header search: [name, page, title].
+                istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")],
+                # Linkovi's cards for it too: [name, second line, href, data-domain].
+                linkovi=[[n, shown, h, d] for _, group in links for n, h, _, d, shown in group],
+            ),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ),
+        encoding="utf-8",
+    )
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
     about = env.get_template("o_sajtu.html").render()
@@ -2488,8 +3108,10 @@ def main(db_path, out, dev_mode=False):
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
     write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()))
     # icons: {host: file} of the sites' own icons in static/link (saved by hand), for link.html's cards.
-    write(site / "link" / "index.html", env.get_template("link.html").render(
-        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}, groups=links))
+    write(
+        site / "link" / "index.html",
+        env.get_template("link.html").render(icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}, groups=links),
+    )
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())
     if dev:
@@ -2503,8 +3125,11 @@ def main(db_path, out, dev_mode=False):
     if dev:
         return
     write_sitemap(site)
-    print(f"{len(items)} items, {len(topics)} topics, {len(subjects)} subjects, "
-          f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti", flush=True)
+    print(
+        f"{len(items)} items, {len(topics)} topics, {len(subjects)} subjects, "
+        f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti",
+        flush=True,
+    )
     npx = shutil.which("npx") or sys.exit("npx not found: Pagefind needs Node.js")
     subprocess.run([npx, "-y", PAGEFIND, "--site", str(site)], check=True)
     strip_pagefind(site)
@@ -2512,22 +3137,31 @@ def main(db_path, out, dev_mode=False):
 
 if __name__ == "__main__":
     assert fold("Ђачки распоред, Čas") == "djacki raspored, cas"
-    assert wiki_title("УПИС 2026/2027.") == "Упис 2026/2027." and wiki_title("cenovnik") == "Cenovnik" and wiki_title("ОАС Упис") == "ОАС Упис"
+    assert (
+        wiki_title("УПИС 2026/2027.") == "Упис 2026/2027." and wiki_title("cenovnik") == "Cenovnik" and wiki_title("ОАС Упис") == "ОАС Упис"
+    )
     hrefs = {"upis/oas": "/mf/upis/oas/", "biblioteka/start": "/mf/biblioteka/start/"}
-    assert wiki_link("/upis/oas#rok", hrefs) == "/mf/upis/oas/#rok" and wiki_link("https://www.mas.bg.ac.rs/biblioteka", hrefs) == "/mf/biblioteka/start/"
+    assert (
+        wiki_link("/upis/oas#rok", hrefs) == "/mf/upis/oas/#rok"
+        and wiki_link("https://www.mas.bg.ac.rs/biblioteka", hrefs) == "/mf/biblioteka/start/"
+    )
     assert wiki_link("/doku.php?id=upis:oas", hrefs) == "/mf/upis/oas/" and wiki_link("https://ie.mas.bg.ac.rs/upis/oas", hrefs) is None
     assert wiki_link("/_media/upis/oas.pdf", hrefs) is None
     assert acronyms("Основи отпорности конструкција") == {"ook"} and acronyms("Машински елементи 1") == {"me1", "me"}
     assert acronyms("Математика 1", ["МАТ1 рок", "МИ - вежбе"]) == {"m1", "mat1"} and acronyms("Електротехника") == set()
     assert acronyms("Понашање заварених спојева у експлоатацији") == {"pzsue", "pzse"}
     assert acronyms("Биомедицинска инструментација и опрема", ["BMIO - испит", "ДОМАЋИ 2", "ОМ ПРВИ ДЕО", "ММ1 рок"]) == {
-        "biio", "bio", "bmio"}
-    assert css_colors(":root {\n  --a: #fff;\n  --m: light-dark(color-mix(in srgb, #b 16%, transparent), #c);\n"
-                      "  --r: 6px;\n  --a: #000; }") == [("--a", "#fff", "#fff"), ("--m", "color-mix(in srgb, #b 16%, transparent)", "#c")]
+        "biio",
+        "bio",
+        "bmio",
+    }
+    assert css_colors(
+        ":root {\n  --a: #fff;\n  --m: light-dark(color-mix(in srgb, #b 16%, transparent), #c);\n  --r: 6px;\n  --a: #000; }"
+    ) == [("--a", "#fff", "#fff"), ("--m", "color-mix(in srgb, #b 16%, transparent)", "#c")]
     asset_v["site.js"] = "ab"
-    assert versioned('<script src="/static/site.js"> `/static/site.js#${k}` /static/site.js?v=ab /static/sw.js '
-                     '/static/site.json') == ('<script src="/static/site.js?v=ab"> `/static/site.js?v=ab#${k}` '
-                                              '/static/site.js?v=ab /static/sw.js /static/site.json')
+    assert versioned('<script src="/static/site.js"> `/static/site.js#${k}` /static/site.js?v=ab /static/sw.js /static/site.json') == (
+        '<script src="/static/site.js?v=ab"> `/static/site.js?v=ab#${k}` /static/site.js?v=ab /static/sw.js /static/site.json'
+    )
     asset_v.clear()
     assert snav_href("/nastavnik/x/", ["/", "/nastavnici/", "/vesti/"]) == "/nastavnici/"
     assert snav_href("/", ["/", "/vesti/"]) == "/" and snav_href("/tema/1/", ["/", "/vesti/"]) is None
@@ -2536,39 +3170,76 @@ if __name__ == "__main__":
     set_hrefs(_r, lambda r: f"/p/{slug(r['n'])}/")
     assert [r["href"] for r in _r] == ["/p/mata-1/", "/p/mata-1-7/", "/p/drugo/"]
     assert subject_name("﻿Цевни  водови (1044) ") == "Цевни водови"
-    assert [plural(n, "thread") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == "thread threada threadova threadova threadova thread threada threadova threadova".split()
+    assert [
+        plural(n, "thread") for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)
+    ] == "thread threada threadova threadova threadova thread threada threadova threadova".split()
     assert [plural(n, "post") for n in (1, 2, 5, 21, 22)] == "post posta postova post posta".split()
     _v = load_verzije("note\n## 2. x\nLead **b**.\n- 2–3 [novo] **A** `B`\n  dalje\n### H\n- 1, 4 C <i>\n")[0]
     assert (_v["span"], _v["n"], _v["lead"]) == ("0.1–0.4", 4, Markup("Lead <b>b</b>.")), _v
-    assert _v["parts"][0]["items"] == [dict(v="0.2–0.3", tag=("Novo", "new"), html=Markup('<b>A</b> <span data-notx>B</span> dalje'))]
+    assert _v["parts"][0]["items"] == [dict(v="0.2–0.3", tag=("Novo", "new"), html=Markup("<b>A</b> <span data-notx>B</span> dalje"))]
     assert _v["parts"][1]["head"] == "H" and _v["parts"][1]["items"][0]["html"] == Markup("C &lt;i&gt;"), _v
-    assert [katedra("Катедра за " + k) for k in ("термодинамику", "процесну технику", "теорију механизама и машина",
-            "аутоматско управљање", "моторна возила", "моторе", "информационе технологије у машинству")] == [
-        "термодинамика", "процесна техника", "теорија механизама и машина", "аутоматско управљање", "моторна возила", "мотори",
-        "информационе технологије у машинству"]
+    assert [
+        katedra("Катедра за " + k)
+        for k in (
+            "термодинамику",
+            "процесну технику",
+            "теорију механизама и машина",
+            "аутоматско управљање",
+            "моторна возила",
+            "моторе",
+            "информационе технологије у машинству",
+        )
+    ] == [
+        "термодинамика",
+        "процесна техника",
+        "теорија механизама и машина",
+        "аутоматско управљање",
+        "моторна возила",
+        "мотори",
+        "информационе технологије у машинству",
+    ]
     assert env.filters["dmy"]("2026-11-08 10:00") == "08.11.2026."
     assert env.filters["katedra"]("Катедра за механику флуида") == "механика флуида" and env.filters["katedra"](None) == ""
     assert short_smer("основне академске студије - ИТМ") == "ОАС - ИТМ" and short_smer("катедре") == "катедре"
-    assert slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4" and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"
+    assert (
+        slot_label("Изборни предмет 5.4.5", "5.4") == "Изборни предмет 5.4"
+        and slot_label("Изборни предмет 5.2", "5.2") == "Изборни предмет 5.2"
+    )
     assert fold(short_smer(PROGRAMS[0].replace(" — ", " - "))) == fold("ОАС - МИ")
-    assert [service(u) for u in ("https://teams.microsoft.com/l/x", "https://docs.google.com/document/d/1", "https://docs.google.com/forms/d/1",
-                                 "https://us02web.zoom.us/j/1", "http://ie.mas.bg.ac.rs/x", "https://nastava.mas.bg.ac.rs/x",
-                                 "https://masbgacrs-my.sharepoint.com/x", "https://youtu.be/x", "https://mat.mas.bg.ac.rs/moodle/login/",
-                                 "http://it0.mas.bg.ac.rs/")] == [
-        "Teams", "Google Drive", None, None, "ie.mas.bg.ac.rs", None, "OneDrive", "YouTube", "Moodle", "Moodle"]
+    assert [
+        service(u)
+        for u in (
+            "https://teams.microsoft.com/l/x",
+            "https://docs.google.com/document/d/1",
+            "https://docs.google.com/forms/d/1",
+            "https://us02web.zoom.us/j/1",
+            "http://ie.mas.bg.ac.rs/x",
+            "https://nastava.mas.bg.ac.rs/x",
+            "https://masbgacrs-my.sharepoint.com/x",
+            "https://youtu.be/x",
+            "https://mat.mas.bg.ac.rs/moodle/login/",
+            "http://it0.mas.bg.ac.rs/",
+        )
+    ] == ["Teams", "Google Drive", None, None, "ie.mas.bg.ac.rs", None, "OneDrive", "YouTube", "Moodle", "Moodle"]
     # A mark names who links it, most posts first; only teachers' usernames (for their own pages).
     _s, _t = dict(name="ME"), dict(username="pl")
     _p = lambda who, t, d: dict(kind="post", subj=_s, who=who, teacher=t, posted=d, html='<a href="https://classroom.google.com/c/1">c</a>')
     mark_elsewhere([_p("Ana", None, "2021"), _p("Petar L", _t, "2023"), _p("Petar L", _t, "2026"), dict(kind="post", subj=None)])
     _e = _s["elsewhere"]["Classroom"]
     assert (_e["who"], _e["users"], _e["first"]["posted"], _e["last"]["posted"]) == (["Petar L", "Ana"], {"pl"}, "2021", "2026")
+
     # One video is not a place, two are, as is a playlist; a meeting and a results sheet are not material.
     def _marks(*urls):
         s = dict(name="S")
         mark_elsewhere([dict(kind="post", subj=s, who="A", teacher=None, posted="2025", html=f'<a href="{u}">v</a>') for u in urls])
         return list(s.get("elsewhere", {}))
-    assert _marks("https://youtu.be/a", "https://drive.google.com/drive/folders/x", "https://teams.microsoft.com/l/meetup-join/19x",
-                  "https://docs.google.com/spreadsheets/d/e/x/pubhtml") == ["Google Drive"]
+
+    assert _marks(
+        "https://youtu.be/a",
+        "https://drive.google.com/drive/folders/x",
+        "https://teams.microsoft.com/l/meetup-join/19x",
+        "https://docs.google.com/spreadsheets/d/e/x/pubhtml",
+    ) == ["Google Drive"]
     assert _marks("https://youtu.be/a", "https://youtu.be/b") == ["YouTube"] and _marks("https://youtu.be/a") == []
     assert service("https://solfins.sharepoint.com/x") is None
     _a = lambda v: re.search(r'href="([^"]*)"', clean_html(f'<a href="{v}">x</a>'))[1].replace("&amp;", "&")
@@ -2583,81 +3254,152 @@ if __name__ == "__main__":
     assert row_katedra(dict(smer=dict(key="x")), []) is None
     _m, _k = dict(name="основне академске студије - МИ"), dict(name="катедре")
     assert smer_label(_m["name"]) == "Основне академске студије - Машинско инжењерство" and smer_label("катедре") == "Катедре"
-    _a, _b, _c, _e = (dict(id=i, name=n, href=f"/{i}/", count=1, smer=m) for i, n, m in
-                      ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k)))
+    _a, _b, _c, _e = (
+        dict(id=i, name=n, href=f"/{i}/", count=1, smer=m) for i, n, m in ((1, "Б", _m), (2, "А", _m), (3, "В", _k), (4, "Г", _k))
+    )
     _pl = dict(program=PROGRAMS[0], module=None, semester=3, i=0, slot=None)
     _bk = lambda f, places, **kw: dict(dict(forum=f, places=places, gone=0, id="b", href="/b/", name="Б"), **kw)
-    _p = picker({1: _a, 2: _b, 3: _c, 4: _e}, [
-        _bk(_a, [_pl, dict(_pl, i=1, slot="4.4", slot_name="Изборни предмет 4.4.5")]), _bk(_c, [dict(_pl, i=2, semester=4)]),
-        _bk(None, [dict(_pl, i=3, semester=5)], id="b9", href="/b9/", name="Д"), _bk(None, [_pl], id="b8", gone=1)],
-                [dict(shown="Г", href="/g/", gone=1, courses=[dict(subj=_a)], thumb=None, title="доцент", katedra=None,
-                      span={"from": 1950, "to": 1980, "from_est": True}, last_seen="1980", age=40),
-                 dict(shown="Н", href="/n/", gone=0, courses=[dict(subj=_b), dict(subj=None)], thumb="/foto/n.jpg",
-                      title="доцент", katedra="Катедра за математику"),
-                 dict(shown="Ж", href="/z/", gone=1, courses=[], thumb=None, title=None, katedra=None,
-                      span={"to": 1990}, last_seen="0000", age=0)],
-                [dict(subj=_b, teacher=dict(href="/n/"))] * 2 + [dict(subj=_a, teacher=dict(href="/g/")),
-                 dict(subj=_b, teacher=None), dict(subj=None, teacher=dict(href="/n/"))])
+    _p = picker(
+        {1: _a, 2: _b, 3: _c, 4: _e},
+        [
+            _bk(_a, [_pl, dict(_pl, i=1, slot="4.4", slot_name="Изборни предмет 4.4.5")]),
+            _bk(_c, [dict(_pl, i=2, semester=4)]),
+            _bk(None, [dict(_pl, i=3, semester=5)], id="b9", href="/b9/", name="Д"),
+            _bk(None, [_pl], id="b8", gone=1),
+        ],
+        [
+            dict(
+                shown="Г",
+                href="/g/",
+                gone=1,
+                courses=[dict(subj=_a)],
+                thumb=None,
+                title="доцент",
+                katedra=None,
+                span={"from": 1950, "to": 1980, "from_est": True},
+                last_seen="1980",
+                age=40,
+            ),
+            dict(
+                shown="Н",
+                href="/n/",
+                gone=0,
+                courses=[dict(subj=_b), dict(subj=None)],
+                thumb="/foto/n.jpg",
+                title="доцент",
+                katedra="Катедра за математику",
+            ),
+            dict(
+                shown="Ж", href="/z/", gone=1, courses=[], thumb=None, title=None, katedra=None, span={"to": 1990}, last_seen="0000", age=0
+            ),
+        ],
+        [dict(subj=_b, teacher=dict(href="/n/"))] * 2
+        + [dict(subj=_a, teacher=dict(href="/g/")), dict(subj=_b, teacher=None), dict(subj=None, teacher=dict(href="/n/"))],
+    )
     assert _p["posters"] == [[[1, 1]], [[0, 2]], [], [], []], _p["posters"]
     _g = lambda n, s: dict(n=n, c=[], s=s)
-    assert _p["tree"] == [dict(n=PROGRAMS[0], s=[], c=[
-        dict(n="2. godina", s=[], c=[_g("", [0, 2]), _g("Изборни предмет 4.4", [0])]),
-        dict(n="3. godina", s=[], c=[_g("", [4])]),
-        dict(n="Stari predmeti", s=[], c=[_g("", [1])])]), dict(n="Катедре", s=[], c=[_g("", [3])])], _p["tree"]
+    assert _p["tree"] == [
+        dict(
+            n=PROGRAMS[0],
+            s=[],
+            c=[
+                dict(n="2. godina", s=[], c=[_g("", [0, 2]), _g("Изборни предмет 4.4", [0])]),
+                dict(n="3. godina", s=[], c=[_g("", [4])]),
+                dict(n="Stari predmeti", s=[], c=[_g("", [1])]),
+            ],
+        ),
+        dict(n="Катедре", s=[], c=[_g("", [3])]),
+    ], _p["tree"]
     assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [
-        ["Н", "/n/", "/foto/n.jpg", "доцент · математика"], ["Г", "/g/", None, "доцент · ~1950–1980", 40],
-        ["Ж", "/z/", None, "do 1990", None]], _p["people"]
-    assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1,
-                              katedra_href("Катедра за математику")]], _p["katedre"]
+        ["Н", "/n/", "/foto/n.jpg", "доцент · математика"],
+        ["Г", "/g/", None, "доцент · ~1950–1980", 40],
+        ["Ж", "/z/", None, "do 1990", None],
+    ], _p["people"]
+    assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1, katedra_href("Катедра за математику")]], (
+        _p["katedre"]
+    )
     katedra_pages.add("Катедра за математику")
     assert katedra_href("Катедра за математику") == "/katedra/matematika/", katedra_href("Катедра за математику")
     katedra_pages.clear()
     assert katedra_href("Катедра за моторе") == "/nastavnici/arhiva/?katedra=katedra-za-motore"
-    _d = ('<h1 id="k">Катедра за x</h1><div class="level1"><div class="wrap_related wrap_right plugin_wrap"><p>'
-          '<a href="http://x.mas.bg.ac.rs/" class="urlextern"> веб сајт</a></p></div><p>Текст.</p></div>'
-          '<div class="plugin_include_content x"><h2>Наставници</h2></div>')
-    assert department_intro(_d) == ('<div><p>Текст.</p></div>', "http://x.mas.bg.ac.rs/"), department_intro(_d)
-    _b = bibliography('<div id="nastavnici-bibliografija"><h3>Радови у часописима ван SCI и SCIe листа</h3><div><p>\n'
-                      'Marić Ana, Lazović Tatjana M. (2014). <a href="https://m/h/1"> Wear</a>, Tribology, 3(2).<br/>\n'
-                      'ISSN: 1, <a href="https://dx.doi.org/10.1/x">10.1/x</a>, M24.\n</p></div></div>',
-                      [dict(title="Wear", year=2014, url="https://m/h/1"), dict(title="Old", year=1999, url="https://m/h/2")],
-                      "Татјана М. Лазовић-Капор")
-    assert _b == [dict(kind="časopis", authors=[("Marić Ana", False), ("Lazović Tatjana M.", True)], year=2014, title="Wear",
-                       url="https://m/h/1", venue="Tribology, 3(2)", doi="10.1/x", m="M24"),
-                  dict(kind=None, authors=[], year=1999, title="Old", url="https://m/h/2", venue="", doi=None, m=None)], _b
+    _d = (
+        '<h1 id="k">Катедра за x</h1><div class="level1"><div class="wrap_related wrap_right plugin_wrap"><p>'
+        '<a href="http://x.mas.bg.ac.rs/" class="urlextern"> веб сајт</a></p></div><p>Текст.</p></div>'
+        '<div class="plugin_include_content x"><h2>Наставници</h2></div>'
+    )
+    assert department_intro(_d) == ("<div><p>Текст.</p></div>", "http://x.mas.bg.ac.rs/"), department_intro(_d)
+    _b = bibliography(
+        '<div id="nastavnici-bibliografija"><h3>Радови у часописима ван SCI и SCIe листа</h3><div><p>\n'
+        'Marić Ana, Lazović Tatjana M. (2014). <a href="https://m/h/1"> Wear</a>, Tribology, 3(2).<br/>\n'
+        'ISSN: 1, <a href="https://dx.doi.org/10.1/x">10.1/x</a>, M24.\n</p></div></div>',
+        [dict(title="Wear", year=2014, url="https://m/h/1"), dict(title="Old", year=1999, url="https://m/h/2")],
+        "Татјана М. Лазовић-Капор",
+    )
+    assert _b == [
+        dict(
+            kind="časopis",
+            authors=[("Marić Ana", False), ("Lazović Tatjana M.", True)],
+            year=2014,
+            title="Wear",
+            url="https://m/h/1",
+            venue="Tribology, 3(2)",
+            doi="10.1/x",
+            m="M24",
+        ),
+        dict(kind=None, authors=[], year=1999, title="Old", url="https://m/h/2", venue="", doi=None, m=None),
+    ], _b
     # An ie notice is a post of the subject its page's h1 names, punctuation aside; its written links are links, its
     # files a post's; the page's "Literatura" is the subject's material; a page no subject has is left out.
     assert file_rows([("javascript:alert(1)", "x.pdf", None)]) == "" and "https://a/b.pdf" in file_rows([("https://a/b.pdf", "b", None)])
     assert linkify('Link: https://1drv.ms/x?e=V&amp;a=1. <a href="https://a/b">https://a/b</a>') == (
         'Link: <a href="https://1drv.ms/x?e=V&amp;a=1" rel="noopener noreferrer">https://1drv.ms/x?e=V&amp;a=1</a>. '
-        '<a href="https://a/b">https://a/b</a>')
+        '<a href="https://a/b">https://a/b</a>'
+    )
     _db = sqlite3.connect(":memory:")
     _db.row_factory = sqlite3.Row
     _db.execute("CREATE TABLE katedre_pages (url, sha, site, title, html, first_seen, last_seen, gone)")
     _db.execute("CREATE TABLE katedre_notices (nid, key, site, url, title, label, date, html, files, first_seen, last_seen, gone)")
     _u = "https://ie.mas.bg.ac.rs/predmeti_p.php?SchoolSubjectID=19"
-    _db.executemany("INSERT INTO katedre_pages VALUES (?, 'ab', 'ie', 'IE', ?, '2026-11-11T05:00:00+00:00', '2026-11-11T05:00:00+00:00', 0)", [
-        (_u, '<h1>Projektovanje sistema čovek-mašina</h1><section><h1>LITERATURA</h1><div><div>'
-             '<a href="https://ie.mas.bg.ac.rs/data_store/upload/90_pz_1.pdf">90_pz_1.pdf</a><div>Predavanje 1</div></div></div></section>'),
-        ("https://ie.mas.bg.ac.rs/predmeti_p.php?SchoolSubjectID=38", "<h1>Engineering Management and Economics</h1>")])
-    _db.execute("INSERT INTO katedre_notices VALUES (7, 'k', 'ie', ?, 'Kolokvijum', '05.11.2026', '2026-11-05', "
-                "'Rezultati: https://1drv.ms/x', '[[\"https://ie.mas.bg.ac.rs/data_store/upload/1815_R_2.docx\", \"1815_R_2.docx\"]]', "
-                "'2026-11-11T05:42:23+00:00', '2026-11-11T05:42:23+00:00', 0)", (_u,))
+    _db.executemany(
+        "INSERT INTO katedre_pages VALUES (?, 'ab', 'ie', 'IE', ?, '2026-11-11T05:00:00+00:00', '2026-11-11T05:00:00+00:00', 0)",
+        [
+            (
+                _u,
+                "<h1>Projektovanje sistema čovek-mašina</h1><section><h1>LITERATURA</h1><div><div>"
+                '<a href="https://ie.mas.bg.ac.rs/data_store/upload/90_pz_1.pdf">90_pz_1.pdf</a><div>Predavanje 1</div></div></div></section>',
+            ),
+            ("https://ie.mas.bg.ac.rs/predmeti_p.php?SchoolSubjectID=38", "<h1>Engineering Management and Economics</h1>"),
+        ],
+    )
+    _db.execute(
+        "INSERT INTO katedre_notices VALUES (7, 'k', 'ie', ?, 'Kolokvijum', '05.11.2026', '2026-11-05', "
+        "'Rezultati: https://1drv.ms/x', '[[\"https://ie.mas.bg.ac.rs/data_store/upload/1815_R_2.docx\", \"1815_R_2.docx\"]]', "
+        "'2026-11-11T05:42:23+00:00', '2026-11-11T05:42:23+00:00', 0)",
+        (_u,),
+    )
     _sm = dict(key="mas-mi", short="МАС - МИ", href="/smer/mas-mi/")
     _subj = {1: dict(id=1, name="Пројектовање система човек - машина", smer=_sm, codes=["0520"])}
     import contextlib, io
+
     with contextlib.redirect_stderr(io.StringIO()):
         _k = load_katedre(_db, {1: _sm}, _subj)
     assert [(i["id"], i["subj"]["id"], i["date"], i["posted"], i["site"]["mark"]) for i in _k] == [
-        ("k7", 1, "2026-11-05", "2026-11-05T10:00:00+00:00", "ie")], _k
-    assert '<a href="https://1drv.ms/x"' in _k[0]["html"] and 'att__t--doc">DOCX</span><span class="att__n">R_2.docx</span>' in _k[0]["html"]
+        ("k7", 1, "2026-11-05", "2026-11-05T10:00:00+00:00", "ie")
+    ], _k
+    assert (
+        '<a href="https://1drv.ms/x"' in _k[0]["html"] and 'att__t--doc">DOCX</span><span class="att__n">R_2.docx</span>' in _k[0]["html"]
+    )
     assert _subj[1]["site"] == _u and _subj[1]["lit"]["n"] == 1 and "Predavanje 1<small>pz_1.pdf</small>" in _subj[1]["lit"]["html"]
     # A department's notice is its forum's (made when the board has none), or the subject its title names.
-    _db.execute("INSERT INTO katedre_pages VALUES ('https://meh.mas.bg.ac.rs/vesti/', 'ab', 'meh', 'Вести', '', "
-                "'2026-11-11T05:00:00+00:00', '2026-11-11T05:00:00+00:00', 0)")
-    _db.executemany("INSERT INTO katedre_notices VALUES (?, ?, 'meh', 'https://meh.mas.bg.ac.rs/vesti/', ?, ?, '2026-06-11', "
-                    "'<p>a</p>', '[]', '2026-11-11T05:42:23+00:00', '2026-11-11T05:42:23+00:00', 0)",
-                    [(8, "k8", "Транспортни уређаји – резултати", "x"), (9, "k9", "Обавештење", "y")])
+    _db.execute(
+        "INSERT INTO katedre_pages VALUES ('https://meh.mas.bg.ac.rs/vesti/', 'ab', 'meh', 'Вести', '', "
+        "'2026-11-11T05:00:00+00:00', '2026-11-11T05:00:00+00:00', 0)"
+    )
+    _db.executemany(
+        "INSERT INTO katedre_notices VALUES (?, ?, 'meh', 'https://meh.mas.bg.ac.rs/vesti/', ?, ?, '2026-06-11', "
+        "'<p>a</p>', '[]', '2026-11-11T05:42:23+00:00', '2026-11-11T05:42:23+00:00', 0)",
+        [(8, "k8", "Транспортни уређаји – резултати", "x"), (9, "k9", "Обавештење", "y")],
+    )
     _kat = dict(id=2, key="katedre", href="/smer/katedre/", short="катедре")
     _subj = {1: dict(id=1, name="Транспортни уређаји", smer=_sm, codes=[])}
     with contextlib.redirect_stderr(io.StringIO()):
@@ -2667,72 +3409,135 @@ if __name__ == "__main__":
     # A mail's "Re:" is in the topic of the oldest mail it answers that is here; one answering a mail not here, or with
     # a new subject line, starts its own.
     import tempfile
+
     with tempfile.TemporaryDirectory() as _t:
-        for _d, _id, _refs, _at, _ti in [("2026-01-01-aaaaaaaa", "<a>", [], "09:00", "T"), ("2026-01-02-bbbbbbbb", "<b>", ["<x>", "<a>"], "09:00", "Re: T"),
-                                         ("2026-01-03-cccccccc", "<c>", ["<a>", "<b>"], "08:00", "RE: T"), ("2026-01-04-dddddddd", "<d>", ["<x>"], "09:00", "Re: X"),
-                                         ("2026-01-05-eeeeeeee", "<e>", ["<a>"], "09:00", "Novo")]:
+        for _d, _id, _refs, _at, _ti in [
+            ("2026-01-01-aaaaaaaa", "<a>", [], "09:00", "T"),
+            ("2026-01-02-bbbbbbbb", "<b>", ["<x>", "<a>"], "09:00", "Re: T"),
+            ("2026-01-03-cccccccc", "<c>", ["<a>", "<b>"], "08:00", "RE: T"),
+            ("2026-01-04-dddddddd", "<d>", ["<x>"], "09:00", "Re: X"),
+            ("2026-01-05-eeeeeeee", "<e>", ["<a>"], "09:00", "Novo"),
+        ]:
             (Path(_t) / _d).mkdir()
             # No file on disk: the build has only post.json (the files are in the release).
-            (Path(_t) / _d / "post.json").write_text(json.dumps(dict(
-                id=_id, refs=_refs, page="/1/", author="llecic", posted=f"{_d[:10]}T{_at}:00+00:00", when="", title=_ti,
-                html='<div style="x">Hi <script>x</script></div>', files=["r.pdf"] if _id == "<a>" else [],
-                sizes={"r.pdf": 2048} if _id == "<a>" else {})), encoding="utf-8")
+            (Path(_t) / _d / "post.json").write_text(
+                json.dumps(
+                    dict(
+                        id=_id,
+                        refs=_refs,
+                        page="/1/",
+                        author="llecic",
+                        posted=f"{_d[:10]}T{_at}:00+00:00",
+                        when="",
+                        title=_ti,
+                        html='<div style="x">Hi <script>x</script></div>',
+                        files=["r.pdf"] if _id == "<a>" else [],
+                        sizes={"r.pdf": 2048} if _id == "<a>" else {},
+                    )
+                ),
+                encoding="utf-8",
+            )
         (Path(_t) / "teams-x").mkdir()
-        (Path(_t) / "teams-x" / "material.json").write_text(json.dumps(dict(page="/1/", name="T 2025/2026. godina",
-                                                                             files=["Predavanja/P 1.pdf", "a.docx"])), encoding="utf-8")
+        (Path(_t) / "teams-x" / "material.json").write_text(
+            json.dumps(dict(page="/1/", name="T 2025/2026. godina", files=["Predavanja/P 1.pdf", "a.docx"])), encoding="utf-8"
+        )
         _ms = dict(id=1, name="S", smer=_sm, href="/1/")
         _m = load_mail({1: _ms}, Path(_t))
-    assert _ms["lit"]["n"] == 2 and f'href="/files/mail/{asset_name("teams-x/Predavanja/P 1.pdf")}/P%201.pdf"' in _ms["lit"]["html"], _ms["lit"]
+    assert _ms["lit"]["n"] == 2 and f'href="/files/mail/{asset_name("teams-x/Predavanja/P 1.pdf")}/P%201.pdf"' in _ms["lit"]["html"], _ms[
+        "lit"
+    ]
     assert "P 1.pdf<small>2025/2026 · Predavanja</small>" in _ms["lit"]["html"] and "a.docx<small>2025/2026</small>" in _ms["lit"]["html"]
-    assert [(i["id"], i["topic"]) for i in _m] == [("maaaaaaaa", "maaaaaaaa"), ("mbbbbbbbb", "maaaaaaaa"), ("mcccccccc", "maaaaaaaa"),
-                                                   ("mdddddddd", "mdddddddd"), ("meeeeeeee", "meeeeeeee")], _m
-    assert _m[0]["num"] < _m[1]["num"] < _m[2]["num"] and "script" not in _m[0]["html"] and 'style=' not in _m[0]["html"]
-    assert f'href="/files/mail/{asset_name("2026-01-01-aaaaaaaa/r.pdf")}/r.pdf"' in _m[0]["html"] and "<small>2.0 KiB</small>" in _m[0]["html"], _m[0]["html"]
+    assert [(i["id"], i["topic"]) for i in _m] == [
+        ("maaaaaaaa", "maaaaaaaa"),
+        ("mbbbbbbbb", "maaaaaaaa"),
+        ("mcccccccc", "maaaaaaaa"),
+        ("mdddddddd", "mdddddddd"),
+        ("meeeeeeee", "meeeeeeee"),
+    ], _m
+    assert _m[0]["num"] < _m[1]["num"] < _m[2]["num"] and "script" not in _m[0]["html"] and "style=" not in _m[0]["html"]
+    assert (
+        f'href="/files/mail/{asset_name("2026-01-01-aaaaaaaa/r.pdf")}/r.pdf"' in _m[0]["html"] and "<small>2.0 KiB</small>" in _m[0]["html"]
+    ), _m[0]["html"]
     assert _p["subjects"][0] == ["/1/", "Б"] and _p["subjects"][4:] == [["/b9/", "Д", 0]], _p["subjects"]
     assert first_link('<h1>K</h1><a href="/f/k.pdf?a=1&amp;b=2">Календар  2026</a>') == ("Календар 2026", "/f/k.pdf?a=1&b=2")
-    _pr = ('<h2>Raspored 2026</h2><h3>Jesenji semestar</h3><h4>OSNOVNE AKADEMSKE STUDIJE - <b>MAŠINSKO</b> INŽENjERSTVO</h4>'
-           '<p>I god. <a href="/f/1.pdf">raspored</a> za obavezne<br/>II god. <a href="/f/2.pdf"> raspored</a></p>'
-           '<p>Izborni predmeti: <a href="/f/54.pdf">5.4</a>, <a href="/f/55.pdf">5.5</a><br/>Računarska sala: <a href="/f/3.pdf">324</a></p>'
-           '<h4>MASTER AKADEMSKE STUDIJE - INDUSTRIJA 4.0</h4><p>Obavezni (po modulima):<br/><a href="/f/b.pdf">BMI - Biomedicina</a><br/>'
-           '<a href="/f/i.pdf">OAS - Informacione - 3. godina</a></p><h4>DOKTORSKE</h4><p>Biće objavljen!</p>')
+    _pr = (
+        "<h2>Raspored 2026</h2><h3>Jesenji semestar</h3><h4>OSNOVNE AKADEMSKE STUDIJE - <b>MAŠINSKO</b> INŽENjERSTVO</h4>"
+        '<p>I god. <a href="/f/1.pdf">raspored</a> za obavezne<br/>II god. <a href="/f/2.pdf"> raspored</a></p>'
+        '<p>Izborni predmeti: <a href="/f/54.pdf">5.4</a>, <a href="/f/55.pdf">5.5</a><br/>Računarska sala: <a href="/f/3.pdf">324</a></p>'
+        '<h4>MASTER AKADEMSKE STUDIJE - INDUSTRIJA 4.0</h4><p>Obavezni (po modulima):<br/><a href="/f/b.pdf">BMI - Biomedicina</a><br/>'
+        '<a href="/f/i.pdf">OAS - Informacione - 3. godina</a></p><h4>DOKTORSKE</h4><p>Biće objavljen!</p>'
+    )
     _l = parse_lectures(_pr)
     assert (_l["title"], _l["semester"], [p["key"] for p in _l["programs"]]) == (
-        "Raspored 2026", "Jesenji semestar", ["osnovne-akademske-studije-masinsko-inzenjerstvo", "master-akademske-studije-industrija-4-0", "doktorske"])
-    assert _l["programs"][0] == dict(key=_l["programs"][0]["key"], level="Osnovne akademske studije", name="Mašinsko inženjerstvo",
-        cards=[("1", "1. godina", "/f/1.pdf"), ("2", "2. godina", "/f/2.pdf")], electives=[("5.4", "/f/54.pdf"), ("5.5", "/f/55.pdf")],
-        rooms=[("324", "/f/3.pdf")], notes=[], short="OAS"), _l["programs"][0]
-    assert [p["short"] for p in parse_lectures(_pr.replace("DOKTORSKE", "MASTER AKADEMSKE STUDIJE - MAŠINSKO INŽENjERSTVO"))["programs"]] == [
-        "OAS", "MAS - IND4.0", "MAS - MI"]
+        "Raspored 2026",
+        "Jesenji semestar",
+        ["osnovne-akademske-studije-masinsko-inzenjerstvo", "master-akademske-studije-industrija-4-0", "doktorske"],
+    )
+    assert _l["programs"][0] == dict(
+        key=_l["programs"][0]["key"],
+        level="Osnovne akademske studije",
+        name="Mašinsko inženjerstvo",
+        cards=[("1", "1. godina", "/f/1.pdf"), ("2", "2. godina", "/f/2.pdf")],
+        electives=[("5.4", "/f/54.pdf"), ("5.5", "/f/55.pdf")],
+        rooms=[("324", "/f/3.pdf")],
+        notes=[],
+        short="OAS",
+    ), _l["programs"][0]
+    assert [
+        p["short"] for p in parse_lectures(_pr.replace("DOKTORSKE", "MASTER AKADEMSKE STUDIJE - MAŠINSKO INŽENjERSTVO"))["programs"]
+    ] == ["OAS", "MAS - IND4.0", "MAS - MI"]
     assert _l["programs"][1]["cards"] == [("BMI", "Biomedicina", "/f/b.pdf"), ("3", "3. godina", "/f/i.pdf")]
     assert _l["programs"][2]["notes"] == ["Biće objavljen!"] and parse_lectures("<p>x</p>") is None
-    _at = attachments(clean_html('<dl class="attachbox"><dt>Attachments</dt><dd><dl class="file"><dt><span class="imageset"></span> '
-                                 '<a class="postlink" href="./download/file.php?id=7">Rok &amp; B.PDF</a></dt><dd>(58.7 KiB) Downloaded 4 times'
-                                 '</dd></dl></dd></dl>'))
-    assert ('<a class="att" href="https://nastava.mas.bg.ac.rs/nastava/download/file.php?id=7" rel="noopener noreferrer">'
-            '<span class="att__t att__t--pdf">PDF</span><span class="att__n">Rok &amp; B.PDF<small>58.7 KiB · preuzeto 4 puta</small>'
-            '</span></a>') in _at and "<dt>Prilozi</dt>" in _at, _at
+    _at = attachments(
+        clean_html(
+            '<dl class="attachbox"><dt>Attachments</dt><dd><dl class="file"><dt><span class="imageset"></span> '
+            '<a class="postlink" href="./download/file.php?id=7">Rok &amp; B.PDF</a></dt><dd>(58.7 KiB) Downloaded 4 times'
+            "</dd></dl></dd></dl>"
+        )
+    )
+    assert (
+        '<a class="att" href="https://nastava.mas.bg.ac.rs/nastava/download/file.php?id=7" rel="noopener noreferrer">'
+        '<span class="att__t att__t--pdf">PDF</span><span class="att__n">Rok &amp; B.PDF<small>58.7 KiB · preuzeto 4 puta</small>'
+        "</span></a>"
+    ) in _at and "<dt>Prilozi</dt>" in _at, _at
     assert attachments(None) is None and attachments("<p>x</p>") == "<p>x</p>"
-    _dl = clean_html('<dl class="file"><dt><a class="postlink" href="./download/file.php?id=11&amp;sid=b0c">R&amp;T.zip</a></dt>'
-                     '<dd><em>овде</em></dd> <dd>(45.16 KiB) Downloaded 642 times</dd></dl>'
-                     '<dl class="file"><dt><a href="./download/file.php?id=12">b.pdf</a></dt><dd>(1 KiB) Downloaded 1 time</dd></dl>')
+    _dl = clean_html(
+        '<dl class="file"><dt><a class="postlink" href="./download/file.php?id=11&amp;sid=b0c">R&amp;T.zip</a></dt>'
+        "<dd><em>овде</em></dd> <dd>(45.16 KiB) Downloaded 642 times</dd></dl>"
+        '<dl class="file"><dt><a href="./download/file.php?id=12">b.pdf</a></dt><dd>(1 KiB) Downloaded 1 time</dd></dl>'
+    )
     assert downloads(_dl) == [(11, "R&T.zip", 642), (12, "b.pdf", 1)] and downloads(None) == [], downloads(_dl)
-    assert bars([(2014, 5), (2015, 10)], str) == [dict(label=2014, n=5, pct=50.0, href="2014"), dict(label=2015, n=10, pct=100.0, href="2015")]
+    assert bars([(2014, 5), (2015, 10)], str) == [
+        dict(label=2014, n=5, pct=50.0, href="2014"),
+        dict(label=2015, n=10, pct=100.0, href="2015"),
+    ]
     assert ranking(Counter(a=4, b=1, c=2), lambda k: (k.upper(), None, None), k=2) == [
-        dict(label="A", href=None, note=None, n=4, pct=100.0), dict(label="C", href=None, note=None, n=2, pct=50.0)]
+        dict(label="A", href=None, note=None, n=4, pct=100.0),
+        dict(label="C", href=None, note=None, n=2, pct=50.0),
+    ]
     assert env.filters["n"](23692) == "23.692" and plural(642, "preuzimanje") == "preuzimanja"
-    _at = attachments('<dl>\n<dt><span></span> <a href="/f?id=1" rel="x">a.docx</a></dt>\n<dd><em>Ocene</em></dd> <dd>(1 KiB) preuzeto 2 puta</dd>\n</dl>')
-    assert _at == ('<a class="att" href="/f?id=1" rel="noopener noreferrer"><span class="att__t att__t--doc">DOCX</span><span class="att__n">'
-                   'a.docx<span class="att__c"><em>Ocene</em></span><small>1 KiB · preuzeto 2 puta</small></span></a>'), _at
-    _ct = clean_html(cent_tidy(
-        '<div class="et_pb_row responsive-buttons"><div class="et_pb_column et_clickable"><a href="https://c/s1.pdf"><div class="x">'
-        '<p>Смена 1</p></div></a></div><div class="et_pb_column et_clickable"><p>Смена 2</p></div></div>'
-        '<div class="et_pb_row"><div id="at-col-arrow"><img src="https://c/a.webp"></div><div id="at-col-head"><p>ПЛ-1</p></div>'
-        '<div id="at-col"><p>Лаб 1</p></div><div id="at-col-attach"><a href="https://c/u/lab1.pdf">lab1.pdf</a></div>'
-        '<div id="at-col"></div><div id="at-col-nedelja">I недеља</div></div>'
-        '<div class="et_pb_toggle et_pb_toggle_open"><h4 class="et_pb_toggle_title"><span class="accordion_mark">ПЛ-3</span>'
-        '<p class="accordion_title">Лаб 3</p><a href="https://c/u/lab3.PDF">lab3.PDF</a><span class="accordion-nedelja"></span></h4>'
-        '<div class="et_pb_toggle_content"><ul><li>Упутство <a href="https://drive.google.com/x">video</a></li></ul></div></div>'
-        '<div class="et_pb_text et_pb_text_align_center"><p>c</p></div>'), "https://c/", classes=CENT_CLASSES)
+    _at = attachments(
+        '<dl>\n<dt><span></span> <a href="/f?id=1" rel="x">a.docx</a></dt>\n<dd><em>Ocene</em></dd> <dd>(1 KiB) preuzeto 2 puta</dd>\n</dl>'
+    )
+    assert _at == (
+        '<a class="att" href="/f?id=1" rel="noopener noreferrer"><span class="att__t att__t--doc">DOCX</span><span class="att__n">'
+        'a.docx<span class="att__c"><em>Ocene</em></span><small>1 KiB · preuzeto 2 puta</small></span></a>'
+    ), _at
+    _ct = clean_html(
+        cent_tidy(
+            '<div class="et_pb_row responsive-buttons"><div class="et_pb_column et_clickable"><a href="https://c/s1.pdf"><div class="x">'
+            '<p>Смена 1</p></div></a></div><div class="et_pb_column et_clickable"><p>Смена 2</p></div></div>'
+            '<div class="et_pb_row"><div id="at-col-arrow"><img src="https://c/a.webp"></div><div id="at-col-head"><p>ПЛ-1</p></div>'
+            '<div id="at-col"><p>Лаб 1</p></div><div id="at-col-attach"><a href="https://c/u/lab1.pdf">lab1.pdf</a></div>'
+            '<div id="at-col"></div><div id="at-col-nedelja">I недеља</div></div>'
+            '<div class="et_pb_toggle et_pb_toggle_open"><h4 class="et_pb_toggle_title"><span class="accordion_mark">ПЛ-3</span>'
+            '<p class="accordion_title">Лаб 3</p><a href="https://c/u/lab3.PDF">lab3.PDF</a><span class="accordion-nedelja"></span></h4>'
+            '<div class="et_pb_toggle_content"><ul><li>Упутство <a href="https://drive.google.com/x">video</a></li></ul></div></div>'
+            '<div class="et_pb_text et_pb_text_align_center"><p>c</p></div>'
+        ),
+        "https://c/",
+        classes=CENT_CLASSES,
+    )
     assert _ct == (
         '<div class="cent-btns"><a class="cent-btn" href="https://c/s1.pdf" rel="noopener noreferrer">Смена 1</a>'
         '<span class="cent-btn" title="bez linka na sajtu katedre">Смена 2</span></div>'
@@ -2743,45 +3548,84 @@ if __name__ == "__main__":
         '<a class="cent-file" href="https://c/u/lab3.PDF" rel="noopener noreferrer"><span class="att__t att__t--pdf">PDF</span>'
         'lab3.PDF</a></summary><div><ul><li>Упутство <a class="cent-file" href="https://drive.google.com/x" '
         'rel="noopener noreferrer"><span class="att__t att__t--video">▶</span>video</a></li></ul></div></details>'
-        '<div class="cent-c"><p>c</p></div>'), _ct
+        '<div class="cent-c"><p>c</p></div>'
+    ), _ct
     _s, _f = split_page(f"<html><title>T</title><meta>{HEAD_END}<x>{MAIN}a</main><p></main></html>")
-    assert (_s, _f) == (f"<html><title></title><x>{MAIN}<!--main--></main></html>",
-                        f'<html lang="sr"><title>T</title><meta>{HEAD_END}a</main><p></html>'), (_s, _f)
+    assert (_s, _f) == (
+        f"<html><title></title><x>{MAIN}<!--main--></main></html>",
+        f'<html lang="sr"><title>T</title><meta>{HEAD_END}a</main><p></html>',
+    ), (_s, _f)
     assert desc(" a\n b ") == "a b" and desc("aaa bbb ccc", 9) == "aaa bbb…"
     assert lat("Љиљана ЉУБА Ђорђе, Џ. Mašina 2") == "Ljiljana LJUBA Đorđe, Dž. Mašina 2" and lat(None) == ""
     assert lat(Markup("Ш &amp; A")) == Markup("Š &amp; A")
-    _bc = breadcrumbs('<nav class="crumbs"><a href="/"><svg></svg>Početna</a><svg></svg><a href="/smer/x/" title="A &amp; B">A &amp; B</a>'
-                      '<svg></svg><span class="crumbs__here" aria-current="page">Мата</span></nav>', f"{SITE_URL}/p/")
+    _bc = breadcrumbs(
+        '<nav class="crumbs"><a href="/"><svg></svg>Početna</a><svg></svg><a href="/smer/x/" title="A &amp; B">A &amp; B</a>'
+        '<svg></svg><span class="crumbs__here" aria-current="page">Мата</span></nav>',
+        f"{SITE_URL}/p/",
+    )
     assert [(i["position"], i["name"], i["item"]) for i in json.loads(re.search(r">(.*)</script>", _bc)[1])["itemListElement"]] == [
-        (1, "Početna", f"{SITE_URL}/"), (2, "A & B", f"{SITE_URL}/smer/x/"), (3, "Мата", f"{SITE_URL}/p/")], _bc
+        (1, "Početna", f"{SITE_URL}/"),
+        (2, "A & B", f"{SITE_URL}/smer/x/"),
+        (3, "Мата", f"{SITE_URL}/p/"),
+    ], _bc
     assert breadcrumbs("<p>no crumbs</p>", SITE_URL) == "" and type(_bc) is str
-    assert drop_empty_tables('<table><tr><th>Predmet</th></tr><tr><td> &nbsp;</td></tr></table><p>x</p>') == "<p>x</p>"
-    assert drop_empty_tables('<table><tr><td></td><td><b>2.11.</b></td></tr></table>').startswith("<table>")
-    assert drop_empty_tables('<h2>A</h2><div><table><td>1</td></table></div><h2>B</h2>\n<div class="l">'
-                             '<table><th>x</th><td> </td></table></div>') == '<h2>A</h2><div><table><td>1</td></table></div>\n<div class="l"></div>'
+    assert drop_empty_tables("<table><tr><th>Predmet</th></tr><tr><td> &nbsp;</td></tr></table><p>x</p>") == "<p>x</p>"
+    assert drop_empty_tables("<table><tr><td></td><td><b>2.11.</b></td></tr></table>").startswith("<table>")
+    assert (
+        drop_empty_tables(
+            '<h2>A</h2><div><table><td>1</td></table></div><h2>B</h2>\n<div class="l"><table><th>x</th><td> </td></table></div>'
+        )
+        == '<h2>A</h2><div><table><td>1</td></table></div>\n<div class="l"></div>'
+    )
     assert preuzeto("(1 KiB) Downloaded 1 time, Downloaded 22 times") == "(1 KiB) preuzeto 1 puta, preuzeto 22 puta"
-    assert post_words(dict(title="Rezultati ispita", files=[(1, "OPK 3. predavanje.pdf", 9)], body="Видети http://x.rs/a, "
-                           "www.mas.bg.ac.rs, a@b.rs i Moodle_2015.pdf\nOPK 3. predavanje.pdf\n(4.29 MiB) preuzeto 1021 puta")) == [
-        "rezultati", "ispita", "videti"]
-    _bp = book_page('<h1>X</h1><h2 id="циљ">Циљ</h2>\n<div class="level2"><p>\n\nA &amp; b.\n\n</p></div>'
-                    '<h2>Фонд часова</h2><div><p>Укупан фонд часова: 30<br></p></div>'
-                    '<h4>Провера знања</h4><div><p>Тест: 0<br>\nЗавршни испит: 4<br></p></div>'
-                    '<h2>Провера знања (укупно 100 поена)</h2><div><p>Пројекат: 40<br>Рачунски задаци: 0<br>'
-                    'Услов за излазак на испит (потребан број поена): 30<br></p></div>'
-                    '<h2>Литература</h2><div><p>\n\nA, 1992.; B, 2010.\n</p></div>')
-    assert book_page('<h2>Ресурси</h2><div><p>Лекција 1: А\n2. Б</p></div>')["text"]["Ресурси"] == (["А", "Б"], True)
-    assert book_page('<h2>Ресурси</h2><div><p>- А\n2. Б</p></div>')["text"]["Ресурси"] == (["А", "2. Б"], False)
+    assert post_words(
+        dict(
+            title="Rezultati ispita",
+            files=[(1, "OPK 3. predavanje.pdf", 9)],
+            body="Видети http://x.rs/a, www.mas.bg.ac.rs, a@b.rs i Moodle_2015.pdf\nOPK 3. predavanje.pdf\n(4.29 MiB) preuzeto 1021 puta",
+        )
+    ) == ["rezultati", "ispita", "videti"]
+    _bp = book_page(
+        '<h1>X</h1><h2 id="циљ">Циљ</h2>\n<div class="level2"><p>\n\nA &amp; b.\n\n</p></div>'
+        "<h2>Фонд часова</h2><div><p>Укупан фонд часова: 30<br></p></div>"
+        "<h4>Провера знања</h4><div><p>Тест: 0<br>\nЗавршни испит: 4<br></p></div>"
+        "<h2>Провера знања (укупно 100 поена)</h2><div><p>Пројекат: 40<br>Рачунски задаци: 0<br>"
+        "Услов за излазак на испит (потребан број поена): 30<br></p></div>"
+        "<h2>Литература</h2><div><p>\n\nA, 1992.; B, 2010.\n</p></div>"
+    )
+    assert book_page("<h2>Ресурси</h2><div><p>Лекција 1: А\n2. Б</p></div>")["text"]["Ресурси"] == (["А", "Б"], True)
+    assert book_page("<h2>Ресурси</h2><div><p>- А\n2. Б</p></div>")["text"]["Ресурси"] == (["А", "2. Б"], False)
     assert (_bp["text"]["Циљ"][0], _bp["hours"], _bp["points"], _bp["pass_min"], _bp["books"]) == (
-        ["A & b."], dict(total=30, groups=[("Провера знања", [("Завршни испит", 4)])]), [("Пројекат", 40)], 30, ["A, 1992.", "B, 2010."]), _bp
-    assert same_words(Counter(ispit=2, ispita=5, ispitu=1, ispitni=1, studenti=3, studenata=2, smene=5, smena=1, smen=1,
-                              kandidata=1)) == Counter(ispit=8, ispitni=1, studenti=5, smene=7, kandidata=1)
+        ["A & b."],
+        dict(total=30, groups=[("Провера знања", [("Завршни испит", 4)])]),
+        [("Пројекат", 40)],
+        30,
+        ["A, 1992.", "B, 2010."],
+    ), _bp
+    assert same_words(
+        Counter(ispit=2, ispita=5, ispitu=1, ispitni=1, studenti=3, studenata=2, smene=5, smena=1, smen=1, kandidata=1)
+    ) == Counter(ispit=8, ispitni=1, studenti=5, smene=7, kandidata=1)
     import xml.etree.ElementTree as ET
-    _it = dict(id="p5", num=5, title="A & <b>", posted="2026-11-08T14:39:57+00:00", who="Ђ", html="<p>x &amp; y</p>", body="",
-               subj=dict(name="Мата 1"), smer=None, thread=dict(href="/tema/3/", posts=[1, 2]))
+
+    _it = dict(
+        id="p5",
+        num=5,
+        title="A & <b>",
+        posted="2026-11-08T14:39:57+00:00",
+        who="Ђ",
+        html="<p>x &amp; y</p>",
+        body="",
+        subj=dict(name="Мата 1"),
+        smer=None,
+        thread=dict(href="/tema/3/", posts=[1, 2]),
+    )
     _x = ET.fromstring(atom("T", "/predmet/m/", [_it]))
     _ns = {"a": "http://www.w3.org/2005/Atom"}
     assert _x.find("a:entry/a:link", _ns).get("href") == f"{SITE_URL}/tema/3/#p5" and _x.find("a:entry/a:title", _ns).text == "A & <b>"
-    assert _x.find("a:entry/a:content", _ns).text == "<p>x &amp; y</p>" and ET.fromstring(atom("T", "/", [])).find("a:updated", _ns) is not None
+    assert (
+        _x.find("a:entry/a:content", _ns).text == "<p>x &amp; y</p>"
+        and ET.fromstring(atom("T", "/", [])).find("a:updated", _ns) is not None
+    )
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     main(*sys.argv[1:3])

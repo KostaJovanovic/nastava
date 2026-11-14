@@ -14,6 +14,7 @@ build.py's devcheck.py checks that dev mode renders what a build writes.
 --built: the last build in pages/.build/site, as deployed. Most pages are fragments there: join() puts them into
 shell.html, as the Worker (pages/src/index.js join) does on the live site.
 """
+
 import ctypes
 import os
 import posixpath
@@ -40,14 +41,29 @@ FRAGMENT = '<html lang="sr"><title>'
 # sync writes there first. Not the icons: their link's ?v= hash goes stale after an edit, but every reply here is
 # no-cache (end_headers), so a reload fetches the new file anyway. Not verzije.md: /verzije/ reads it at each render
 # (build.py Lazy.fresh). The teachers' files of history, photos and biographies: build.py reads them at the start.
-WATCH = [HERE / "build.py", HERE / "wiki_tidy.py", *(HERE.parent / f for f in (
-    "studije.py", "nastavnici.py", "mail.py", "nastava.db", "nastava.db-wal", "nastavnici-istorija.jsonl",
-    "nastavnici-foto.jsonl", "nastavnici-biografije.jsonl", "nastavnici-sazetak.jsonl"))]
+WATCH = [
+    HERE / "build.py",
+    HERE / "wiki_tidy.py",
+    *(
+        HERE.parent / f
+        for f in (
+            "studije.py",
+            "nastavnici.py",
+            "mail.py",
+            "nastava.db",
+            "nastava.db-wal",
+            "nastavnici-istorija.jsonl",
+            "nastavnici-foto.jsonl",
+            "nastavnici-biografije.jsonl",
+            "nastavnici-sazetak.jsonl",
+        )
+    ),
+]
 build = None  # dev mode: the build module, its pages loaded (dev())
 
 
 def join(shell, fragment):
-    head, _, main = fragment[fragment.index("<title>"):fragment.rindex("</html>")].partition("<!--/head-->")
+    head, _, main = fragment[fragment.index("<title>") : fragment.rindex("</html>")].partition("<!--/head-->")
     if snav := re.search(r'<meta name="snav" content="([^"]+)">', head):
         a = f'<a href="{snav[1]}"'
         shell = shell.replace(a, a + ' aria-current="page"', 1)
@@ -59,8 +75,9 @@ class Handler(SimpleHTTPRequestHandler):
         # pages/ + /static/... is pages/static/.... Decided on the resolved path: /static/../x is /x, from the build.
         # Dev mode: Pagefind's index from the last build, the rest from dev mode's out dir.
         clean = posixpath.normpath(unquote(urlsplit(path).path))
-        self.directory = str(HERE if clean.startswith("/static/") else
-                             SITE if not build or clean.startswith("/pagefind/") else DEV / "site")
+        self.directory = str(
+            HERE if clean.startswith("/static/") else SITE if not build or clean.startswith("/pagefind/") else DEV / "site"
+        )
         return super().translate_path(path)
 
     def send_page(self, code, page):
@@ -133,9 +150,14 @@ def lan_ip():
 
 
 if __name__ == "__main__":
-    assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title><meta><!--/head-->$& M</html>") == "<title>T</title><meta><b>$& M</b>"
-    assert join('<title></title><a href="/x/">X</a><a href="/x/"><!--main-->', f'{FRAGMENT}T</title><meta name="snav" content="/x/"><!--/head-->M</html>') == (
-        '<title>T</title><meta name="snav" content="/x/"><a href="/x/" aria-current="page">X</a><a href="/x/">M')
+    assert (
+        join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title><meta><!--/head-->$& M</html>")
+        == "<title>T</title><meta><b>$& M</b>"
+    )
+    assert join(
+        '<title></title><a href="/x/">X</a><a href="/x/"><!--main-->',
+        f'{FRAGMENT}T</title><meta name="snav" content="/x/"><!--/head-->M</html>',
+    ) == ('<title>T</title><meta name="snav" content="/x/"><a href="/x/" aria-current="page">X</a><a href="/x/">M')
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     port = int(args[0]) if args else 15497  # server.bat's PORT, drawn at random
     if "--child" in sys.argv:
@@ -143,6 +165,7 @@ if __name__ == "__main__":
         t = time.time()
         sys.path.insert(0, str(HERE))
         import build as _build
+
         _build.main(str(DB), str(DEV), dev_mode=True)
         build = _build
         print(f"  ready: {len(build.pages)} pages in {time.time() - t:.0f} s", flush=True)
@@ -154,6 +177,7 @@ if __name__ == "__main__":
     print(qr_terminal(lan))
     print(f"\n  Local:   http://localhost:{port}\n  Network: {lan}  (scan the QR, same Wi-Fi)\n  static:  {HERE / 'static'}\n")
     if "--open" in sys.argv:  # server.bat: the browser once the site answers (dev mode loads for a while first)
+
         def open_when_up():
             while True:
                 try:
@@ -161,6 +185,7 @@ if __name__ == "__main__":
                     return webbrowser.open(f"http://localhost:{port}")
                 except OSError:
                     time.sleep(0.5)
+
         threading.Thread(target=open_when_up, daemon=True).start()
     if "--built" in sys.argv:
         ThreadingHTTPServer(("", port), partial(Handler, directory=str(SITE))).serve_forever()

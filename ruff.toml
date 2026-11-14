@@ -1,0 +1,8 @@
+line-length = 140
+target-version = "py311"
+# Python files only: not the code blocks in the plans (.md).
+extend-exclude = ["*.md"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
