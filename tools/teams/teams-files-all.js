@@ -15,7 +15,8 @@
       if (/\b(Files|Sites)\.Read(Write)?\.All\b/.test(v.target) && /graph\.microsoft\.com|AppCatalog/.test(v.target)) token = v.secret;
     }
   }
-  if (!token) return console.log('No Graph sign-in in this page that can read files; nothing done.');
+  // Teams asks for the files' sign-in only once a Files tab is opened.
+  if (!token) return console.log('No sign-in for files in this page yet: open any class, its Files tab (Datoteke), wait for the list, then run this again.');
   const get = async url => {
     const r = await fetch(url, {headers: {Authorization: `Bearer ${token}`}});
     if (!r.ok) throw new Error(`${r.status} ${url.slice(0, 120)}`);
