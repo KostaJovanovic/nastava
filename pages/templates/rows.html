@@ -11,14 +11,6 @@
 {%- macro crumb(href, name) -%}
 <svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><a href="{{ href }}" title="{{ name }}">{{ name }}</a>
 {%- endmacro -%}
-
-{#- A card of /pomoc/ and /mf/ (Linkovi's, link.html): its icon, name and the line under it; another site's opens
-    there. gone: a page the faculty removed, kept here, marked. line_notx: a line not to transliterate (an address). -#}
-{%- macro guide_card(c, line_notx=false) -%}
-<li><a class="lk__a{% if c.gone %} lk__a--down{% endif %}" href="{{ c.href }}"{% if c.href.startswith('http') %} rel="noopener"{% endif %}>
-  {%- if c.gone %}<span class="lk__down">uklonjeno</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ c.icon }}"></use></svg></span><span class="lk__t"><b>{{ c.name }}</b><small{% if line_notx %} data-notx{% endif %}>{{ c.line }}</small></span></a></li>
-{%- endmacro -%}
-
 {#- The author: a teacher links to their page by name (no title or middle initial: those are on their page only);
     another author is a username, which stays in Latin. -#}
 {%- macro who(r) -%}
@@ -123,7 +115,8 @@
 {%- endmacro -%}
 
 {#- News of vesti.mas.bg.ac.rs, newest first: the home page's newest (more: the list's link on the heading) and a
-    year's list (filter: the list filter's data, its title and categories). -#}
+    year's list (filter: the list filter's data, its title and categories). Enrollment news: the enrollment icon and
+    a mark. -#}
 {%- macro vest_rows(title, vesti, more=none, filter=false) -%}
 <section class="fb fb--posts">
   {%- if caller is defined %}{{ caller() }}{% endif %}
@@ -131,8 +124,8 @@
   <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for v in vesti %}
     <li class="fr"{% if filter %} data-find="{{ v.find }}" data-k="{{ v.cat_keys }}"{% if loop.index == 20 %} id="paint"{% endif %}{% endif %}>
-      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-news"></use></svg></span>
-      <div class="fr__t"><a class="fr__a" href="{{ v.href }}">{{ v.title }}</a>{% if v.gone %}<span class="gone">uklonjeno sa sajta vesti</span>{% endif %}</div>
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'enter' if v.upis else 'news' }}"></use></svg></span>
+      <div class="fr__t"><a class="fr__a" href="{{ v.href }}">{{ v.title }}</a>{% if v.upis %}<span class="tag">upis</span>{% endif %}{% if v.gone %}<span class="gone">uklonjeno sa sajta vesti</span>{% endif %}</div>
       <div class="fr__more"><span class="fr__s">{{ v.cats | join(', ') }}</span><time class="fr__d" datetime="{{ v.date or '' }}">{{ v.date | dmy }}</time></div>
     </li>
     {%- endfor %}

@@ -992,6 +992,9 @@ a.mh__ki:hover { color: var(--accent-t); }
 /* A post or topic the board no longer has (the archive keeps it). */
 .gone { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent-t); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
 .post__meta .gone { margin-left: 0; }
+/* An enrollment news post (vesti's category Упис), as .gone but filled, so the two read apart. */
+.tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: var(--accent); color: var(--accent-fg); font-size: 11.5px; font-weight: 800; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
+.post__meta .tag { margin-left: 0; }
 /* The mark of what comes from a department's site, not the board (build.py load_cent): a row's author, a page. */
 .src { display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--accent); color: var(--accent-fg); font: 700 11px/18px var(--sans); vertical-align: 1px; }
 /* The other sources in their own colours (build.py VIA): Teams' purple, the students' webmail's slate. */

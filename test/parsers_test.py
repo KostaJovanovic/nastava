@@ -126,7 +126,7 @@ _idx = {'': '<li><a href="/?idx=upis" title="upis" class="idx_dir"rel="nofollow"
         'en': '<li><a href="/en/x" class="wikilink1" data-wiki-id="en:x">X</a></li>'}
 assert studije.wiki_index(_idx.__getitem__) == {'vesti': 'Вести', 'upis/oas': 'УПИС НА & ОАС'}
 assert studije.NOT_WIKI.search('studije/predmeti/0642') and studije.NOT_WIKI.search('fakultet/nastavnici/7')
-assert studije.NOT_WIKI.search('wiki-renamed/syntax') and studije.LINKED.match('fakultet/dokumenti/start')
+assert studije.NOT_WIKI.search('wiki-renamed/syntax') and 'upis/start' in studije.SHOWN
 assert not studije.NOT_WIKI.search('studije/praksa') and not studije.NOT_WIKI.search('fakultet/dokumenti/start')
 
 # cent.mas.bg.ac.rs (cent.py): a subject's notices page (a notice; Divi's script links made <a>), a results page (file

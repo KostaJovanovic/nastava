@@ -33,7 +33,7 @@ from markupsafe import Markup, escape
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent))
-from studije import PAGES as STUDY_PAGES, SITE as STUDY_SITE, media_path  # noqa: E402
+from studije import PAGES as STUDY_PAGES, SHOWN, SITE as STUDY_SITE, media_path  # noqa: E402
 from nastavnici import photo_urls  # noqa: E402
 from mail import asset_name, TAG as MAIL_TAG  # noqa: E402
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
@@ -415,7 +415,9 @@ def load_vesti(db):
         iso, year = parse_date(r["date"])
         names = [cats[c] for c in json.loads(r["categories"]) if c in cats]
         title = unescape(r["title"])
+        # upis: in the news site's category Упис (its id 8), the enrollment news (the wiki's upis/vesti lists them).
         out.append(dict(id=f"v{r['id']}", kind="vest", href=f"/vest/{r['id']}/", title=title, date=iso, year=year,
+                        upis=8 in json.loads(r["categories"]),
                         posted=f"{r['date_gmt']}Z", cats=names, cat_keys="|".join(slug(c) for c in names),
                         find=fold(" ".join([title] + names)), html=clean_html(r["html"], VESTI),
                         body=strip_tags(r["html"])[:PAGE_TEXT], gone=r["gone"], source_url=r["link"],
@@ -1275,102 +1277,102 @@ def render_study_pages(site, db):
     return schedule_entries(calendar, lectures, get("raspored-ispita"))
 
 
-# /pomoc/: what a student needs, by task: (group, [(name, the line under it, target, icon)]). A target is a page of
-# www.mas.bg.ac.rs (its wiki path, archived at /mf/), a page of this site ("/…") or another site ("https://…"). The
-# lines say what is there, never a date or an amount: the faculty's page changes every year, these stay true.
-POMOC = [
-    ("Upis na fakultet", [
-        ("Upis u prvu godinu", "Osnovne, master i doktorske studije, na jednom mestu", "upis/start", "enter"),
-        ("Osnovne studije", "Konkurs, prijemni ispit i dokumenta za upis", "upis/oas", "enter"),
-        ("Rokovi za osnovne studije", "Prijava, prijemni, rang liste i upis po danima", "upis/vaznidatumioas", "calendar"),
-        ("Master studije", "Konkurs i upis na master", "upis/mas", "enter"),
-        ("Rokovi za master studije", "Prijava, rang liste i upis po danima", "upis/vaznidatumimas", "calendar"),
-        ("Doktorske studije", "Konkurs i upis na doktorske studije", "upis/das", "enter"),
-        ("Rokovi za doktorske studije", "Prijava, rang liste i upis po danima", "upis/vaznidatumidas", "calendar"),
-        ("Prijemni ispit", "Pravila, bodovanje i redosled kandidata", "upis/oas/prijemni", "file"),
-        ("Probni prijemni testovi", "Vežbanje za prijemni iz matematike", "https://testovi.mas.bg.ac.rs/", "file"),
-        ("Pripremna nastava", "Časovi matematike pred prijemni", "upis/pripremna-nastava", "book"),
-        ("Pretprijava", "Prijava kandidata pre konkursa", "https://pretprijava.mas.bg.ac.rs/", "user"),
-        ("Vesti o upisu", "Rang liste i obaveštenja za kandidate", "upis/vesti", "news"),
-        ("Zašto Mašinski", "Fakultet ukratko, za buduće studente", "upis/zasto-mf", "star"),
+# Linkovi's cards (link.html), also found by the header search (izbor.json linkovi): (group, [(name, href, icon from
+# icons.svg, data-domain)]). An href "mf:<path>" is a page of www.mas.bg.ac.rs this site shows (studije.py SHOWN).
+LINKS = [
+    ("Upis i studiranje", [
+        ("Upis u prvu godinu", "mf:upis/start", "enter", None),
+        ("Upis na osnovne studije", "mf:upis/oas", "enter", None),
+        ("Rokovi za osnovne studije", "mf:upis/vaznidatumioas", "calendar", None),
+        ("Upis na master studije", "mf:upis/mas", "enter", None),
+        ("Rokovi za master studije", "mf:upis/vaznidatumimas", "calendar", None),
+        ("Upis na doktorske studije", "mf:upis/das", "enter", None),
+        ("Rokovi za doktorske studije", "mf:upis/vaznidatumidas", "calendar", None),
+        ("Upis u višu godinu ili obnova", "mf:studenti/start", "enter", None),
+        ("Izbor predmeta", "mf:studenti/izbor-predmeta", "book", None),
+        ("Finansijsko zaduženje", "mf:studenti/finansijsko-zaduzenje", "file", None),
+        ("Uplate fakultetu", "mf:studenti/placanja", "file", None),
+        ("Prijava ispita", "mf:studenti/prijava-ispita", "calendar", None),
+        ("Studentski email", "mf:servisi/email-za-studente", "mail", None),
+        ("eduroam", "mf:servisi/eduroam", "globe", None),
+        ("VPN", "mf:servisi/vpn", "globe", None),
+        ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
+        ("Kontakt fakulteta", "mf:fakultet/kontakt", "home", None),
     ]),
-    ("Upis u višu godinu", [
-        ("Upis u višu godinu ili obnova", "Elektronska prijava i koraci, za osnovne i master studije", "studenti/start", "enter"),
-        ("Izbor predmeta", "Kako se biraju i dodeljuju predmeti na studentskom servisu", "studenti/izbor-predmeta", "book"),
-        ("Finansijsko zaduženje", "Kako se određuje školarina za godinu", "studenti/finansijsko-zaduzenje", "file"),
-        ("Uplate fakultetu", "Poziv na broj za školarinu, ispite i ostalo", "studenti/placanja", "file"),
+    ("Fakultet", [
+        ("Forum nastave", "https://nastava.mas.bg.ac.rs/nastava/", "msgs", None),
+        ("studenti.mas", "https://studenti.mas.bg.ac.rs/", "user", None),
+        ("Studentski webmail", "https://webmail.studenti.mas.bg.ac.rs/", "mail", None),
+        ("Mašinski fakultet", "https://www.mas.bg.ac.rs/", "globe", None),
+        ("Vesti o predmetima", "https://www.mas.bg.ac.rs/studije/vesti", "news", None),
+        ("Raspored ispita", "https://www.mas.bg.ac.rs/studije/raspored-ispita", "calendar", None),
+        ("Vesti fakulteta", "https://vesti.mas.bg.ac.rs/", "news", None),
+        ("Prezentacije nastavnika", "https://etc.mas.bg.ac.rs/", "file", None),
+        ("FSEL (Moodle)", "https://fsel.mas.bg.ac.rs/moodle/", "book", None),
+        ("Biblioteka", "https://www.mas.bg.ac.rs/biblioteka/start", "book", None),
     ]),
-    ("Tokom studija", [
-        ("studenti.mas", "Studentski servis: prijava ispita, ocene, predmeti", "https://studenti.mas.bg.ac.rs/", "user"),
-        ("Prijava ispita", "Kako se ispiti prijavljuju i plaćaju", "studenti/prijava-ispita", "calendar"),
-        ("Kalendar i rasporedi", "Kalendar nastave, raspored predavanja i ispita", "/raspored/", "calendar"),
-        ("Predmeti", "Svi predmeti sa obaveštenjima nastavnika", "/predmeti/", "book"),
-        ("Nastavnici", "Nastavnici i saradnici po katedrama", "/nastavnici/", "users"),
-        ("Vesti o predmetima", "Obaveštenja o nastavi i ispitima sa sajta fakulteta", "studije/vesti", "news"),
-        ("Studentski parlament", "Ko predstavlja studente i kako se bira", "studenti/parlament", "users"),
+    ("Studenti", [
+        ("Veliki drajv", "https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU", "cloud", "kosta-onedrive.com"),
+        ("Mašinci", "https://stepen.masinci.org/", "users", None),
+        ("Drumska strela", "https://fsra.stt.org.rs/", "katedra-za-motorna-vozila", None),
+        ("Beoavia", "https://beoavia.org/", "katedra-za-vazduhoplovstvo", None),
+        ("Robotoid", "https://robotoid.stt.org.rs/", "katedra-za-automatsko-upravljanje", None),
     ]),
-    ("Nalozi i internet", [
-        ("Studentski email", "Nalog na fakultetu i kako se podešava", "servisi/email-za-studente", "mail"),
-        ("Studentski webmail", "Pošta u browseru", "https://webmail.studenti.mas.bg.ac.rs/", "mail"),
-        ("eduroam", "Besplatan internet na fakultetu i drugim univerzitetima", "servisi/eduroam", "globe"),
-        ("VPN", "Mreža fakulteta od kuće", "servisi/vpn", "globe"),
-        ("Microsoft softver", "Besplatne licence za studente (Azure Dev Tools)", "servisi/microsoft-imagine", "cloud"),
-        ("Pošta u spamu", "Kako da mejlovi fakulteta ne završe u spamu", "servisi/spam", "mail"),
+    ("Katedre i programi", [
+        ("Katedra za proizvodno mašinstvo", "https://cent.mas.bg.ac.rs/", "katedra-za-proizvodno-masinstvo", None),
+        ("Industrijsko inženjerstvo", "https://ie.mas.bg.ac.rs/", "katedra-za-industrijsko-inzenjerstvo", None),
+        ("Katedra za procesnu tehniku", "https://pt.mas.bg.ac.rs/", "katedra-za-procesnu-tehniku", None),
+        ("Katedra za motore", "https://motori.mas.bg.ac.rs/", "katedra-za-motore", None),
+        ("Katedra za mehanizaciju", "https://meh.mas.bg.ac.rs/", "katedra-za-mehanizaciju", None),
+        ("Katedra za mehaniku fluida", "https://fluidi.mas.bg.ac.rs/", "katedra-za-mehaniku-fluida", None),
+        ("Katedra za vazduhoplovstvo", "http://vaz.mas.bg.ac.rs/", "katedra-za-vazduhoplovstvo", None),
+        ("Katedra za opšte mašinske konstrukcije", "https://omk.mas.bg.ac.rs/", "katedra-za-opste-masinske-konstrukcije", None),
+        ("Katedra za matematiku", "https://mat.mas.bg.ac.rs/", "katedra-za-matematiku", None),
+        ("Poljoprivredno prehrambeno mašinstvo", "https://ppm.mas.bg.ac.rs/", "katedra-za-poljoprivredno-masinstvo", None),
+        ("Informacione tehnologije u mašinstvu", "https://it0.mas.bg.ac.rs/", "katedra-za-informacione-tehnologije-u-masinstvu", None),
+        ("MF-ITM", "http://cs.mas.bg.ac.rs/", "katedra-za-informacione-tehnologije-u-masinstvu", None),
+        ("Mašinstvo i informacione tehnologije", "http://mit.mas.bg.ac.rs/", "folder", None),
+        ("Industrija 4.0", "https://i40.mas.bg.ac.rs/", "folder", None),
+        ("Modul ZZK", "https://zzk.mas.bg.ac.rs/", "folder", None),
     ]),
-    ("Gde se obratiti", [
-        ("Kontakt", "Adresa, dekanat, telefoni i mejlovi", "fakultet/kontakt", "home"),
-        ("CIT", "Centar za informacione tehnologije: nalozi i mreža", "fakultet/sluzbe/cit", "globe"),
-        ("Biblioteka", "Usluge, katalozi i radovi", "biblioteka/start", "book"),
-        ("Pozajmica knjiga", "Članstvo i pozajmljivanje u biblioteci", "biblioteka/usluge", "book"),
-        ("Elektronski izvori", "KoBSON: časopisi i knjige na mreži fakulteta", "biblioteka/eizvori", "book"),
+    ("Ostali sajtovi fakulteta", [
+        ("Sajt na engleskom", "http://www.en.mas.bg.ac.rs/", "globe", None),
+        ("Pretprijava kandidata", "https://pretprijava.mas.bg.ac.rs/", "user", None),
+        ("Probni prijemni testovi", "https://testovi.mas.bg.ac.rs/", "file", None),
+        ("Repozitorijum Machinery", "https://machinery.mas.bg.ac.rs/", "book", None),
+        ("Alumni fondacija", "https://alumni.mas.bg.ac.rs/", "users", None),
+        ("Inovacioni inkubator", "https://inkubator.mas.bg.ac.rs/", "globe", None),
+        ("Laboratorija za toplotne turbomašine", "https://ltt.mas.bg.ac.rs/", "globe", None),
+        ("Mission4.0", "https://mission4-0.mas.bg.ac.rs/", "globe", None),
+        ("LGS", "https://lgs.mas.bg.ac.rs/", "globe", None),
+        ("Geotermal", "https://geotermal.mas.bg.ac.rs/", "globe", None),
+    ]),
+    ("Ovaj sajt", [
+        ("Predmeti", "/predmeti/", "book", None),
+        ("O sajtu", "/o-sajtu/", "file", None),
+        ("Statistika", "/statistika/", "file", None),
+        ("Verzije", "/verzije/", "file", None),
+        ("Kod na GitHub-u", "https://github.com/KostaJovanovic/nastava", "globe", None),
+        ("Prijavi grešku", "https://github.com/KostaJovanovic/nastava/issues", "msg", None),
+        ("Knjiga utisaka", "https://valjdakosta.com/guestbook", "msgs", None),
     ]),
 ]
 
-# /mf/: the faculty site's pages for everyone else, as POMOC: the pages to start from, by what they are (the rest are
-# linked from these, and all of them are under "Ostale stranice").
-MF_GROUPS = [
-    ("Fakultet", [
-        ("O fakultetu", "Osnovni podaci i organizacija", "fakultet/start", "home"),
-        ("Organi fakulteta", "Dekan, prodekani, saveti i veća", "fakultet/dekanat", "users"),
-        ("Organizaciona struktura", "Centri, laboratorije i službe", "organizacija/start", "folder"),
-        ("Zvanični dokumenti", "Statut, pravilnici, odluke i izveštaji", "fakultet/dokumenti/start", "file"),
-        ("Zapisnici veća", "Sednice Nastavno-naučnog veća", "fakultet/dokumenti/nnv/start", "file"),
-        ("Šefovi katedri", "Spisak po katedrama", "fakultet/spisak-sefova-katedri", "katedre"),
-        ("Istorija", "Iz istorije Mašinskog fakulteta", "fakultet/istorija", "book"),
-    ]),
-    ("Zaposleni", [
-        ("Konkursi za zvanja", "Otvoreni konkursi za nastavnike i saradnike", "fakultet/izbori-u-zvanja/konkursi/start", "users"),
-        ("Referati", "Izveštaji komisija za izbor u zvanja", "fakultet/izbori-u-zvanja/referati/start", "file"),
-        ("Obrasci za izbor u zvanja", "Procedure i obrasci", "fakultet/izbori-u-zvanja", "file"),
-        ("Email za zaposlene", "Nalog i podešavanje", "servisi/email-za-zaposlene", "mail"),
-        ("Sindikat", "Vesti sindikalne organizacije", "sindikat/vesti", "msgs"),
-        ("Akti sindikata", "Pravni akti i ugovori", "sindikat/dokumenti", "file"),
-    ]),
-    ("Akreditacija i kvalitet", [
-        ("Akreditacije", "Sve akreditacije fakulteta, od 2008.", "akreditacija/start", "star"),
-        ("Samovrednovanje 2022/23.", "Izveštaj o kvalitetu, po studijskim programima", "akreditacija/start/samovrednovanje22", "star"),
-        ("Samovrednovanje 2021/22.", "Izveštaj o kvalitetu, po studijskim programima", "akreditacija/start/samovrednovanje21", "star"),
-    ]),
-    ("Nauka", [
-        ("Naučnoistraživačka delatnost", "Projekti, saradnja i rezultati", "istrazivanje/start", "globe"),
-        ("FME Transactions", "Časopis fakulteta, sva godišta od 2002.", "istrazivanje/fme/start", "news"),
-        ("Projekti", "Domaći i međunarodni projekti", "istrazivanje/projekti", "globe"),
-        ("Tehnička rešenja", "Rešenja nastala na fakultetu", "istrazivanje/tehnicka-resenja", "file"),
-        ("Međunarodna saradnja", "Saradnja u nauci", "istrazivanje/saradnja", "globe"),
-        ("Centri i laboratorije", "Jedinice naučne i stručne delatnosti", "organizacija/centri-lab/start", "folder"),
-    ]),
-    ("Biblioteka i izdanja", [
-        ("Knjige fakulteta", "Izdanja po katedrama", "biblioteka/izdanja/start", "katedre"),
-        ("Izdavačka delatnost", "Kako fakultet izdaje knjige", "fakultet/izdanja", "book"),
-        ("Nagrada za najbolju knjigu", "Godišnja nagrada fakulteta", "katalozi/izdanja/start", "star"),
-        ("Doktorati na uvidu", "Disertacije pred odbranu", "biblioteka/doktorati-na-uvidu-javnosti", "file"),
-        ("Bibliografije", "Radovi nastavnika fakulteta", "biblioteka/bibliografije", "book"),
-    ]),
-    ("Obuke", [
-        ("Energetski menadžeri", "Obuka i ispit za energetske menadžere i savetnike", "fakultet/obuke/obuka-energetskih-menadzera/start", "calendar"),
-        ("Sertifikati A i B", "Rad sa gasovima koji oštećuju ozonski omotač", "fakultet/obuke/obuka-a-i-b-skoooiofgsesb/start", "calendar"),
-    ]),
-]
+
+def link_groups():
+    """LINKS as link.html shows them: (group, [(name, href, icon, data-domain, the card's second line)]). The second
+    line: the address; a shown page of the faculty's its site (its paths are long: vaznidatumioas); with a data-domain
+    (the drive), OneDrive."""
+    wiki = {h[3:] for _, links in LINKS for _, h, _, _ in links if h.startswith("mf:")}
+    assert wiki == SHOWN, f"studije.py SHOWN and LINKS differ: {wiki ^ SHOWN}"
+    return [(group, [(name, wiki_href(h[3:]), icon, domain, "www.mas.bg.ac.rs") if h.startswith("mf:") else
+                     (name, h, icon, domain, "OneDrive" if domain else h.split("://")[-1].rstrip("/"))
+                     for name, h, icon, domain in links]) for group, links in LINKS]
+
+
+def wiki_href(path):
+    """A shown wiki page's address here: /mf/<path>/, in Latin as the site's other URLs (upis/konkurs-дас)."""
+    return "/mf/" + "/".join(map(slug, path.split("/"))) + "/"
 
 
 def wiki_link(value, hrefs):
@@ -1388,53 +1390,27 @@ def wiki_link(value, hrefs):
 
 
 def render_wiki_pages(site, db, render):
-    """The rest of www.mas.bg.ac.rs (studije.py wiki_pages) at /mf/<its path>/, as the schedule pages (render, from
-    render_study_pages), linking each other's copies; /pomoc/ (POMOC) and /mf/ (MF_GROUPS, then every page) listing
-    them. A page gone from the wiki stays, marked."""
+    """The pages of www.mas.bg.ac.rs a student needs (studije.py SHOWN, of wiki_pages; Linkovi lists them, LINKS) at
+    wiki_href, as the schedule pages (render, from render_study_pages), linking each other's copies. The rest of the
+    wiki is kept in the database, not shown. A page gone from the wiki stays, marked."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'wiki_pages'").fetchone():
         return
     pages = defaultdict(list)
-    for r in db.execute("SELECT * FROM wiki_pages ORDER BY path, last_seen DESC"):
+    for r in db.execute(f"SELECT * FROM wiki_pages WHERE path IN ({','.join('?' * len(SHOWN))}) ORDER BY path, last_seen DESC",
+                        sorted(SHOWN)):
         pages[r["path"]].append(dict(r))
-    # Latin, as the site's other URLs: a few wiki pages have a Cyrillic name (upis/konkurs-дас).
-    hrefs = {path: "/mf/" + "/".join(map(slug, path.split("/"))) + "/" for path in pages}
-    assert len(set(hrefs.values())) == len(hrefs), "two wiki pages at one address"
-    rest = []
+    hrefs = {path: wiki_href(path) for path in pages}
     for path, versions in pages.items():
         for v in versions:
             v["title"] = wiki_title(v["title"])
-        render(versions, hrefs[path], STUDY_SITE + quote(path), ("/mf/", "Sajt fakulteta"),
+        render(versions, hrefs[path], STUDY_SITE + quote(path), ("/link/", "Linkovi"),
                link=lambda value: wiki_link(value, hrefs))
-        v = versions[0]
-        # A page with next to nothing on it ("Страница је у припреми.", "a"): kept, not listed.
-        if len(strip_tags(v["html"]).replace(v["title"], "").split()) >= 8 or v["gone"]:
-            rest.append(dict(href=v["href"], title=v["title"], gone=v["gone"], path=path))
-
-    def cards(groups):
-        """groups' targets as links: a wiki path its copy's (and whether it is gone); one this site lacks left out."""
-        url = lambda t: t.startswith(("/", "https://"))
-        missing = [t for _, links in groups for _, _, t, _ in links if not url(t) and t not in pages]
-        # A test database has a few pages; the real one all of these (studije.py keeps a page gone from the wiki).
-        assert not missing or len(pages) < 100, f"no such wiki pages: {missing}"
-        return [(name, [dict(name=n, line=line, icon=icon, href=t if url(t) else hrefs[t],
-                             gone=not url(t) and pages[t][0]["gone"]) for n, line, t, icon in links if url(t) or t in pages])
-                for name, links in groups]
-
-    write(site / "pomoc" / "index.html", env.get_template("pomoc.html").render(groups=cards(POMOC)))
-    write(site / "mf" / "index.html", env.get_template("mf.html").render(
-        groups=cards(MF_GROUPS), rest=sorted(rest, key=lambda p: natural(p["path"]))))
 
 
 def wiki_title(t):
     """A wiki page's title as the site shows it: one in capitals ("УПИС НА ОСНОВНЕ...") in sentence case, a page
     name ("cenovnik") capitalized."""
     return t[0].upper() + t[1:].lower() if t.isupper() or t.islower() else t
-
-
-def natural(path):
-    """A sort key: numbers as numbers (vol9 before vol10), a folder's start page first."""
-    path = re.sub(r"(^|/)start(/|$)", r"\1\2", path)
-    return [int(x) if x.isdigit() else fold(x) for x in re.split(r"(\d+)", path)]
 
 
 def photo_path(url, kind):
@@ -2425,7 +2401,9 @@ def main(db_path, out, dev_mode=False):
     raspored = render_study_pages(site, db)
     (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored,
                                                      # The researchers and demonstrators for the header search: [name, page, title].
-                                                     istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")]),
+                                                     istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")],
+                                                     # Linkovi's cards for it too: [name, second line, href, data-domain].
+                                                     linkovi=[[n, shown, h, d] for _, links in link_groups() for n, h, _, d, shown in links]),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
@@ -2435,7 +2413,7 @@ def main(db_path, out, dev_mode=False):
     write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()))
     # icons: {host: file} of the sites' own icons in static/link (saved by hand), for link.html's cards.
     write(site / "link" / "index.html", env.get_template("link.html").render(
-        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}))
+        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}, groups=link_groups()))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())
     if dev:
@@ -2463,7 +2441,6 @@ if __name__ == "__main__":
     assert wiki_link("/upis/oas#rok", hrefs) == "/mf/upis/oas/#rok" and wiki_link("https://www.mas.bg.ac.rs/biblioteka", hrefs) == "/mf/biblioteka/start/"
     assert wiki_link("/doku.php?id=upis:oas", hrefs) == "/mf/upis/oas/" and wiki_link("https://ie.mas.bg.ac.rs/upis/oas", hrefs) is None
     assert wiki_link("/_media/upis/oas.pdf", hrefs) is None
-    assert natural("fme/vol9") < natural("fme/vol10") and natural("a/start/x") < natural("a/b")
     assert acronyms("Основи отпорности конструкција") == {"ook"} and acronyms("Машински елементи 1") == {"me1", "me"}
     assert acronyms("Математика 1", ["МАТ1 рок", "МИ - вежбе"]) == {"m1", "mat1"} and acronyms("Електротехника") == set()
     assert acronyms("Понашање заварених спојева у експлоатацији") == {"pzsue", "pzse"}

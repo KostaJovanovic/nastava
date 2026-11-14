@@ -28,9 +28,14 @@ SAFE = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt',
 # other pages (-kockice, -include) and the wiki's own (its menus, its test pages).
 NOT_WIKI = re.compile(r'^(en|eng|playground|wiki|wiki-renamed|studije/(predmeti|oas|mas|ds)|fakultet/nastavnici|organizacija/katedre)(/|$)'
 	r'|-(kockice|include)$|^(start|menu|navigacija|sidebar|top|topitems|my-404-page|mapa)$')
-# Their pages' files stay linked to the wiki, not stored here: ~5.8 GB of PDFs (2026-11), too big for nastava.db and
-# the site. site_files.py keeps a local copy of them.
-LINKED = re.compile(r'^(fakultet|akreditacija|biblioteka|izdanja|katalozi|istrazivanje|sindikat)/')
+# The wiki pages the site shows (pages/build.py LINKS, in Linkovi): what a student needs. Only theirs (and the schedule
+# pages') files are stored here; the rest stay linked to the wiki (~5.8 GB of PDFs, 2026-11), site_files.py keeps a
+# local copy of them. Every other page is kept too, not shown.
+SHOWN = {
+	'upis/start', 'upis/oas', 'upis/vaznidatumioas', 'upis/mas', 'upis/vaznidatumimas', 'upis/das', 'upis/vaznidatumidas',
+	'studenti/start', 'studenti/izbor-predmeta', 'studenti/finansijsko-zaduzenje', 'studenti/placanja', 'studenti/prijava-ispita',
+	'servisi/email-za-studente', 'servisi/eduroam', 'servisi/vpn', 'servisi/microsoft-imagine', 'fakultet/kontakt',
+}
 
 SCHEMA = '''
 create table if not exists study_pages (slug text, sha text, title text, html text, first_seen text, last_seen text, primary key (slug, sha));
@@ -101,7 +106,7 @@ def sync(db):
 		main = BeautifulSoup(r.text, 'html.parser').select_one('div.page')
 		if main is None:
 			raise RuntimeError(f'{path}: no div.page, the site changed')
-		if not LINKED.match(path):
+		if path in SHOWN or path.removeprefix('studije/') in PAGES:
 			files.update(p for tag in main.select('a[href], img[src]') for p in [media_path(tag.get('href') or tag.get('src'))] if p and safe(p))
 		return str(main)
 

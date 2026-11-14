@@ -13,8 +13,8 @@
     return e;
   };
 
-  /* The header search, of everything: the matching subjects (by studije), teachers, katedre, researchers and schedule
-     entries listed under the bar, the first few of each with a link to the rest on its list page; off the home page,
+  /* The header search, of everything: the matching subjects (by studije), teachers, katedre, researchers, schedule
+     entries and Linkovi's links listed under the bar, the first few of each with a link to the rest on its list page; off the home page,
      the texts' best hits too. Enter searches all the texts (search.js on the home page). A list page filters its own
      list with its own box (below). */
   var list = null, data = null;
@@ -33,7 +33,7 @@
       // rows: [subgroup, name, hint, href, decorate(a)]: the first 5 of a type with a list page (3 of the katedre),
       // and a link to the rest.
       var section = function (key, title, rows) {
-        var cap = ENTER[key] ? 5 : key === 'katedre' ? 3 : 200, sub = null;
+        var cap = ENTER[key] ? 5 : key === 'katedre' ? 3 : key === 'linkovi' ? 6 : 200, sub = null;
         if (!rows.length) return;
         var g = list.appendChild(el('div', 'cmd__g'));
         g.setAttribute('role', 'group');
@@ -97,6 +97,9 @@
         .map(function (r) { return ['', r[0], r[2], r[1]]; }));
       section('raspored', 'Raspored', (data.raspored || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
         .map(function (r) { return ['', r[0], r[1], r[2]]; }));
+      // Linkovi's cards (build.py LINKS), by name and address; the drive's keeps its data-domain (the dialog before it).
+      section('linkovi', 'Linkovi', (data.linkovi || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
+        .map(function (r) { return ['', r[0], r[1], r[2], r[3] && function (a) { a.setAttribute('data-domain', r[3]); }]; }));
       // The texts (posts, news): off the home page, their best hits as they come; the home page lists them itself.
       if (!onHome) {
         var box = list.appendChild(el('div', 'cmd__g'));
