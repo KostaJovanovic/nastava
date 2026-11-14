@@ -96,7 +96,8 @@ pipeline and site, with new scrapers for phpBB.
   read by `build.py`. `docs/`: the plans. `tools/teams/`: the browser-console scripts for Teams.
 - `pages/build.py`: render `nastava.db` as the static site, in the board's layout: the index of smerovi, a page per
   smer and subject (its topics, filtered by text or author in the page), a page per topic of several posts (`/tema/`),
-  and a page per post (`/item/`, what search finds). The header stays at the top; the side panel (page links,
+  and a page per post (`/item/`, what search finds). `/statistika/`'s word cloud is made at most weekly
+  (`pages/build.py words`, a step of `ci/deploy.sh`) into the database's `meta` table; a build uses it. The header stays at the top; the side panel (page links,
   filters by smer and year) fits the screen beside it. A teacher's page links a search of their posts (`/?autor=`).
   Atom feeds for a feed reader: `/feed.xml` (the board's newest posts) and `feed.xml` on each subject page.
   The side panel's "Obaveštenja" links `/mojipredmeti/`: step 1 picks the subjects; step 2 has the notifications'

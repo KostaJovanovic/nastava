@@ -54,6 +54,7 @@ from sitegen.stats import bars  # noqa: E402
 from sitegen.stats import post_words  # noqa: E402
 from sitegen.stats import ranking  # noqa: E402
 from sitegen.stats import same_words  # noqa: E402
+from sitegen.stats import saved_cloud  # noqa: E402
 from sitegen.stil import css_colors  # noqa: E402
 from sitegen.text import BASE  # noqa: E402
 from sitegen.text import PROGRAMS  # noqa: E402
@@ -553,3 +554,14 @@ _x = ET.fromstring(atom("T", "/predmet/m/", [_it]))
 _ns = {"a": "http://www.w3.org/2005/Atom"}
 assert _x.find("a:entry/a:link", _ns).get("href") == f"{SITE_URL}/tema/3/#p5" and _x.find("a:entry/a:title", _ns).text == "A & <b>"
 assert _x.find("a:entry/a:content", _ns).text == "<p>x &amp; y</p>" and ET.fromstring(atom("T", "/", [])).find("a:updated", _ns) is not None
+
+# The word cloud meta keeps (build.py words): used while under 7 days old; none, too old or no meta table: None.
+from datetime import date as _date  # noqa: E402
+
+_wdb = sqlite3.connect(":memory:")
+assert saved_cloud(_wdb, _date(2026, 11, 14)) is None
+_wdb.execute("CREATE TABLE meta (key text primary key, value text)")
+assert saved_cloud(_wdb, _date(2026, 11, 14)) is None
+_wdb.executemany("INSERT INTO meta VALUES (?, ?)", [("words", '[["ispit", 3], ["usmeni", 1]]'), ("words_at", "2026-11-08")])
+assert saved_cloud(_wdb, _date(2026, 11, 14)) == [("ispit", 3), ("usmeni", 1)]
+assert saved_cloud(_wdb, _date(2026, 11, 15)) is None

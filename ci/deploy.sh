@@ -94,6 +94,9 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	for p in "${parts[@]:1}"; do
 		step "$p" uv run "scrapers/$p.py" sync || failed+=("$p")
 	done
+	# /statistika/'s word cloud, made again when a week old (pages/build.py words): it goes up with the state, and the
+	# builds of the week skip it. Not in the fingerprint: a run that changed nothing else does not save it (the next does).
+	step words uv run -q pages/build.py words nastava.db || failed+=(words)
 	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time. Rows
 	# the pull kept from this PC (ci/state_merge.py, $RUN_DIR/merged) are a change the saved state lacks.
 	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" && ! -s $RUN_DIR/merged ]]; then

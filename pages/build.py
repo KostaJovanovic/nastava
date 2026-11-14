@@ -5,6 +5,7 @@
 """Render nastava.db as a static site for GitHub Pages, with its Pagefind search index.
 
 Usage: uv run pages/build.py <nastava.db> <out dir>
+       uv run pages/build.py words <nastava.db>   (the word cloud into meta, when a week old: ci/deploy.sh)
 Writes <out>/site, most pages as fragments of shell.html (split_page), runs Pagefind (needs Node's npx) into
 <out>/site/pagefind, then removes the hidden text Pagefind read from the item pages.
 """
@@ -15,6 +16,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+from datetime import date
 from collections import defaultdict
 from pathlib import Path
 
@@ -57,11 +59,37 @@ from sitegen.render import (
     render_vesti,
 )  # noqa: E402
 from sitegen.schedule import render_study_pages  # noqa: E402
-from sitegen.stats import archive_stats  # noqa: E402
+from sitegen.stats import archive_stats, cloud, saved_cloud  # noqa: E402
 from sitegen.stil import stil_data  # noqa: E402
 from sitegen.text import acronyms  # noqa: E402
 from sitegen.wiki import archived_wiki, link_groups, link_icons  # noqa: E402
 from sitegen import output  # noqa: E402
+
+
+def load_all(db):
+    """Every source's posts as items (and what they hang on): main's start, and words's."""
+    place, smerovi, subjects = load_places(db)
+    cent_items, cent_pushed = load_cent(db, smerovi, subjects)
+    items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + load_mail(subjects)
+    return smerovi, subjects, items, cent_pushed
+
+
+def words(db_path):
+    """The word cloud into meta (words, words_at) when it is missing or WORDS_DAYS old, else nothing: ci/deploy.sh runs
+    this before it saves the state, and the builds of the week use it (stats.saved_cloud) instead of making it."""
+    db = sqlite3.connect(db_path, timeout=60)
+    db.row_factory = sqlite3.Row
+    today = date.today()
+    if saved_cloud(db, today) is not None:
+        print("word cloud: still fresh", flush=True)
+        return
+    posts = [it for it in load_all(db)[2] if it["kind"] == "post"]
+    db.executemany(
+        "insert or replace into meta (key, value) values (?, ?)",
+        [("words", json.dumps(cloud(posts), ensure_ascii=False)), ("words_at", today.isoformat())],
+    )
+    db.commit()
+    print(f"word cloud: made from {len(posts)} posts", flush=True)
 
 
 def main(db_path, out, dev_mode=False):
@@ -76,9 +104,7 @@ def main(db_path, out, dev_mode=False):
     version_static(site / "static")
     db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
-    place, smerovi, subjects = load_places(db)
-    cent_items, cent_pushed = load_cent(db, smerovi, subjects)
-    items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + load_mail(subjects)
+    smerovi, subjects, items, cent_pushed = load_all(db)
     teachers = load_teachers(db, subjects)
     if teachers:
         write_photos(db, site)
@@ -154,7 +180,10 @@ def main(db_path, out, dev_mode=False):
         ),
         encoding="utf-8",
     )
-    write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
+    write(
+        site / "statistika" / "index.html",
+        env.get_template("stats.html").render(st=archive_stats(items, topics, teachers, saved_cloud(db, date.today()))),
+    )
     write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
     about = env.get_template("o_sajtu.html").render()
     write(site / "o-sajtu" / "index.html", about)
@@ -185,6 +214,8 @@ def main(db_path, out, dev_mode=False):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["words"] and len(sys.argv) == 3:
+        sys.exit(words(sys.argv[2]))
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     main(*sys.argv[1:3])

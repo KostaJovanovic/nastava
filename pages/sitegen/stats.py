@@ -1,6 +1,8 @@
 """The /statistika/ page: counts, charts and the word cloud."""
 
+import json
 import re
+import sqlite3
 from collections import Counter, defaultdict
 from datetime import date
 from urllib.parse import quote
@@ -59,8 +61,29 @@ def same_words(counts):
     return Counter({max(c, key=lambda w: (w == s and c[w] * 4 >= max(c.values()), c[w])): c.total() for s, c in stems.items()})
 
 
-def archive_stats(items, topics, teachers):
-    """The numbers of /statistika/: the board by time, who posts, what is downloaded, the teachers."""
+# The word cloud is made again once it is this many days old (pages/build.py words): it is a quarter of a build.
+WORDS_DAYS = 7
+
+
+def cloud(posts):
+    """The word cloud's counts: the 60 most common words of the posts (post_words, same_words), [(word, n)]."""
+    return same_words(Counter(w for it in posts for w in post_words(it))).most_common(60)
+
+
+def saved_cloud(db, today):
+    """The cloud meta keeps (pages/build.py words) while it is under WORDS_DAYS old; None: none, too old, no meta."""
+    try:
+        row = dict(db.execute("select key, value from meta where key in ('words', 'words_at')").fetchall())
+    except sqlite3.OperationalError:
+        return None
+    if "words" not in row or (today - date.fromisoformat(row.get("words_at") or "1970-01-01")).days >= WORDS_DAYS:
+        return None
+    return [tuple(pair) for pair in json.loads(row["words"])]
+
+
+def archive_stats(items, topics, teachers, words=None):
+    """The numbers of /statistika/: the board by time, who posts, what is downloaded, the teachers. words: the cloud
+    (saved_cloud), else made here."""
     posts = [it for it in items if it["kind"] == "post"]
     dated = [it for it in posts if it["date"]]
     files = attachment_files(posts)
@@ -104,7 +127,8 @@ def archive_stats(items, topics, teachers):
     days = Counter(date.fromisoformat(it["date"][:10]).weekday() for it in dated)
     busiest = Counter(it["date"][:10] for it in dated).most_common(1)
     topic = {t["href"]: t for t in topics}
-    words = same_words(Counter(w for it in posts for w in post_words(it)))
+    # Its 60 pairs in order: ranking's most_common(60) gives them back as from all the counts.
+    words = Counter(dict(words if words is not None else cloud(posts)))
 
     listed = [t for t in teachers if not t["gone"]]
     posting = {t["username"] for t in listed if t["username"] and t["username"] in tally["authors"]}
