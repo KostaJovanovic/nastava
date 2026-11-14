@@ -594,9 +594,9 @@
         noPush.className = 'leave';
         noPush.setAttribute('aria-labelledby', 'nopush-h');
         noPush.innerHTML = '<div class="leave__in"><h2 id="nopush-h">Kako uključiti obaveštenja</h2><p></p><ol class="leave__steps"></ol>'
-          + '<div class="leave__rss"><p><b>Ili preko RSS-a.</b> U čitaču vesti (Feedly, Inoreader…) dodaj adresu, '
+          + '<details class="leave__rss"><summary>Ili preko RSS-a</summary><div><p>U čitaču vesti (Feedly, Inoreader…) dodaj adresu, '
           + 'ili preuzmi sve predmete odjednom i uvezi ih.</p><ul></ul>'
-          + '<a class="btn" data-opml download="moji-predmeti.opml">Preuzmi za čitač (OPML)</a></div>'
+          + '<a class="btn" data-opml download="moji-predmeti.opml">Preuzmi za čitač (OPML)</a></div></details>'
           + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
         d.body.appendChild(noPush);
         noPush.addEventListener('click', function (e) {
@@ -620,6 +620,7 @@
         ul.appendChild(li);
       });
       noPush.querySelector('[data-opml]').hidden = !feeds.length;
+      noPush.querySelector('.leave__rss').open = false;
       noPush.showModal();
       noPush.querySelector('button').focus();
     });
