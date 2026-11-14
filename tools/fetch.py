@@ -5,7 +5,7 @@
 """Run the browser-console exports for you: opens Edge (its own profile, so a sign-in stays), waits while you sign in,
 then runs the export in the page and saves what it downloads in Downloads/nastava-<what>-<date>/.
 
-Usage: fetch.py teams                     teams-export.js and teams-files.js, then teams.py add on them
+Usage: fetch.py teams                     teams-export.js and teams-files-all.js (every class), then teams.py add
        fetch.py moodle <course url> …     moodle-export.js on each course page (enrol first)
 
 The sign-in is yours, typed in the window; the script never sees or keeps a password. The profile (cookies) is in
@@ -81,7 +81,7 @@ def teams(page, out):
     )
     page.wait_for_timeout(5000)  # the other tokens (Graph's, for the files) come a moment later
     export = [p for p in run(page, "teams/teams-export.js", out) if p.suffix == ".json"]
-    run(page, "teams/teams-files.js", out)
+    run(page, "teams/teams-files-all.js", out)  # every class you are in, not only teams.py's CLASSES
     if export:
         print("\nteams.py add:")
         subprocess.run(["uv", "run", str(ROOT / "scrapers" / "teams.py"), "add", str(export[0]), str(out)], cwd=ROOT,
