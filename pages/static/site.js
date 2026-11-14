@@ -786,7 +786,53 @@
       b.hidden = false;
     });
   };
-  // The reason, in a dialog like the one for leaving the archive (.leave).
+  /* How to turn them on, for this device and browser: why (the switch's title) and the steps, in the dialog below.
+     kind: 'blocked' (the reader said no, or the phone's settings), 'install' (an iPhone: only from the home screen),
+     'none' (a browser without web push). The menu names as the browsers show them in English, which is how most
+     phones here are set. */
+  var ua = navigator.userAgent;
+  var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var android = /Android/.test(ua);
+  var inApp = /FBAN|FBAV|Instagram|Messenger|Line\/|TikTok|Snapchat/.test(ua);
+  var brow = /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Edg(A|iOS)?\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera'
+    : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : '';
+  var pushSteps = function (kind) {
+    if (inApp) return ['Ova stranica je otvorena u aplikaciji (Instagram, Messenger…), koja ne prima obaveštenja sajtova.',
+      'Otvori je u browseru: meni ⋯ ili ⋮ → „Open in browser”.', 'Tamo uključi Obaveštenja.'];
+    if (kind === 'install') return [
+      'Na iPhone-u obaveštenja stižu samo sajtu dodatom na početni ekran (iOS 16.4 ili noviji).',
+      brow === 'Safari' || !brow ? 'Dodirni Share (kvadrat sa strelicom nagore), dole na ekranu.' : 'Dodirni Share (kvadrat sa strelicom nagore) u ' + brow + '-u.',
+      'Izaberi „Add to Home Screen”, pa „Add”.',
+      'Otvori sajt sa početnog ekrana (ikonica „Nastava”).',
+      'U panelu Obaveštenja uključi prekidač, pa dozvoli („Allow”).'];
+    if (kind === 'blocked') {
+      if (ios) return ['Obaveštenja su isključena za ovaj sajt.', 'Otvori Settings na telefonu → Notifications → Nastava.',
+        'Uključi „Allow Notifications”.', 'Vrati se ovde i uključi prekidač.'];
+      if (android && brow === 'Firefox') return ['Firefox je blokirao obaveštenja ovom sajtu.',
+        'Dodirni katanac levo od adrese.', 'Kod „Notifications” izaberi „Allowed”.', 'Osveži stranicu i uključi prekidač.'];
+      if (android) return [(brow || 'Browser') + ' je blokirao obaveštenja ovom sajtu.',
+        'Dodirni ikonicu levo od adrese → „Permissions” (ili „Site settings”).',
+        'Uključi „Notifications”.',
+        'Ako i dalje ne radi: Settings na telefonu → Apps → ' + (brow || 'tvoj browser') + ' → Notifications → uključi.',
+        'Osveži stranicu i uključi prekidač.'];
+      if (brow === 'Safari') return ['Safari je blokirao obaveštenja ovom sajtu.',
+        'U meniju Safari → Settings → Websites → Notifications.', 'Kod masinci.org izaberi „Allow”.',
+        'Osveži stranicu i uključi prekidač.'];
+      if (brow === 'Firefox') return ['Firefox je blokirao obaveštenja ovom sajtu.',
+        'Klikni ikonicu levo od adrese.', 'Kod „Send Notifications: Blocked” klikni ×.',
+        'Osveži stranicu, uključi prekidač i izaberi „Allow”.'];
+      return [(brow || 'Browser') + ' je blokirao obaveštenja ovom sajtu.',
+        'Klikni ikonicu levo od adrese' + (brow === 'Edge' ? ' → „Permissions for this site”.' : ' → „Site settings”.'),
+        'Kod „Notifications” izaberi „Allow”.', 'Osveži stranicu i uključi prekidač.'];
+    }
+    if (ios) return ['Obaveštenja na iPhone-u traže iOS 16.4 ili noviji.', 'Settings → General → Software Update.',
+      'Posle ažuriranja otvori sajt sa početnog ekrana i uključi prekidač.'];
+    return ['Ovaj browser ne može da prima obaveštenja.',
+      android ? 'Otvori sajt u Chrome-u, Firefox-u, Edge-u ili Samsung Internet-u.' : 'Otvori sajt u Chrome-u, Edge-u, Firefox-u ili Safari-ju.',
+      'Tamo uključi Obaveštenja.'];
+  };
+  var pushKind = 'none';
+  // The reason and the steps, in a dialog like the one for leaving the archive (.leave).
   var noPush = null;
   pushBoxes.forEach(function (b, i) {
     b.addEventListener('click', function (e) {
@@ -796,14 +842,17 @@
         noPush = d.createElement('dialog');
         noPush.className = 'leave';
         noPush.setAttribute('aria-labelledby', 'nopush-h');
-        noPush.innerHTML = '<div class="leave__in"><h2 id="nopush-h">Obaveštenja nisu dostupna</h2><p></p>'
+        noPush.innerHTML = '<div class="leave__in"><h2 id="nopush-h">Kako uključiti obaveštenja</h2><p></p><ol class="leave__steps"></ol>'
           + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
         d.body.appendChild(noPush);
         noPush.addEventListener('click', function (e) {
           if (e.target === noPush || e.target.closest('button')) noPush.close();
         });
       }
-      noPush.querySelector('p').textContent = b.title;
+      var steps = pushSteps(pushKind), ol = noPush.querySelector('ol');
+      noPush.querySelector('p').textContent = steps[0];
+      ol.textContent = '';
+      steps.slice(1).forEach(function (s) { var li = d.createElement('li'); li.textContent = s; ol.appendChild(li); });
       noPush.showModal();
       noPush.querySelector('button').focus();
     });
@@ -838,7 +887,11 @@
       clearTimeout(timer);
       timer = setTimeout(resave, 3000);
     });
-    var denied = function () { return Notification.permission === 'denied' ? blocked : ''; };
+    var denied = function () {
+      if (Notification.permission !== 'denied') return '';
+      pushKind = 'blocked';
+      return blocked;
+    };
     current().then(function (sub) {
       showPush(!!sub && Notification.permission === 'granted', denied());
     }).catch(function () {});
@@ -863,6 +916,7 @@
     }); });
   } else {
     var iphone = navigator.standalone === false;
+    pushKind = iphone ? 'install' : 'none';
     showPush(false, iphone ? 'Na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.' : 'Ovaj browser ne može da prima obaveštenja.');
     if (iphone) said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
   }

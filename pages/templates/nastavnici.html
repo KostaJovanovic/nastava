@@ -22,7 +22,9 @@
     <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span><b class="arch__n">{{ left | length | n }}</b></a>
     {%- endif %}
   </div>
-  <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na fakultetu.{% elif researchers %}Istraživači Inovacionog centra fakulteta i demonstratori, koji nisu na spisku nastavnika.{% else %}Ko predaje šta, gde je kabinet i kada su konsultacije. Broj postova je sa foruma nastave. Ostali: <a href="/nastavnici/istrazivaci/">istraživači i demonstratori</a>.{% endif %}</p>
+  {%- if archive or researchers %}
+  <p class="mh__sub">{% if archive %}Nastavnici koji više nisu na fakultetu.{% else %}Istraživači Inovacionog centra fakulteta i demonstratori, koji nisu na spisku nastavnika.{% endif %}</p>
+  {%- endif %}
 </div>
 {#- Its own search filters this list (site.js); its text is ?q=. -#}
 <form class="people__bar" data-filter onsubmit="return false">

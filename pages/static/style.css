@@ -476,6 +476,9 @@ body:has(#res) .filters--years { display: none; }
 .leave h2 { color: var(--fg); font: 800 18px var(--sans); }
 .leave b { color: var(--fg); }
 .leave__url { padding: 8px 10px; border-radius: 8px; background: var(--icon-bg); color: var(--dim); font: 400 12.5px var(--mono); overflow-wrap: anywhere; }
+/* The steps to turn notifications on (site.js pushSteps). */
+.leave__steps { display: grid; gap: 6px; margin: 0; padding-left: 1.3em; font-size: 14px; line-height: 1.45; }
+.leave__steps li::marker { color: var(--slate); font-weight: 800; }
 .leave__acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
 /* ---- Kalendar i rasporedi ---------------------------------------------------- */
