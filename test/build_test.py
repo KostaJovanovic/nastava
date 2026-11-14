@@ -574,3 +574,21 @@ assert saved_cloud(_wdb, _date(2026, 11, 14)) is None
 _wdb.executemany("INSERT INTO meta VALUES (?, ?)", [("words", '[["ispit", 3], ["usmeni", 1]]'), ("words_at", "2026-11-08")])
 assert saved_cloud(_wdb, _date(2026, 11, 14)) == [("ispit", 3), ("usmeni", 1)]
 assert saved_cloud(_wdb, _date(2026, 11, 15)) is None
+
+# The departments' whole sites (load_sajtovi): a page's title, its group, the teacher it is about.
+from sitegen.load_sajtovi import group_of, own_title, slug_title, teacher_of  # noqa: E402
+
+assert own_title("Industrijsko Inženjerstvo - Predmeti") == "Predmeti"
+assert own_title("Prof. Dr. Đuro Koruga — Katedra za biomedicinsko inženjerstvo") == "Prof. Dr. Đuro Koruga"
+assert own_title("Катедра за ХМЕС") == ""
+assert slug_title("https://hidro.mas.bg.ac.rs/centri_lab1.html") == "Centri lab1"
+assert group_of("ciah", "https://ciah.mas.bg.ac.rs/stakla", "Испитивање") == "Laboratorija CIAH"
+assert group_of("hidro", "https://hidro.mas.bg.ac.rs/istorijat.html", "Историјат") == "O katedri"
+assert group_of("meh", "https://meh.mas.bg.ac.rs/projekti/", "Пројекти") == "Istraživanje i projekti"
+_gajic = dict(id="1", name="Александар Гајић", katedra="Катедра за хидрауличне машине и енергетске системе", _tok={"aleksandar", "gajic"})
+_rad = dict(id="2", name="др Зоран Ј. Радаковић", username="zradakovic")
+_byk = {_gajic["katedra"]: [_gajic]}
+assert teacher_of("hidro", "https://hidro.mas.bg.ac.rs/profesori_gajic.html", {}, _byk) is _gajic
+assert teacher_of("hidro", "https://hidro.mas.bg.ac.rs/istorijat.html", {}, _byk) is None
+assert teacher_of("etc", "https://etc.mas.bg.ac.rs/zradakovic/EM1.htm", {"zradakovic": _rad}, {}) is _rad
+assert teacher_of("etc", "https://etc.mas.bg.ac.rs/", {"zradakovic": _rad}, {}) is None

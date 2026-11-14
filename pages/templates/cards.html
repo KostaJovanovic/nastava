@@ -1,6 +1,15 @@
 {#- A teacher's card, as /nastavnici/ lists them (nastavnici.html) and a katedra's page (katedra.html). -#}
 {%- macro est(y, guess) %}{% if guess %}<span class="est" title="procena">~{{ y }}</span>{% else %}{{ y }}{% endif %}{% endmacro %}
 
+{#- A page of a department's own site (load_sajtovi), folded: its title; open, its content and the original. -#}
+{%- macro site_fold(p) %}
+<details class="tp__bio sf__page">
+  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{{ p.title }}</summary>
+  <div class="prose prose--html">{{ p.html | safe }}</div>
+  <p class="tp__src"><a href="{{ p.url }}" rel="noopener" target="_blank">Original na {{ p.url.split('/')[2] }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a> · sačuvano {{ p.seen }}</p>
+</details>
+{%- endmacro %}
+
 {%- macro card(t, id='') %}
   {#- The grey corner: a departed teacher, on the archive page and in the list's search. -#}
   <li{% if id %} id="{{ id }}"{% endif %} class="pc{% if t.gone %} pc--gone{% if t.last_seen[:4] == '0000' %} pc--undated{% endif %}" style="--p: {{ t.age }}%{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">

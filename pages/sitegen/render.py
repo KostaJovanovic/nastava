@@ -227,10 +227,10 @@ def render_teachers(site, teachers, items, book):
     )
 
 
-def render_katedre(site, db, teachers, subjects, topics):
+def render_katedre(site, db, teachers, subjects, topics, sajt=None):
     """A page per katedra with listed teachers (/katedra/<name>/): the faculty's text about it and its own site,
-    its teachers' cards, its subjects (those whose row has its icon, build.py row_katedra) by smer, and the newest
-    topics in them."""
+    its teachers' cards, its subjects (those whose row has its icon, build.py row_katedra) by smer, the newest
+    topics in them, and its own site's pages, folded (load_sajtovi)."""
     dept = {}
     if db.execute("SELECT 1 FROM sqlite_master WHERE name = 'departments'").fetchone():
         dept = {r["name"]: r for r in db.execute("SELECT * FROM departments")}
@@ -258,6 +258,7 @@ def render_katedre(site, db, teachers, subjects, topics):
                 groups=groups,
                 n_subjects=len(subs),
                 topics=newest[k],
+                sajt=(sajt or {}).get(k),
             ),
         )
 

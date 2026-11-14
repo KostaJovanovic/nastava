@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "rows.html" import crumb, forum_rows, topic_rows %}
-{% from "cards.html" import card %}
+{% from "cards.html" import card, site_fold %}
 {#- A katedra (build.py render_katedre): the faculty's text about it, a link to its own site, its teachers, its
     subjects by smer and the newest topics in them. -#}
 {%- set origin = source %}
@@ -43,4 +43,15 @@
 {%- for label, subs in groups %}
 {{ forum_rows(label, subs, 'book') }}
 {%- endfor %}
+
+{#- Its own site's pages (load_sajtovi), by group, each folded. Read again on 1 October and 1 March (ci/plan.py). -#}
+{%- if sajt %}
+<section class="tp__sec" aria-labelledby="s-h">
+  <div class="tp__h"><h2 id="s-h">Sa sajta katedre</h2>{{ ext('https://' ~ sajt.host ~ '/', sajt.host) }}</div>
+  {%- for label, pages in sajt.groups %}
+  <h3 class="sf__h">{{ label }} <span>{{ pages | length }}</span></h3>
+  <div class="sf">{% for p in pages %}{{ site_fold(p) }}{% endfor %}</div>
+  {%- endfor %}
+</section>
+{%- endif %}
 {% endblock %}

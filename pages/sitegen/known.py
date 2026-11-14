@@ -68,6 +68,35 @@ FORUMS = {
 # The sites whose pages are each a subject's (ie's subject pages, fluidi's); the others' are the department's.
 SUBJECT_PAGE = re.compile(r"ie\.mas\.bg\.ac\.rs/predmeti_p|fluidi\.mas\.bg\.ac\.rs/[a-z]+/$")
 
+# The announcement pages (katedre.py SITES' patterns): their notices are posts, so not among a site's other pages.
+ANNOUNCEMENTS = re.compile(r"/(novosti\.php|vesti/(page/\d+/)?|obavestenja(\.html)?|api\.php\?tip=\w+)$")
+
+# Each department site's katedra (load_sajtovi): its pages go on that katedra's page. etc has none: it is the
+# teachers' own folders (etc.mas.bg.ac.rs/<username>/), each on its teacher's page.
+SITE_KATEDRA = {
+    "ie": "Катедра за индустријско инжењерство",
+    "motori": "Катедра за моторе",
+    "meh": "Катедра за механизацију",
+    "bmi": "Катедра за биомедицинско инжењерство",
+    "pt": "Катедра за процесну технику",
+    "ppm": "Катедра за пољопривредно машинство",
+    "fluidi": "Катедра за механику флуида",
+    "hidro": "Катедра за хидрауличне машине и енергетске системе",
+    # Лабораторија ЦИАХ is the Institute for Motor Vehicles' (its home page).
+    "ciah": "Катедра за моторна возила",
+}
+
+# A katedra page's groups of its site's pages, in this order: the first whose pattern the page's folded path and
+# title match. ciah's are all the laboratory's services: one group of their own.
+SITE_GROUPS = [
+    ("Laboratorija CIAH", r"^ciah "),
+    ("Ljudi", r"profesor|docent|asistent|saradnic|osoblj|zaposlen|\btim\b|/teams/|o-nama/ "),
+    ("Laboratorije i centri", r"lab|centr|instrument"),
+    ("Studije i nastava", r"nastav|studij|predmet|osnovn|master|doktor|diplom|raspored|ispit|kutak|obrazovan|prijem|spisak|download"),
+    ("Istraživanje i projekti", r"istraz|projek|publikac|referenc|tehnick|saradnj|naucn|mpntr|konferenc|izdava|proizvod|committee|topic|sie"),
+    ("O katedri", r""),
+]
+
 # The posts not from the board or a department's site: their tag (style.css .src--<mark>) and its title.
 VIA = {"teams": dict(mark="teams", name="Sa Microsoft Teams-a"), "moodle": dict(mark="moodle", name="Sa Moodle-a"),
        "webmail": dict(mark="webmail", name="Mejl studentima")}

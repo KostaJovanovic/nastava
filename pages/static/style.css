@@ -1519,6 +1519,13 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
 .tp__bio summary .i { transition: transform .15s; }
 .tp__bio[open] summary .i { transform: rotate(90deg); }
 .tp__bio .prose { padding: 4px 18px 0; }
+/* A department site's pages (cards.html site_fold): a stack of folds, under a group's heading on a katedra's page.
+   A page's own layout (a table of a menu's width, a wide image) stays inside its fold. */
+.sf { display: grid; gap: 8px; }
+.sf__h { margin: 18px 0 8px; font-size: 15px; }
+.sf__h span { color: var(--dim); font-weight: 400; }
+.sf__page .prose { overflow-x: auto; }
+.sf__page .prose img { max-width: 100%; height: auto; }
 /* The old site's card: its fields as the band's, with room for the long ones (education, publications). */
 .tp__card { padding: 4px 18px 0; gap: 6px 18px; }
 .tp__card dd { white-space: pre-line; }

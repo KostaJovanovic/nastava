@@ -30,6 +30,7 @@ from sitegen.load_board import load_items, load_places, load_topics, side_panel 
 from sitegen.load_book import load_book  # noqa: E402
 from sitegen.load_sources import load_cent, load_katedre, load_mail, load_vesti  # noqa: E402
 from sitegen.load_teachers import load_teachers, write_photos  # noqa: E402
+from sitegen.load_sajtovi import load_sajtovi  # noqa: E402
 from sitegen.output import (
     LazyTemplate,
     PAGEFIND,
@@ -110,6 +111,14 @@ def main(db_path, out, dev_mode=False):
         write_photos(db, site)
     katedra_pages.clear()
     katedra_pages.update(t["katedra"] for t in teachers if not t["gone"] and not t.get("aside") and t["katedra"])
+    # The departments' whole sites: a katedra's pages on its page (render_katedre), a teacher's own on theirs.
+    sajt_katedre, sajt_nastavnika = load_sajtovi(db, teachers)
+    for t in teachers:
+        s = sajt_nastavnika.get(t["id"])
+        # Not a page that is already their biography (nastavnici-biografije.jsonl: bmi's, pt's).
+        if s and t["bio"]:
+            s["pages"] = [p for p in s["pages"] if p["url"] not in {b["url"] for b in t["bio"]}]
+        t["sajt"] = s if s and s["pages"] else None
     # A board author is a teacher when the username is the teacher's e-mail before @. When two rows share it (a
     # teacher who became emeritus), the one still listed comes last and wins.
     teacher_of = {t["username"]: t for t in sorted(teachers, key=lambda t: not t["gone"]) if t["username"]}
@@ -161,7 +170,7 @@ def main(db_path, out, dev_mode=False):
     for it in items:
         write(site / "item" / it["id"] / "index.html", render_item(it), index=False)
     render_teachers(site, teachers, items, book)
-    render_katedre(site, db, teachers, subjects, topics)
+    render_katedre(site, db, teachers, subjects, topics, sajt_katedre)
     render_book(site, book)
     raspored = render_study_pages(site, db)
     links = link_groups(archived_wiki(db))
