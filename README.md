@@ -23,7 +23,7 @@ pipeline and site, with new scrapers for phpBB.
   A run that finds nothing new stops before saving and publishing. By hand, on GitHub:
   `gh workflow run sync.yml -f what=forum` (or `"forum studije"`, `sync`); on a PC: `bash ci/deploy.sh forum`
   (or `forum studije`, `sync`), which first gets the saved state. A run:
-  1. gets the state (`ci/state.sh pull`) and tests the parsers on saved pages (`test/parsers_test.py`);
+  1. gets the state (`ci/state.sh pull`) and runs the tests that need no network (`test/*_test.py`; the build's before the build);
   2. reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
      with a post in the last 14 days (an edit does not change the counts);
   3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and the schedules, the
@@ -118,10 +118,11 @@ pipeline and site, with new scrapers for phpBB.
   the slowest pages), what was new, how long new posts took to be found and to be on the site, the sizes, the
   notifications, and on GitHub how late the run started. `uv run ci/runs.py report` sums it up; `uv run ci/runs.py
   schedule` replays the board's posts since 2022 against the schedule in use and the best 2–6 runs a day per season.
-- `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network.
+- `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network. The other `test/*_test.py`:
+  each script's own asserts (`build_test.py`: the site's parts), plain asserts, `uv run test/<name>_test.py`.
 - `test/worker_test.mjs`: the Worker's page join, push subscriptions and `/files/` paths, no network
   (`node --test test/worker_test.mjs`, before `wrangler deploy`).
-- `test/browser_test.py`: real searches and screenshots in Edge against a running site.
+- `test/browser/`: real searches, filters and screenshots in Edge against a running site (`browser_test.py`, …).
 - `save.bat`: git (commit, push, pull), and `deploy [sync]`: commit, push, then `ci/deploy.sh`. `server.bat`: build
   and serve the site on this PC, port 15497, with a QR for phones.
 

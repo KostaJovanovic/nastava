@@ -10,6 +10,7 @@ mail/**
 __pycache__/
 .build/
 test/*.png
+test/browser/*.png
 test/dom.html
 .wrangler/
 # The web push keys (ci/push.py keys): keep a copy elsewhere, never commit.

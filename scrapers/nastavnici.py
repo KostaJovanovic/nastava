@@ -21,7 +21,7 @@ from html import unescape
 from urllib.parse import urljoin
 
 from common import DELAY, connect, session
-from translit import CYRILLIC, LATIN, to_cyr
+from translit import CYRILLIC, LATIN
 
 SITE = "https://www.mas.bg.ac.rs/"
 LIST = "fakultet/nastavnici/start"
@@ -337,17 +337,4 @@ def open_db():
 
 
 if __name__ == "__main__":
-    assert split_title(" др Душан Љ. Ђукић,  ванредни професор ") == ("др Душан Љ. Ђукић", "ванредни професор")
-    assert split_title("др Зоран В. Стаменић , доцент")[0] == "др Зоран В. Стаменић"
-    assert photo_urls('<img src="/_media/fakultet/nastavnici/7.jpg?w=130&amp;tok=a">', None) == (
-        "https://www.mas.bg.ac.rs/_media/fakultet/nastavnici/7.jpg?w=130&tok=a",
-        "https://www.mas.bg.ac.rs/_media/fakultet/nastavnici/7.jpg",
-    )
-    assert photo_urls("", "https://x/y.jpg") == ("https://x/y.jpg", "https://x/y.jpg")
-    assert to_cyr("Miloš Lj. Glavonjić, Džajić") == "Милош Љ. Главоњић, Џајић"
-    assert name_key("Весна К. Спасојевић-Бркић") == name_key("Vesna Spasojević Brkić") == "vesna spasojevic brkic"
-    assert name_key("Dragan Lj.Milanović") == "dragan milanovic"
-    assert field("Кабинет : 440\nТелефон: -", "Кабинет") == "440"
-    assert field("Кабинет\n:\nМејл адреса\n: x@y", "Кабинет") is None
-    assert plain_name("мастер маш. инж. Јована Р. Антић") == "Јована Р. Антић" and plain_name("др Мирољуб Аџић") == "Мирољуб Аџић"
     main()

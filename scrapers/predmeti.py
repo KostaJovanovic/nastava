@@ -215,5 +215,4 @@ def main():
 
 
 if __name__ == "__main__":
-    assert subject_id("/studije/predmeti/0642") == "0642" and subject_id("/studije/oas/start") is None
     main()

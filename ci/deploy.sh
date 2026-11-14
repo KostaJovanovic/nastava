@@ -67,7 +67,16 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	for p in "${parts[@]:1}"; do
 		[[ $p == studije || $p == nastavnici || $p == predmeti ]] || { echo "unknown scraper: $p" >&2; exit 2; }
 	done
-	step tests uv run test/parsers_test.py
+	# Every test that needs no network or site (test/*_test.py), but the build's (before the build) and docs_test.py
+	# (it downloads attachments). A failure stops the run here: a broken parser must not scrape.
+	run_tests() {  # in a function set -e is off: each failure returns itself
+		local t
+		for t in test/*_test.py; do
+			[[ $t == test/build_test.py || $t == test/docs_test.py ]] && continue
+			uv run -q "$t" || return
+		done
+	}
+	step tests run_tests
 	# The newest post before the scrape: the posts after it get a web push once published (ci/push.py).
 	before=$(uv run -q ci/push.py last | tr -d '\r') || before=
 	print=$(uv run -q ci/plan.py fingerprint | tr -d '\r')
@@ -94,6 +103,8 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	fi
 fi
 
+# build.py's asserts (they ran with the build until they moved to test/): a failure stops the build, as it did.
+step build-tests uv run -q test/build_test.py
 step build uv run pages/build.py nastava.db pages/.build
 
 name=site-$(date -u +%Y%m%d-%H%M%S).tar.gz

@@ -10,8 +10,8 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pages"))
-from build import fold  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scrapers"))
+from translit import fold  # noqa: E402
 
 base, item, out = sys.argv[1].rstrip("/"), sys.argv[2], sys.argv[3]
 sys.stdout.reconfigure(encoding="utf-8")

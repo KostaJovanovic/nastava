@@ -96,11 +96,6 @@ def download(urls):
 
 
 if __name__ == "__main__":
-    assert (
-        target("https://ie.mas.bg.ac.rs/data_store/upload/1815_R%C5%A0 2.docx")
-        == OUT / "ie.mas.bg.ac.rs" / "data_store" / "upload" / "1815_RŠ 2.docx"
-    )
-    assert target("https://cent.mas.bg.ac.rs/a/../x.pdf?id=3").name == "x.pdf_id=3"
     if sys.argv[1:] not in (["list"], ["download"]):
         sys.exit(__doc__)
     db = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)

@@ -251,10 +251,6 @@ def history(db):
 
 
 if __name__ == "__main__":
-    assert wb_time("20140629012301") == "2014-06-29T01:23:01+00:00"
-    assert image_key("http://cent.mas.bg.ac.rs/ljudi/slike/velike/dmilutinovic.jpg") == "dmilutinovic"
-    assert image_key("http://ie.mas.bg.ac.rs/data_store/images/zaposleni/photo_sonja_josipovic.jpg?x=1") == "sonja josipovic"
-    assert person_keys(dict(full_name="др Зоран В. Стаменић", email="ZStamenic@mas.bg.ac.rs")) == {"zoran stamenic", "zstamenic"}
     sys.stdout.reconfigure(encoding="utf-8")
     if len(sys.argv) > 1:
         sys.exit(__doc__)
