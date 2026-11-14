@@ -1482,6 +1482,14 @@ body:not(:has([data-sort] option[value="-c"]:checked)) .pc__p { display: none; }
 /* 16px on a phone, as .field: smaller and iOS zooms in on it. */
 .pick select { field-sizing: content; height: 100%; padding: 0 10px 0 4px; border: 0; border-radius: inherit; background: transparent; color: var(--fg); font: 700 16px var(--sans); cursor: pointer; }
 .pick select:focus { outline: none; }
+/* A phone: the search the full width, the filters and the grouping and order two to a row. */
+@media (max-width: 600px) {
+  .people__bar > .field { flex: 1 1 calc(50% - 3px); max-width: none; min-width: 0; }
+  .people__bar > input.field { flex-basis: 100%; }
+  .people__bar .arrange { flex: 1 1 100%; }
+  .people__bar .pick { flex: 1 1 calc(50% - 3px); min-width: 0; }
+  .people__bar .pick select { flex: 1; min-width: 0; text-overflow: ellipsis; }
+}
 @media (min-width: 900px) { .pick select { font-size: 13.5px; } }
 .groups { display: grid; gap: var(--gap); }
 .groups .is-empty { display: none; }
