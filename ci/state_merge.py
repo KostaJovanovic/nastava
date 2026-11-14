@@ -19,7 +19,7 @@ WHOLE = {"subject_places", "teacher_subjects"}
 
 
 def merge(state, local):
-    """Add to the database at state what the one at local has and it lacks (see above)."""
+    """Add to the database at state what the one at local has and it lacks (see above). Returns how many rows."""
     db = sqlite3.connect(state)
     db.execute("ATTACH ? AS l", (local,))
     have = {n for n, in db.execute("SELECT name FROM main.sqlite_master WHERE type = 'table'")}
@@ -41,21 +41,29 @@ def merge(state, local):
         # OR IGNORE: a row whose key the state has with other values stays the state's.
         db.execute(f"INSERT OR IGNORE INTO main.{q} ({cols}) SELECT {cols} FROM l.{q} EXCEPT SELECT {cols} FROM main.{q}")
     db.commit()
+    added = db.total_changes
     db.execute("DETACH l")
     db.close()
+    return added
 
 
 def pull(archive, local):
+    """The state at archive into local, merged. Rows added from local: told, and marked in $RUN_DIR/merged so that
+    ci/deploy.sh saves the state even when the scrape changed nothing (else they would wait for a run that does)."""
     with tempfile.TemporaryDirectory() as tmp:
         with tarfile.open(archive, "r:zst") as t:
             t.extractall(tmp, filter="data")
         state = os.path.join(tmp, "nastava.db")
-        if os.path.exists(local):
-            merge(state, local)
+        added = merge(state, local) if os.path.exists(local) else 0
         src, dst = sqlite3.connect(state), sqlite3.connect(local, timeout=60)
         src.backup(dst)
         dst.close()
         src.close()
+    if added:
+        print(f"kept {added} rows only this copy had")
+        if os.getenv("RUN_DIR"):
+            with open(os.path.join(os.environ["RUN_DIR"], "merged"), "w") as f:
+                f.write(str(added))
 
 
 def _test():
@@ -77,7 +85,7 @@ def _test():
         b.commit()
         b.close()
         a.close()
-        merge(s, l)
+        assert merge(s, l) == 3  # post 2, log 'b', the wiki page
         m = sqlite3.connect(s)
         assert m.execute("SELECT id, html, extra FROM posts ORDER BY id").fetchall() == [(1, "state", None), (2, "only here", "e"), (3, "new", None)]
         assert m.execute("SELECT x FROM log ORDER BY x").fetchall() == [("a",), ("b",)]

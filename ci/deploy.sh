@@ -85,8 +85,9 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	for p in "${parts[@]:1}"; do
 		step "$p" uv run "$p.py" sync || failed+=("$p")
 	done
-	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time.
-	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" ]]; then
+	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time. Rows
+	# the pull kept from this PC (ci/state_merge.py, $RUN_DIR/merged) are a change the saved state lacks.
+	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" && ! -s $RUN_DIR/merged ]]; then
 		echo "nothing changed: no save; build and publish for the time checked"
 	else
 		step state bash ci/state.sh push
