@@ -291,8 +291,8 @@ def load_mail(subjects, folder=MAIL):
         files = [(mail_href(f"{m['dir']}/{f}"), f, f"{m['sizes'][f] / 1024:.1f} KiB") for f in m["files"]]
         html = linkify(clean_html(m["html"]) or "") + file_rows(files)
         day = m["posted"][:10]
-        # Where it came from, as a tag beside the author (rows.html who): a Teams post or a mail to the students.
-        via = VIA["teams" if m["id"].startswith("teams:") else "webmail"]
+        # Where it came from, as a tag beside the author (rows.html who): a Teams or Moodle post, or a mail to the students.
+        via = VIA[next((k for k in ("teams", "moodle") if m["id"].startswith(k + ":")), "webmail")]
         items.append(
             dict(
                 id=f"m{key[m['id']]}",
@@ -316,15 +316,18 @@ def load_mail(subjects, folder=MAIL):
                 via=via,
             )
         )
-    # teams.py's material: a Teams class's library, beyond its posts' files, in one box on the subject's page; each
-    # file with its class's school year and folder. shortcut: a subject with ie's "Literatura" too gets only this box.
-    material = defaultdict(list)
+    # teams.py's and moodle.py's material: a Teams class's library beyond its posts' files, a Moodle course's files, in
+    # one box on the subject's page; each file with its class's school year and folder. shortcut: a subject with ie's
+    # "Literatura" too gets only this box.
+    material, sources = defaultdict(list), defaultdict(list)
     for p in sorted(folder.glob("*/material.json")):
         m = json.loads(p.read_text(encoding="utf-8"))
         s = by_href.get(m["page"])
         if not s:
             print(f"mail: no subject page {m['page']} ({p.parent.name})", file=sys.stderr)
             continue
+        if (src := m.get("source", "teams")) not in sources[s["href"]]:
+            sources[s["href"]].append(src)
         year = (re.search(r"20\d\d/\d+", m["name"]) or [None])[0]
         material[s["href"]] += [
             (
@@ -334,6 +337,9 @@ def load_mail(subjects, folder=MAIL):
             )
             for f in m["files"]
         ]
+    names = {"teams": "Teams", "moodle": "Moodle"}
     for href, files in material.items():
-        by_href[href]["lit"] = dict(mark="teams", title="Materijal sa Teams-a", n=len(files), html=file_rows(files, "Teams"))
+        src = sources[href]
+        title = "Materijal sa " + " i ".join(f"{names[x]}-a" for x in src)
+        by_href[href]["lit"] = dict(mark=src[0], title=title, n=len(files), html=file_rows(files, names[src[0]]))
     return items

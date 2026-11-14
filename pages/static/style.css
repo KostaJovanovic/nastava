@@ -1015,8 +1015,9 @@ a.mh__ki:hover { color: var(--accent-t); }
 /* An outline in its colour, the text the same (not filled: a filled red read as a warning). The border is in the
    height: 16px + 2 × 1px. */
 .src { display: inline-block; padding: 0 5px; border: 1px solid currentColor; border-radius: 4px; color: light-dark(var(--accent), #f07a94); font: 700 11px/16px var(--sans); vertical-align: 1px; }
-/* The other sources in their own colours (build.py VIA): Teams' purple, the students' webmail's slate. */
+/* The other sources in their own colours (build.py VIA): Teams' purple, Moodle's orange, the students' webmail's slate. */
 .src--teams { color: light-dark(#5b5fc7, #a9acf2); }
+.src--moodle { color: light-dark(#b45309, #f9a65a); }
 .src--webmail { color: light-dark(#4b535d, #b4bcc6); }
 /* In a list's coloured title bar: white, as its text. */
 .fb__h .src { color: inherit; }

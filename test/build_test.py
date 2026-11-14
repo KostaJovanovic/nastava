@@ -374,8 +374,14 @@ with tempfile.TemporaryDirectory() as _t:
     (Path(_t) / "teams-x" / "material.json").write_text(
         json.dumps(dict(page="/1/", name="T 2025/2026. godina", files=["Predavanja/P 1.pdf", "a.docx"])), encoding="utf-8"
     )
-    _ms = dict(id=1, name="S", smer=_sm, href="/1/")
-    _m = load_mail({1: _ms}, Path(_t))
+    (Path(_t) / "moodle-x").mkdir()
+    (Path(_t) / "moodle-x" / "material.json").write_text(
+        json.dumps(dict(page="/2/", name="M 2024/2025", source="moodle", files=["2. nedelja/c.pdf"])), encoding="utf-8"
+    )
+    _ms, _ms2 = dict(id=1, name="S", smer=_sm, href="/1/"), dict(id=2, name="S2", smer=_sm, href="/2/")
+    _m = load_mail({1: _ms, 2: _ms2}, Path(_t))
+assert _ms2["lit"]["mark"] == "moodle" and _ms2["lit"]["title"] == "Materijal sa Moodle-a" and "2024/2025 · 2. nedelja" in _ms2["lit"]["html"], _ms2["lit"]
+assert _ms["lit"]["mark"] == "teams" and _ms["lit"]["title"] == "Materijal sa Teams-a"
 assert _ms["lit"]["n"] == 2 and f'href="/files/mail/{asset_name("teams-x/Predavanja/P 1.pdf")}/P%201.pdf"' in _ms["lit"]["html"], _ms["lit"]
 assert "P 1.pdf<small>2025/2026 · Predavanja</small>" in _ms["lit"]["html"] and "a.docx<small>2025/2026</small>" in _ms["lit"]["html"]
 assert [(i["id"], i["topic"]) for i in _m] == [

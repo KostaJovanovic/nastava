@@ -80,6 +80,9 @@ pipeline and site, with new scrapers for phpBB.
   with its replies (a student's is "Student #N", numbered per thread, with no name, index, e-mail or file of theirs),
   and the rest of each class's SharePoint library as the subject's "Materijal sa Teams-a". `tools/teams/teams-export.js` reads
   the posts in the browser.
+- `scrapers/moodle.py`: a Moodle course into `mail/`, in the same form: each teacher's note (a label, an activity's
+  description, an assignment's or test's text) a post with its files, dated by its section's week; the other files
+  the subject's "Materijal sa Moodle-a". Not the forums. `tools/moodle/moodle-export.js` reads the course in the browser.
 - `scrapers/nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
@@ -163,6 +166,11 @@ page. A new class goes in `CLASSES` (its group id → subject page; in both file
 `TEACHERS` (their Teams account → board username), a student's name written in a reply with no index next to it in
 `NAMED`; then `uv run scrapers/teams.py add <teams-export.json> <zip folder>`, read the students' replies in `mail/` for names
 it missed, `uv run scrapers/mail.py upload`, and commit `mail/`.
+
+To add a Moodle course: enrol, open its page (`course/view.php?id=…`), paste `tools/moodle/moodle-export.js` into the
+DevTools console and run it: it saves `moodle-<host>-<id>.zip` in Downloads. Then `uv run scrapers/moodle.py add <zip>
+/predmet/<smer>/<subject>/ <teacher's board username>`, plus week 1's Monday (`2026-03-09`) when the sections are
+"N. nedelja" with no dates; `uv run scrapers/mail.py upload`, and commit `mail/`.
 
 ## License
 

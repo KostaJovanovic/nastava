@@ -1,0 +1,12 @@
+{
+ "id": "moodle:elearning:1056:80872",
+ "refs": [],
+ "page": "/predmet/mas-mi/primenjena-mehatronika/",
+ "author": "mregodic",
+ "posted": "2026-04-13T10:21:00+00:00",
+ "when": "13.04.2026.",
+ "title": "Drugi test",
+ "html": "<!DOCTYPE html>\n\n<meta charset=\"utf-8\"/>\n<span class=\"notifications\" id=\"user-notifications\"></span><div role=\"main\"><span id=\"maincontent\"></span><div class=\"box generalbox\" id=\"intro\"><div class=\"no-overflow\"><p>U drugom testu će biti pokrivena oblast pneumatskih i hidrauličnih razvodnika.<br/></p><p>Handout: Ventili i razvodnici</p></div></div><div class=\"box quizinfo\"><p>Test je zatvoren dana ponedeljak, 20. april 2026, 19:00</p>\n<p>Vremensko ograničenje: 15 min</p>\n<p>Način ocenjivanja: Najviša ocena</p>\n</div><div class=\"box quizattempt\"><div class=\"continuebutton\"><form action=\"https://elearning.rcub.bg.ac.rs/moodle/course/view.php\" method=\"get\"><div><input type=\"submit\" value=\"Povratak na kurs\"/><input name=\"id\" type=\"hidden\" value=\"1056\"/></div></form></div></div></div>",
+ "files": [],
+ "sizes": {}
+}

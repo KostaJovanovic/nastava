@@ -69,7 +69,8 @@ FORUMS = {
 SUBJECT_PAGE = re.compile(r"ie\.mas\.bg\.ac\.rs/predmeti_p|fluidi\.mas\.bg\.ac\.rs/[a-z]+/$")
 
 # The posts not from the board or a department's site: their tag (style.css .src--<mark>) and its title.
-VIA = {"teams": dict(mark="teams", name="Sa Microsoft Teams-a"), "webmail": dict(mark="webmail", name="Mejl studentima")}
+VIA = {"teams": dict(mark="teams", name="Sa Microsoft Teams-a"), "moodle": dict(mark="moodle", name="Sa Moodle-a"),
+       "webmail": dict(mark="webmail", name="Mejl studentima")}
 
 # A subject page without posts (predmet.html): one of these, in place of the empty list.
 QUIET = [
