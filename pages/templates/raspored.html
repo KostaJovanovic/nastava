@@ -9,6 +9,7 @@
 {% block og %}-raspored{% endblock %}
 {% block description %}Kalendar nastave i ispita, raspored predavanja po godinama i modulima i raspored ispita Mašinskog fakulteta u Beogradu, sa svim ranijim verzijama.{% endblock %}
 
+{% from "link_card.html" import card with context %}
 {%- macro pdf() %}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-file"></use></svg>{% endmacro %}
 
 {% block main %}
@@ -69,6 +70,16 @@
 <section class="panel rs" aria-labelledby="ri-h">
   <div class="rs__head"><h2 id="ri-h">Raspored ispita</h2></div>
   <div class="prose prose--html">{{ exams_html | safe }}</div>
+</section>
+{%- endif %}
+
+{%- if upis %}
+{#- Linkovi's Upis i studiranje (build.py LINKS), the same cards. -#}
+<section class="lk" aria-labelledby="ru-h">
+  <h2 class="lk__h" id="ru-h">Upis i studiranje</h2>
+  <ul class="lk__grid">
+    {%- for l in upis %}{{ card(*l) }}{% endfor %}
+  </ul>
 </section>
 {%- endif %}
 {% endblock %}

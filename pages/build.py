@@ -1284,7 +1284,9 @@ def render_study_pages(site, db):
         calendar=calendar, lectures=lectures,
         lectures_html=get("raspored-predavanja"), exams_html=get("raspored-ispita"),
         sources=[(now[slug]["page"]["href"], title) for slug, title in STUDY_PAGES.items() if slug in now],
-        checked=max((n["page"]["last_seen"] for n in now.values()), default=None)))
+        checked=max((n["page"]["last_seen"] for n in now.values()), default=None),
+        # Linkovi's Upis i studiranje, under the exam schedule.
+        upis=next((g for t, g in link_groups(archived_wiki(db)) if t == "Upis i studiranje"), []), icons=link_icons()))
     return schedule_entries(calendar, lectures, get("raspored-ispita"))
 
 
@@ -1372,6 +1374,11 @@ def link_groups(archived):
     return [(group, [(name, mf(h[3:]), icon, domain, "www.mas.bg.ac.rs") if h.startswith("mf:") else
                      (name, h, icon, domain, "OneDrive" if domain else h.split("://")[-1].rstrip("/"))
                      for name, h, icon, domain in links]) for group, links in LINKS]
+
+
+def link_icons():
+    """{host: file} of the sites' own icons in static/link (saved by hand), for the cards (link_card.html)."""
+    return {p.stem: p.name for p in (HERE / "static" / "link").iterdir()}
 
 
 def archived_wiki(db):
@@ -2487,9 +2494,7 @@ def main(db_path, out, dev_mode=False):
     write(site / "o-sajtu" / "index.html", about)
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
     write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()))
-    # icons: {host: file} of the sites' own icons in static/link (saved by hand), for link.html's cards.
-    write(site / "link" / "index.html", env.get_template("link.html").render(
-        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}, groups=links))
+    write(site / "link" / "index.html", env.get_template("link.html").render(icons=link_icons(), groups=links))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())
     if dev:
