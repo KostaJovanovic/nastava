@@ -85,15 +85,15 @@
 </section>
 
 {#- A biography in its source's own words (nastavnici-biografije.jsonl): the faculty's 2023 monograph, each paragraph
-    with its page, or the site of Katedra za procesnu tehniku (paragraphs with no page). A past teacher's under the band,
-    the others' folded at the end. -#}
-{%- set bio_pt = t.bio and not t.bio[0].page %}
+    with its page, or a katedra's site (its paragraphs name it, 'Katedre za procesnu tehniku'). A past teacher's under
+    the band, the others' folded at the end. -#}
+{%- set bio_site = t.bio and t.bio[0].site %}
 {%- macro bio_body() %}
   {%- for p in t.bio %}
   <p>{{ p.text }}</p>
   {%- endfor %}
-  {%- if bio_pt %}
-  <p class="tp__src">Sa <a href="{{ t.bio[0].url }}" rel="noopener" target="_blank">sajta Katedre za procesnu tehniku</a></p>
+  {%- if bio_site %}
+  <p class="tp__src">Sa <a href="{{ t.bio[0].url }}" rel="noopener" target="_blank">sajta {{ bio_site }}</a></p>
   {%- else %}
   <p class="tp__src">Iz monografije „Mašinski fakultet Univerziteta u Beogradu 1873–1948–2023“, {% for p in t.bio | unique(attribute='page') %}<a href="{{ p.url }}" rel="noopener" target="_blank">str. {{ p.page }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>
   {%- endif %}
@@ -106,7 +106,7 @@
     {%- for p in t.summary %}<p>{{ p }}</p>{% endfor %}
     {%- set from = [] %}
     {%- if html %}{% set _ = from.append('profil sa sajta fakulteta') %}{% endif %}
-    {%- if t.bio %}{% set _ = from.append('sajt Katedre za procesnu tehniku' if bio_pt else 'monografija fakulteta') %}{% endif %}
+    {%- if t.bio %}{% set _ = from.append('sajt ' ~ bio_site if bio_site else 'monografija fakulteta') %}{% endif %}
     {%- if h and h.sources %}{% set _ = from.append('izvori o istoriji fakulteta') %}{% endif %}
     {%- if t.biblio %}{% set _ = from.append('bibliografija') %}{% endif %}
     <p class="tp__src">Sažetak, napisan iz izvora na ovoj strani{% if from %}: {{ from | join(', ') }}{% endif %}.</p>
@@ -115,7 +115,7 @@
 {%- endif %}
 {%- if t.bio and past %}
 <section class="tp__sec" id="biografija">
-  <div class="tp__h"><h2>{{ ('Sa sajta Katedre' if bio_pt else 'Iz monografije fakulteta') if t.summary else 'Biografija' }}</h2></div>
+  <div class="tp__h"><h2>{{ ('Sa sajta Katedre' if bio_site else 'Iz monografije fakulteta') if t.summary else 'Biografija' }}</h2></div>
   <div class="tp__biotext">{{ bio_body() }}</div>
 </section>
 {%- endif %}
@@ -225,7 +225,7 @@
 
 {%- if t.bio and not past %}
 <details class="tp__bio">
-  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{{ 'Biografija sa sajta Katedre za procesnu tehniku' if bio_pt else 'Biografija iz monografije fakulteta (2023)' }}</summary>
+  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{{ 'Biografija sa sajta ' ~ bio_site if bio_site else 'Biografija iz monografije fakulteta (2023)' }}</summary>
   <div class="tp__biotext">{{ bio_body() }}</div>
 </details>
 {%- endif %}
