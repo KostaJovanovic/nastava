@@ -95,14 +95,14 @@ class Handler(SimpleHTTPRequestHandler):
         if build:
             url = urlsplit(self.path)
             path = unquote(url.path)
-            if not path.endswith("/") and path + "/" in build.pages:  # as GitHub Pages: /x is /x/
+            if not path.endswith("/") and path + "/" in build.output.pages:  # as GitHub Pages: /x is /x/
                 self.send_response(301)
                 self.send_header("Location", url.path + "/" + (f"?{url.query}" if url.query else ""))
                 return self.end_headers()
-            if page := build.pages.get(path):
+            if page := build.output.pages.get(path):
                 # The side panel link aria-current in the first frame, as join() marks it from the build's <meta>.
                 page = str(page)
-                if h := build.snav_href(path, build.snav):
+                if h := build.output.snav_href(path, build.output.snav):
                     a = f'<a href="{h}"'
                     page = page.replace(a, a + ' aria-current="page"', 1)
                 return self.send_page(200, page)
@@ -123,7 +123,7 @@ class Handler(SimpleHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None):
         # A missing page gets the site's 404.html, as on GitHub Pages.
         if build and code == 404:
-            return self.send_page(404, str(build.pages["/404.html"]))
+            return self.send_page(404, str(build.output.pages["/404.html"]))
         page = SITE / "404.html"
         if code != 404 or not page.is_file():
             return super().send_error(code, message, explain)
@@ -170,7 +170,7 @@ if __name__ == "__main__":
 
         _build.main(str(DB), str(DEV), dev_mode=True)
         build = _build
-        print(f"  ready: {len(build.pages)} pages in {time.time() - t:.0f} s", flush=True)
+        print(f"  ready: {len(build.output.pages)} pages in {time.time() - t:.0f} s", flush=True)
         ThreadingHTTPServer(("", port), partial(Handler, directory=str(DEV / "site"))).serve_forever()
     lan = f"http://{lan_ip()}:{port}"
     if os.name == "nt":  # ANSI colours for the QR in the classic console; Windows Terminal has them already

@@ -22,31 +22,40 @@ PF = re.compile(r'<div class="pf" data-pagefind-body>.*?</div>(?=</article>)', r
 
 def main(db):
     built = {}
-    write, write_page = build.write, build.write_page
+    output = build.output
+    # Every module that holds a writer (build.py and the sitegen modules import them by name): patched in each.
+    holders = [m for name, m in sys.modules.items() if name == "build" or name.startswith("sitegen.")]
+
+    def patch(**fs):
+        for m in holders:
+            for name, f in fs.items():
+                if hasattr(m, name):
+                    setattr(m, name, f)
 
     def keep(path, html, index=True, canonical=None):
-        built[f"/{path.parent.relative_to(build.site_dir).as_posix()}/"] = html
+        built[f"/{path.parent.relative_to(output.site_dir).as_posix()}/"] = html
         path.parent.mkdir(parents=True, exist_ok=True)
 
-    build.write = keep
-    build.write_page = lambda path, html: built.__setitem__(
-        "/" + path.relative_to(build.site_dir).as_posix().removesuffix("index.html"), html
-    )
-    build.write_sitemap = lambda site: None
+    def keep_page(path, html):
+        built["/" + path.relative_to(output.site_dir).as_posix().removesuffix("index.html")] = html
+
+    write, write_page = output.write, output.write_page
+    patch(write=keep, write_page=keep_page, write_sitemap=lambda site: None, strip_pagefind=lambda *a, **k: None)
     build.shutil.which = lambda name: "npx"
-    build.subprocess.run = build.strip_pagefind = lambda *a, **k: None
+    build.subprocess.run = lambda *a, **k: None
     with tempfile.TemporaryDirectory() as out:
         build.main(db, out)
-        build.write, build.write_page = write, write_page
+        patch(write=write, write_page=write_page)
         build.main(db, out, dev_mode=True)
-    assert built.keys() == build.pages.keys(), sorted(built.keys() ^ build.pages.keys())[:10]
-    bad = [u for u, html in built.items() if PF.sub("", html) != str(build.pages[u])]
+    pages = output.pages
+    assert built.keys() == pages.keys(), sorted(built.keys() ^ pages.keys())[:10]
+    bad = [u for u, html in built.items() if PF.sub("", html) != str(pages[u])]
     print(f"{len(built)} pages, {len(bad)} differ" + (": " + " ".join(bad[:20]) if bad else ""))
     kinds = {}
     for u in bad:  # the first difference of each kind of page (its first path segment)
         kinds.setdefault(u.split("/")[1], u)
     for u in kinds.values():
-        a, b = PF.sub("", built[u]), str(build.pages[u])
+        a, b = PF.sub("", built[u]), str(pages[u])
         i = next(i for i in range(min(len(a), len(b)) + 1) if i == min(len(a), len(b)) or a[i] != b[i])
         print(f"\n{u} at {i}:\n  build: {a[max(0, i - 150) : i + 150]!r}\n  dev:   {b[max(0, i - 150) : i + 150]!r}")
     return not bad
