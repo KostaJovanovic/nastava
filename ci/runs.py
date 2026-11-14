@@ -186,7 +186,7 @@ REPO = os.getenv("GITHUB_REPOSITORY", "KostaJovanovic/nastava")
 RUN_DIR = Path(os.getenv("RUN_DIR") or ".")
 # What a scraper adds: a new row (a post, a page's new version) has a rowid above the snapshot's.
 TABLES = ["posts", "vesti", "cent_notices", "cent_pages", "katedre_pages", "study_pages", "study_files", "teachers",
-          "subjects"]
+          "subjects", "wiki_pages", "departments"]
 UTC = lambda s: dt.datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(dt.timezone.utc)
 iso = lambda t: t.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
