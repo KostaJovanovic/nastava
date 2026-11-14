@@ -845,6 +845,9 @@
         noPush.className = 'leave';
         noPush.setAttribute('aria-labelledby', 'nopush-h');
         noPush.innerHTML = '<div class="leave__in"><h2 id="nopush-h">Kako uključiti obaveštenja</h2><p></p><ol class="leave__steps"></ol>'
+          + '<div class="leave__rss"><p><b>Ili preko RSS-a.</b> U čitaču vesti (Feedly, Inoreader…) dodaj adresu, '
+          + 'ili preuzmi sve predmete odjednom i uvezi ih.</p><ul></ul>'
+          + '<a class="btn" data-opml download="moji-predmeti.opml">Preuzmi za čitač (OPML)</a></div>'
           + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
         d.body.appendChild(noPush);
         noPush.addEventListener('click', function (e) {
@@ -855,6 +858,19 @@
       noPush.querySelector('p').textContent = steps[0];
       ol.textContent = '';
       steps.slice(1).forEach(function (s) { var li = d.createElement('li'); li.textContent = s; ol.appendChild(li); });
+      // RSS: each followed subject's feed (build.py write_feeds), else the whole board's; the OPML only for subjects.
+      var feeds = withPosts().map(function (s) { return [s.name, location.origin + s.href + 'feed.xml']; });
+      var ul = noPush.querySelector('.leave__rss ul');
+      ul.textContent = '';
+      (feeds.length ? feeds : [['Svi novi postovi', location.origin + '/feed.xml']]).forEach(function (f) {
+        var li = d.createElement('li'), a = d.createElement('a');
+        li.textContent = f[0];
+        a.href = a.textContent = f[1];
+        a.className = 'leave__url';
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+      noPush.querySelector('[data-opml]').hidden = !feeds.length;
       noPush.showModal();
       noPush.querySelector('button').focus();
     });
@@ -924,8 +940,10 @@
   }
 
   /* The followed subjects' feeds as one OPML file, which a feed reader imports. Made on the click, from the list now. */
-  var opml = d.querySelector('[data-opml]');
-  if (opml) opml.addEventListener('click', function () {
+  // Delegated: the notifications dialog (noPush) is made on its first click, after this.
+  d.addEventListener('click', function (e) {
+    var opml = e.target.closest && e.target.closest('[data-opml]');
+    if (!opml) return;
     var x = function (s) { return s.replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
     var rows = mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       var page = location.origin + s.href;
