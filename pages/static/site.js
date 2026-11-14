@@ -260,22 +260,33 @@
     var all = 400, out = { duration: 150, easing: 'ease-in', fill: 'forwards' }, k = 0;
     // The rows that stay as they are: the followed smerovi already first as built (first in both orders).
     while (k < ol.built.length && (ol.built[k].dataset.pids || '').split(' ').some(window.mojiNow.has)) k++;
-    var rows = ol.built.slice(k);
+    var rows = ol.built.slice(k), cards = [card];
+    // Najnoviji threadovi too, when it is on the screen in place (not the peek, search.html .fade): all under its title
+    // bar, as its rows swap with the followed subjects' (style.css .moji-only).
+    var news = !d.documentElement.classList.contains('fade') && d.querySelector('#res > .lists > .fb:has([data-mine])');
+    if (news) {
+      cards.push(news);
+      rows = rows.concat([].slice.call(news.querySelectorAll(':scope > :not(.fb__h)')));
+    }
     // From what is on the screen: a flip mid-way starts where the last one got to.
-    var from = rows.map(function (r) { return getComputedStyle(r).opacity; }), h0 = card.getBoundingClientRect().height;
+    var from = rows.map(function (r) { return getComputedStyle(r).opacity; });
+    var h0 = cards.map(function (c) { return c.getBoundingClientRect().height; });
     studijeAnims.forEach(function (a) { a.cancel(); });
-    // Else the card's height after the change (the new choice is saved already), now.
-    if (h1 == null) h1 = window.mojiAhead(function () { return card.getBoundingClientRect().height; });
-    var move = card.animate({ height: [h0 + 'px', h1 + 'px'] }, { duration: all, easing: 'cubic-bezier(.4, 0, .2, 1)' });
+    // Else the cards' heights after the change (the new choice is saved already), now.
+    var measure = function () { return cards.map(function (c) { return c.getBoundingClientRect().height; }); };
+    if (h1 == null || h1.length !== cards.length) h1 = window.mojiAhead(measure);
+    var moves = cards.map(function (c, i) {
+      return c.animate({ height: [h0[i] + 'px', h1[i] + 'px'] }, { duration: all, easing: 'cubic-bezier(.4, 0, .2, 1)' });
+    });
     var outs = rows.map(function (r, i) { return r.animate({ opacity: [from[i], 0] }, out); });
-    studijeAnims = outs.concat(move);
+    studijeAnims = outs.concat(moves);
     // The change once the fade out has ended (not a timer: it waits for a slow phone's frames too, as the card's move
     // does). A flip mid-way cancels these, and so this.
     Promise.all(outs.map(function (a) { return a.finished; })).then(function () {
       outs.forEach(function (a) { a.cancel(); });
       change();
       // Each row to its own opacity now (a greyed smer's .45, head.js), ending with the move.
-      studijeAnims = [move].concat(rows.map(function (r) {
+      studijeAnims = moves.concat(rows.map(function (r) {
         return r.animate({ opacity: [0, getComputedStyle(r).opacity] }, { duration: all - out.duration, easing: 'cubic-bezier(.2, .8, .2, 1)' });
       }));
     }, function () {});
@@ -288,9 +299,12 @@
     studijeNext = null;
     clearTimeout(nextWait);
     nextWait = setTimeout(function () {
-      var card = d.querySelector('#res > .fb--forums');
-      if (!card || !only || card.getAnimations({ subtree: true }).length || d.documentElement.classList.contains('falling')) return;
-      studijeNext = window.mojiAhead(function () { return card.getBoundingClientRect().height; }, only.checked ? '1' : '');
+      var card = d.querySelector('#res > .fb--forums'), cl = d.documentElement.classList;
+      if (!card || !only || card.getAnimations({ subtree: true }).length || cl.contains('falling')) return;
+      // As fadeStudije's cards: Najnoviji threadovi too when in place.
+      var news = !cl.contains('fade') && d.querySelector('#res > .lists > .fb:has([data-mine])');
+      var cards = news ? [card, news] : [card];
+      studijeNext = window.mojiAhead(function () { return cards.map(function (c) { return c.getBoundingClientRect().height; }); }, only.checked ? '1' : '');
     }, 1000);
   };
   d.addEventListener('moji', measureNext);
@@ -494,9 +508,10 @@
   window.masinci = { el: el, izbor: izbor, mine: mine, keepMine: keepMine };
   var fillMine = function () {
     // Najnoviji threadovi's rows of the followed subjects (rows.html topic_rows mine), shown in place of its own only while
-    // "Samo moji predmeti" is on (head.js, style.css .moji-only).
+    // "Samo moji predmeti" is on (head.js, style.css .moji-only). Filled while it is off too, so switching it on has
+    // them ready, and fadeStudije knows the card's height ahead (measureNext, again once they are in).
     var ol = d.querySelector('[data-mine]'), list = mine();
-    if (!ol || !(window.mojiNow && window.mojiNow.only)) return;
+    if (!ol || !list.length) return;
     var sec = ol.parentNode;
     // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
     Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
@@ -508,6 +523,7 @@
       rows.sort(function (a, b) { return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0; });
       ol.innerHTML = rows.slice(0, 10).map(function (r) { return r[1]; }).join('');
       sec.querySelector('.moji__none').hidden = rows.length > 0;
+      measureNext();
     });
   };
   fillMine();
