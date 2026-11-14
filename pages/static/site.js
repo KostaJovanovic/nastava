@@ -825,8 +825,10 @@
         'Klikni ikonicu levo od adrese' + (brow === 'Edge' ? ' → „Permissions for this site”.' : ' → „Site settings”.'),
         'Kod „Notifications” izaberi „Allow”.', 'Osveži stranicu i uključi prekidač.'];
     }
+    // The home screen's site on iOS before 16.4 (March 2023): an iPhone 6s, 7 or the first SE stops at iOS 15.
     if (ios) return ['Obaveštenja na iPhone-u traže iOS 16.4 ili noviji.', 'Settings → General → Software Update.',
-      'Posle ažuriranja otvori sajt sa početnog ekrana i uključi prekidač.'];
+      'Posle ažuriranja otvori sajt sa početnog ekrana i uključi prekidač.',
+      'iPhone 7 i stariji ne mogu na iOS 16.4, pa na njima obaveštenja ne rade.'];
     return ['Ovaj browser ne može da prima obaveštenja.',
       android ? 'Otvori sajt u Chrome-u, Firefox-u, Edge-u ili Samsung Internet-u.' : 'Otvori sajt u Chrome-u, Edge-u, Firefox-u ili Safari-ju.',
       'Tamo uključi Obaveštenja.'];
