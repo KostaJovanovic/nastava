@@ -70,10 +70,14 @@ Risks:
 ## Open decisions
 
 1. ~~Capacitor or TWA~~: Capacitor (above).
-2. Distribution: APK as a GitHub release (sideloaded), or Google Play ($25, 12 testers for 14 days on a new personal
-   account, possible rejection as a website wrapper). Leaning GitHub releases.
-3. App ID: `org.masinci.nastava`?
-4. Build: local scripts in the style of `save.bat` first; maybe an Actions job that builds and signs on a tag later.
+2. ~~Distribution~~: an APK in a GitHub release, installed by hand (decided 2026-11-14). Not Google Play ($25, 12
+   testers for 14 days on a new personal account, possible rejection as a website wrapper). The app loads the live
+   site, so only a change to the native shell needs a new APK.
+3. ~~App ID~~: `com.valjdakosta.nastava` (decided 2026-11-14; fixed once installed).
+4. ~~Build~~: a local script in the style of `save.bat` builds and signs the APK; the user uploads it to the release
+   (decided 2026-11-14). The signing key stays on the user's PC. An Actions job on a tag maybe later.
+
+All decided: next is the phone check below, then the build.
 
 ## Check first
 
