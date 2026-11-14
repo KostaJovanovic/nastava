@@ -109,6 +109,7 @@ def fingerprint(db):
         "select count(*), sum(gone), total(length(html)) from subjects", "select count(*) from subject_places",
         "select count(*), sum(gone), total(length(html)) from cent_notices", "select count(*), sum(gone) from cent_pages",
         "select count(*), sum(gone) from katedre_pages",
+        "select count(*), total(length(html)) from departments",
     ]
     out = []
     for q in queries:
