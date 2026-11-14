@@ -825,8 +825,10 @@
         'Klikni ikonicu levo od adrese' + (brow === 'Edge' ? ' → „Permissions for this site”.' : ' → „Site settings”.'),
         'Kod „Notifications” izaberi „Allow”.', 'Osveži stranicu i uključi prekidač.'];
     }
+    // The home screen's site on iOS before 16.4 (March 2023): an iPhone 6s, 7 or the first SE stops at iOS 15.
     if (ios) return ['Obaveštenja na iPhone-u traže iOS 16.4 ili noviji.', 'Settings → General → Software Update.',
-      'Posle ažuriranja otvori sajt sa početnog ekrana i uključi prekidač.'];
+      'Posle ažuriranja otvori sajt sa početnog ekrana i uključi prekidač.',
+      'iPhone 7 i stariji ne mogu na iOS 16.4, pa na njima obaveštenja ne rade.'];
     return ['Ovaj browser ne može da prima obaveštenja.',
       android ? 'Otvori sajt u Chrome-u, Firefox-u, Edge-u ili Samsung Internet-u.' : 'Otvori sajt u Chrome-u, Edge-u, Firefox-u ili Safari-ju.',
       'Tamo uključi Obaveštenja.'];
@@ -843,6 +845,9 @@
         noPush.className = 'leave';
         noPush.setAttribute('aria-labelledby', 'nopush-h');
         noPush.innerHTML = '<div class="leave__in"><h2 id="nopush-h">Kako uključiti obaveštenja</h2><p></p><ol class="leave__steps"></ol>'
+          + '<div class="leave__rss"><p><b>Ili preko RSS-a.</b> U čitaču vesti (Feedly, Inoreader…) dodaj adresu, '
+          + 'ili preuzmi sve predmete odjednom i uvezi ih.</p><ul></ul>'
+          + '<a class="btn" data-opml download="moji-predmeti.opml">Preuzmi za čitač (OPML)</a></div>'
           + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
         d.body.appendChild(noPush);
         noPush.addEventListener('click', function (e) {
@@ -853,6 +858,19 @@
       noPush.querySelector('p').textContent = steps[0];
       ol.textContent = '';
       steps.slice(1).forEach(function (s) { var li = d.createElement('li'); li.textContent = s; ol.appendChild(li); });
+      // RSS: each followed subject's feed (build.py write_feeds), else the whole board's; the OPML only for subjects.
+      var feeds = withPosts().map(function (s) { return [s.name, location.origin + s.href + 'feed.xml']; });
+      var ul = noPush.querySelector('.leave__rss ul');
+      ul.textContent = '';
+      (feeds.length ? feeds : [['Svi novi postovi', location.origin + '/feed.xml']]).forEach(function (f) {
+        var li = d.createElement('li'), a = d.createElement('a');
+        li.textContent = f[0];
+        a.href = a.textContent = f[1];
+        a.className = 'leave__url';
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+      noPush.querySelector('[data-opml]').hidden = !feeds.length;
       noPush.showModal();
       noPush.querySelector('button').focus();
     });
@@ -922,8 +940,10 @@
   }
 
   /* The followed subjects' feeds as one OPML file, which a feed reader imports. Made on the click, from the list now. */
-  var opml = d.querySelector('[data-opml]');
-  if (opml) opml.addEventListener('click', function () {
+  // Delegated: the notifications dialog (noPush) is made on its first click, after this.
+  d.addEventListener('click', function (e) {
+    var opml = e.target.closest && e.target.closest('[data-opml]');
+    if (!opml) return;
     var x = function (s) { return s.replace(/[&<>"]/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
     var rows = mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       var page = location.origin + s.href;
