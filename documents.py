@@ -30,7 +30,8 @@ from urllib.parse import unquote
 
 import requests
 
-from nastava import BASE, DELAY, WORKERS, connect, session
+from common import DELAY, is_html_page, session
+from nastava import BASE, WORKERS, connect
 
 FILES = os.getenv("FILES", os.path.join(os.path.dirname(os.path.abspath(__file__)), "files"))
 TEXT_LIMIT = 5_000_000
@@ -134,11 +135,6 @@ def trim_image(kind, data):
         if cut > 0:
             return data[: cut + len(end)]
     return data
-
-
-def is_html_page(data):
-    head = data[:512].lstrip().lower()
-    return head.startswith((b"<!doctype html", b"<html"))
 
 
 def fetch(file_id):

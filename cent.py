@@ -16,21 +16,16 @@ import hashlib
 import json
 import os
 import re
-import sqlite3
 import sys
 import time
-from datetime import datetime, timezone
 from html import unescape
-from pathlib import Path
-from urllib.parse import unquote, urlsplit
 
 from bs4 import BeautifulSoup
 
 # The board's session: retries a 429 or 5xx with backoff, so one hiccup does not end the run.
-from nastava import session
+from common import connect, name_icons, now, session
 
 SITE = "https://cent.mas.bg.ac.rs"
-DB = os.getenv("DB", str(Path(__file__).resolve().parent / "nastava.db"))
 DELAY = float(os.getenv("DELAY", "1.0"))
 SCHEMA = """
 create table if not exists cent_pages (id integer, sha text, parent integer, menu_order integer, slug text, title text,
@@ -40,14 +35,7 @@ create table if not exists cent_notices (nid integer primary key autoincrement, 
 	title text, date text, html text, files text, first_seen text, last_seen text, gone integer not null default 0);
 create table if not exists cent_notice_old (nid integer, html text, files text, last_seen text);
 """
-# A file link's icon (an image in the link) gives way to the file's name; these hosts are videos.
-FILE = re.compile(r"\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|dwg|txt|m|py|csv|odt|ods|step|stp|igs|nc|jpe?g|png|gif|webp)$", re.I)
-VIDEO = re.compile(r"(drive\.google\.com|docs\.google\.com|youtube\.com|youtu\.be|vimeo\.com)", re.I)
 FOOTER = "ОАС МАС ДАС"
-
-
-def now():
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def get(s, url, **kw):
@@ -88,24 +76,6 @@ def link_modules(soup):
                 for child in list(el.children):
                     a.append(child.extract())
                 el.append(a)
-
-
-def name_icons(soup, page_url):
-    """A link whose content is only an icon gets text: the file's name, "video", or the image's alt. A link to the
-    page itself (an icon in a heading) or to nowhere (href="", an icon with no file yet) goes."""
-    for a in soup.find_all("a", href=True):
-        if a.decomposed:  # inside a link that went
-            continue
-        href = a["href"].split("#")[0].strip()
-        if (not href or href.rstrip("/") == page_url.rstrip("/")) and not a.get_text(strip=True):
-            a.decompose()
-            continue
-        if a.get_text(strip=True):
-            continue
-        path = unquote(urlsplit(href).path)
-        name = path.rsplit("/", 1)[-1] if FILE.search(path) else "video" if VIDEO.search(href) else (a.img and a.img.get("alt")) or "link"
-        a.clear()
-        a.append(name)
 
 
 def parse(html, page_url):
@@ -192,8 +162,7 @@ def store_notices(db, page_id, notices, seen):
 
 
 def sync():
-    db = sqlite3.connect(DB)
-    db.executescript(SCHEMA)
+    db = connect(SCHEMA)
     s, seen = session(), now()
     pages = list_pages(s)
     known = dict(

@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from html import unescape
 from urllib.parse import quote, unquote, urljoin, urlparse
 
+from common import DELAY, connect, is_html_page, session
+
 SITE = "https://www.mas.bg.ac.rs/"
 PAGES = {"kalendar-nastave": "Kalendar nastave", "raspored-predavanja": "Raspored predavanja", "raspored-ispita": "Raspored ispita"}
 # Served from the archive's own origin, so only types that cannot run script there.
@@ -114,8 +116,6 @@ def wiki_index(get):
 def sync(db):
     # Imported here: pages/build.py imports this module for media_path and has none of these installed.
     from bs4 import BeautifulSoup
-    from documents import is_html_page
-    from nastava import DELAY, session
 
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     files = set()
@@ -171,7 +171,6 @@ def sync(db):
 
 
 def main():
-    from nastava import connect
 
     sys.stdout.reconfigure(encoding="utf-8")
     db = connect()

@@ -16,6 +16,8 @@ import sys
 import time
 from datetime import datetime, timezone
 
+from common import DELAY, connect, session
+
 SITE = "https://www.mas.bg.ac.rs/"
 BOOK = "studije/predmeti/start"
 # The plan pages: (program as the book names it, page, which plan table on the page). Master MI has one per module.
@@ -159,7 +161,6 @@ def save(db, row, now):
 
 
 def sync(db):
-    from nastava import DELAY, session
 
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     cache = {}
@@ -204,7 +205,6 @@ def sync(db):
 
 
 def main():
-    from nastava import connect
 
     sys.stdout.reconfigure(encoding="utf-8")
     if (sys.argv[1] if len(sys.argv) > 1 else "sync") != "sync":

@@ -16,10 +16,8 @@ import shutil
 import sqlite3
 import subprocess
 import sys
-import unicodedata
 from collections import Counter, defaultdict
 from datetime import date, datetime
-from functools import lru_cache
 from html import unescape
 from itertools import groupby
 from pathlib import Path
@@ -36,6 +34,7 @@ HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent))
 from studije import PAGES as STUDY_PAGES, SHOWN, SITE as STUDY_SITE, media_path  # noqa: E402
 from nastavnici import photo_urls  # noqa: E402
+from translit import fold, lat  # noqa: E402
 from mail import asset_name, TAG as MAIL_TAG  # noqa: E402
 from wiki_tidy import CLASSES as WIKI_CLASSES, lexicon, recase, tidy as wiki_tidy  # noqa: E402
 
@@ -52,8 +51,6 @@ SITE_URL = "https://masinci.org"
 PAGEFIND = "pagefind@1.6.0"
 # shortcut: a document page shows and indexes at most this much text; raise it if GitHub Pages' 1 GB allows.
 PAGE_TEXT = 300_000
-CYR = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s".split()))
-assert len(CYR) == 30
 
 env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
 # The noun after a number: 1, 21 thread; 2, 3, 4, 22 threada; 5–20, 11–14 threadova.
@@ -114,13 +111,6 @@ def katedra_href(k):
 env.filters["katedra_href"] = katedra_href
 
 
-@lru_cache(maxsize=1 << 16)  # the same names are folded again and again (subjects, teachers, authors)
-def fold(s):
-    """Serbian Cyrillic to Latin, no diacritics, lower case. search.js folds the query the same way."""
-    s = "".join(CYR.get(ch, ch) for ch in (s or "").lower()).replace("đ", "dj")
-    return "".join(ch for ch in unicodedata.normalize("NFD", s) if not unicodedata.combining(ch))
-
-
 # The short words a subject's acronym may leave out: teachers write both ОИККЗС and ОККЗС, ПЗСУЕ and ПЗСЕ.
 ACR_SKIP = {"i", "u", "iz", "za", "na", "o", "od", "sa", "s", "a", "po", "pri", "kod", "ili"}
 
@@ -170,24 +160,6 @@ def desc(text, n=160):
     """A page's description (base.html): its text on one line, cut at a word."""
     text = " ".join(str(text or "").split())
     return text if len(text) <= n else text[:n].rsplit(" ", 1)[0] + "…"
-
-
-LAT = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "a b v g d đ e ž z i j k l lj m n nj o p r s t ć u f h c č dž š".split()))
-
-
-def lat(s):
-    """Serbian Cyrillic to Latin, as pismo.js toLat shows a page by default: for what no script converts (the link
-    previews, base.html). Љ is 'LJ' in a word of capitals, 'Lj' otherwise. Escaped text stays escaped (Markup)."""
-
-    def letter(m):
-        c, l = m[0], LAT.get(m[0].lower())
-        if l is None or c == c.lower():
-            return l or c
-        after = m.string[m.end() : m.end() + 1]
-        return l.upper() if after and after != after.lower() else l[0].upper() + l[1:]
-
-    out = re.sub(r"[Ѐ-ӿ]", letter, str(s or ""))
-    return Markup(out) if isinstance(s, Markup) else out
 
 
 env.filters["desc"] = desc

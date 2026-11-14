@@ -20,6 +20,9 @@ from datetime import datetime, timezone
 from html import unescape
 from urllib.parse import urljoin
 
+from common import DELAY, connect, session
+from translit import CYRILLIC, LATIN, to_cyr
+
 SITE = "https://www.mas.bg.ac.rs/"
 LIST = "fakultet/nastavnici/start"
 EMERITUS = "fakultet/nastavnici/emeritus/start"
@@ -50,7 +53,6 @@ def store_photos(db):
     """A local copy of each teacher photo, fetched once per URL (the faculty's changes with the file): the faculty
     removes a departed teacher's photo, and masinac.org or the Wayback Machine can lose theirs. A failed one is
     tried again on the next run."""
-    from nastava import DELAY, session
 
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     have = {r[0] for r in db.execute("select url from photos")}
@@ -208,7 +210,6 @@ def save(db, row, now):
 
 def page(path):
     """The page's HTML, or None for a 404."""
-    from nastava import DELAY, session
 
     time.sleep(DELAY)
     r = session().get(SITE + path, timeout=60)
@@ -299,18 +300,6 @@ def sync(db):
 
 WAYBACK = "https://web.archive.org/"
 MASINAC = "https://www.masinac.org/"
-LATIN = "a b v g d đ e ž z i j k l lj m n nj o p r s t ć u f h c č dž š".split()
-CYRILLIC = "абвгдђежзијклљмнњопрстћуфхцчџш"
-
-
-def to_cyr(s):
-    """'Miloš Glavonjić' -> 'Милош Главоњић' (masinac.org writes in Latin, the faculty in Cyrillic)."""
-
-    def one(m):
-        c = CYRILLIC[LATIN.index(m[0].lower())]
-        return c.upper() if m[0][0].isupper() else c
-
-    return re.sub("dž|lj|nj|[a-zčćšžđ]", one, s, flags=re.I)
 
 
 def name_key(name):
@@ -364,7 +353,6 @@ def history(db):
     masinac.org (2008 on). Each one not listed today is stored gone, with their last archived profile and a photo that
     still loads; listed teachers are not touched."""
     from collections import Counter, defaultdict
-    from nastava import DELAY, session
 
     def get(url, tries=4):
         """The page's text; None after the tries (raises for the Wayback Machine, where every page asked for exists)."""
@@ -540,7 +528,6 @@ def history(db):
 
 
 def main():
-    from nastava import connect
 
     sys.stdout.reconfigure(encoding="utf-8")
     cmd = sys.argv[1] if len(sys.argv) > 1 else "sync"

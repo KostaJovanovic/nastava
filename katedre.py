@@ -17,21 +17,17 @@ import json
 import hashlib
 import os
 import re
-import sqlite3
 import sys
 import time
 from collections import deque
 from datetime import date, datetime
-from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup, Comment
 
-from cent import FILE, name_icons, now
-from nastava import instrument
+from common import FILE, connect, name_icons, now, plain_session
 
-DB = os.getenv("DB", str(Path(__file__).resolve().parent / "nastava.db"))
 # One request at a time, never two in flight: 8 of the 10 sites are one server (147.91.26.9), so they are not crawled
 # in parallel; 0.3 s keeps it to ~2-3 requests a second, a run ~3-4 minutes.
 DELAY = float(os.getenv("DELAY", "0.3"))
@@ -456,11 +452,9 @@ def crawl(db, s, site, starts, keep, seen):
 
 
 def sync(names):
-    db = sqlite3.connect(DB)
-    db.executescript(SCHEMA)
+    db = connect(SCHEMA)
     # No retries (not nastava.session): a crawl meets dead links, and backing off on each would take minutes apiece.
-    s, seen = instrument(requests.Session()), now()
-    s.headers["User-Agent"] = "Mozilla/5.0 (personal archive)"
+    s, seen = plain_session(), now()
     down = [n for n in names if not crawl(db, s, n, *SITES[n], seen)]
     if down:
         sys.exit(f"katedre: no answer from {', '.join(down)}")

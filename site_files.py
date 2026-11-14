@@ -20,11 +20,10 @@ from urllib.parse import quote, unquote, urljoin, urlsplit
 import requests
 from bs4 import BeautifulSoup
 
-from cent import FILE
+from common import DB, FILE
 from studije import SITE as STUDY_SITE, media_path
 
 HERE = Path(__file__).resolve().parent
-DB = os.getenv("DB", str(HERE / "nastava.db"))
 OUT = HERE / "files" / "sites"
 DELAY = float(os.getenv("DELAY", "0.3"))
 

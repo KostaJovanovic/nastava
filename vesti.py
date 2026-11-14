@@ -17,6 +17,8 @@ import sys
 import time
 from datetime import datetime, timezone
 
+from common import DELAY, connect, session
+
 # The pretty /wp-json/ route answers 404 there; ?rest_route= is the same API.
 API = "https://vesti.mas.bg.ac.rs/?rest_route=/wp/v2/"
 
@@ -29,7 +31,6 @@ create table if not exists vesti_categories (id integer primary key, name text, 
 
 def listing(what, fields):
     """Every row of a REST collection, 100 at a time; checks the count against X-WP-Total."""
-    from nastava import DELAY, session
 
     rows, page = [], 1
     while True:
@@ -83,7 +84,6 @@ def sync(db):
 
 
 def main():
-    from nastava import connect
 
     sys.stdout.reconfigure(encoding="utf-8")
     db = connect()

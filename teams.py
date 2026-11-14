@@ -27,6 +27,8 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
+from translit import FOLD
+
 MAIL = Path(__file__).resolve().parent / "mail"
 # A class (its group id) -> its subject's page.
 CLASSES = {
@@ -91,11 +93,10 @@ SIGNED_T = signed(r"(?:/\s*(?:20)?\d\d|-\s*20\d\d)")
 STUDENT_MAIL = re.compile(r"@studenti?\.mas\.bg\.ac\.rs$", re.I)
 # Students named in a reply with no index next to it, and not under their Teams name: found by reading the replies.
 NAMED = ["Jovan Geratovic"]
-LAT = dict(zip("абвгдђежзијклљмнњопрстћуфхцчџш", "a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s".split()))
 # A letter of a name without diacritics, as it can be written: with them, or in Cyrillic.
 LATIN = {"dj": "(?:dj|đ)", "dz": "(?:dz|dž)", "c": "[cčć]", "s": "[sš]", "z": "[zž]", "d": "[dđ]"}
 CYRIL = {
-    **{v: k for k, v in LAT.items() if v not in ("c", "s", "z", "d", "dj", "lj", "nj", "dz")},
+    **{v: k for k, v in FOLD.items() if v not in ("c", "s", "z", "d", "dj", "lj", "nj", "dz")},
     "dj": "(?:ђ|дј)",
     "lj": "(?:љ|лј)",
     "nj": "(?:њ|нј)",
@@ -109,7 +110,7 @@ CYRIL = {
 
 def plain(name):
     """A name in Latin, lower case, without diacritics: "Ђорђе Илић", "Đorđe Ilić" -> "djordje ilic"."""
-    s = "".join(LAT.get(ch, ch) for ch in name.lower()).replace("đ", "dj")
+    s = "".join(FOLD.get(ch, ch) for ch in name.lower()).replace("đ", "dj")
     return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
 
 
