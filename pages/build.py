@@ -1212,6 +1212,23 @@ def write_sitemap(site):
     (site / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n", encoding="utf-8")
 
 
+FILE_PATH = re.compile(r"(?:/file\.php|\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|csv|dwg|stp|step|m|py|jpe?g|png))$", re.I)
+
+
+def has_kinds(it):
+    """What a post has besides its text, for its topic's row (rows.html topic_row): (a file, a link). A file: an
+    attachment, or a link to one (a cent or department file, a PDF anywhere); a link: any other web page, not the
+    board's own (another thread, a quote's source)."""
+    file, link = bool(it.get("files")), False
+    for href in re.findall(r'<a\b[^>]*\bhref="([^"]+)"', it.get("html") or ""):
+        u = urlsplit(unescape(href))
+        if FILE_PATH.search(u.path):
+            file = True
+        elif u.scheme in ("http", "https") and (u.hostname or "").lower() != "nastava.mas.bg.ac.rs":
+            link = True
+    return file, link
+
+
 def load_topics(db, items):
     """The board's topics, newest last post first. A topic of one post links to that post's page, a longer one to /tema/."""
     titles = dict(db.execute("SELECT id, title FROM topics"))
@@ -1235,6 +1252,8 @@ def load_topics(db, items):
             authors="|".join(sorted({(r["author"] or "").lower() for r in rows})),
             find=fold(" ".join([titles.get(tid) or ""] + [f"{r['title']} {r['who'] or ''}" for r in rows])),
         )
+        kinds = [has_kinds(r) for r in rows]
+        t["has_file"], t["has_link"] = any(f for f, _ in kinds), any(lk for _, lk in kinds)
         for i, r in enumerate(rows):
             # The posts before and after it in the topic, for a post's own page.
             r["thread"], r["prev"], r["next"] = t, rows[i - 1] if i else None, rows[i + 1] if i + 1 < len(rows) else None

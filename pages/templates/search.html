@@ -22,7 +22,8 @@
       start, and switching it on brings them up as a scroll would ('moji', site.js; once its own listener, registered
       after this one, has the new state), ending 740 ms after the click, over the end of Studije's own animation
       (site.js fadeStudije). Switching it off, at the page's top, lets them fall back to the peek first, then Studije
-      changes (fallFirst).
+      changes (fallFirst); not when they were whole before it was switched on (opened by a move down, or in place
+      from the start): the switch gives back what it found.
       --drop and the fade's end (--end, in the lists' own lengths) follow the screen: at once (the lists' top is the
       Studije card's bottom and #res's gap, both parsed already, so no flash), at load (fonts, Moji predmeti), on
       every resize and whenever Studije's height changes (Samo moji predmeti greys and shrinks its rows, head.js): on
@@ -62,7 +63,10 @@
         removeEventListener("resize", place);
         ro.disconnect();
       };
-      const go = (e) => down[e.type](e) && open();
+      // whole: the reader has them whole (a move down opened them, or "Samo moji predmeti" was on at load), so switching
+      // it off leaves them so; the switch's own rise does not count.
+      let whole = cl.contains("moji-only");
+      const go = (e) => down[e.type](e) && (whole = true, open());
       // The switch on brings the lists up in their usual .5s (style.css), ending 740 ms after the click (site.js gives
       // its time), over the end of Studije's own animation. A flip mid-way cancels the wait. Without a click (site.js's
       // first 'moji'): at once.
@@ -81,7 +85,7 @@
       // phone: each frame writes only their own translate (their layer moves; --drop would restyle all in them), the
       // mask's end is set once, the edge and the gap read once. At once if they do not fall (scrolled, a search on view).
       window.fallFirst = () => new Promise((done) => {
-        if (cl.contains("fade") || scrollY || cl.contains("searching")) return done();
+        if (whole || cl.contains("fade") || scrollY || cl.contains("searching")) return done();
         const l = lists(), y0 = l.getBoundingClientRect().top, b = edge(), gap = under() - s.getBoundingClientRect().bottom;
         arm(true);
         l.style.setProperty("--end", "72px");
