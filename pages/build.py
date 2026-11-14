@@ -2201,6 +2201,57 @@ def load_verzije(text):
     return days
 
 
+# /stil/'s typefaces: (name, its font-family in style.css, its files in static/fonts, its weights, where it is used).
+STIL_FONTS = (
+    ("IBM Plex Sans", "IBM Plex Sans", ["IBMPlexSans.woff2"], (400, 700), "tekst celog sajta"),
+    ("IBM Plex Mono", "IBM Plex Mono", ["IBMPlexMono-Regular.woff2", "IBMPlexMono-Bold.woff2"], (400, 700), "kodovi, brojevi, datumi"),
+    ("Geist", "Geist", ["Geist-Regular.woff2", "Geist-ExtraBold.woff2"], (400, 800), "OG slike sekcija"),
+    ("Golos Text", "Golos Text", ["lab/GolosText.woff2"], (800,), "OG slike linkova"),
+    ("Roboto Mono", "Roboto Mono", ["RobotoMono-Regular.woff2"], (400,), "OG slike linkova"),
+)
+# /stil/'s logo files, in static/.
+STIL_LOGOS = ("favicon.svg", "app-icon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "badge.png")
+
+
+def css_colors(css):
+    """style.css -> [(--name, light, dark)] of each variable holding a colour, first definition only (the old Safari
+    block repeats them). A plain colour is the same in both themes."""
+    seen = {}
+    for name, value in re.findall(r"^\s*(--[\w-]+):\s*([^;]+);", css, re.M):
+        if name in seen or not (value.startswith("light-dark(") or re.fullmatch(r"#[0-9a-fA-F]{3,8}", value)):
+            continue
+        if value.startswith("light-dark("):
+            inner, depth = value[len("light-dark("):-1], 0
+            for i, c in enumerate(inner):  # the comma between the two, not one inside color-mix()
+                depth += (c == "(") - (c == ")")
+                if c == "," and not depth:
+                    break
+            seen[name] = (inner[:i].strip(), inner[i + 1:].strip())
+        else:
+            seen[name] = (value, value)
+    return [(n, *v) for n, v in seen.items()]
+
+
+def png_size(path):
+    head = path.read_bytes()[:24]  # the IHDR chunk: width and height, big-endian, at bytes 16 and 20
+    return f"{int.from_bytes(head[16:20])}×{int.from_bytes(head[20:24])}"
+
+
+def stil_data():
+    static = HERE / "static"
+    sprite = (static / "icons.svg").read_text(encoding="utf-8")
+    # Each symbol as an SVG of its own, for its download link (a data: URL: no files to write).
+    icons = [dict(id=i, svg=f'<svg xmlns="http://www.w3.org/2000/svg"{attrs}>{body}</svg>')
+             for i, attrs, body in re.findall(r'<symbol id="([^"]+)"([^>]*)>(.*?)</symbol>', sprite, re.S)]
+    assert len(icons) == sprite.count("<symbol"), "icons.svg: a symbol /stil/ did not read"
+    logos = [dict(name=n, size=png_size(static / n) if n.endswith(".png") else "SVG") for n in STIL_LOGOS]
+    posters = sorted(p.name for p in static.iterdir() if p.name.startswith("og") and p.suffix in (".png", ".jpg"))
+    fonts = [dict(name=n, family=f, files=files, weights=w, use=u) for n, f, files, w, u in STIL_FONTS]
+    assert all((static / "fonts" / f).exists() for t in fonts for f in t["files"]), "STIL_FONTS: a file not in static/fonts"
+    return dict(colors=css_colors((static / "style.css").read_text(encoding="utf-8")), icons=icons, logos=logos,
+                posters=posters, fonts=fonts)
+
+
 def main(db_path, out, dev_mode=False):
     global dev
     dev = dev_mode
@@ -2285,6 +2336,7 @@ def main(db_path, out, dev_mode=False):
     about = env.get_template("o_sajtu.html").render()
     write(site / "o-sajtu" / "index.html", about)
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
+    write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()))
     # icons: {host: file} of the sites' own icons in static/link (saved by hand), for link.html's cards.
     write(site / "link" / "index.html", env.get_template("link.html").render(
         icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}))
@@ -2319,6 +2371,8 @@ if __name__ == "__main__":
     assert acronyms("Понашање заварених спојева у експлоатацији") == {"pzsue", "pzse"}
     assert acronyms("Биомедицинска инструментација и опрема", ["BMIO - испит", "ДОМАЋИ 2", "ОМ ПРВИ ДЕО", "ММ1 рок"]) == {
         "biio", "bio", "bmio"}
+    assert css_colors(":root {\n  --a: #fff;\n  --m: light-dark(color-mix(in srgb, #b 16%, transparent), #c);\n"
+                      "  --r: 6px;\n  --a: #000; }") == [("--a", "#fff", "#fff"), ("--m", "color-mix(in srgb, #b 16%, transparent)", "#c")]
     asset_v["site.js"] = "ab"
     assert versioned('<script src="/static/site.js"> `/static/site.js#${k}` /static/site.js?v=ab /static/sw.js '
                      '/static/site.json') == ('<script src="/static/site.js?v=ab"> `/static/site.js?v=ab#${k}` '

@@ -11,6 +11,8 @@
 @font-face { font-family: "IBM Plex Sans"; src: url("/static/fonts/IBMPlexSans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 @font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/IBMPlexMono-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+/* An OG image's font, for its specimen on /stil/ (stil.html). */
+@font-face { font-family: "Roboto Mono"; src: url("/static/fonts/RobotoMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 /* Fonts to try in place of Plex Sans (site.js, the font menu): each downloads only once something uses it. Latin,
    Latin Extended and Cyrillic only; variable ones cut to 400–800. "Roboto Lab": not the system's Roboto in --sans. */
 @font-face { font-family: "Geist"; src: url("/static/fonts/Geist-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
@@ -874,6 +876,34 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .field::placeholder { color: var(--dim); opacity: 1; }
 @media (min-width: 900px) { .field { font-size: 14px; } }
 
+/* ---- Stil (stil.html): the logos, colours, fonts, icons and OG images, each a download ------------------------ */
+.sl { display: grid; margin: 0; padding: 0; list-style: none; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(var(--min, 150px), 1fr)); }
+.sl > li, .sl > a { display: grid; gap: 4px; align-content: start; min-width: 0; padding: 10px; border: 1px solid var(--line-2); border-radius: var(--r); color: var(--text); font-size: 12.5px; }
+.sl a { color: var(--link); }
+.sl > a:hover, .sl > li:has(a:hover) { background: var(--hover); }
+.sl img { width: 100%; height: auto; }
+.sl small { color: var(--dim); }
+.sl__logo img { width: 64px; height: 64px; object-fit: contain; }
+.sl__logo--mask img { background: var(--slate); border-radius: 14px; }  /* badge.png: white on clear, a mask */
+.sl__c { height: 44px; border: 1px solid var(--line); border-radius: var(--r); }
+.sl code { overflow-wrap: anywhere; font: 400 12px var(--mono); }
+.sl--icons { --min: 92px; }
+.sl--icons > a { justify-items: center; text-align: center; color: var(--fg); }
+.sl--icons .i { width: 28px; height: 28px; }
+.sl--icons span { overflow-wrap: anywhere; color: var(--dim); font-size: 11px; }
+.sl--og { --min: 220px; }
+.sl-font { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--line-2); }
+.sl-font:first-of-type { border-top: 0; padding-top: 0; }
+.sl-font h3 { color: var(--fg); font-size: 22px; line-height: 1.2; }
+.sl-font p { color: var(--fg); font-size: 17px; overflow-wrap: anywhere; }
+.sl-font small { color: var(--dim); font-size: 12.5px; }
+.sl-font small a { color: var(--link); }
+/* A colour's value in the theme now showing (dark only by data-tema, see Colours); the old Safari has light only. */
+.sl__d { display: none; }
+:root[data-tema="dark"] .sl__l { display: none; }
+:root[data-tema="dark"] .sl__d { display: inline; }
+@supports not (color: light-dark(#000, #fff)) { .sl .sl__l { display: inline; } .sl .sl__d { display: none; } }
+
 /* ---- Buttons ------------------------------------------------------------ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -1679,6 +1709,8 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 /* The theme switch (site.js): no cross-fade, the circle's clip is the whole effect; going light, the old (dark) page
    is the one on top, rolling out. */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+/* The pictures take no clicks or scrolls: the page under them goes on working while the circle moves. */
+::view-transition { pointer-events: none; }
 :root[data-vt="light"]::view-transition-old(root) { z-index: 1; }
 /* Going dark, the dark page is hidden until its circle starts moving, so it never shows whole for a frame. */
 :root[data-vt="dark"]::view-transition-new(root) { clip-path: circle(0 at 0 0); }

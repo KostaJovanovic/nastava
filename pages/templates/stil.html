@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Stil{% endblock %}
+{% block description %}Logo, boje, fontovi, ikone i OG slike sajta nastava, za preuzimanje.{% endblock %}
+
+{#- Everything from the files themselves (build.py stil_data): a new colour in style.css, icon in icons.svg or OG
+    image in static/ shows here with no edit. Each item is a download. -#}
+{% block main %}
+<div class="mh">
+  <h1 id="title">Stil</h1>
+  <p class="mh__sub">Logo, boje, fontovi i ikone sajta. Klik na bilo šta ga preuzima.</p>
+</div>
+
+<section class="st">
+  <h2 class="st__h">Logo</h2>
+  <ul class="sl">
+    {%- for l in logos %}
+    <li class="sl__logo{{ ' sl__logo--mask' if l.name == 'badge.png' }}"><img src="/static/{{ l.name }}" alt="" loading="lazy"><a href="/static/{{ l.name }}" download>{{ l.name }}</a><small>{{ l.size }}</small></li>
+    {%- endfor %}
+  </ul>
+</section>
+
+<section class="st">
+  <h2 class="st__h">Boje <span>u temi koja je sad uključena</span></h2>
+  <ul class="sl">
+    {%- for name, light, dark in colors %}
+    <li><span class="sl__c" style="background: var({{ name }})"></span><code>{{ name }}</code><code><span class="sl__l">{{ light }}</span><span class="sl__d">{{ dark }}</span></code></li>
+    {%- endfor %}
+  </ul>
+</section>
+
+<section class="st">
+  <h2 class="st__h">Fontovi</h2>
+  {%- for f in fonts %}
+  <div class="sl-font" style="font-family: '{{ f.family }}'">
+    <h3 style="font-weight: {{ f.weights[-1] }}">{{ f.name }}</h3>
+    {%- for w in f.weights %}
+    <p style="font-weight: {{ w }}">Mašinski fakultet · Машински факултет · 0123456789</p>
+    {%- endfor %}
+    <small style="font-family: var(--sans)">{{ f.use }} · {% for file in f.files %}<a href="/static/fonts/{{ file }}" download>{{ file.split("/")[-1] }}</a>{{ ", " if not loop.last }}{% endfor %}</small>
+  </div>
+  {%- endfor %}
+</section>
+
+<section class="st">
+  <h2 class="st__h">Ikone <span>{{ icons | length }}</span></h2>
+  <div class="sl sl--icons">
+    {%- for i in icons %}
+    <a href="data:image/svg+xml,{{ i.svg | urlencode }}" download="{{ i.id }}.svg" title="{{ i.id }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#{{ i.id }}"></use></svg><span>{{ i.id | replace("i-", "", 1) }}</span></a>
+    {%- endfor %}
+  </div>
+</section>
+
+<section class="st">
+  <h2 class="st__h">OG slike <span>slika linka kad se podeli</span></h2>
+  <div class="sl sl--og">
+    {%- for p in posters %}
+    <a href="/static/{{ p }}" download><img src="/static/{{ p }}" alt="" loading="lazy" width="1200" height="630"><small>{{ p }}</small></a>
+    {%- endfor %}
+  </div>
+</section>
+{% endblock %}
