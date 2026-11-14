@@ -213,7 +213,11 @@ def write(path, html, index=True, canonical=None):
     its URL on the main domain, for search engines (also for its copy on github.io), or that of the page canonical
     names (a site path) that shows the same. index=False: search engines leave it out (the posts, which name
     students; their subjects' pages are indexed), and so does the sitemap. Dev mode: kept for serve.py, whole."""
-    own = f"/{path.parent.relative_to(site_dir).as_posix()}/"
+    # As path.parent.relative_to(site_dir), by string: pathlib's took ~4 s of dev mode's start (33k pages, Windows).
+    folder, root = path.parent.as_posix(), site_dir.as_posix()
+    if folder != root and not folder.startswith(root + "/"):
+        raise ValueError(f"{path} is not in {site_dir}")
+    own = f"/{folder[len(root) + 1 :] or '.'}/"
     if dev:
         pages[own] = html
         return
