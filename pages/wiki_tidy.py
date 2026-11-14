@@ -393,11 +393,12 @@ MODULE = re.compile(r"(\d{1,2})\.\s*([^()\d]+?)\s*\(([^)]{2,8})\)\s*(\d+)\s*ка
 def tune(root, path, new):
     """What only one page has. A page the faculty reworded keeps the generic look, with a warning."""
     if path == "upis/mas":
-        # The master's modules, "1. Аутоматско управљање (САУ) 24 кандидата" in one block: a table.
+        # The master's modules, "1. Аутоматско управљање (САУ) | 24 кандидата" (a table or one block): a table with a
+        # head, the code and the number apart.
         block = next(
             (
                 el
-                for el in root.find_all(["div", "p", "ol", "ul"])
+                for el in root.find_all(["table", "div", "p", "ol", "ul"])
                 if len(MODULE.findall(el.get_text(" "))) >= 5 and not el.find(["div", "p"])
             ),
             None,

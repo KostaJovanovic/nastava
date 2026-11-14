@@ -1,0 +1,19 @@
+{#- A Linkovi card, shared by link.html and raspored.html (its Upis i studiranje): import it with context, for icons
+    ({host: file} of the sites' own icons in static/link, build.py link_icons). -#}
+{#- The sites that did not work when last checked (11.11.2026.): no answer, an empty page, the server's default
+    page or "under reconstruction". The card stays, with a mark in its corner. -#}
+{% set down = ['https://omk.mas.bg.ac.rs/', 'https://mat.mas.bg.ac.rs/', 'http://www.en.mas.bg.ac.rs/',
+               'https://lgs.mas.bg.ac.rs/', 'https://geotermal.mas.bg.ac.rs/'] %}
+
+{#- One link's card: (name, href, icon from icons.svg, data-domain). Another site's icon in the corner (build.py
+    icons), unless the corner says it does not work. A faculty site without its own: the faculty's
+    (www.mas.bg.ac.rs), as on a faculty page shown here. shown: the second line (build.py link_groups); else the
+    address; with a data-domain (the drive), that name, as the dialog before it says (site.js). -#}
+{% macro card(name, href, icon, domain, shown=none) %}
+    {%- set shown = shown or ('OneDrive' if domain else href.split('://')[-1].rstrip('/')) %}
+    {%- set host = href.split('/')[2] if '://' in href else shown.split('/')[0] %}
+    {%- set fav = icons.get(host) or (icons.get('www.mas.bg.ac.rs') if host.endswith('.mas.bg.ac.rs') else none) %}
+    <li><a class="lk__a{% if href in down %} lk__a--down{% endif %}" href="{{ href }}"{% if domain %} data-domain="{{ domain }}"{% endif %}>
+      {%- if fav and href not in down %}<img class="lk__fav" src="/static/link/{{ fav }}" alt="" width="16" height="16" loading="lazy" decoding="async">{% endif %}
+      {%- if href in down %}<span class="lk__down">ne radi</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ name }}</b><small data-notx>{{ shown }}</small></span></a></li>
+{%- endmacro %}
