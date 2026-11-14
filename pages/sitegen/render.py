@@ -73,6 +73,7 @@ def render_places(site, topics, smerovi, subjects):
         )
         # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
         quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
+        s["katedra"] = row_katedra(s, rows)  # before its page: predmet.html links it
         write(
             site / s["href"].strip("/") / "index.html",
             env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet),
@@ -91,7 +92,6 @@ def render_places(site, topics, smerovi, subjects):
         for s in subs:
             # sorted: a set's order changes from run to run, and with it the page (a deploy with nothing new).
             s["find"] = fold(" ".join([s["name"], *sorted(s["acr"])] + [t["full_name"] for t in s.get("teachers", [])]))
-            s["katedra"] = row_katedra(s, in_subject[s["id"]])
         rows = in_smer[m["id"]]
         m["live"] = bool(rows or subs)
         m["subjects"], m["topics"] = len(subs), len(rows) + sum(s["topics"] for s in subs)
