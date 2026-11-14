@@ -83,7 +83,8 @@ pipeline and site, with new scrapers for phpBB.
 - `scrapers/nastavnici.py`: archive the teacher list of www.mas.bg.ac.rs, every profile (katedra, kabinet, mejl, telefon,
   termini, predmeti, bibliografija) and the emeritus page, into the `teachers` and `teacher_subjects` tables.
   The site has `/nastavnici/` (filter by name, subject, katedra, zvanje) and a page per teacher with their forum posts;
-  a forum author is linked to a teacher when the username is the e-mail before @.
+  a forum author is linked to a teacher when the username is the e-mail before @. `scrapers/nastavnici_istorija.py`
+  (once, by hand): the teachers who left before the archive began, from the Wayback Machine and masinac.org.
 - `scrapers/predmeti.py`: archive the faculty's subject book (all subjects of every program), every subject page, and where
   each subject is in the plans (program, master module, semester, elective slot such as 5.4) into the `subjects` and
   `subject_places` tables. The site has `/predmeti/`, grouped as the plans by default, and a page per subject.
