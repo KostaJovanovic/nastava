@@ -162,6 +162,9 @@ def add(zpath, page, author, week1=None):
         p = re.sub(r"^\d+ ", "", f.split("/", 1)[0]) + "/" + Path(f).name
         if p in rest:
             p = re.sub(r"^\d+ ", "", f)
+        # Windows drops a folder's trailing dot or space ("26.septembar.2025."): mail.py upload names a file by its path
+        # on disk, so the path here must be that one.
+        p = "/".join(x.rstrip(". ") or "_" for x in p.split("/")[:-1]) + "/" + p.rsplit("/", 1)[-1]
         (out / p).parent.mkdir(parents=True, exist_ok=True)
         (out / p).write_bytes(z.read(f))
         rest.append(p)
