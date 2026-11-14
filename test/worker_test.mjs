@@ -39,6 +39,36 @@ test("join puts the fragment's head and main into the shell, a $& in a post as i
 	assert.equal(join(shell, page), '<html><title>T</title><meta name="d"><body><main><p>$& a</p></main></body></html>');
 });
 
+test("shell.html is fetched once per deploy; a shell from another deploy is used, not kept", async () => {
+	const real = { fetch: globalThis.fetch, caches: globalThis.caches };
+	const store = new Map(), got = [];
+	globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res) } };
+	let deploy = "D1", shellDeploy = "D1";
+	globalThis.fetch = async (u) => {
+		got.push(u.slice(u.lastIndexOf("/")));
+		const shell = u.endsWith("/shell.html");
+		const body = shell ? `<html><title></title><!--main-->${shellDeploy}</html>` : '<html lang="sr"><title>T</title><!--/head-->p</html>';
+		return new Response(body, { headers: { "Content-Type": "text/html", "Last-Modified": shell ? shellDeploy : deploy } });
+	};
+	const ctx = { waitUntil: (p) => p };
+	const get = async (path) => (await worker.fetch(new Request(`https://masinci.org${path}`), {}, ctx)).text();
+	try {
+		assert.equal(await get("/a"), "<html><title>T</title>pD1</html>");
+		await get("/b");
+		assert.deepEqual(got.splice(0), ["/a", "/shell.html", "/b"]);
+		deploy = "D2"; // the pages are out, shell.html not yet: used each time, never kept
+		assert.equal(await get("/c"), "<html><title>T</title>pD1</html>");
+		await get("/d");
+		assert.deepEqual(got.splice(0), ["/c", "/shell.html", "/d", "/shell.html"]);
+		shellDeploy = "D2";
+		assert.equal(await get("/e"), "<html><title>T</title>pD2</html>");
+		await get("/f");
+		assert.deepEqual(got.splice(0), ["/e", "/shell.html", "/f"]);
+	} finally {
+		Object.assign(globalThis, real);
+	}
+});
+
 test("a subscription is kept, read back with the key, and dropped with no subjects", async () => {
 	const env = { PUSH: kv(), PUSH_KEY: "k" };
 	assert.equal((await post(env, { endpoint: EP, keys, s: [S], t: { [S]: ["pera.peric"] } })).status, 204);

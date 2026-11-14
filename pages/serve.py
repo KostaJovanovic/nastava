@@ -14,6 +14,7 @@ build.py's devcheck.py checks that dev mode renders what a build writes.
 --built: the last build in pages/.build/site, as deployed. Most pages are fragments there: join() puts them into
 shell.html, as the Worker (pages/src/index.js join) does on the live site.
 """
+
 import ctypes
 import os
 import posixpath
@@ -36,18 +37,35 @@ SITE = HERE / ".build" / "site"
 DEV = HERE / ".build" / "dev"  # dev mode's build.py out dir: its site/ has the small files, no pages
 DB = HERE.parent / "nastava.db"
 FRAGMENT = '<html lang="sr"><title>'
-# What dev mode's data comes from: a change restarts it. build.py imports the three modules and wiki_tidy.py. The database's -wal: a
+# What dev mode's data comes from: a change restarts it. build.py imports the three scrapers (and common.py, translit.py) and wiki_tidy.py. The database's -wal: a
 # sync writes there first. Not the icons: their link's ?v= hash goes stale after an edit, but every reply here is
 # no-cache (end_headers), so a reload fetches the new file anyway. Not verzije.md: /verzije/ reads it at each render
 # (build.py Lazy.fresh). The teachers' files of history, photos and biographies: build.py reads them at the start.
-WATCH = [HERE / "build.py", HERE / "wiki_tidy.py", *(HERE.parent / f for f in (
-    "studije.py", "nastavnici.py", "mail.py", "nastava.db", "nastava.db-wal", "nastavnici-istorija.jsonl",
-    "nastavnici-foto.jsonl", "nastavnici-biografije.jsonl", "nastavnici-sazetak.jsonl"))]
+WATCH = [
+    HERE / "build.py",
+    HERE / "wiki_tidy.py",
+    *(
+        HERE.parent / f
+        for f in (
+            "scrapers/studije.py",
+            "scrapers/nastavnici.py",
+            "scrapers/mail.py",
+            "scrapers/common.py",
+            "scrapers/translit.py",
+            "nastava.db",
+            "nastava.db-wal",
+            "data/nastavnici-istorija.jsonl",
+            "data/nastavnici-foto.jsonl",
+            "data/nastavnici-biografije.jsonl",
+            "data/nastavnici-sazetak.jsonl",
+        )
+    ),
+]
 build = None  # dev mode: the build module, its pages loaded (dev())
 
 
 def join(shell, fragment):
-    head, _, main = fragment[fragment.index("<title>"):fragment.rindex("</html>")].partition("<!--/head-->")
+    head, _, main = fragment[fragment.index("<title>") : fragment.rindex("</html>")].partition("<!--/head-->")
     if snav := re.search(r'<meta name="snav" content="([^"]+)">', head):
         a = f'<a href="{snav[1]}"'
         shell = shell.replace(a, a + ' aria-current="page"', 1)
@@ -59,8 +77,9 @@ class Handler(SimpleHTTPRequestHandler):
         # pages/ + /static/... is pages/static/.... Decided on the resolved path: /static/../x is /x, from the build.
         # Dev mode: Pagefind's index from the last build, the rest from dev mode's out dir.
         clean = posixpath.normpath(unquote(urlsplit(path).path))
-        self.directory = str(HERE if clean.startswith("/static/") else
-                             SITE if not build or clean.startswith("/pagefind/") else DEV / "site")
+        self.directory = str(
+            HERE if clean.startswith("/static/") else SITE if not build or clean.startswith("/pagefind/") else DEV / "site"
+        )
         return super().translate_path(path)
 
     def send_page(self, code, page):
@@ -76,14 +95,14 @@ class Handler(SimpleHTTPRequestHandler):
         if build:
             url = urlsplit(self.path)
             path = unquote(url.path)
-            if not path.endswith("/") and path + "/" in build.pages:  # as GitHub Pages: /x is /x/
+            if not path.endswith("/") and path + "/" in build.output.pages:  # as GitHub Pages: /x is /x/
                 self.send_response(301)
                 self.send_header("Location", url.path + "/" + (f"?{url.query}" if url.query else ""))
                 return self.end_headers()
-            if page := build.pages.get(path):
+            if page := build.output.pages.get(path):
                 # The side panel link aria-current in the first frame, as join() marks it from the build's <meta>.
                 page = str(page)
-                if h := build.snav_href(path, build.snav):
+                if h := build.output.snav_href(path, build.output.snav):
                     a = f'<a href="{h}"'
                     page = page.replace(a, a + ' aria-current="page"', 1)
                 return self.send_page(200, page)
@@ -104,7 +123,7 @@ class Handler(SimpleHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None):
         # A missing page gets the site's 404.html, as on GitHub Pages.
         if build and code == 404:
-            return self.send_page(404, str(build.pages["/404.html"]))
+            return self.send_page(404, str(build.output.pages["/404.html"]))
         page = SITE / "404.html"
         if code != 404 or not page.is_file():
             return super().send_error(code, message, explain)
@@ -133,9 +152,14 @@ def lan_ip():
 
 
 if __name__ == "__main__":
-    assert join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title><meta><!--/head-->$& M</html>") == "<title>T</title><meta><b>$& M</b>"
-    assert join('<title></title><a href="/x/">X</a><a href="/x/"><!--main-->', f'{FRAGMENT}T</title><meta name="snav" content="/x/"><!--/head-->M</html>') == (
-        '<title>T</title><meta name="snav" content="/x/"><a href="/x/" aria-current="page">X</a><a href="/x/">M')
+    assert (
+        join("<title></title><b><!--main--></b>", f"{FRAGMENT}T</title><meta><!--/head-->$& M</html>")
+        == "<title>T</title><meta><b>$& M</b>"
+    )
+    assert join(
+        '<title></title><a href="/x/">X</a><a href="/x/"><!--main-->',
+        f'{FRAGMENT}T</title><meta name="snav" content="/x/"><!--/head-->M</html>',
+    ) == ('<title>T</title><meta name="snav" content="/x/"><a href="/x/" aria-current="page">X</a><a href="/x/">M')
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     port = int(args[0]) if args else 15497  # server.bat's PORT, drawn at random
     if "--child" in sys.argv:
@@ -143,9 +167,10 @@ if __name__ == "__main__":
         t = time.time()
         sys.path.insert(0, str(HERE))
         import build as _build
+
         _build.main(str(DB), str(DEV), dev_mode=True)
         build = _build
-        print(f"  ready: {len(build.pages)} pages in {time.time() - t:.0f} s", flush=True)
+        print(f"  ready: {len(build.output.pages)} pages in {time.time() - t:.0f} s", flush=True)
         ThreadingHTTPServer(("", port), partial(Handler, directory=str(DEV / "site"))).serve_forever()
     lan = f"http://{lan_ip()}:{port}"
     if os.name == "nt":  # ANSI colours for the QR in the classic console; Windows Terminal has them already
@@ -154,6 +179,7 @@ if __name__ == "__main__":
     print(qr_terminal(lan))
     print(f"\n  Local:   http://localhost:{port}\n  Network: {lan}  (scan the QR, same Wi-Fi)\n  static:  {HERE / 'static'}\n")
     if "--open" in sys.argv:  # server.bat: the browser once the site answers (dev mode loads for a while first)
+
         def open_when_up():
             while True:
                 try:
@@ -161,6 +187,7 @@ if __name__ == "__main__":
                     return webbrowser.open(f"http://localhost:{port}")
                 except OSError:
                     time.sleep(0.5)
+
         threading.Thread(target=open_when_up, daemon=True).start()
     if "--built" in sys.argv:
         ThreadingHTTPServer(("", port), partial(Handler, directory=str(SITE))).serve_forever()

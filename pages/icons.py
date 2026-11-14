@@ -3,6 +3,7 @@
 An iPhone's home screen takes no SVG (apple-touch-icon), Android's install wants 192 and 512 px; the badge is the
 logo alone, white on clear (Android tints it): static/sw.js.
 """
+
 import re
 from pathlib import Path
 

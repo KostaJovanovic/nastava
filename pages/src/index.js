@@ -25,7 +25,24 @@ function cacheControl(url) {
 	return "public, max-age=300";
 }
 
-async function page(url) {
+// shell.html once per deploy, not once per page: GitHub Pages stamps every file of a deploy with the same
+// Last-Modified, so the fragment's names its shell. A path GitHub Pages 404s, so the page cache never stores one there.
+// A shell from another deploy (one still going out) is used but not kept.
+async function shellFor(url, fragment, ctx) {
+	const deploy = fragment.headers.get("Last-Modified");
+	const key = deploy && new Request(`${url.origin}/__shell/${encodeURIComponent(deploy)}`);
+	const kept = key && (await caches.default.match(key));
+	if (kept) return kept.text();
+	const shell = await fetch(PAGES + "/shell.html");
+	if (!shell.ok) return null;
+	if (key && shell.headers.get("Last-Modified") === deploy) {
+		const copy = new Response(shell.clone().body, { headers: { "Content-Type": "text/html", "Cache-Control": "public, max-age=86400" } });
+		ctx.waitUntil(caches.default.put(key, copy));
+	}
+	return shell.text();
+}
+
+async function page(url, ctx) {
 	const response = await fetch(PAGES + url.pathname + url.search, { redirect: "manual" });
 	// GitHub Pages adds the trailing slash with a redirect to the project path.
 	const location = response.headers.get("Location");
@@ -36,9 +53,9 @@ async function page(url) {
 	// A whole page goes out untouched; only a fragment is read and joined.
 	const fragment = await response.clone().text();
 	if (!fragment.startsWith(FRAGMENT)) return response;
-	const shell = await fetch(PAGES + "/shell.html");
-	if (!shell.ok) return new Response("shell.html missing", { status: 502 });
-	return new Response(join(await shell.text(), fragment), response);
+	const shell = await shellFor(url, response, ctx);
+	if (shell === null) return new Response("shell.html missing", { status: 502 });
+	return new Response(join(shell, fragment), response);
 }
 
 async function releaseFile(path) {
@@ -192,7 +209,7 @@ export default {
 			response.headers.set("Cache-Control", cacheControl(url));
 			return response;
 		}
-		const origin = url.pathname.startsWith("/files/") ? await releaseFile(url.pathname) : await page(url);
+		const origin = url.pathname.startsWith("/files/") ? await releaseFile(url.pathname) : await page(url, ctx);
 		if (!origin) return new Response("Not found", { status: 404 });
 		// Cache only a 200: a 404 for a new Pagefind file must not stay in the cache.
 		if (origin.status !== 200) return origin;

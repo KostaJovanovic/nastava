@@ -34,8 +34,8 @@ def _qr_rs_generator(degree):
     for i in range(degree):
         ng = [0] * (len(g) + 1)
         for j in range(len(g)):
-            ng[j] ^= g[j]                             # x * g  (keeps it monic)
-            ng[j + 1] ^= _qr_gmul(g[j], _QR_EXP[i])   # alpha^i * g
+            ng[j] ^= g[j]  # x * g  (keeps it monic)
+            ng[j + 1] ^= _qr_gmul(g[j], _QR_EXP[i])  # alpha^i * g
         g = ng
     return g
 
@@ -48,19 +48,33 @@ def _qr_rs_ecc(data, degree):
         if coef:
             for j in range(len(gen)):
                 res[i + j] ^= _qr_gmul(gen[j], coef)
-    return res[len(data):]
+    return res[len(data) :]
 
 
 # version -> (ecc codewords per block, [(block count, data codewords per block)])
 _QR_VER = {
-    1: (10, [(1, 16)]), 2: (16, [(1, 28)]), 3: (26, [(1, 44)]),
-    4: (18, [(2, 32)]), 5: (24, [(2, 43)]), 6: (16, [(4, 27)]),
-    7: (18, [(4, 31)]), 8: (22, [(2, 38), (2, 39)]),
-    9: (22, [(3, 36), (2, 37)]), 10: (26, [(4, 43), (1, 44)]),
+    1: (10, [(1, 16)]),
+    2: (16, [(1, 28)]),
+    3: (26, [(1, 44)]),
+    4: (18, [(2, 32)]),
+    5: (24, [(2, 43)]),
+    6: (16, [(4, 27)]),
+    7: (18, [(4, 31)]),
+    8: (22, [(2, 38), (2, 39)]),
+    9: (22, [(3, 36), (2, 37)]),
+    10: (26, [(4, 43), (1, 44)]),
 }
 _QR_ALIGN = {
-    1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34],
-    7: [6, 22, 38], 8: [6, 24, 42], 9: [6, 26, 46], 10: [6, 28, 50],
+    1: [],
+    2: [6, 18],
+    3: [6, 22],
+    4: [6, 26],
+    5: [6, 30],
+    6: [6, 34],
+    7: [6, 22, 38],
+    8: [6, 24, 42],
+    9: [6, 26, 46],
+    10: [6, 28, 50],
 }
 
 
@@ -85,18 +99,18 @@ def _qr_data_codewords(data, version):
         for i in range(n - 1, -1, -1):
             bits.append((val >> i) & 1)
 
-    put(0b0100, 4)                                  # byte mode
-    put(len(data), 16 if version >= 10 else 8)      # character count
+    put(0b0100, 4)  # byte mode
+    put(len(data), 16 if version >= 10 else 8)  # character count
     for b in data:
         put(b, 8)
-    put(0, min(4, total_bits - len(bits)))          # terminator
-    while len(bits) % 8:                             # pad to a byte boundary
+    put(0, min(4, total_bits - len(bits)))  # terminator
+    while len(bits) % 8:  # pad to a byte boundary
         bits.append(0)
     pad, i = (0xEC, 0x11), 0
-    while len(bits) < total_bits:                    # pad codewords
+    while len(bits) < total_bits:  # pad codewords
         put(pad[i % 2], 8)
         i += 1
-    return [int("".join(map(str, bits[i:i + 8])), 2) for i in range(0, total_bits, 8)]
+    return [int("".join(map(str, bits[i : i + 8])), 2) for i in range(0, total_bits, 8)]
 
 
 def _qr_interleave(data_cw, version):
@@ -104,7 +118,7 @@ def _qr_interleave(data_cw, version):
     blocks, idx = [], 0
     for count, dcw in groups:
         for _ in range(count):
-            blocks.append(data_cw[idx:idx + dcw])
+            blocks.append(data_cw[idx : idx + dcw])
             idx += dcw
     ecc_blocks = [_qr_rs_ecc(b, ecc_len) for b in blocks]
     out = []
@@ -127,11 +141,11 @@ def _qr_build(codewords, version):
         mods[row][col] = 1 if val else 0
         fn[row][col] = True
 
-    for i in range(size):                            # timing patterns
+    for i in range(size):  # timing patterns
         setf(6, i, i % 2 == 0)
         setf(i, 6, i % 2 == 0)
 
-    def finder(cx, cy):                              # finder + separator ring
+    def finder(cx, cy):  # finder + separator ring
         for dy in range(-4, 5):
             for dx in range(-4, 5):
                 x, y = cx + dx, cy + dy
@@ -142,7 +156,7 @@ def _qr_build(codewords, version):
     finder(size - 4, 3)
     finder(3, size - 4)
 
-    pos = _QR_ALIGN[version]                          # alignment patterns
+    pos = _QR_ALIGN[version]  # alignment patterns
     last = len(pos) - 1
     skip = {(0, 0), (0, last), (last, 0)}
     for i, ax in enumerate(pos):
@@ -152,9 +166,9 @@ def _qr_build(codewords, version):
                     for dx in range(-2, 3):
                         setf(ax + dx, ay + dy, max(abs(dx), abs(dy)) != 1)
 
-    setf(8, size - 8, 1)                             # always-dark module
+    setf(8, size - 8, 1)  # always-dark module
 
-    for i in range(9):                               # reserve format-info cross
+    for i in range(9):  # reserve format-info cross
         if i != 6:
             setf(i, 8, 0)
             setf(8, i, 0)
@@ -162,7 +176,7 @@ def _qr_build(codewords, version):
         setf(size - 1 - i, 8, 0)
         setf(8, size - 1 - i, 0)
 
-    if version >= 7:                                 # version-info blocks
+    if version >= 7:  # version-info blocks
         rem = version
         for _ in range(12):
             rem = (rem << 1) ^ ((rem >> 11) * 0x1F25)
@@ -173,10 +187,10 @@ def _qr_build(codewords, version):
             setf(b, a, bit)
             setf(a, b, bit)
 
-    bit = 0                                          # data/ecc up-down zigzag
+    bit = 0  # data/ecc up-down zigzag
     for right in range(size - 1, 0, -2):
         if right <= 6:
-            right -= 1                               # step past timing column
+            right -= 1  # step past timing column
         upward = ((right + 1) & 2) == 0
         for i in range(size):
             row = (size - 1 - i) if upward else i
@@ -209,19 +223,19 @@ def _qr_mask(m, col, row):
 
 
 def _qr_place_format(mods, size, mask):
-    data = mask                                      # EC level M -> 0b00
+    data = mask  # EC level M -> 0b00
     rem = data
     for _ in range(10):
         rem = (rem << 1) ^ ((rem >> 9) * 0x537)
     bits = ((data << 10) | rem) ^ 0x5412
-    for i in range(6):                               # copy 1
+    for i in range(6):  # copy 1
         mods[i][8] = _qr_bit(bits, i)
     mods[7][8] = _qr_bit(bits, 6)
     mods[8][8] = _qr_bit(bits, 7)
     mods[8][7] = _qr_bit(bits, 8)
     for i in range(9, 15):
         mods[8][14 - i] = _qr_bit(bits, i)
-    for i in range(8):                               # copy 2
+    for i in range(8):  # copy 2
         mods[8][size - 1 - i] = _qr_bit(bits, i)
     for i in range(8, 15):
         mods[size - 15 + i][8] = _qr_bit(bits, i)
@@ -232,8 +246,7 @@ def _qr_penalty(mods, size):
     score = 0
     p1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0]
     p2 = list(reversed(p1))
-    lines = [row[:] for row in mods] + \
-            [[mods[r][c] for r in range(size)] for c in range(size)]
+    lines = [row[:] for row in mods] + [[mods[r][c] for r in range(size)] for c in range(size)]
     for line in lines:
         run = 1
         for i in range(1, size):
@@ -246,7 +259,7 @@ def _qr_penalty(mods, size):
             else:
                 run = 1
         for i in range(size - 11):
-            seg = line[i:i + 11]
+            seg = line[i : i + 11]
             if seg == p1 or seg == p2:
                 score += 40
     for r in range(size - 1):

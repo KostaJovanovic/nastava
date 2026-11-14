@@ -46,8 +46,10 @@
 	const attrs = new WeakMap();
 	const convert = (s) => (mode === "cyr" ? toCyr(s) : toLat(s));
 
-	function convertNode(n) {
+	// kept: the page's second pass (DOMContentLoaded), which leaves a node shown as this mode has it.
+	function convertNode(n, kept) {
 		const s = shown.get(n);
+		if (kept && n.nodeValue === s) return;
 		if (s === undefined) text.set(n, n.nodeValue);
 		// The parser added to it after it was converted (its text came in two network chunks): the new end is original
 		// too. Changed some other way: that is the original now.
@@ -57,18 +59,18 @@
 		shown.set(n, v);
 	}
 
-	function apply(root) {
+	function apply(root, kept) {
 		if (root.nodeType === Node.TEXT_NODE) {
-			if (!root.parentElement?.closest(SKIP)) convertNode(root);
+			if (!root.parentElement?.closest(SKIP)) convertNode(root, kept);
 			return;
 		}
 		if (root.nodeType !== Node.ELEMENT_NODE || root.closest(SKIP)) return;
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
 			acceptNode: (n) => (n.parentElement.closest(SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
 		});
-		for (let n = walker.nextNode(); n; n = walker.nextNode()) convertNode(n);
+		for (let n = walker.nextNode(); n; n = walker.nextNode()) convertNode(n, kept);
 		for (const el of [root, ...root.querySelectorAll(ATTRS.map((a) => `[${a}]`).join(","))]) {
-			if (el.closest(SKIP)) continue;
+			if (el.closest(SKIP) || (kept && attrs.has(el))) continue;
 			const saved = attrs.get(el) ?? {};
 			for (const a of ATTRS) {
 				if (!el.hasAttribute(a)) continue;
@@ -108,17 +110,18 @@
 
 	const title = document.title;
 	const lang = () => { document.documentElement.lang = mode === "cyr" ? "sr-Cyrl" : "sr-Latn"; };
-	function set(m) {
+	function set(m, kept) {
 		mode = m;
 		try { localStorage.setItem(KEY, m); } catch (e) {}
 		lang();
 		document.title = convert(title);
-		apply(document.body);
+		apply(document.body, kept);
 		window.pismoButton();
 	}
 
 	// Loaded in <head> (base.html): each node is converted as the parser adds it, before any frame shows it (an
-	// observer's callback runs first), so neither script flashes. Then the whole page once more, when it is parsed.
+	// observer's callback runs first), so neither script flashes. Then the whole page once more, when it is parsed, for
+	// the text the parser added to after converting it (kept: what is shown as converted is left alone).
 	// Our own changes are to text (characterData), which this does not watch, so it cannot loop.
 	new MutationObserver((records) => {
 		for (const r of records) for (const n of r.addedNodes) apply(n);
@@ -127,6 +130,6 @@
 		if (e.target.closest("#pismo")) set(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
 	});
 	lang();
-	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => set(mode));
+	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => set(mode, true));
 	else set(mode);
 })();

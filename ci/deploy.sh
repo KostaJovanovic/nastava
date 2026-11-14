@@ -67,24 +67,36 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	for p in "${parts[@]:1}"; do
 		[[ $p == studije || $p == nastavnici || $p == predmeti ]] || { echo "unknown scraper: $p" >&2; exit 2; }
 	done
-	step tests uv run test/parsers_test.py
+	# Every test that needs no network or site (test/*_test.py), but the build's (before the build) and docs_test.py
+	# (it downloads attachments). A failure stops the run here: a broken parser must not scrape.
+	run_tests() {  # in a function set -e is off: each failure returns itself
+		local t
+		for t in test/*_test.py; do
+			[[ $t == test/build_test.py || $t == test/docs_test.py ]] && continue
+			uv run -q "$t" || return
+		done
+	}
+	step tests run_tests
 	# The newest post before the scrape: the posts after it get a web push once published (ci/push.py).
 	before=$(uv run -q ci/push.py last | tr -d '\r') || before=
 	print=$(uv run -q ci/plan.py fingerprint | tr -d '\r')
 	uv run -q ci/runs.py snap || true
-	step nastava uv run nastava.py sync
+	step nastava uv run scrapers/nastava.py sync
 	# Right after the scrape, so a post made since then does not count as missing.
-	step stats uv run nastava.py stats || failed+=(stats)
+	step stats uv run scrapers/nastava.py stats || failed+=(stats)
 	# The news change daily too, and all of them are ~46 requests.
-	step vesti uv run vesti.py sync || failed+=(vesti)
+	step vesti uv run scrapers/vesti.py sync || failed+=(vesti)
 	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
-	step cent uv run cent.py sync || failed+=(cent)
+	step cent uv run scrapers/cent.py sync || failed+=(cent)
 	# The other departments' sites, every run as cent (a subject's material changes with its posts): ~400 requests,
 	# ~3-4 minutes.
-	step katedre uv run katedre.py sync || failed+=(katedre)
+	step katedre uv run scrapers/katedre.py sync || failed+=(katedre)
 	for p in "${parts[@]:1}"; do
-		step "$p" uv run "$p.py" sync || failed+=("$p")
+		step "$p" uv run "scrapers/$p.py" sync || failed+=("$p")
 	done
+	# /statistika/'s word cloud, made again when a week old (pages/build.py words): it goes up with the state, and the
+	# builds of the week skip it. Not in the fingerprint: a run that changed nothing else does not save it (the next does).
+	step words uv run -q pages/build.py words nastava.db || failed+=(words)
 	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time. Rows
 	# the pull kept from this PC (ci/state_merge.py, $RUN_DIR/merged) are a change the saved state lacks.
 	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" && ! -s $RUN_DIR/merged ]]; then
@@ -94,6 +106,8 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	fi
 fi
 
+# build.py's asserts (they ran with the build until they moved to test/): a failure stops the build, as it did.
+step build-tests uv run -q test/build_test.py
 step build uv run pages/build.py nastava.db pages/.build
 
 name=site-$(date -u +%Y%m%d-%H%M%S).tar.gz
