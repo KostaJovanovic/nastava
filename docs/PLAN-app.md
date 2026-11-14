@@ -11,7 +11,7 @@ Cloud Messaging (FCM) next to it.
 
 ## Design
 
-1. **Shell loads the live site.** `capacitor.config` sets `server.url` to `https://nastava.masinci.org`, so there is
+1. **Shell loads the live site.** `capacitor.config` sets `server.url` to `https://masinci.org`, so there is
    no bundled copy to go stale after a deploy. Capacitor gives that page its native bridge, so `site.js` uses the
    global `Capacitor.Plugins` (no npm build in `pages/`). The project lives in `app/` (package.json, capacitor.config,
    generated `android/`). The back button goes back through history by default.
@@ -28,9 +28,13 @@ Cloud Messaging (FCM) next to it.
    - Once, by hand: a Firebase project, `google-services.json` in `app/android/app/`, and the service account JSON as a
      GitHub secret.
 
-3. **External links.** By default Capacitor opens a navigation to another host with an Android intent, which means
-   the default browser; `target=_blank` should end up there too. In the app, skip the "leaving the site" dialog.
-   Needs a check on a phone, especially the PDF attachments on the faculty site.
+3. **External links: always the phone's browser app, never inside the app** (the user's requirement: a link that
+   opens in the app makes it feel half-done). Not left to Capacitor's defaults: in the app, `site.js` catches every
+   click on a link to another host (`target=_blank` too) and hands it to `AppLauncher.openUrl` (`@capacitor/app-launcher`),
+   an Android intent to the default browser. No "leaving the site" dialog in the app. Not `@capacitor/browser`: that
+   is a Custom Tab, inside the app. Downloads too: the WebView does not download by itself, so `/files/` (mail and
+   Teams attachments) and the faculty site's PDFs also go to the browser. Check on a phone: a link in a post, a
+   PDF attachment, a `/files/` download, the faculty site's links in /link/.
 
 4. **Icons and build.** The manifest only has `favicon.svg`; `@capacitor/assets` makes the Android icons from one
    1024px PNG. Current Capacitor (7/8) needs JDK 21 (installed: 17). The release signing key stays outside the repo.
@@ -46,23 +50,26 @@ device.
 | `site.js`: native push alongside web push | ~30 lines | Easy |
 | Worker: accept FCM tokens | ~10 lines | Easy |
 | `push.py`: send through FCM v1 | ~30 lines + `google-auth` | Medium (OAuth token, error codes) |
-| External links to the system browser | probably 0, maybe a small native override | Unknown until tested |
+| External links and downloads to the browser app | ~15 lines in `site.js` + `@capacitor/app-launcher` | Easy; check on a phone |
 | JDK 21, Firebase, secret, icons, signing key | none | Tedious |
 
 Risks:
 - Capacitor might not give its bridge to the remote site (extra config).
-- `target=_blank` might stay in the WebView (a few native lines in Java or Kotlin).
+- A navigation `site.js` does not see (a redirect, a form) could still open another host in the WebView; Capacitor
+  hands those to an intent by default, to confirm on the phone.
 - Google Play's 14-day closed test, if the app goes there.
 
-## Alternative: TWA (Bubblewrap)
+## Ruled out (2026-11-14)
 
-A Trusted Web Activity runs the site in Chrome, so the current web push works unchanged: no Firebase and no changes
-to `site.js`, the Worker or `push.py`. A few hours of work. The trade-off: outside links open in a Custom Tab (the
-default browser shown inside the app), not by switching to the browser app.
+- **TWA (Bubblewrap):** the current web push would work unchanged, but outside links open in a Custom Tab, inside
+  the app. That is the half-done feel the user does not want.
+- **Tauri 2:** no official push plugin on Android (community ones only), a remote site needs its own permission
+  config, and Rust + NDK is a heavier setup. Its gain, desktop apps from the same project, is not wanted: a desktop
+  browser already has the site's web push.
 
 ## Open decisions
 
-1. Capacitor or TWA. Leaning Capacitor: it hands links off to the browser and leaves room for native features.
+1. ~~Capacitor or TWA~~: Capacitor (above).
 2. Distribution: APK as a GitHub release (sideloaded), or Google Play ($25, 12 testers for 14 days on a new personal
    account, possible rejection as a website wrapper). Leaning GitHub releases.
 3. App ID: `org.masinci.nastava`?
@@ -70,5 +77,5 @@ default browser shown inside the app), not by switching to the browser app.
 
 ## Check first
 
-On a phone, before any `site.js` work: does Capacitor 8 give the bridge to a remote `server.url` without extra
-settings, and does `target=_blank` reach the system browser?
+On a phone, before any `site.js` work: does Capacitor 8 give the bridge (`Capacitor.Plugins`) to a remote
+`server.url` without extra settings? The link catching above depends on it.
