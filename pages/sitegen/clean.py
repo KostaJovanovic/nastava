@@ -80,9 +80,14 @@ def cent_tidy(html):
         h = t.select_one(".et_pb_toggle_title")
         links = [a.extract() for a in h.select("a[href]")] if h else []
         mark, title = (h.select_one(".accordion_mark"), h.select_one(".accordion_title")) if h else (None, None)
+        body = t.select_one(".et_pb_toggle_content")
+        # No title (cent shows such an item open): its content in place, not behind an empty fold.
+        if not txt(h) and not links:
+            t.replace_with(body.extract() if body else "")
+            continue
         d = soup.new_tag("details", attrs={"class": "cent-acc"})
         d.append(head("summary", txt(mark), txt(title) if title or mark else txt(h), links, txt(h and h.select_one(".accordion-nedelja"))))
-        if body := t.select_one(".et_pb_toggle_content"):
+        if body:
             d.append(body.extract())
         t.replace_with(d)
     for row in soup.select(".et_pb_row:has(> #at-col-head)"):

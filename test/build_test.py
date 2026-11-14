@@ -489,6 +489,9 @@ assert _ct == (
     'rel="noopener noreferrer"><span class="att__t att__t--video">▶</span>video</a></li></ul></div></details>'
     '<div class="cent-c"><p>c</p></div>'
 ), _ct
+# A toggle without a title: its content in place, no empty fold.
+_ct = cent_tidy('<div class="et_pb_toggle"><h4 class="et_pb_toggle_title"></h4><div class="et_pb_toggle_content"><p>x</p></div></div>')
+assert "<details" not in _ct and "<p>x</p>" in _ct, _ct
 _s, _f = split_page(f"<html><title>T</title><meta>{HEAD_END}<x>{MAIN}a</main><p></main></html>")
 assert (_s, _f) == (
     f"<html><title></title><x>{MAIN}<!--main--></main></html>",
