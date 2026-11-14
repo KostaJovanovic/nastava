@@ -1006,10 +1006,14 @@ a.mh__ki:hover { color: var(--accent-t); }
 .tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: var(--accent); color: var(--accent-fg); font-size: 11.5px; font-weight: 800; line-height: 18px; white-space: nowrap; vertical-align: 1px; }
 .post__meta .tag { margin-left: 0; }
 /* The mark of what comes from a department's site, not the board (build.py load_cent): a row's author, a page. */
-.src { display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--accent); color: var(--accent-fg); font: 700 11px/18px var(--sans); vertical-align: 1px; }
+/* An outline in its colour, the text the same (not filled: a filled red read as a warning). The border is in the
+   height: 16px + 2 × 1px. */
+.src { display: inline-block; padding: 0 5px; border: 1px solid currentColor; border-radius: 4px; color: light-dark(var(--accent), #f07a94); font: 700 11px/16px var(--sans); vertical-align: 1px; }
 /* The other sources in their own colours (build.py VIA): Teams' purple, the students' webmail's slate. */
-.src--teams { background: #5b5fc7; color: #fff; }
-.src--webmail { background: #4b535d; color: #fff; }
+.src--teams { color: light-dark(#5b5fc7, #a9acf2); }
+.src--webmail { color: light-dark(#4b535d, #b4bcc6); }
+/* In a list's coloured title bar: white, as its text. */
+.fb__h .src { color: inherit; }
 /* Where a subject's material is besides the board, from its posts' links (build.py mark_elsewhere): Teams, Drive, … */
 .ext { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--dim); font-size: 11.5px; line-height: 18px; white-space: nowrap; vertical-align: 1px; text-decoration: none; }
 .mh__sub .ext { margin: 0 0 0 4px; }
@@ -1129,7 +1133,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   /* The 32px icon as far from the row's left edge as from its top and bottom: (the 3-line row - 32px) / 2, less the 12px padding. */
   /* Every table's the same, so the icons line up from one table to the next. */
   .fr__i { grid-row: auto; margin-left: calc((3 * 12.5px * 1.3 + 12px - 32px) / 2 - 12px); }
-  .fr__last .src { line-height: 14px; }
+  .fr__last .src { line-height: 12px; }
   /* The last post's title is a pointer, quieter than the row's own title. */
   .fr__last .lt { display: block; color: var(--link); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
   .fr__last .lt:hover { color: var(--accent-t); }
@@ -1181,9 +1185,9 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .falling .lists { transition: --hide .5s ease-out; }
 /* will-change: their own layer, so --drop following Studije's animation (search.html) moves them, not repaints them. */
 .fade .lists { --hide: 1; translate: 0 var(--drop, 100vh); will-change: translate; }
-/* The source tags (cent, ie, teams…) without their colours until the reveal: the row's background, the line's text. */
-:is(.fade, .faded) .lists .src { transition: background-color .5s ease-out, color .5s ease-out; }
-.fade .lists .src { background-color: transparent; color: inherit; }
+/* The source tags (cent, ie, teams…) without their colours until the reveal: the line's text, outline too. */
+:is(.fade, .faded) .lists .src { transition: color .5s ease-out; }
+.fade .lists .src { color: inherit; }
 /* So is Najnoviji threadovi's title bar in the light theme (the dark one's is dark already): the light grey of the side
    panel's Statistika bars (.hist i); its text stays white. */
 :is(.fade, .faded) .lists > :first-child .fb__h { transition: background-color .5s ease-out; }
