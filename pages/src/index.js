@@ -88,6 +88,10 @@ const B64URL = /^[A-Za-z0-9_-]{1,200}$/;
 // A teacher page's slug (build.py set_hrefs): URL-safe characters.
 const TEACHER = /^[A-Za-z0-9._~-]{1,80}$/;
 
+// The count of browsers with notifications on (/statistika/): one row per subscription in D1's push_subs. Only a
+// count: a failure here (no DB, no table yet) never stops a subscription or a send.
+const counted = (env, statements) => env.DB ? env.DB.batch(statements(env.DB)).catch(() => {}) : null;
+
 async function push(request, env, url) {
 	const status = (code) => new Response(null, { status: code });
 	if (!env.PUSH) return status(503);
@@ -96,6 +100,8 @@ async function push(request, env, url) {
 		// 500 a call (a KV read each, under the 1000 a Worker call may make); ci/push.py asks again with the cursor.
 		const page = await env.PUSH.list({ limit: 500, cursor: url.searchParams.get("cursor") || undefined });
 		const subs = await Promise.all(page.keys.map(async (k) => ({ endpoint: k.name, ...(await env.PUSH.get(k.name, "json")) })));
+		// The count's list (push_subs) gets every subscription listed: the ones from before it, and any it missed.
+		if (subs.length) await counted(env, (db) => subs.map((x) => db.prepare("INSERT OR IGNORE INTO push_subs (endpoint) VALUES (?)").bind(x.endpoint)));
 		return Response.json({ subs, cursor: page.list_complete ? null : page.cursor });
 	}
 	if (request.method !== "POST") return status(405);
@@ -109,6 +115,7 @@ async function push(request, env, url) {
 	if (typeof endpoint !== "string" || endpoint.length > 500 || !PUSH_HOST.test(endpoint) || !Array.isArray(s)) return status(400);
 	if (!s.length) {
 		await env.PUSH.delete(endpoint);
+		await counted(env, (db) => [db.prepare("DELETE FROM push_subs WHERE endpoint = ?").bind(endpoint)]);
 		return status(204);
 	}
 	if (!B64URL.test(keys?.p256dh) || !B64URL.test(keys?.auth) || s.length > 300 || !s.every((h) => SUBJECT.test(h))) return status(400);
@@ -117,12 +124,14 @@ async function push(request, env, url) {
 		s.includes(h) && Array.isArray(ts) && ts.length && ts.length <= 50 && ts.every((x) => typeof x === "string" && TEACHER.test(x))));
 	if (!picked) return status(400);
 	await env.PUSH.put(endpoint, JSON.stringify(t ? { k: keys.p256dh, a: keys.auth, s, t } : { k: keys.p256dh, a: keys.auth, s }));
+	await counted(env, (db) => [db.prepare("INSERT OR IGNORE INTO push_subs (endpoint) VALUES (?)").bind(endpoint)]);
 	return status(204);
 }
 
 // Visitor counter, as on valjdakosta.com: each IP counts once per three-day period (D1 binding DB, schema.sql). The
-// IPs older than that are deleted, so the total is kept on its own. site.js posts from every page; /statistika/ shows n.
-async function visit(request, env) {
+// IPs older than that are deleted, so the total is kept on its own. site.js posts from every page; /statistika/ shows n,
+// and asks (?push) for push too: the browsers with notifications on (push_subs).
+async function visit(request, env, url) {
 	if (request.method !== "POST") return new Response(null, { status: 405 });
 	if (!env.DB) return new Response(null, { status: 503 });
 	const ip = request.headers.get("CF-Connecting-IP") || "";
@@ -136,7 +145,9 @@ async function visit(request, env) {
 		]);
 	}
 	const { n } = await env.DB.prepare("SELECT n FROM visit_total").first();
-	return Response.json({ n });
+	if (!url.searchParams.has("push")) return Response.json({ n });
+	const row = await env.DB.prepare("SELECT count(*) AS push FROM push_subs").first().catch(() => null);
+	return Response.json(row ? { n, push: row.push } : { n });
 }
 
 // The automatic update (wrangler.toml crons): GitHub's own schedule started runs 5–8 hours late, a dispatch starts at
@@ -163,7 +174,7 @@ export default {
 		const url = new URL(request.url);
 		// Before the cache: these are not pages.
 		if (url.pathname === "/push" || url.pathname === "/push/subs") return push(request, env, url);
-		if (url.pathname === "/visit") return visit(request, env);
+		if (url.pathname === "/visit") return visit(request, env, url);
 		if (request.method !== "GET" && request.method !== "HEAD") {
 			return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
 		}

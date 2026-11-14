@@ -50,6 +50,49 @@ test("a subscription is kept, read back with the key, and dropped with no subjec
 	assert.equal(env.PUSH.m.size, 0);
 });
 
+// D1 as far as the count needs it: push_subs as a set, visit_total as n; no table (made = false) throws, as D1 would.
+function d1(made = true) {
+	const subs = new Set();
+	const stmt = (sql, args = []) => ({
+		bind: (...a) => stmt(sql, a),
+		run: async () => {
+			if (!made && /push_subs/.test(sql)) throw new Error("no such table: push_subs");
+			if (/^INSERT OR IGNORE INTO push_subs/.test(sql)) subs.add(args[0]);
+			else if (/^DELETE FROM push_subs/.test(sql)) subs.delete(args[0]);
+			return { meta: { changes: 0 } };
+		},
+		first: async () => {
+			if (!made && /push_subs/.test(sql)) throw new Error("no such table: push_subs");
+			return /push_subs/.test(sql) ? { push: subs.size } : { n: 7 };
+		},
+	});
+	return { subs, prepare: (sql) => stmt(sql), batch: async (list) => { for (const s of list) await s.run(); } };
+}
+
+test("the count of browsers with notifications: on subscribe, off, the listing; only /visit?push gives it", async () => {
+	const env = { PUSH: kv(), PUSH_KEY: "k", DB: d1() };
+	const visit = async (q = "?push") => (await call(env, `/visit${q}`, { method: "POST" })).json();
+	await post(env, { endpoint: EP, keys, s: [S] });
+	await post(env, { endpoint: EP, keys, s: [S, "/predmet/oas-mi/fizika/"] }); // a change of subjects: still one
+	assert.deepEqual(await visit(), { n: 7, push: 1 });
+	assert.deepEqual(await visit(""), { n: 7 });
+	await post(env, { endpoint: EP, s: [] });
+	assert.deepEqual(await visit(), { n: 7, push: 0 });
+	// One made before the count: the listing (ci/push.py, every run) adds it.
+	env.PUSH.m.set(EP, JSON.stringify({ k: keys.p256dh, a: keys.auth, s: [S] }));
+	await call(env, "/push/subs", { headers: { Authorization: "Bearer k" } });
+	assert.deepEqual(await visit(), { n: 7, push: 1 });
+});
+
+test("no push_subs table yet: subscriptions and the listing still work, /visit has no count", async () => {
+	const env = { PUSH: kv(), PUSH_KEY: "k", DB: d1(false) };
+	assert.equal((await post(env, { endpoint: EP, keys, s: [S] })).status, 204);
+	const r = await call(env, "/push/subs", { headers: { Authorization: "Bearer k" } });
+	assert.equal((await r.json()).subs.length, 1);
+	assert.deepEqual(await (await call(env, "/visit?push", { method: "POST" })).json(), { n: 7 });
+	assert.equal((await post(env, { endpoint: EP, s: [] })).status, 204);
+});
+
 test("a subscription the Worker must refuse", async () => {
 	const env = { PUSH: kv(), PUSH_KEY: "k" };
 	for (const body of [
