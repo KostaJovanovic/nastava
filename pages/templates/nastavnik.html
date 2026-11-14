@@ -113,9 +113,10 @@
   </div>
 </section>
 {%- endif %}
-{%- if t.bio and past %}
+{#- A katedra site's text is long (up to 28 paragraphs): always folded, under the summary. -#}
+{%- if t.bio and past and not bio_site %}
 <section class="tp__sec" id="biografija">
-  <div class="tp__h"><h2>{{ ('Sa sajta Katedre' if bio_site else 'Iz monografije fakulteta') if t.summary else 'Biografija' }}</h2></div>
+  <div class="tp__h"><h2>{{ 'Iz monografije fakulteta' if t.summary else 'Biografija' }}</h2></div>
   <div class="tp__biotext">{{ bio_body() }}</div>
 </section>
 {%- endif %}
@@ -223,7 +224,7 @@
 </section>
 {%- endif %}
 
-{%- if t.bio and not past %}
+{%- if t.bio and (not past or bio_site) %}
 <details class="tp__bio">
   <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{{ 'Biografija sa sajta ' ~ bio_site if bio_site else 'Biografija iz monografije fakulteta (2023)' }}</summary>
   <div class="tp__biotext">{{ bio_body() }}</div>
