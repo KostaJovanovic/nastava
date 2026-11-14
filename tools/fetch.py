@@ -33,10 +33,21 @@ def js(name):
 def run(page, script, out):
     """Run a console script in the page and save every file it downloads into out."""
     downloads = []
-    page.on("download", downloads.append)
-    page.evaluate(js(script))
-    page.wait_for_timeout(2000)  # the last click's download event
-    page.remove_listener("download", downloads.append)
+    on_download = lambda d: downloads.append(d)  # a plain function: Playwright can't wrap list.append
+
+    # Only the script's own messages, not the page's noise ("[Auth] …", failed loads).
+    def on_console(m):
+        if not re.match(r"\[|Failed to load|Unhandled|An iframe|Banner not shown", m.text):
+            print(" ", m.text)
+
+    page.on("download", on_download)
+    page.on("console", on_console)
+    try:
+        page.evaluate(js(script))
+        page.wait_for_timeout(2000)  # the last click's download event
+    finally:
+        page.remove_listener("download", on_download)
+        page.remove_listener("console", on_console)
     saved = []
     for d in downloads:
         d.save_as(out / d.suggested_filename)
@@ -86,7 +97,6 @@ if __name__ == "__main__":
         ctx = p.chromium.launch_persistent_context(PROFILE, channel="msedge", headless=False, accept_downloads=True,
                                                    no_viewport=True)
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
-        page.on("console", lambda m: print(" ", m.text))
         try:
             teams(page, out) if what == "teams" else moodle(page, out, sys.argv[2:])
         finally:
