@@ -1,6 +1,7 @@
 # Plan: refactor (untangle the code, cut the waste)
 
-Status: agreed 2026-11-13, made full 2026-11-14 (checked against the code that day). Nothing built.
+Status: agreed 2026-11-13, made full 2026-11-14. Built on branch `refactor` (worktree `../nastava-refactor`) on
+2026-11-14: step 0 and A1–A6 done (see "As built"); A7 waits for the user (the UI work), then A8, part B.
 
 Part A must not change the site: every page byte for byte the same (the check below), except where a step says what
 may differ. Part B changes what the build or the browser does, each step with its own check. The open question at
@@ -56,6 +57,26 @@ and once per part, `uv run pages/serve.py <port>` opens a page (kill only that s
 - `nastavnici.py`: the live sync plus `history`, a one-time job (~200 lines) with its own fetching.
 - Asserts in the `__main__` of 14 files (~185), run on each build or each run.
 - `site.js`: one 1,192-line IIFE on every page; the `/mojipredmeti/` picker (~270 lines) serves one page.
+
+## As built (2026-11-14), where it differs from the steps below
+
+- **The check:** `devcheck.py` already failed on `main` (748 subject pages: `katedra_pages` is filled by
+  render_katedre, after the subject pages are written, so a build lacks the katedra link dev mode shows). A bug of
+  `main`, not fixed here (it changes the site); the check holds "the same 748 pages differ, the same way". The
+  reference is built from `git archive main` of the day, rebuilt after each merge.
+- **A1:** ruff also formats Python inside `.md` code blocks: `ruff.toml` excludes `*.md`.
+- **A2:** the scrapers' own page fetchers stay (studije's 403 as missing, predmeti's cache, the sleep before or after
+  differ on purpose); `common.py` has no shared `get`. A scraper may import the one of its own source
+  (documents → nastava, site_files → studije). `name_icons` and `is_html_page` moved to `common.py`. `pismo.js` got
+  no comment (its asset hash would change every page); `translit.py` names it.
+- **A4:** history keeps its own `get` (its retries are its own); `nastavnici.open_db()` is the setup both use.
+- **A5:** the loaders are flat modules (`load_board.py`, `load_sources.py`, `load_teachers.py`, `load_book.py`), not a
+  `load/` package; `LINK` went to `text.py`; `wiki` before `schedule`. `output.py`'s `HERE` is `pages/`;
+  `build.py` keeps its own. `devcheck.py` patches the writers in every module that holds them. `write()`'s ~18%:
+  pathlib's `relative_to`, now a string slice (same URLs).
+- **A6:** `docs_test.py` downloads attachments: not run by `deploy.sh`. The browser tests write their screenshots
+  where they did.
+- **Not done in A3:** the memory notes that name moved files (`PLAN.md`): to change when the branch is merged.
 
 ## Step 0: before the refactor (bugs, not refactor)
 
