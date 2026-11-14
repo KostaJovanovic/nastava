@@ -1708,10 +1708,7 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 
 /* The theme switch (site.js): no cross-fade, the circle's clip is the whole effect; going light, the old (dark) page
    is the one on top, rolling out. */
-::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-/* The pictures take no clicks or scrolls: the page under them goes on working while the circle moves. */
-::view-transition { pointer-events: none; }
-:root[data-vt="light"]::view-transition-old(root) { z-index: 1; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }:root[data-vt="light"]::view-transition-old(root) { z-index: 1; }
 /* Going dark, the dark page is hidden until its circle starts moving, so it never shows whole for a frame. */
 :root[data-vt="dark"]::view-transition-new(root) { clip-path: circle(0 at 0 0); }
 /* iOS Safari leaves the page's background (body's, on the canvas) out of the pictures: the live one turned dark at

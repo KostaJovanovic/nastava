@@ -1,26 +1,36 @@
 {% extends "base.html" %}
 {% set origin = 'https://www.mas.bg.ac.rs/' %}
+{% from "rows.html" import guide_card %}
 
-{#- The archived pages of www.mas.bg.ac.rs that no other part of the site shows (studije.py wiki_pages, build.py
-    render_wiki_pages), as Linkovi's cards (link.html): groups, (name, icon, [page]) by what the pages are; a page:
-    href, title, gone, path (its address on the wiki, the card's second line). -#}
+{#- The archived pages of www.mas.bg.ac.rs (studije.py wiki_pages, build.py render_wiki_pages): the student's are on
+    /pomoc/; here the pages to start from by what they are (build.py MF_GROUPS; groups: (name, [card]), rows.html
+    guide_card), then every page, folded (rest: href, title, gone, path). -#}
 {% block title %}Sajt fakulteta{% endblock %}
-{% block description %}Arhiva stranica sa www.mas.bg.ac.rs: upis, studiranje, propisi, akreditacija, izbori u zvanja, biblioteka i nauka, sa svim ranijim verzijama.{% endblock %}
+{% block description %}Arhiva stranica sa www.mas.bg.ac.rs: organi fakulteta, dokumenti, izbori u zvanja, akreditacija, nauka, FME Transactions, biblioteka i obuke, sa svim ranijim verzijama.{% endblock %}
 
 {% block main %}
 <div class="mh">
   <h1 id="title">Sajt fakulteta</h1>
-  <p class="mh__sub">{{ total | n }} stranica sa <a href="https://www.mas.bg.ac.rs/" rel="noopener" target="_blank">www.mas.bg.ac.rs</a>, sa svim ranijim verzijama</p>
+  <p class="mh__sub">Stranice sa <a href="https://www.mas.bg.ac.rs/" rel="noopener" target="_blank">www.mas.bg.ac.rs</a>, sa svim ranijim verzijama</p>
 </div>
-{%- for name, icon, rows in groups %}
-<section class="lk" aria-labelledby="mf-{{ loop.index }}">
-  <h2 class="lk__h" id="mf-{{ loop.index }}">{{ name }} <small>{{ rows | length }}</small></h2>
+<section class="lk" aria-labelledby="mf-0">
+  <h2 class="lk__h" id="mf-0">Za studente</h2>
   <ul class="lk__grid">
-    {%- for p in rows %}
-    <li><a class="lk__a{% if p.gone %} lk__a--down{% endif %}" href="{{ p.href }}">
-      {%- if p.gone %}<span class="lk__down">uklonjeno</span>{% endif %}<span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ icon }}"></use></svg></span><span class="lk__t"><b>{{ p.title }}</b><small data-notx>{{ p.path }}</small></span></a></li>
-    {%- endfor %}
+    {{- guide_card(dict(name='Pomoć', line='Upis, upis u višu godinu, uplate, prijava ispita, email, eduroam', href='/pomoc/', icon='help')) }}
+  </ul>
+</section>
+{%- for name, cards in groups %}
+<section class="lk" aria-labelledby="mf-{{ loop.index }}">
+  <h2 class="lk__h" id="mf-{{ loop.index }}">{{ name }}</h2>
+  <ul class="lk__grid">
+    {%- for c in cards %}{{ guide_card(c) }}{% endfor %}
   </ul>
 </section>
 {%- endfor %}
+<details class="sg lk">
+  <summary class="sg__h">Sve stranice <span>· {{ rest | length }}</span></summary>
+  <ul class="lk__grid">
+    {%- for p in rest %}{{ guide_card(dict(name=p.title, line=p.path, href=p.href, icon='file', gone=p.gone), line_notx=true) }}{% endfor %}
+  </ul>
+</details>
 {% endblock %}

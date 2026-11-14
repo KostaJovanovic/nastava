@@ -24,6 +24,7 @@ Sections, top to bottom:
 Touches: build.py (render + per-icon SVGs + one assert that every symbol got written), a new templates/stil.html,
 style.css (grid and swatch styles), base.html footer, o_sajtu.html.
 
-[ ] verzije.md entry: not added. verzije.md lists commits to 317 and build.py fails on a gap, so it waits
-    for the next batch of entries (318 on).
-[ ] The section posters (Claude Design PNGs) use other fonts than these; add them if their files are found.
+[x] verzije.md entry: deferred by the user's choice. verzije.md lists commits to 317 and build.py fails on a gap,
+    so it goes in with the user's next batch of entries (318 on).
+[x] The section posters' (Claude Design PNGs) own fonts: dropped by the user's choice; /stil/ shows those posters
+    as images only.
