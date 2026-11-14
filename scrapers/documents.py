@@ -30,10 +30,10 @@ from urllib.parse import unquote
 
 import requests
 
-from common import DELAY, is_html_page, session
+from common import DELAY, ROOT, is_html_page, session
 from nastava import BASE, WORKERS, connect
 
-FILES = os.getenv("FILES", os.path.join(os.path.dirname(os.path.abspath(__file__)), "files"))
+FILES = os.getenv("FILES", str(ROOT / "files"))
 TEXT_LIMIT = 5_000_000
 MEMBER_LIMIT = 100_000_000
 SOFFICE = shutil.which("soffice") or r"C:\Program Files\LibreOffice\program\soffice.exe"

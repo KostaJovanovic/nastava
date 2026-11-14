@@ -72,18 +72,18 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	before=$(uv run -q ci/push.py last | tr -d '\r') || before=
 	print=$(uv run -q ci/plan.py fingerprint | tr -d '\r')
 	uv run -q ci/runs.py snap || true
-	step nastava uv run nastava.py sync
+	step nastava uv run scrapers/nastava.py sync
 	# Right after the scrape, so a post made since then does not count as missing.
-	step stats uv run nastava.py stats || failed+=(stats)
+	step stats uv run scrapers/nastava.py stats || failed+=(stats)
 	# The news change daily too, and all of them are ~46 requests.
-	step vesti uv run vesti.py sync || failed+=(vesti)
+	step vesti uv run scrapers/vesti.py sync || failed+=(vesti)
 	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
-	step cent uv run cent.py sync || failed+=(cent)
+	step cent uv run scrapers/cent.py sync || failed+=(cent)
 	# The other departments' sites, every run as cent (a subject's material changes with its posts): ~400 requests,
 	# ~3-4 minutes.
-	step katedre uv run katedre.py sync || failed+=(katedre)
+	step katedre uv run scrapers/katedre.py sync || failed+=(katedre)
 	for p in "${parts[@]:1}"; do
-		step "$p" uv run "$p.py" sync || failed+=("$p")
+		step "$p" uv run "scrapers/$p.py" sync || failed+=("$p")
 	done
 	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time. Rows
 	# the pull kept from this PC (ci/state_merge.py, $RUN_DIR/merged) are a change the saved state lacks.

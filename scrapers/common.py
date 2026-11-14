@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent  # the repo (this file is in scrapers/)
 DB = os.getenv("DB", str(ROOT / "nastava.db"))
 # The pause between requests to www.mas.bg.ac.rs, the board and the news (cent.py and katedre.py have their own).
 DELAY = float(os.getenv("DELAY", "0.5"))

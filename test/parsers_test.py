@@ -12,7 +12,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scrapers"))
 import nastava  # noqa: E402
 import cent  # noqa: E402
 import katedre  # noqa: E402

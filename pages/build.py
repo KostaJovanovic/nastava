@@ -31,7 +31,7 @@ from jinja2.utils import htmlsafe_json_dumps
 from markupsafe import Markup, escape
 
 HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parent / "scrapers"))
 from studije import PAGES as STUDY_PAGES, SHOWN, SITE as STUDY_SITE, media_path  # noqa: E402
 from nastavnici import photo_urls  # noqa: E402
 from translit import fold, lat  # noqa: E402
@@ -1999,7 +1999,7 @@ OTHER_TEACHERS += [
 ]
 
 
-HISTORY = Path(__file__).resolve().parent.parent / "nastavnici-istorija.jsonl"
+HISTORY = HERE.resolve().parent / "data" / "nastavnici-istorija.jsonl"
 # Portraits of teachers without one, from the monograph, the old site, In memoriam, Wikipedia, SANU: page id, the
 # image's key in the photos table, the page it is on and its caption there.
 FOTOS = HISTORY.with_name("nastavnici-foto.jsonl")

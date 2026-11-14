@@ -29,7 +29,7 @@ netsh advfirewall firewall add rule name="Nastava Port %PORT%" dir=in action=all
 
 :ready
 if not exist "nastava.db" (
-  echo [err]  no nastava.db - run "bash ci/state.sh pull" or "uv run nastava.py sync" first
+  echo [err]  no nastava.db - run "bash ci/state.sh pull" or "uv run scrapers/nastava.py sync" first
   goto fail
 )
 set "MODE="

@@ -27,9 +27,10 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
+from common import ROOT
 from translit import FOLD
 
-MAIL = Path(__file__).resolve().parent / "mail"
+MAIL = ROOT / "mail"
 # A class (its group id) -> its subject's page.
 CLASSES = {
     "082939b7-8d05-4150-9f90-ba736597d7ef": "/predmet/oas-mi/masinsko-inzenjerstvo-i-odrzivi-razvoj/",  # 113, 2025/26

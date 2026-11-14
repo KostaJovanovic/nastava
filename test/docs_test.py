@@ -2,7 +2,7 @@
 
 import sys
 
-sys.path.insert(0, ".")
+sys.path.insert(0, "scrapers")
 import documents as d
 import nastava as n
 

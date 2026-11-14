@@ -20,11 +20,10 @@ from urllib.parse import quote, unquote, urljoin, urlsplit
 import requests
 from bs4 import BeautifulSoup
 
-from common import DB, FILE
+from common import DB, FILE, ROOT
 from studije import SITE as STUDY_SITE, media_path
 
-HERE = Path(__file__).resolve().parent
-OUT = HERE / "files" / "sites"
+OUT = ROOT / "files" / "sites"
 DELAY = float(os.getenv("DELAY", "0.3"))
 
 

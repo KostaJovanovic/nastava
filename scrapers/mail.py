@@ -29,7 +29,9 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-MAIL = Path(__file__).resolve().parent / "mail"
+from common import ROOT
+
+MAIL = ROOT / "mail"
 REPO, TAG = "KostaJovanovic/nastava", "mail"
 
 
