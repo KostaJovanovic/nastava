@@ -35,10 +35,11 @@ def run(page, script, out):
     downloads = []
     on_download = lambda d: downloads.append(d)  # a plain function: Playwright can't wrap list.append
 
-    # Only the script's own messages, not the page's noise ("[Auth] …", failed loads).
+    # Only the script's own messages (run by evaluate: no page file of its own), not the page's noise.
     def on_console(m):
-        if not re.match(r"\[|Failed to load|Unhandled|An iframe|Banner not shown", m.text):
-            print(" ", m.text)
+        url = (m.location or {}).get("url") or ""
+        if not url or "playwright" in url or "__puppeteer" in url:
+            print(" ", m.text, flush=True)
 
     page.on("download", on_download)
     page.on("console", on_console)
@@ -88,7 +89,8 @@ def moodle(page, out, urls):
 
 
 if __name__ == "__main__":
-    what = sys.argv[1] if len(sys.argv) > 1 else ""
+    sys.stdout.reconfigure(encoding="utf-8")  # the classes' names (š, ž), not cp1252's �
+    what =sys.argv[1] if len(sys.argv) > 1 else ""
     if what not in ("teams", "moodle") or (what == "moodle" and len(sys.argv) < 3):
         sys.exit(__doc__)
     out = Path.home() / "Downloads" / f"nastava-{what}-{date.today()}"
