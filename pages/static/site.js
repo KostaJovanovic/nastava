@@ -253,7 +253,9 @@
      what is on the screen. Elsewhere, or with reduced motion, change() at once. */
   var studijeAnims = [];
   // h1: the card's height after the change, if measured already (at the click, before anything moves: a page-wide restyle).
-  var fadeStudije = function (change, h1) {
+  // ready: the followed subjects' rows for Najnoviji threadovi (fillMine), loading since the click when late: then its
+  // new height is known only once they are in, and it moves from there, in the time left.
+  var fadeStudije = function (change, h1, ready, late) {
     var card = d.querySelector('#res > .fb--forums'), ol = card && card.querySelector('.fb__rows');
     if (!ol || !ol.built || card.closest('.searching') || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
     // The card moves for all of it; the rows fade out for its first part and in for the rest, so both end together.
@@ -265,7 +267,7 @@
     // bar, as its rows swap with the followed subjects' (style.css .moji-only).
     var news = !d.documentElement.classList.contains('fade') && d.querySelector('#res > .lists > .fb:has([data-mine])');
     if (news) {
-      cards.push(news);
+      if (!late) cards.push(news);
       rows = rows.concat([].slice.call(news.querySelectorAll(':scope > :not(.fb__h)')));
     }
     // From what is on the screen: a flip mid-way starts where the last one got to.
@@ -282,8 +284,12 @@
     studijeAnims = outs.concat(moves);
     // The change once the fade out has ended (not a timer: it waits for a slow phone's frames too, as the card's move
     // does). A flip mid-way cancels these, and so this.
-    Promise.all(outs.map(function (a) { return a.finished; })).then(function () {
+    Promise.all(outs.map(function (a) { return a.finished; }).concat(ready || [])).then(function () {
       outs.forEach(function (a) { a.cancel(); });
+      if (news && late) {
+        var n0 = news.getBoundingClientRect().height, n1 = window.mojiAhead(function () { return news.getBoundingClientRect().height; });
+        moves.push(news.animate({ height: [n0 + 'px', n1 + 'px'] }, { duration: all - out.duration, easing: 'cubic-bezier(.4, 0, .2, 1)' }));
+      }
       change();
       // Each row to its own opacity now (a greyed smer's .45, head.js), ending with the move.
       studijeAnims = moves.concat(rows.map(function (r) {
@@ -317,10 +323,12 @@
     // time, for what is timed from it (search.html: the lists under Studije).
     var at = performance.now(), on = only.checked, h1 = studijeNext;
     studijeNext = null;
+    // On: Najnoviji threadovi's followed rows load now, while the rows fade out (late: not in yet).
+    var ready = on ? fillMine(true) : null, late = on && !mineIn;
     // Off: the lists under Studije fall back to their peek first (search.html fallFirst), then Studije changes; unless
     // the switch went back on meanwhile.
     (on || !window.fallFirst ? Promise.resolve() : window.fallFirst()).then(function () {
-      if (only.checked === on) fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); }, h1);
+      if (only.checked === on) fadeStudije(function () { d.dispatchEvent(new CustomEvent('moji', { detail: { at: at } })); }, h1, ready, late);
     });
   });
 
@@ -506,15 +514,20 @@
 
   // The /mojipredmeti/ picker: moji.js (that page only), with what it shares with the rest of the site.
   window.masinci = { el: el, izbor: izbor, mine: mine, keepMine: keepMine };
-  var fillMine = function () {
+  // The followed subjects whose rows are in (or coming), and that promise: the switch's click starts the load (on: the
+  // fetch runs while the rows fade out, fadeStudije), and the 'moji' after it finds them there.
+  var mineFor = null, mineLoad = null, mineIn = false;
+  var fillMine = function (on) {
     // Najnoviji threadovi's rows of the followed subjects (rows.html topic_rows mine), shown in place of its own only while
-    // "Samo moji predmeti" is on (head.js, style.css .moji-only). Filled while it is off too, so switching it on has
-    // them ready, and fadeStudije knows the card's height ahead (measureNext, again once they are in).
-    var ol = d.querySelector('[data-mine]'), list = mine();
-    if (!ol || !list.length) return;
+    // "Samo moji predmeti" is on (head.js, style.css .moji-only); only then loaded. on: it is being switched on.
+    var ol = d.querySelector('[data-mine]'), list = mine(), key = JSON.stringify(list.map(function (s) { return s.href; }));
+    if (!ol || !(on || (window.mojiNow && window.mojiNow.only))) return Promise.resolve();
+    if (key === mineFor) return mineLoad;
     var sec = ol.parentNode;
+    mineFor = key;
+    mineIn = false;
     // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
-    Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
+    return mineLoad = Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
         .catch(function () { return { rows: [] }; });
     })).then(function (all) {
@@ -523,14 +536,15 @@
       rows.sort(function (a, b) { return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0; });
       ol.innerHTML = rows.slice(0, 10).map(function (r) { return r[1]; }).join('');
       sec.querySelector('.moji__none').hidden = rows.length > 0;
+      if (mineFor === key) mineIn = true;
       measureNext();
     });
   };
   fillMine();
   // search.js puts the home page back when the search is cleared, as built: without these rows.
-  d.addEventListener('pocetna', fillMine);
+  d.addEventListener('pocetna', function () { mineFor = null; fillMine(); });
   d.addEventListener('pocetna', function () { window.mojiSort(); });
-  d.addEventListener('moji', fillMine);
+  d.addEventListener('moji', function () { fillMine(); });
 
   /* Notifications: web push of the followed subjects' new posts. static/sw.js shows them; the Worker (/push) keeps this
      browser's subscription with the subjects' pages, and ci/push.py sends after each deploy. Only a subject with topics
