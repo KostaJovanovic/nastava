@@ -8,6 +8,10 @@ the end is in no step until the user answers it.
 
 ## Rules for whoever builds it
 
+- All of it on the local branch `refactor`, made from `main` at the start; `main` is not touched. The user merges it
+  (and pushes) when they want. Other sessions may go on committing to `main`: before each step, `git merge main`
+  into `refactor` (a merge, not a rebase: the moves keep their history), fix the conflicts by redoing the move on
+  the new code, and take a new reference build from `main` as merged. If a merge cannot be made clean, stop and ask.
 - Steps in order; each step one commit (A5: one commit per module moved), message 3–5 words. Commit, never push.
 - Start a step only on a clean tree with no other session editing the repo: the moves touch most files.
 - Never build into `pages/.build` (the user rebuilds); the check builds into `%TEMP%`.
