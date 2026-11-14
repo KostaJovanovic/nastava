@@ -99,7 +99,7 @@
         .map(function (r) { return ['', r[0], r[1], r[2]]; }));
       // Linkovi's cards (build.py LINKS), by name and address; the drive's keeps its data-domain (the dialog before it).
       section('linkovi', 'Linkovi', (data.linkovi || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
-        .map(function (r) { return ['', r[0], r[1], r[2], r[3] && function (a) { a.setAttribute('data-domain', r[3]); }]; }));
+        .map(function (r) { return ['', r[0], r[1], r[2], function (a) { icon('link')(a); if (r[3]) a.setAttribute('data-domain', r[3]); }]; }));
       // The texts (posts, news): off the home page, their best hits as they come; the home page lists them itself.
       if (!onHome) {
         var box = list.appendChild(el('div', 'cmd__g'));
