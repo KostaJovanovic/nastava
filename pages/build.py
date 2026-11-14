@@ -1224,12 +1224,13 @@ def render_study_pages(site, db):
     and the exam schedules. Returns /raspored/ as search entries (schedule_entries)."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'study_pages'").fetchone():
         return []
-    # Every version of every file: the one seen last keeps the plain URL, an older one is under its hash.
-    newest, versions_of = {}, defaultdict(list)
-    for r in db.execute("SELECT path, sha, data, first_seen FROM study_files ORDER BY path, last_seen DESC"):
+    # Every version of every file: the one seen last keeps the plain URL, an older one is under its hash. Written at
+    # the end, only those a shown page links (used): the database also has files of wiki pages no longer shown.
+    newest, versions_of, stored, used = {}, defaultdict(list), {}, set()
+    for r in db.execute("SELECT path, sha, first_seen FROM study_files ORDER BY path, last_seen DESC"):
         rel = f"v/{r['sha'][:12]}/{r['path']}" if r["path"] in newest else r["path"]
-        write_bytes(site / "studije" / "files" / rel, r["data"])
         url = f"/studije/files/{quote(rel)}"
+        stored[url] = (rel, r["path"], r["sha"])
         newest.setdefault(r["path"], url)
         versions_of[r["path"]].append((r["first_seen"], url))
 
@@ -1247,8 +1248,11 @@ def render_study_pages(site, db):
             v["href"] = base if i == 0 else f"{base}{v['first_seen'][:10]}-{v['sha'][:6]}/"
         for v in versions:
             when = None if v is versions[0] else v["last_seen"]
-            local = lambda value: ((p := media_path(value)) and (file_then(p, when) if when else newest.get(p))
-                                   or link(value))
+            def local(value, when=when):
+                url = (p := media_path(value)) and (file_then(p, when) if when else newest.get(p))
+                if url:
+                    used.add(url)
+                return url or link(value)
             html = drop_empty_tables(clean_html(v["html"], source, local) or "")
             # The page's first heading is usually its title, which the page already has as h1.
             m = re.search(r"<h([12])[^>]*>(.*?)</h\1>", html, re.S)
@@ -1267,6 +1271,10 @@ def render_study_pages(site, db):
         html = render(versions, f"/studije/{name}/", f"{STUDY_SITE}studije/{name}", ("/raspored/", "Kalendar i rasporedi"))
         now[name] = dict(page=versions[0], html=html)
     render_wiki_pages(site, db, render)
+    for url in used:
+        rel, path, sha = stored[url]
+        data, = db.execute("SELECT data FROM study_files WHERE path = ? AND sha = ?", (path, sha)).fetchone()
+        write_bytes(site / "studije" / "files" / rel, data)
     get = lambda slug: now.get(slug, {}).get("html")
     calendar, lectures = first_link(get("kalendar-nastave")), parse_lectures(get("raspored-predavanja"))
     write(site / "raspored" / "index.html", env.get_template("raspored.html").render(
