@@ -8,7 +8,9 @@ the end is in no step until the user answers it.
 
 ## Rules for whoever builds it
 
-- All of it on the local branch `refactor`, made from `main` at the start; `main` is not touched. The user merges it
+- All of it in its own worktree, `git worktree add ../nastava-refactor -b refactor main`, so the sessions working
+  in `J:\Projekti\nastava` on `main` never see a file move under them. Copy `nastava.db` into the worktree once (it
+  is git-ignored; `serve.py` reads it there). All of it on the local branch `refactor`; `main` is not touched. The user merges it
   (and pushes) when they want. Other sessions may go on committing to `main`: before each step, `git merge main`
   into `refactor` (a merge, not a rebase: the moves keep their history), fix the conflicts by redoing the move on
   the new code, and take a new reference build from `main` as merged. If a merge cannot be made clean, stop and ask.
