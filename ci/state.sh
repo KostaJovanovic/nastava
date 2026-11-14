@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Get or save nastava.db as an asset of the "state" release.
+# Get or save nastava.db as an asset of the "state" release. Get merges into this copy (ci/state_merge.py), never
+# deleting from it.
 # Usage: ci/state.sh pull | push   (in the directory that holds nastava.db)
 # Not encrypted: the database holds only what the public board shows.
 set -euo pipefail
@@ -10,16 +11,12 @@ pull)
 	# The asset names have a UTC time stamp, so the last name in sort order is the newest.
 	name=$(gh release view state -R "$repo" --json assets -q '.assets[].name' | sort | tail -n 1)
 	[[ -n $name ]] || { echo "no state asset" >&2; exit 1; }
-	# Into the database through SQLite's backup, not over the file: a running dev server (pages/serve.py) keeps
-	# nastava.db and its WAL open, and Windows neither deletes nor replaces an open file. The server sees the change
-	# and restarts.
-	gh release download state -R "$repo" -p "$name" -O - | uv run --no-project --python 3.14 python -c "
-import sqlite3, sys, tarfile, tempfile
-with tempfile.TemporaryDirectory() as tmp:
-    tarfile.open(fileobj=sys.stdin.buffer, mode='r|zst').extractall(tmp, filter='data')
-    src, dst = sqlite3.connect(tmp + '/nastava.db'), sqlite3.connect('nastava.db', timeout=60)
-    src.backup(dst)
-    dst.close(); src.close()"
+	# Merged with this copy, not over it (ci/state_merge.py): what only this PC has stays. A running dev server
+	# (pages/serve.py) sees the change and restarts.
+	tmp=$(mktemp -d)
+	trap 'rm -rf "$tmp"' EXIT
+	gh release download state -R "$repo" -p "$name" -O "$tmp/$name"
+	uv run --no-project --python 3.14 python "$(dirname "$0")/state_merge.py" "$tmp/$name" nastava.db
 	echo "pulled $name"
 	;;
 push)

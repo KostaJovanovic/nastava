@@ -104,6 +104,7 @@ def fingerprint(db):
         "select count(*), sum(gone), total(length(title)) from topics",
         "select count(*), sum(gone) from vesti",
         "select count(*) from study_pages", "select count(*) from study_files",
+        "select count(*), sum(gone), total(length(html)) from wiki_pages",
         "select count(*), sum(gone), total(length(html)) from teachers", "select count(*) from teacher_subjects",
         "select count(*), sum(gone), total(length(html)) from subjects", "select count(*) from subject_places",
         "select count(*), sum(gone), total(length(html)) from cent_notices", "select count(*), sum(gone) from cent_pages",

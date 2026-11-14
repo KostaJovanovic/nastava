@@ -47,8 +47,8 @@ finish() {
 }
 
 if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
-	# The saved state, not this PC's copy: the scheduled run may be newer, and an older copy would scrape and notify
-	# its posts again.
+	# The saved state first: the scheduled run may be newer, and an older copy would scrape and notify its posts again.
+	# Merged with this PC's copy (ci/state_merge.py): what only this PC has stays, and goes up with the next save.
 	step pull bash ci/state.sh pull
 	parts=("$@")
 	if [[ $1 == auto ]]; then

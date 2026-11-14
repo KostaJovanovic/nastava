@@ -1367,15 +1367,24 @@ LINKS = [
 ]
 
 
-def link_groups():
+def link_groups(archived):
     """LINKS as link.html shows them: (group, [(name, href, icon, data-domain, the card's second line)]). The second
     line: the address; a shown page of the faculty's its site (its paths are long: vaznidatumioas); with a data-domain
-    (the drive), OneDrive."""
+    (the drive), OneDrive. archived: the wiki paths the database has; one it lacks (studije.py not run yet) links the
+    faculty's page."""
     wiki = {h[3:] for _, links in LINKS for _, h, _, _ in links if h.startswith("mf:")}
     assert wiki == SHOWN, f"studije.py SHOWN and LINKS differ: {wiki ^ SHOWN}"
-    return [(group, [(name, wiki_href(h[3:]), icon, domain, "www.mas.bg.ac.rs") if h.startswith("mf:") else
+    mf = lambda path: wiki_href(path) if path in archived else STUDY_SITE + path
+    return [(group, [(name, mf(h[3:]), icon, domain, "www.mas.bg.ac.rs") if h.startswith("mf:") else
                      (name, h, icon, domain, "OneDrive" if domain else h.split("://")[-1].rstrip("/"))
                      for name, h, icon, domain in links]) for group, links in LINKS]
+
+
+def archived_wiki(db):
+    """The wiki paths wiki_pages has (none before studije.py made the table)."""
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'wiki_pages'").fetchone():
+        return set()
+    return {r[0] for r in db.execute("SELECT DISTINCT path FROM wiki_pages")}
 
 
 def wiki_href(path):
@@ -2407,11 +2416,12 @@ def main(db_path, out, dev_mode=False):
     render_katedre(site, db, teachers, subjects, topics)
     render_book(site, book)
     raspored = render_study_pages(site, db)
+    links = link_groups(archived_wiki(db))
     (site / "izbor.json").write_text(json.dumps(dict(picker(subjects, book, teachers, items), raspored=raspored,
                                                      # The researchers and demonstrators for the header search: [name, page, title].
                                                      istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")],
                                                      # Linkovi's cards for it too: [name, second line, href, data-domain].
-                                                     linkovi=[[n, shown, h, d] for _, links in link_groups() for n, h, _, d, shown in links]),
+                                                     linkovi=[[n, shown, h, d] for _, group in links for n, h, _, d, shown in group]),
                                                 ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write(site / "statistika" / "index.html", env.get_template("stats.html").render(st=archive_stats(items, topics, teachers)))
     write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
@@ -2421,7 +2431,7 @@ def main(db_path, out, dev_mode=False):
     write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()))
     # icons: {host: file} of the sites' own icons in static/link (saved by hand), for link.html's cards.
     write(site / "link" / "index.html", env.get_template("link.html").render(
-        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}, groups=link_groups()))
+        icons={p.stem: p.name for p in (HERE / "static" / "link").iterdir()}, groups=links))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())
     if dev:
