@@ -80,7 +80,8 @@
         const mod = (act.className.match(/modtype_(\w+)/) || [])[1] || 'unknown';
         const a = act.querySelector('a.aalink, .activityname a, .activityinstance a');
         const name = text(act.querySelector('.instancename')) || text(a) || mod;
-        const item = {type: mod, name, url: a?.href || null, files: []};
+        const desc = act.querySelector('.contentafterlink, .activity-description, .description-inner');
+        const item = {type: mod, name, url: a?.href || null, description: desc?.innerHTML.trim() || '', files: []};
         section.activities.push(item);
         const adir = `${dir}/${clean(name)}`;
         console.log(`${mod}: ${name}`);
