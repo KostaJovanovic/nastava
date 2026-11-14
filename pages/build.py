@@ -36,6 +36,7 @@ sys.path.insert(0, str(HERE.parent))
 from studije import PAGES as STUDY_PAGES, SHOWN, SITE as STUDY_SITE, media_path  # noqa: E402
 from nastavnici import photo_urls  # noqa: E402
 from mail import asset_name, TAG as MAIL_TAG  # noqa: E402
+from wiki_tidy import CLASSES as WIKI_CLASSES, lexicon, recase, tidy as wiki_tidy  # noqa: E402
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
 KIND = {"post": "obavestenje", "document": "dokument", "vest": "vest", "cent": "obavestenje", "katedra": "obavestenje"}
 RECENT = 20
@@ -1241,9 +1242,10 @@ def render_study_pages(site, db):
         then = [url for first, url in seen if first <= when]
         return then[-1] if then else seen[0][1] if seen else None
 
-    def render(versions, base, source, crumb, link=lambda value: None):
+    def render(versions, base, source, crumb, link=lambda value: None, tidy=None, classes=None, **newest_only):
         """A page's versions, newest first: the newest at base, each older one under its first date. link: a link's
-        address on this site, if it has the page (else the faculty's). Returns the newest one's html."""
+        address on this site, if it has the page (else the faculty's). tidy: the page's html before clean_html keeps
+        classes. newest_only: more for the newest one's template (upis/start's tabs). Returns the newest one's html."""
         for i, v in enumerate(versions):
             v["href"] = base if i == 0 else f"{base}{v['first_seen'][:10]}-{v['sha'][:6]}/"
         for v in versions:
@@ -1253,13 +1255,14 @@ def render_study_pages(site, db):
                 if url:
                     used.add(url)
                 return url or link(value)
-            html = drop_empty_tables(clean_html(v["html"], source, local) or "")
+            html = drop_empty_tables(clean_html(tidy(v["html"]) if tidy else v["html"], source, local, classes) or "")
             # The page's first heading is usually its title, which the page already has as h1.
             m = re.search(r"<h([12])[^>]*>(.*?)</h\1>", html, re.S)
             if m and fold(re.sub(r"<[^>]+>", "", m[2]).strip()) == fold(v["title"]):
                 html = html[:m.start()] + html[m.end():]
             write(site / v["href"].strip("/") / "index.html", env.get_template("studije.html").render(
-                page=v, current=versions[0], versions=versions, html=html, source_url=source, crumb_to=crumb))
+                page=v, current=versions[0], versions=versions, html=html, source_url=source, crumb_to=crumb,
+                **(newest_only if v is versions[0] else {})))
             if v is versions[0]:
                 newest_html = html
         return newest_html
@@ -1288,20 +1291,11 @@ def render_study_pages(site, db):
 # Linkovi's cards (link.html), also found by the header search (izbor.json linkovi): (group, [(name, href, icon from
 # icons.svg, data-domain)]). An href "mf:<path>" is a page of www.mas.bg.ac.rs this site shows (studije.py SHOWN).
 LINKS = [
+    # Only what no other of these pages links: Upis has OAS, MAS, DAS and the higher years as tabs, each with its
+    # dates; the higher years' page links the choice of subjects, the fees, the payments and the student e-mail.
     ("Upis i studiranje", [
-        ("Upis u prvu godinu", "mf:upis/start", "enter", None),
-        ("Upis na osnovne studije", "mf:upis/oas", "enter", None),
-        ("Rokovi za osnovne studije", "mf:upis/vaznidatumioas", "calendar", None),
-        ("Upis na master studije", "mf:upis/mas", "enter", None),
-        ("Rokovi za master studije", "mf:upis/vaznidatumimas", "calendar", None),
-        ("Upis na doktorske studije", "mf:upis/das", "enter", None),
-        ("Rokovi za doktorske studije", "mf:upis/vaznidatumidas", "calendar", None),
-        ("Upis u višu godinu ili obnova", "mf:studenti/start", "enter", None),
-        ("Izbor predmeta", "mf:studenti/izbor-predmeta", "book", None),
-        ("Finansijsko zaduženje", "mf:studenti/finansijsko-zaduzenje", "file", None),
-        ("Uplate fakultetu", "mf:studenti/placanja", "file", None),
+        ("Upis i obnova godine", "mf:upis/start", "enter", None),
         ("Prijava ispita", "mf:studenti/prijava-ispita", "calendar", None),
-        ("Studentski email", "mf:servisi/email-za-studente", "mail", None),
         ("eduroam", "mf:servisi/eduroam", "globe", None),
         ("VPN", "mf:servisi/vpn", "globe", None),
         ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
@@ -1373,7 +1367,7 @@ def link_groups(archived):
     (the drive), OneDrive. archived: the wiki paths the database has; one it lacks (studije.py not run yet) links the
     faculty's page."""
     wiki = {h[3:] for _, links in LINKS for _, h, _, _ in links if h.startswith("mf:")}
-    assert wiki == SHOWN, f"studije.py SHOWN and LINKS differ: {wiki ^ SHOWN}"
+    assert wiki <= SHOWN, f"LINKS has pages studije.py does not keep: {wiki - SHOWN}"
     mf = lambda path: wiki_href(path) if path in archived else STUDY_SITE + path
     return [(group, [(name, mf(h[3:]), icon, domain, "www.mas.bg.ac.rs") if h.startswith("mf:") else
                      (name, h, icon, domain, "OneDrive" if domain else h.split("://")[-1].rstrip("/"))
@@ -1417,17 +1411,81 @@ def render_wiki_pages(site, db, render):
                         sorted(SHOWN)):
         pages[r["path"]].append(dict(r))
     hrefs = {path: wiki_href(path) for path in pages}
-    for path, versions in pages.items():
+    lex = lexicon(BeautifulSoup(r[0], "html.parser").get_text("\n") for r in db.execute("SELECT html FROM wiki_pages"))
+    shown = {}
+    for path, versions in sorted(pages.items(), key=lambda kv: kv[0] == UPIS):  # upis/start last: its tabs show the rest
         for v in versions:
-            v["title"] = wiki_title(v["title"])
-        render(versions, hrefs[path], STUDY_SITE + quote(path), ("/link/", "Linkovi"),
-               link=lambda value: wiki_link(value, hrefs))
+            v["title"] = wiki_title(v["title"], lex)
+        extra = dict(tabs=upis_tabs(versions[0]["html"], pages, shown, hrefs)) if path == UPIS else {}
+        shown[path] = render(versions, hrefs[path], STUDY_SITE + quote(path), ("/link/", "Linkovi"),
+                             link=lambda value: wiki_link(value, hrefs),
+                             tidy=lambda html, path=path: wiki_tidy(html, path, lex), classes=WIKI_CLASSES, **extra)
 
 
-def wiki_title(t):
-    """A wiki page's title as the site shows it: one in capitals ("УПИС НА ОСНОВНЕ...") in sentence case, a page
-    name ("cenovnik") capitalized."""
-    return t[0].upper() + t[1:].lower() if t.isupper() or t.islower() else t
+UPIS = "upis/start"
+# upis/start's tabs: (short, long name) for the pages it links; another one it links later gets its own title.
+UPIS_TABS = {"upis/oas": ("OAS", "Osnovne akademske studije"), "upis/mas": ("MAS", "Master akademske studije"),
+             "upis/das": ("DAS", "Doktorske akademske studije"), "studenti/start": ("Viša godina", "Upis u više godine ili obnova")}
+
+
+def upis_tabs(raw, pages, shown, hrefs):
+    """upis/start's links as tabs (studije.html; site.js shows one at a time, as /raspored/'s programs): each the
+    linked page's shown html, its important-dates page linked from it shown above it in place of that link. A dates
+    page that only links one page per program shows those; when their timelines are the same, the first, once."""
+    soup = BeautifulSoup(raw, "html.parser")
+    paths = list(dict.fromkeys(a["data-wiki-id"].replace(":", "/") for a in soup.select("a[data-wiki-id]")))
+    paths = [p for p in paths if p in shown]
+    if set(paths) != set(UPIS_TABS):
+        print(f"[warn] mf/{UPIS}: links {paths}, the tabs expected {list(UPIS_TABS)}", file=sys.stderr)
+    by_href = {h: p for p, h in hrefs.items()}
+    tabs = []
+    for path in paths:
+        body = BeautifulSoup(shown[path], "html.parser")
+        rok, seen = [], set()
+        for a in body.select("a[href]"):
+            dates = by_href.get(a["href"].split("#")[0])
+            if not dates or "datum" not in dates:
+                continue
+            block = a.find_parent(["li", "p"]) or a
+            if len(block.get_text(" ", strip=True)) < 80:  # "Важни датуми налазе се на линку": the dates replace it
+                block.decompose()
+            if dates in seen:  # linked again further down
+                continue
+            seen.add(dates)
+            page = BeautifulSoup(shown[dates], "html.parser")
+            if page.select_one("ol.wt-tl"):
+                rok.append(("", from_timeline(page)))
+                continue
+            # A program's link: "МАШИНСКО ИНЖЕЊЕРСТВО и за студије на српском и …", named by its program alone.
+            subs = [(re.split(r"\s+[иi]\s+за\s", s.get_text(" ", strip=True))[0], by_href.get(s["href"]))
+                    for s in page.select("a[href]")]
+            subs = [(t, BeautifulSoup(shown[p], "html.parser")) for t, p in subs if p in shown]
+            lines = {str(s.select_one("ol.wt-tl")) for _, s in subs}
+            if subs and len(lines) == 1:
+                rok.append((" и ".join(t for t, _ in subs), from_timeline(subs[0][1])))
+            else:
+                rok += [(t, from_timeline(s)) for t, s in subs] or [("", str(page))]
+        short, name = UPIS_TABS.get(path, (pages[path][0]["title"], pages[path][0]["title"]))
+        tabs.append(dict(key=slug(short), short=short, name=name, href=hrefs[path], rok=rok, html=str(body)))
+    return tabs
+
+
+def from_timeline(page):
+    """A dates page from its timeline on: what is above it names the program, which the tab and the box already
+    say; only a heading naming the round (рок: "Важни датуми и рокови за трећи уписни рок") stays."""
+    tl = page.select_one("ol.wt-tl")
+    for el in list(tl.find_previous_siblings()) if tl else []:
+        if not (re.match(r"h[2-6]$", el.name or "") and "рок" in el.get_text().lower()):
+            el.decompose()
+    return str(page)
+
+
+def wiki_title(t, lex=None):
+    """A wiki page's title as the site shows it: one in capitals ("УПИС НА ОСНОВНЕ...") in sentence case, its
+    acronyms kept (lex: wiki_tidy.lexicon; "VPN"), a page name ("cenovnik") capitalized."""
+    if t.isupper():
+        return recase(t, lex or {}, True)
+    return t[0].upper() + t[1:] if t.islower() else t
 
 
 def photo_path(url, kind):

@@ -132,13 +132,13 @@ window.rsPick = function (key, keep) {
 	if (!progs.length) return;
 	if (key === undefined) {
 		key = decodeURIComponent(location.hash.slice(1));
-		try { key = key || localStorage.getItem("raspored"); } catch (e) {}
+		try { key = key || localStorage.getItem(rs.dataset.rs || "raspored"); } catch (e) {}
 	}
 	if (!progs.some((p) => p.id === key)) key = progs[0].id;
 	rs.classList.add("rs--tabs");
 	progs.forEach((p) => { p.hidden = p.id !== key; });
 	rs.querySelectorAll("[data-rs-tab]").forEach((t) => t.setAttribute("aria-current", t.hash === "#" + key));
 	if (!keep) return;
-	try { localStorage.setItem("raspored", key); } catch (e) {}
+	try { localStorage.setItem(rs.dataset.rs || "raspored", key); } catch (e) {}
 	history.replaceState(null, "", "#" + key);
 };

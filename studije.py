@@ -32,7 +32,8 @@ NOT_WIKI = re.compile(r'^(en|eng|playground|wiki|wiki-renamed|studije/(predmeti|
 # pages') files are stored here; the rest stay linked to the wiki (~5.8 GB of PDFs, 2026-11), site_files.py keeps a
 # local copy of them. Every other page is kept too, not shown.
 SHOWN = {
-	'upis/start', 'upis/oas', 'upis/vaznidatumioas', 'upis/mas', 'upis/vaznidatumimas', 'upis/das', 'upis/vaznidatumidas',
+	'upis/start', 'upis/oas', 'upis/vaznidatumioas', 'upis/vaznidatumioas/mi', 'upis/vaznidatumioas/itm',
+	'upis/mas', 'upis/vaznidatumimas', 'upis/das', 'upis/vaznidatumidas',
 	'studenti/start', 'studenti/izbor-predmeta', 'studenti/finansijsko-zaduzenje', 'studenti/placanja', 'studenti/prijava-ispita',
 	'servisi/email-za-studente', 'servisi/eduroam', 'servisi/vpn', 'servisi/microsoft-imagine', 'fakultet/kontakt',
 }

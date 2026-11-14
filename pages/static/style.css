@@ -1221,6 +1221,66 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--wiki :is(h3, h4, h5) { margin: 1.2em 0 .4em; font: 800 15px/1.3 var(--sans); }
 .prose--wiki :is(h1, h2, h3, h4, h5):first-child { margin-top: 0; }
 .prose--wiki hr { border: 0; border-top: 1px solid var(--line); margin-block: 1.2rem; }
+/* The wiki's pages as wiki_tidy.py leaves them: lists, a timeline of dates, label: number rows, named links, notes. */
+.prose--wiki h2 { padding-top: 1.1em; border-top: 1px solid var(--line-2); color: var(--fg); }
+.prose--wiki h2:first-child { padding-top: 0; border-top: 0; }
+.prose--wiki h3 { color: var(--fg); }
+.prose--wiki :is(p, ul, ol, dl, table) { margin-block: 0 .7em; }
+.prose--wiki :is(ul, ol):not([class]) { padding-left: 1.3em; }
+.prose--wiki :is(ul, ol):not([class]) > li + li { margin-top: .3em; }
+.prose--wiki :is(ul, ol):not([class]) > li::marker { color: var(--slate); font-weight: 800; }
+.prose--wiki strong { color: var(--fg); }
+.prose--wiki .wt-hl { color: var(--accent-t); }
+.prose--wiki .wt-amt { color: var(--fg); font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.prose--wiki .wt-note { padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--icon-bg); }
+.prose--wiki .wt-lbl { margin: 1em 0 .3em; color: var(--dim); font: 800 11.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.prose--wiki .wt-box { margin-block: 0 1em; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--alt); }
+.prose--wiki .wt-box > :last-child { margin-bottom: 0; }
+.prose--wiki .wt-box :is(h2, h3, h4) { margin: 0 0 .5em; padding: 0; border: 0; color: var(--dim); font: 800 11.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.prose--wiki a.wt-go {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; margin-block: 2px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg);
+  font-weight: 800; font-size: 13.5px; text-decoration: none; vertical-align: middle;
+}
+.prose--wiki a.wt-go::after { content: "→"; color: var(--accent-t); }
+.prose--wiki a.wt-go:hover { border-color: var(--accent); color: var(--accent-t); }
+.prose--wiki .wt-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; padding: 0; list-style: none; }
+.prose--wiki .wt-links a {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 100%; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--fg);
+  font-weight: 800; line-height: 1.3; text-decoration: none; transition: border-color .12s, transform .12s;
+}
+.prose--wiki .wt-links a::after { content: "→"; color: var(--accent-t); }
+@media (hover: hover) { .prose--wiki .wt-links a:hover { border-color: var(--accent); transform: translateY(-1px); } }
+.prose--wiki .wt-kv { display: grid; grid-template-columns: 1fr auto; max-width: 620px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.prose--wiki .wt-kv > * { margin: 0; padding: 6px 12px; border-top: 1px solid var(--line-2); }
+.prose--wiki .wt-kv > :is(dt, dd):nth-child(-n+2) { border-top: 0; }
+.prose--wiki .wt-kv dd { color: var(--fg); font-weight: 800; text-align: end; font-variant-numeric: tabular-nums; }
+/* The timeline: a dot per date on a line down the left, its times in a column. */
+.prose--wiki .wt-tl { position: relative; padding: 0 0 0 22px; list-style: none; }
+.prose--wiki .wt-tl::before { content: ""; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+.prose--wiki .wt-tl__i { position: relative; padding-bottom: 12px; }
+.prose--wiki .wt-tl__i::before {
+  content: ""; position: absolute; left: -22px; top: 5px; width: 12px; height: 12px;
+  border: 2px solid var(--card); border-radius: 50%; background: var(--head); box-sizing: border-box;
+}
+.prose--wiki .wt-tl__d { display: block; color: var(--fg); font-weight: 800; }
+.prose--wiki .wt-tl__l { margin: 2px 0 0; padding: 0; list-style: none; }
+.prose--wiki .wt-tl__l li { display: grid; grid-template-columns: 7.5em 1fr; gap: 10px; }
+.prose--wiki .wt-tl__h { color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 520px) { .prose--wiki .wt-tl__l li { grid-template-columns: 1fr; gap: 0; } }
+.prose--wiki .wt-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin-block: 0 1em; }
+.prose--wiki .wt-card { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 13.5px; line-height: 1.5; }
+.prose--wiki .wt-card > :is(strong, b):first-child { display: block; margin-bottom: 2px; font-size: 14.5px; line-height: 1.3; }
+.prose--wiki .wt-mod td:last-child { text-align: end; font-weight: 800; }
+/* upis/start's tabs (studije.html): each page's dates first, in a tinted box. */
+.wt-tab__h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--fg); font: 800 18px var(--sans); }
+.wt-tab__h a { color: var(--dim); font-size: 13px; font-weight: 400; }
+.wt-rok { padding: 14px 16px; border-radius: 10px; background: var(--alt); }
+.wt-rok__h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--head); font: 800 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.wt-rok__h .i { width: 18px; height: 18px; }
+.wt-rok__h span { color: var(--dim); letter-spacing: .02em; text-transform: none; font-weight: 400; }
+.wt-rok .wt-tl__i::before { border-color: var(--alt); }
 .prose--html a { color: var(--accent-t); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
 .prose--html table { border-collapse: collapse; margin-block: 1rem; font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: normal; display: block; overflow-x: auto; max-width: 100%; }
 .prose--html th, .prose--html td { border: 1px solid var(--line); padding: .3rem .6rem; text-align: start; vertical-align: top; }

@@ -21,9 +21,34 @@
 {%- if _old %}
 <p class="note">Ovo je ranija verzija stranice, sa fajlovima kakvi su tada bili. <a href="{{ current.href }}">Najnovija verzija</a></p>
 {%- endif %}
+{%- if tabs %}
+{#- upis/start (build.py upis_tabs): a tab per page it links, each with its dates first; site.js shows one at a time,
+    as /raspored/'s programs. Without it the tabs are links to the pages below. -#}
+<section class="panel rs wt-tabs" aria-label="Upis" data-rs="upis">
+  <nav class="mp__tabs rs__tabs" aria-label="Studije">
+    {%- for t in tabs %}
+    <a class="mp__tab" href="#{{ t.key }}" data-rs-tab title="{{ t.name }}"><span>{{ t.short }}</span></a>
+    {%- endfor %}
+  </nav>
+  {%- for t in tabs %}
+  <section class="rs-prog" id="{{ t.key }}" data-prog aria-label="{{ t.name }}">
+    <h2 class="wt-tab__h">{{ t.name }} <a href="{{ t.href }}">cela stranica</a></h2>
+    {%- for label, rok in t.rok %}
+    <div class="wt-rok">
+      <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>Važni datumi{% if label %} <span>· {{ label }}</span>{% endif %}</p>
+      <div class="prose prose--html prose--wiki">{{ rok | safe }}</div>
+    </div>
+    {%- endfor %}
+    <div class="prose prose--html prose--wiki">{{ t.html | safe }}</div>
+  </section>
+  {%- endfor %}
+</section>
+<script>rsPick()</script>
+{%- else %}
 <article class="panel">
   <div class="prose prose--html prose--wiki">{{ html | safe }}</div>
 </article>
+{%- endif %}
 {%- if versions | length > 1 %}
 <section class="versions" aria-labelledby="versions-h">
   <h2 id="versions-h">Sve verzije</h2>
