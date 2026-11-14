@@ -12,13 +12,14 @@ The sign-in is yours, typed in the window; the script never sees or keeps a pass
 ~/.nastava-browser, outside the repository.
 """
 
+import os
 import re
 import subprocess
 import sys
 from datetime import date
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Error, sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE = Path.home() / ".nastava-browser"
@@ -44,7 +45,17 @@ def run(page, script, out):
     page.on("download", on_download)
     page.on("console", on_console)
     try:
-        page.evaluate(js(script))
+        for attempt in range(3):
+            try:
+                page.evaluate(js(script))
+                break
+            except Error as e:
+                # Teams reloads itself now and then, which ends a script running in it: start it again.
+                if attempt == 2 or not re.search(r"context was destroyed|navigat|Target.*closed", str(e)):
+                    raise
+                print(f"  the page reloaded ({str(e).splitlines()[0]}); starting {script} again", flush=True)
+                page.wait_for_load_state("load")
+                page.wait_for_timeout(10000)
         page.wait_for_timeout(2000)  # the last click's download event
     finally:
         page.remove_listener("download", on_download)
@@ -73,7 +84,8 @@ def teams(page, out):
     run(page, "teams/teams-files.js", out)
     if export:
         print("\nteams.py add:")
-        subprocess.run(["uv", "run", str(ROOT / "scrapers" / "teams.py"), "add", str(export[0]), str(out)], cwd=ROOT)
+        subprocess.run(["uv", "run", str(ROOT / "scrapers" / "teams.py"), "add", str(export[0]), str(out)], cwd=ROOT,
+                       env={**os.environ, "PYTHONIOENCODING": "utf-8"})  # the classes' names: cp1252 can't print š
         print("\nNext: read the students' replies in mail/ for names it missed, then mail.py upload and commit mail/ (README).")
 
 
