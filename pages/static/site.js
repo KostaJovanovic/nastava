@@ -27,7 +27,9 @@
       if (!list) return;
       var v = q.value.trim(), w = fold(v).split(/\s+/).filter(Boolean);
       var has = function (s) { return w.every(function (x) { return s.indexOf(x) > -1; }); };
+      // The matches scroll inside (scroll), so the list's rounded corners clip the scrollbar; "all results" stays under them.
       list.textContent = '';
+      var scroll = list.appendChild(el('div', 'cmd__scroll'));
       asked++;
       if (!w.length) { list.hidden = true; return; }
       // rows: [subgroup, name, hint, href, decorate(a)]: the first 5 of a type with a list page (3 of the katedre),
@@ -35,7 +37,7 @@
       var section = function (key, title, rows) {
         var cap = ENTER[key] ? 5 : key === 'katedre' ? 3 : key === 'linkovi' ? 6 : 200, sub = null;
         if (!rows.length) return;
-        var g = list.appendChild(el('div', 'cmd__g'));
+        var g = scroll.appendChild(el('div', 'cmd__g'));
         g.setAttribute('role', 'group');
         g.setAttribute('aria-label', title);
         g.appendChild(el('p', 'cmd__h', title)).setAttribute('aria-hidden', 'true');
@@ -102,12 +104,12 @@
         .map(function (r) { return ['', r[0], r[1], r[2], function (a) { icon('link')(a); if (r[3]) a.setAttribute('data-domain', r[3]); }]; }));
       // The texts (posts, news): off the home page, their best hits as they come; the home page lists them itself.
       if (!onHome) {
-        var box = list.appendChild(el('div', 'cmd__g'));
+        var box = scroll.appendChild(el('div', 'cmd__g'));
         var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima i vestima'));
         a.href = '/?q=' + encodeURIComponent(fold(v));
         textHits(box, a, fold(v), asked);
       }
-      list.hidden = !list.children.length;
+      list.hidden = !scroll.children.length;
     };
     // The texts' first 5 hits in Pagefind (loaded at the first word), as search.js would find them: the followed
     // subjects only while "Samo moji predmeti" is on. my: the show() that asked; a later one wins.
