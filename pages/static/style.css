@@ -586,7 +586,6 @@ body:has(#res) .filters--years { display: none; }
 
 /* "Samo moji predmeti": one switch over the whole row. */
 .tgl { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 16px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--fg); font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.tgl:hover { background: var(--hover); }
 .tgl:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .tgl input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
 .tgl__s { position: relative; flex: none; width: 32px; height: 18px; border-radius: 9px; background: var(--slate); transition: background .15s; }
@@ -596,7 +595,6 @@ body:has(#res) .filters--years { display: none; }
 @media (prefers-reduced-motion: reduce) { .tgl__s, .tgl__s::after { transition: none; } }
 /* Greyed: notifications that this browser can't send, or has blocked (site.js, the reason in its title). */
 .tgl:has(input[aria-disabled="true"]) { opacity: .45; }
-.tgl:has(input[aria-disabled="true"]):hover { background: none; }
 .tgl__bell { display: none; }
 
 /* "Moji predmeti" in the side panel: the button that opens the picker, a plain one (the switch shows the state). */
@@ -634,7 +632,7 @@ body:has(#res) .filters--years { display: none; }
   .fgroup[data-izbor] .tgl--push:has(input[aria-disabled="true"]) { opacity: 1; }
   .fgroup[data-izbor] .tgl--push:has(input[aria-disabled="true"]) .tgl__bell { opacity: .4; }
   .fgroup[data-izbor] .btn.is-set { width: 44px; min-height: 44px; padding: 0; border-color: var(--line); border-radius: 0 8px 8px 0; color: var(--fg); }
-  .fgroup[data-izbor] .btn.is-set:hover { background: var(--hover); color: var(--accent-t); }
+  .fgroup[data-izbor] .btn.is-set:hover { background: var(--card); color: var(--accent-t); }
   .fgroup[data-izbor] .btn.is-set:active { transform: none; }
   .fgroup[data-izbor] .btn.is-set > .i:first-child { display: none; }
   .fgroup[data-izbor] .btn.is-set .moji__edit { display: block; }
