@@ -1291,16 +1291,6 @@ def render_study_pages(site, db):
 # Linkovi's cards (link.html), also found by the header search (izbor.json linkovi): (group, [(name, href, icon from
 # icons.svg, data-domain)]). An href "mf:<path>" is a page of www.mas.bg.ac.rs this site shows (studije.py SHOWN).
 LINKS = [
-    # Only what no other of these pages links: Upis has OAS, MAS, DAS and the higher years as tabs, each with its
-    # dates; the higher years' page links the choice of subjects, the fees, the payments and the student e-mail.
-    ("Upis i studiranje", [
-        ("Upis i obnova godine", "mf:upis/start", "enter", None),
-        ("Prijava ispita", "mf:studenti/prijava-ispita", "calendar", None),
-        ("eduroam", "mf:servisi/eduroam", "globe", None),
-        ("VPN", "mf:servisi/vpn", "globe", None),
-        ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
-        ("Kontakt fakulteta", "mf:fakultet/kontakt", "home", None),
-    ]),
     ("Fakultet", [
         ("Forum nastave", "https://nastava.mas.bg.ac.rs/nastava/", "msgs", None),
         ("studenti.mas", "https://studenti.mas.bg.ac.rs/", "user", None),
@@ -1312,6 +1302,16 @@ LINKS = [
         ("Prezentacije nastavnika", "https://etc.mas.bg.ac.rs/", "file", None),
         ("FSEL (Moodle)", "https://fsel.mas.bg.ac.rs/moodle/", "book", None),
         ("Biblioteka", "https://www.mas.bg.ac.rs/biblioteka/start", "book", None),
+    ]),
+    # Only what no other of these pages links: Upis has OAS, MAS, DAS and the higher years as tabs, each with its
+    # dates; the higher years' page links the choice of subjects, the fees, the payments and the student e-mail.
+    ("Upis i studiranje", [
+        ("Upis i obnova godine", "mf:upis/start", "enter", None),
+        ("Prijava ispita", "mf:studenti/prijava-ispita", "calendar", None),
+        ("eduroam", "mf:servisi/eduroam", "globe", None),
+        ("VPN", "mf:servisi/vpn", "globe", None),
+        ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
+        ("Kontakt fakulteta", "mf:fakultet/kontakt", "home", None),
     ]),
     ("Studenti", [
         ("Veliki drajv", "https://flatsoftcors-my.sharepoint.com/:f:/g/personal/kosta_jovanovic_flatsoft_co_rs/IgDBZZS1d7bBRahqaiN4S9K9AbIi_4GKg8Zbq4vVmLJJMaU", "cloud", "kosta-onedrive.com"),
