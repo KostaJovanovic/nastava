@@ -269,6 +269,9 @@ Where the time goes (dev mode's start-up, ~15 s, profiled 2026-11-13; a build sp
 The build cleans every post as now. Dev mode cleans a post when its page is rendered (the lists need no html). One
 function both ways; `devcheck.py` must still find dev mode = build.
 
+Skipped (2026-11-14): `mark_elsewhere` and `has_kinds` read every post's cleaned html at start-up, so dev mode must
+clean them all anyway; deferring saves nothing.
+
 ### B3. `pismo.js` converts each page once
 
 Now it converts as the parser adds nodes, then `set(mode)` walks the whole body again at DOMContentLoaded, only for
@@ -281,6 +284,10 @@ long page, both scripts.
 `pages/src/index.js` fetches the shell from GitHub Pages for every page not in its cache. Keep it in the edge cache,
 keyed by the deploy (the shell's `?v=` asset versions), so a deploy brings the new shell. `test/worker_test.mjs`
 gets a case; then `wrangler deploy` (the user's).
+
+As built: the key is the fragment's `Last-Modified`, not `?v=`: GitHub Pages stamps every file of a deploy with the
+same one (checked 2026-11-14), and a fragment carries only one `?v=`. A shell whose `Last-Modified` differs (a deploy
+still going out) is used but not kept. No change to the built pages.
 
 ## Open question (asked, not answered)
 
