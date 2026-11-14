@@ -13,7 +13,6 @@ does, each step with its own check. Run it while no other session edits the repo
 - **Fix the fingerprint first (a bug, its own commit).** `studije.py` now fills `wiki_pages` and `nastavnici.py`
   `departments`, but neither is in `ci/plan.py fingerprint` nor in `ci/runs.py TABLES`: a run where only they
   changed is not saved to the `state` release, and the run log misses them.
-- **`mockup-gear.html`** (root, 116 lines, a design mockup): the user decides: delete, or move to `docs/`.
 
 ## The check
 
@@ -33,7 +32,7 @@ Part B says per step where the output may differ and how that is checked instead
   edits `sys.path` to import `studije`, `nastavnici`, `mail`.
 - Two styles: tabs + `'` (nastava, documents, nastavnici, predmeti, studije, vesti, most tests), spaces + `"` (rest).
 - The Cyrillic→Latin table four times: `build.py` (CYR, LAT), `nastavnici.py`, `teams.py`, `pismo.js`.
-- The root: 11 scripts, 4 `.jsonl`, 2 browser-console `.js`, 7 plans, a mockup, 2 `.bat`.
+- The root: 11 scripts, 4 `.jsonl`, 2 browser-console `.js`, 7 plans, 2 `.bat`.
 - Page fetching written again per scraper: `studije.py` and `nastavnici.py` each have their own `page()` (sleep,
   get, None on 404), as `cent.get` and `nastava.get`.
 - `nastavnici.py` does two jobs: the live sync and the history (Wayback, masinac → the `.jsonl` files).
