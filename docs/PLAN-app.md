@@ -37,7 +37,8 @@ Cloud Messaging (FCM) next to it.
    PDF attachment, a `/files/` download, the faculty site's links in /link/.
 
 4. **Icons and build.** The manifest only has `favicon.svg`; `@capacitor/assets` makes the Android icons from one
-   1024px PNG. Current Capacitor (7/8) needs JDK 21 (installed: 17). The release signing key stays outside the repo.
+   1024px PNG. Current Capacitor (7/8) needs JDK 21 (installed: 17; for builds on this PC, the phone check and
+   testing). Release builds run on GitHub (decision 4).
 
 ## Effort
 
@@ -51,7 +52,8 @@ device.
 | Worker: accept FCM tokens | ~10 lines | Easy |
 | `push.py`: send through FCM v1 | ~30 lines + `google-auth` | Medium (OAuth token, error codes) |
 | External links and downloads to the browser app | ~15 lines in `site.js` + `@capacitor/app-launcher` | Easy; check on a phone |
-| JDK 21, Firebase, secret, icons, signing key | none | Tedious |
+| `app.yml`: build, sign, publish on a tag | ~40 lines of workflow | Medium (first run is the test) |
+| JDK 21, Firebase, secrets, icons, signing key | none | Tedious |
 
 Risks:
 - Capacitor might not give its bridge to the remote site (extra config).
@@ -74,8 +76,14 @@ Risks:
    testers for 14 days on a new personal account, possible rejection as a website wrapper). The app loads the live
    site, so only a change to the native shell needs a new APK.
 3. ~~App ID~~: `com.valjdakosta.nastava` (decided 2026-11-14; fixed once installed).
-4. ~~Build~~: a local script in the style of `save.bat` builds and signs the APK; the user uploads it to the release
-   (decided 2026-11-14). The signing key stays on the user's PC. An Actions job on a tag maybe later.
+4. ~~Build~~: GitHub Actions builds, signs and publishes it (decided 2026-11-14). A new workflow `app.yml`, started
+   by pushing a tag `app-v<version>`: JDK 21 and the runner's Android SDK, `npm ci` and `npx cap sync` in `app/`,
+   `gradlew assembleRelease`, signed with the release key, the APK uploaded to the tag's release with `gh`.
+   - The release key: made once on the user's PC (`keytool`), stored as repo secrets (the keystore as base64, its
+     passwords). The user keeps a backup outside the repo: with the key lost, an update can't install over the old
+     app, everyone has to uninstall first.
+   - `google-services.json` (Firebase's client config, not a secret) is committed in `app/android/app/`.
+   - The version: `versionCode` from the run number, `versionName` from the tag.
 
 All decided: next is the phone check below, then the build.
 
