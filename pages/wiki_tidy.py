@@ -80,7 +80,8 @@ def lines(p):
         else:
             cur.append(node)
     out.append(cur)
-    return [ln for ln in out if "".join(n.get_text() if isinstance(n, Tag) else str(n) for n in ln).strip()]
+    return [ln for ln in out if text_of(ln).strip() or any(isinstance(n, Tag) and (n.name == "img" or n.find("img"))
+                                                           for n in ln)]
 
 
 def text_of(nodes):
@@ -119,6 +120,8 @@ def tidy(html, path, lex):
         styled = p.find("span", style=LARGE) or p.find("span", style=COLOR)
         t = p.get_text(" ", strip=True)
         if styled and t and styled.get_text(" ", strip=True) == t and len(t) < 140 and not p.find("a"):
+            for img in p.find_all("img"):  # an image beside the heading stays, above it
+                p.insert_before(img.extract())
             p.name, p.attrs = "h3", {}
             p.string = t
     for span in root.find_all("span", style=True):
@@ -398,7 +401,9 @@ if __name__ == "__main__":
                '<p>Број:<br/>-број студената са инвалидитетом: 4<br/>-број студената Рома: 2</p>'
                '<p><strong>Важни датуми</strong> налазе се на <a href="/x">линку.</a></p>'
                '<p>Упис страних студената Детаљно можете прочитати на <a href="/y">линку</a>.</p>'
-               '<p>Школарина износи 111.000,00 динара.</p></div>', "x", lex)
+               '<p>Школарина износи 111.000,00 динара.</p><p><img src="/a.png" width="650"/></p>'
+               '<p><a href="/b"><img src="/b.png"/></a><br/></p></div>', "x", lex)
+    assert '<img src="/a.png" width="650"/>' in out and '<img src="/b.png"/>' in out, out
     assert '<h2>Пријава</h2>' in out and out.count('class="wt-tl__i"') == 2 and out.count('<ol class="wt-tl">') == 1, out
     assert '<span class="wt-tl__h">12:00 – 14:00</span>' in out and '<dl class="wt-kv">' in out, out
     assert '<a class="wt-go" href="/x">Важни датуми</a>' in out and 'Упис страних студената <a class="wt-go" href="/y">Детаљније</a>' in out, out
