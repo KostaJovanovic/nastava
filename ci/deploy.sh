@@ -65,7 +65,7 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 		parts=(forum studije nastavnici predmeti)
 	fi
 	for p in "${parts[@]:1}"; do
-		[[ $p == studije || $p == nastavnici || $p == predmeti ]] || { echo "unknown scraper: $p" >&2; exit 2; }
+		[[ $p == studije || $p == nastavnici || $p == predmeti || $p == sajtovi ]] || { echo "unknown scraper: $p" >&2; exit 2; }
 	done
 	# Every test that needs no network or site (test/*_test.py), but the build's (before the build) and docs_test.py
 	# (it downloads attachments). A failure stops the run here: a broken parser must not scrape.
@@ -92,7 +92,12 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	# ~3-4 minutes.
 	step katedre uv run scrapers/katedre.py sync || failed+=(katedre)
 	for p in "${parts[@]:1}"; do
-		step "$p" uv run "scrapers/$p.py" sync || failed+=("$p")
+		# sajtovi: the departments' whole sites (katedre.py site), twice a year: ~700 requests, ~10 minutes.
+		if [[ $p == sajtovi ]]; then
+			step sajtovi uv run scrapers/katedre.py site || failed+=(sajtovi)
+		else
+			step "$p" uv run "scrapers/$p.py" sync || failed+=("$p")
+		fi
 	done
 	# /statistika/'s word cloud, made again when a week old (pages/build.py words): it goes up with the state, and the
 	# builds of the week skip it. Not in the fingerprint: a run that changed nothing else does not save it (the next does).

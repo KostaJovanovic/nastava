@@ -8,9 +8,13 @@ one by one (katedre_notices; build.py makes them posts of their subjects). Files
 here: the rest of a site (about, staff, galleries), the Moodles (mat, cs, it0, vaz: a login) and the sites without
 announcements (etc, motori, ppm) or that do not answer (omk, geotermal, au, tmm).
 
-Usage: katedre.py sync [site ...]
+The rest of the sites (about, labs, research, teachers' own pages; etc, motori and ppm too) is read by `site`, now
+and then (ci/plan.py: the semesters' first days), for the katedra and teacher pages; never notices.
+
+Usage: katedre.py sync [site ...] | site [site ...]
   sync   fetch each site's announcement pages (or only the named sites'), store new versions and notices; a page or
          notice no longer there is marked gone.
+  site   crawl each whole site (WHOLE) from its home page; every page but the announcement ones is stored the same way.
 """
 
 import json
@@ -50,6 +54,18 @@ SITES = {
     "hidro": (["https://hidro.mas.bg.ac.rs/obavestenja.html"], r"/obavestenja\.html$"),
     "ciah": (["https://ciah.mas.bg.ac.rs/obavestenja"], r"/obavestenja$"),
 }
+# Each whole site's start pages (site).
+WHOLE = {
+    "ie": ["https://ie.mas.bg.ac.rs/", "https://ie.mas.bg.ac.rs/predmeti.php"],
+    **{s: [f"https://{s}.mas.bg.ac.rs/"] for s in ("etc", "motori", "meh", "bmi", "pt", "ppm", "fluidi", "hidro", "ciah")},
+}
+
+
+def announcement(site, url):
+    """A page sync keeps (SITES), which site leaves to it."""
+    return site in SITES and bool(re.search(SITES[site][1], url))
+
+
 # Not pages: WordPress's own, logins, feeds, a Moodle (a login), English copies, a directory listing's sort links, a
 # wiki's actions (log in, edit, history) and a page again in another language.
 SKIP = re.compile(
@@ -406,8 +422,10 @@ def fetch(s, url):
     return r.text, r.url
 
 
-def crawl(db, s, site, starts, keep, seen):
+def crawl(db, s, site, starts, keep, seen, whole=False):
+    """whole (site): every page is followed, all but the announcement ones (sync's) stored, no notices read."""
     host, keep = urlsplit(starts[0]).hostname, re.compile(keep)
+    mine = (lambda u: not announcement(site, u)) if whole else keep.search
     queue, queued, got, new = deque(map(norm, starts)), set(map(norm, starts)), set(), 0
     while queue and len(got) < MAX:
         url = queue.popleft()
@@ -422,10 +440,10 @@ def crawl(db, s, site, starts, keep, seen):
         # A login wall (most of pt's student wiki) is not a page: one that was public and is now behind it is gone.
         if re.search(r"<h1[^>]*>\s*Permission Denied\s*</h1>", content):
             continue
-        if keep.search(url):
+        if mine(url):
             got.add(url)
             new += store(db, site, url, title, content, seen)
-            if (notices := notices_of(url, content)) is not None:
+            if not whole and (notices := notices_of(url, content)) is not None:
                 store_notices(db, site, url, notices, seen)
             db.commit()
         for u in map(norm, follow):
@@ -438,9 +456,11 @@ def crawl(db, s, site, starts, keep, seen):
             ):
                 queued.add(u)
                 queue.append(u)
-    # A page not reached is gone, unless the crawl stopped early (MAX) or the site did not answer.
+    # A page not reached is gone, unless the crawl stopped early (MAX) or the site did not answer; only among this
+    # crawl's own pages (sync's announcement pages or site's others), so neither marks the other's gone.
     if got and not queue:
-        db.execute(f"update katedre_pages set gone = 1 where site = ? and url not in ({','.join('?' * len(got))})", (site, *got))
+        urls = [u for (u,) in db.execute("select distinct url from katedre_pages where site = ?", (site,))]
+        db.executemany("update katedre_pages set gone = 1 where url = ?", [(u,) for u in urls if mine(u) and u not in got])
         db.commit()
     print(
         f"{site}: {len(got)} pages, {new} new versions"
@@ -451,11 +471,11 @@ def crawl(db, s, site, starts, keep, seen):
     return bool(got)
 
 
-def sync(names):
+def sync(names, whole=False):
     db = connect(SCHEMA)
     # No retries (not nastava.session): a crawl meets dead links, and backing off on each would take minutes apiece.
     s, seen = plain_session(), now()
-    down = [n for n in names if not crawl(db, s, n, *SITES[n], seen)]
+    down = [n for n in names if not (crawl(db, s, n, WHOLE[n], "", seen, True) if whole else crawl(db, s, n, *SITES[n], seen))]
     if down:
         sys.exit(f"katedre: no answer from {', '.join(down)}")
 
@@ -464,5 +484,7 @@ if __name__ == "__main__":
     match sys.argv[1:]:
         case ["sync", *names] if all(n in SITES for n in names):
             sync(names or list(SITES))
+        case ["site", *names] if all(n in WHOLE for n in names):
+            sync(names or list(WHOLE), whole=True)
         case _:
             sys.exit(__doc__)

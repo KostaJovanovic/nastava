@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DB = Path(os.getenv("DB", ROOT / "nastava.db"))
 AFTER = 7  # days after an exam period that stay hot: results and oral exams come then
 YEARLY = (10, 1)  # teachers and subjects: the school year's first day
+SITES = ((10, 1), (3, 1))  # the departments' whole sites (katedre.py site): the semesters' first months
 # "18.1.-31.1.", "3.2. и 4.2.", "(2.11.-4.11.)"
 RANGE = re.compile(r"(\d{1,2})\.(\d{1,2})\.\s*(?:-|–|и|i)\s*(\d{1,2})\.(\d{1,2})\.")
 
@@ -87,14 +88,16 @@ def hot(d, wins):
 def parts(slot, d, wins):
     """The scrapers for a run: "forum" (the board and the news) and those due today. All five runs scrape, every day;
     the morning run also takes the schedule pages (studije) on the 1st of the month and on the first day of a
-    registration or an exam period, and on 1 October the teachers and the subjects. (The departments' sites run every
-    time, in deploy.sh.)"""
+    registration or an exam period, on 1 October the teachers and the subjects, and on 1 October and 1 March the
+    departments' whole sites (sajtovi). (Their announcements run every time, in deploy.sh.)"""
     first = slot == "morning"
     p = ["forum"]
     if first and (d.day == 1 or any(d == a for _, a, _ in wins)):
         p.append("studije")
     if first and (d.month, d.day) == YEARLY:
         p += ["nastavnici", "predmeti"]
+    if first and (d.month, d.day) in SITES:
+        p.append("sajtovi")
     return " ".join(p)
 
 
