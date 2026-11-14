@@ -636,6 +636,8 @@ body:has(#res) .filters--years { display: none; }
   .fgroup[data-izbor] .btn.is-set:active { transform: none; }
   .fgroup[data-izbor] .btn.is-set > .i:first-child { display: none; }
   .fgroup[data-izbor] .btn.is-set .moji__edit { display: block; }
+  /* The 44px cells' icons: near the tab bar's 22px, not a button's 15px. */
+  .fgroup[data-izbor] .tgl__bell, .fgroup[data-izbor] .moji__edit { width: 20px; height: 20px; }
   /* The words stay the names for a screen reader. */
   .fgroup[data-izbor] .is-set > span, .fgroup[data-izbor]:has(.is-set) > .sec { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 }
