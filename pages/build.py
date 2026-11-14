@@ -1519,7 +1519,8 @@ def load_teachers(db, subjects):
         if f and not t["photo"] and f["image"] in local:
             t["photo"] = t["thumb"] = local[f["image"]]
             m = re.search(r"Monografija.*#page=(\d+)", f["page"])
-            t["photo_src"] = dict(f, book_page=m and int(m[1]) - 2)
+            # One the user saved from a search has no page to cite.
+            t["photo_src"] = f["page"] and dict(f, book_page=m and int(m[1]) - 2)
         # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
         # Their own page names them in full (page_name); elsewhere some go by their first surname only (SHORT_SURNAME).
         t["page_name"] = t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
