@@ -12,11 +12,11 @@ Sections, top to bottom:
        size and a download link.
 2. [x] Colors: every CSS variable from style.css that holds a color, as a swatch with its name and value. The
        swatches use `var(--x)`, so they follow the visitor's current theme and change when the theme switches; the
-       value shown is read in the browser with getComputedStyle.
+       build.py reads both values from light-dark() and CSS shows the one of the theme on (no JS).
 3. [x] Typefaces: IBM Plex Sans, IBM Plex Mono, Geist (the site's fonts) and the OG poster fonts Golos Text
        ExtraBold and Roboto Mono; Masinci stays out. Each one gets a specimen (its weights, a Latin and a Cyrillic
-       line) and a download link. Golos ExtraBold and Roboto Mono get copied from pages/og-fonts/ into
-       static/fonts/.
+       line) and a download link. Golos uses the site's own static/fonts/lab/GolosText.woff2 (400–800);
+       Roboto Mono got copied from pages/og-fonts/ into static/fonts/.
 4. [x] Icons: every symbol in icons.svg in a grid, labeled by its id. build.py writes each symbol out as its own
        SVG as a data: URL download link (no files written).
 5. [x] OG posters: og*.png and og-link-*, as thumbnails linking the full file.
