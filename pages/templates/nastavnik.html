@@ -23,7 +23,7 @@
   {%- set w = t.name.split() %}
   <span class="tp__img tp__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>
   {%- endif %}
-  {#- The band's bottom left corner (a phone: on the photo's corner); style.css .tp__sp. -#}
+  {#- The band's bottom left corner (a phone: under the katedra's icon); style.css .tp__sp. -#}
   {%- if t.lista %}{{ sp_badge(t, 'tp__sp') }}{% endif %}
   {#- The katedra's icon in the band's top right corner, as on the list's cards. -#}
   {%- if t.katedra %}<span class="tp__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
