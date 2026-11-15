@@ -366,7 +366,7 @@ def picker(subjects, book, teachers, items=()):
         """[name, page, photo, title · katedra]; one who left: [name, page, photo, title · years, the grey corner's
         length (style.css --p), or None when no year is known (hatched)], as their card on /nastavnici/."""
         if not t["gone"]:
-            return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], katedra(t["katedra"])]))]
+            return [t["page_name"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], katedra(t["katedra"])]))]
         s = t["span"] or {}
         est = lambda y, guess: f"~{y}" if guess else str(y)
         years = (
@@ -376,7 +376,7 @@ def picker(subjects, book, teachers, items=()):
             else s.get("from") and f"od {est(s['from'], s.get('from_est'))}"  # an emeritus
         )
         undated = t["last_seen"][:4] == "0000"
-        return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
+        return [t["page_name"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
 
     listed = Counter(t["katedra"] for t in teachers if not t["gone"] and t["katedra"])
     people = sorted((t for t in teachers if not t.get("aside")), key=lambda t: t["gone"])

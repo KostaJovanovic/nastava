@@ -144,9 +144,11 @@ def load_teachers(db, subjects):
             m = re.search(r"Monografija.*#page=(\d+)", f["page"])
             # One the user saved from a search has no page to cite.
             t["photo_src"] = f["page"] and dict(f, book_page=m and int(m[1]) - 2)
-        # 'Драган С. Алексендрић' -> 'Драган Алексендрић': the shown name, without the father's initial.
-        # Their own page names them in full (page_name); elsewhere some go by their first surname only (SHORT_SURNAME).
-        t["page_name"] = t["shown"] = re.sub(r" \w\.(?= )", "", t["name"])
+        # The name in full (page_name: 'Драган Лј. Милановић', both surnames) on their own page and their card (the
+        # professors list, a katedra's); elsewhere shown: without the father's initial, and some by their first
+        # surname only (SHORT_SURNAME).
+        t["page_name"] = t["name"]
+        t["shown"] = re.sub(r" \w+\.(?= )", "", t["name"])
         if t["id"] in SHORT_SURNAME:
             t["shown"] = t["shown"].split("-")[0]
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
