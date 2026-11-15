@@ -9,7 +9,8 @@ workers_dev = false
 routes = [
   { pattern = "masinci.org", custom_domain = true },
   { pattern = "nastava.valjdakosta.com", custom_domain = true },
-  { pattern = "nastava.masinci.org", custom_domain = true }
+  { pattern = "nastava.masinci.org", custom_domain = true },
+  { pattern = "www.masinci.org", custom_domain = true }
 ]
 
 # The automatic update (src/index.js dispatch starts sync.yml): 7:17, 11:17, 15:17, 19:17 and 22:17 in Belgrade in

@@ -24,11 +24,13 @@ const keys = { p256dh: "BPumbb_-1", auth: "x-Y_z" };
 const S = "/predmet/oas-mi/matematika-1/";
 
 test("the old domains redirect to masinci.org with the path; /push stays", async () => {
-	for (const host of ["nastava.masinci.org", "nastava.valjdakosta.com"]) {
+	for (const host of ["nastava.masinci.org", "nastava.valjdakosta.com", "www.masinci.org"]) {
 		const r = await call({}, "/tema/3/?x=1", undefined, host);
 		assert.equal(r.status, 301);
 		assert.equal(r.headers.get("Location"), "https://masinci.org/tema/3/?x=1");
 	}
+	const http = await worker.fetch(new Request("http://masinci.org/vesti/"), {}, { waitUntil() {} });
+	assert.equal(http.headers.get("Location"), "https://masinci.org/vesti/");
 	const r = await call({ PUSH: kv() }, "/push", { method: "POST", body: "{}" }, "nastava.masinci.org");
 	assert.notEqual(r.status, 301);
 });

@@ -8,6 +8,8 @@ const FRAGMENT = '<html lang="sr"><title>';
 // Pagefind file names have a content hash, except these entry files.
 const ENTRY = /^\/pagefind\/pagefind[^/]*\.(js|json|css)$/;
 const YEAR = 31536000;
+// The hosts that redirect to masinci.org (wrangler.toml routes).
+const OLD_HOSTS = ["nastava.masinci.org", "nastava.valjdakosta.com", "www.masinci.org"];
 
 function cacheControl(url) {
 	const path = url.pathname;
@@ -197,7 +199,9 @@ export default {
 		}
 		// One domain for search engines and links: the old ones move there, path and all (/push and /visit stay
 		// above: the subscriptions made on the old domains).
-		if (url.hostname === "nastava.masinci.org" || url.hostname === "nastava.valjdakosta.com") {
+		// www and plain http too (HSTS works only after an https visit).
+			if (OLD_HOSTS.includes(url.hostname) || (url.hostname === "masinci.org" && url.protocol === "http:")) {
+				url.protocol = "https:";
 			url.hostname = "masinci.org";
 			return Response.redirect(url.toString(), 301);
 		}
