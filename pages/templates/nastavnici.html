@@ -83,7 +83,20 @@
   {%- for t in teachers if t.span and t.span['from'] and t.span['from'] < m[0] <= (t.last_seen[:4] | int) %}{{ card(t, dup=true) }}{% endfor %}
   {%- endmacro %}
   {%- set ns = namespace(sep=false, m=0) %}
+  {#- The emeriti first (render_teachers' order), set apart as the undated are at the end. -#}
+  {%- set emeriti = teachers | selectattr('emeritus') | list if archive else [] %}
+  {%- if emeriti %}
+  <li class="people__sep" data-sep>
+    <h2 class="sg__h">Profesori emeritusi <span>· {{ emeriti | length }}</span></h2>
+    <p>Penzionisani redovni profesori, kojima je Univerzitet dodelio počasno zvanje profesor emeritus.</p>
+  </li>
+  {%- endif %}
   {%- for t in teachers %}
+  {%- if emeriti and not t.emeritus and loop.previtem and loop.previtem.emeritus %}
+  <li class="people__sep" data-sep>
+    <h2 class="sg__h">Otišli sa fakulteta <span>· {{ (teachers | length) - (emeriti | length) }}</span></h2>
+  </li>
+  {%- endif %}
   {%- for m in milestones[ns.m:] if (t.last_seen[:4] | int) < m[0] %}{% set ns.m = ns.m + 1 %}{{ milestone(m) }}{% endfor %}
   {%- if archive and not ns.sep and t.last_seen[:4] == '0000' %}{% set ns.sep = true %}
   <li class="people__sep" data-sep>

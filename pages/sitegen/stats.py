@@ -166,7 +166,7 @@ def archive_stats(items, topics, teachers, words=None):
         ),
         teachers=dict(
             listed=len(listed),
-            emeritus=sum(1 for t in listed if t["emeritus"]),
+            emeritus=sum(1 for t in teachers if t["emeritus"]),
             gone=len(teachers) - len(listed),
             posting=len(posting),
             share=round(by_teachers / (len(posts) or 1) * 100),

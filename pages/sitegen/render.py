@@ -105,14 +105,13 @@ def render_places(site, topics, smerovi, subjects):
             write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t), index=False)
 
 
-def gone_span(t, first_list):
-    """A departed teacher's years at the faculty for the archive's card: {from, to, from_est, to_est}, an estimate
-    where no source says it. From the past (nastavnici-istorija.jsonl): its span. Off the faculty's list: to, the
-    year they left it; from, the earliest of their election report's year (exact), a source's year and their first
-    year on the list (exact unless it is the first list's: they were there before)."""
+def faculty_span(t, first_list):
+    """A teacher's years at the faculty for their card and page: {from, to, from_est, to_est}, an estimate where no
+    source says it. From the past (nastavnici-istorija.jsonl): its span. Off the faculty's list: to, the year they
+    left it; one still there (or an emeritus) has no to. From: the earliest of their start year (an election report,
+    a biography: exact), a source's year and their first year on the list (exact unless it is the first list's: they
+    were there before). An emeritus's to: the year they retired."""
     h = t.get("history") or {}
-    if not t["gone"]:
-        return None
     if not t["first_seen"]:
         return h.get("span")
     seen = [(int(t["first_seen"][:4]), t["first_seen"][:4] == first_list)]
@@ -120,7 +119,10 @@ def gone_span(t, first_list):
     if h.get("start"):
         seen.append((h["start"], False))
     start, est = min(seen, key=lambda s: (s[0], s[1]))
-    return {"from": start, "to": int(t["last_seen"][:4]), "from_est": est, "to_est": False}
+    # An emeritus: to, the year they retired (a source's, else their last on the teachers' list: an estimate).
+    if t["emeritus"]:
+        return {"from": start, "to": h.get("retired"), "from_est": est, "to_est": bool(h.get("retired_est"))}
+    return {"from": start, "to": int(t["last_seen"][:4]) if t["gone"] else None, "from_est": est, "to_est": False}
 
 
 def render_teachers(site, teachers, items, book):
@@ -170,7 +172,7 @@ def render_teachers(site, teachers, items, book):
         # the card, evenly by the year, all of it for 1900 and before. No year: none.
         ago = date.today().year - int(t["last_seen"][:4]) if t["gone"] and t["last_seen"][:4] != "0000" else 0
         t["age"] = round(100 * min(1, max(0, ago) / (date.today().year - 1900)))
-        t["span"] = gone_span(t, first_list)
+        t["span"] = faculty_span(t, first_list)
         t["biblio"] = bibliography(t["html"], (t.get("history") or {}).get("works"), t["name"])
     for t in teachers:
         source = base = f"{STUDY_SITE}fakultet/nastavnici/{'emeritus/start' if t['emeritus'] else t['id']}"
@@ -212,8 +214,8 @@ def render_teachers(site, teachers, items, book):
     for k in sorted({t["katedra"] for t in teachers if t["katedra"]}):
         if f'id="i-{slug(k)}"' not in sprite:
             print(f'[warn] no icon for {k}: add <symbol id="i-{slug(k)}"> to static/icons.svg', file=sys.stderr)
-    # The ones who left, most recent first: a section below the list.
-    left = sorted((t for t in teachers if t["gone"]), key=lambda t: t["last_seen"], reverse=True)
+    # The ones who left, most recent first, the emeriti before them (the archive's own group): a section below the list.
+    left = sorted((t for t in teachers if t["gone"]), key=lambda t: (t["emeritus"], t["last_seen"]), reverse=True)
     write(site / "nastavnici" / "index.html", env.get_template("nastavnici.html").render(teachers=listed, katedre=katedre, left=left))
     write(
         site / "nastavnici" / "arhiva" / "index.html",
@@ -347,9 +349,12 @@ def picker(subjects, book, teachers, items=()):
             return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], katedra(t["katedra"])]))]
         s = t["span"] or {}
         est = lambda y, guess: f"~{y}" if guess else str(y)
-        years = s.get("to") and (
-            (f"{est(s['from'], s.get('from_est'))}–" if s["from"] != s["to"] else "") if s.get("from") else "do "
-        ) + est(s["to"], s.get("to_est"))
+        years = (
+            ((f"{est(s['from'], s.get('from_est'))}–" if s["from"] != s["to"] else "") if s.get("from") else "do ")
+            + est(s["to"], s.get("to_est"))
+            if s.get("to")
+            else s.get("from") and f"od {est(s['from'], s.get('from_est'))}"  # an emeritus
+        )
         undated = t["last_seen"][:4] == "0000"
         return [t["shown"], t["href"], t["thumb"], " · ".join(filter(None, [t["title"], years])), None if undated else t["age"]]
 

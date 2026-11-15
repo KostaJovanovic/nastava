@@ -124,6 +124,9 @@ def load_teachers(db, subjects):
     listed_day = max((t["last_seen"] for t in teachers if not t["gone"] and not t.get("source")), default="")
     for t in teachers:
         t["off_list"] = t["gone"] or t["last_seen"] < listed_day
+        # An emeritus no longer teaches: in the archive, though still on the faculty's emeritus page (so not off_list:
+        # their photo and source stay the faculty's).
+        t["gone"] = t["gone"] or t["emeritus"]
         t["bio"] = bios.pop(t["id"], None)
         t["summary"] = sums.pop(t["id"], None)
         # The photo from our copy (write_photos); a listed teacher's not copied yet from the faculty, one off the

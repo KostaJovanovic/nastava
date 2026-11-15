@@ -5,7 +5,8 @@
 """Teachers who left before the archive began (once, by hand): from the Wayback Machine's copies of the faculty's
 teacher list (2014 on) and from masinac.org (2008 on), into nastavnici.py's tables.
 
-Usage: nastavnici_istorija.py
+Usage: nastavnici_istorija.py [first]
+  first: only the listed teachers' first day on the archived lists (their first_seen), nothing else fetched.
 """
 
 import re
@@ -71,10 +72,10 @@ def wb_time(ts):
     return f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}T{ts[8:10]}:{ts[10:12]}:{ts[12:14]}+00:00"
 
 
-def history(db):
+def history(db, only_first=False):
     """Teachers who left before the archive began, from the Wayback Machine's copies of the list (2014 on) and from
     masinac.org (2008 on). Each one not listed today is stored gone, with their last archived profile and a photo that
-    still loads; listed teachers are not touched."""
+    still loads; a listed teacher gets only their first day on the archived lists. only_first: just that."""
     from collections import Counter, defaultdict
 
     def get(url, tries=4):
@@ -105,12 +106,15 @@ def history(db):
 
     live = {r[0] for r in db.execute("select id from teachers where not gone")}
     seen = {}  # id -> [first ts, last ts, row of the last list]
+    teaching = {}  # id -> the last ts on the teachers' list (not the emeritus page)
     for path, parse in ((LIST, parse_list), (EMERITUS, parse_emeritus)):
         for ts, url in captures("www.mas.bg.ac.rs/" + path):
             rows = parse(page(ts, url))
             print(f"{path} {ts}: {len(rows)}", flush=True)
             for row in rows:
                 seen.setdefault(row["id"], [ts, ts, row])[1:] = [ts, row]
+                if path == LIST:
+                    teaching[row["id"]] = ts
     profiles = {}
     for ts, url in captures("www.mas.bg.ac.rs/fakultet/nastavnici/", prefix=True):
         m = re.search(r"/fakultet/nastavnici/(\d+)$", url.split("?")[0])
@@ -132,6 +136,19 @@ def history(db):
         ids[0]: [min(seen[i][0] for i in ids), *seen[ids[0]][1:]] for keys, ids in people if not keys & taken and not live.intersection(ids)
     }
     print(f"{len(seen)} ids in the archived lists, {len(people)} people, {len(left)} not listed today", flush=True)
+    # One listed today (an emeritus too): their first day on the archived lists, under any of their ids, as first_seen,
+    # the start of their years at the faculty (render.faculty_span); nastavnici.py's own is its first run (2026-11).
+    listed = {k: i for i, n, u in db.execute("select id, name, username from teachers where not gone") for k in (name_key(n), u) if k}
+    for keys, ids in people:
+        for i in live.intersection(ids) | {listed[k] for k in keys if k in listed}:
+            db.execute("update teachers set first_seen = min(first_seen, ?) where id = ?", (wb_time(min(seen[j][0] for j in ids)), i))
+        # An emeritus: the last year on the teachers' list, about when they retired (for nastavnici-istorija.jsonl's
+        # "retired", by hand: no table keeps it).
+        if any(j.startswith("emeritus-") for j in ids) and teaching.keys() & set(ids):
+            print(f"emeritus {seen[ids[0]][2]['full_name']}: last on the teachers' list {max(teaching[j] for j in ids if j in teaching)[:8]}", flush=True)
+    db.commit()
+    if only_first:
+        return
     for n, (i, (first, last, row)) in enumerate(left.items(), 1):
         subjects = []
         if i in profiles:
@@ -252,6 +269,6 @@ def history(db):
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
-    if len(sys.argv) > 1:
+    if sys.argv[1:] not in ([], ["first"]):
         sys.exit(__doc__)
-    history(open_db())
+    history(open_db(), only_first=sys.argv[1:] == ["first"])

@@ -30,15 +30,16 @@
       {#- title: the name on hover; the text above already says it, so the icon is hidden from screen readers. -#}
       <span class="pc__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
       {%- if t.lista %}{{ sp_badge(t, 'pc__sp') }}{% endif %}
-      {#- .pc__p: the post count, shown only while the list is ordered by it (style.css). -#}
+      {#- One line: the office, their years at the faculty ('~' and dimmer where no source says it, an estimate), and
+          .pc__p, the post count, shown only while the list is ordered by it (style.css). -#}
       {%- set office = t.office and not t.gone %}
-      <p class="pc__m">{% if office %}kabinet {{ t.office }}{% endif %}{% if t.posts %}<span class="pc__p">{% if office %}, {% endif %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}</span>{% endif %}</p>
+      {%- set s = t.span %}
+      {%- set yrs = s and (s.to or s['from']) %}
+      <p class="pc__m">{% if office %}kabinet {{ t.office }}{% endif %}
+        {%- if yrs %}{% if office %}<span class="pc__sep"> · </span>{% endif %}<span title="na fakultetu">
+        {%- if not s.to %}od {{ est(s['from'], s.from_est) }}
+        {%- else %}{% if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }}{% endif %}</span>{% endif %}
+        {%- if t.posts %}<span class="pc__p">{% if office or yrs %}<span class="pc__sep"> · </span>{% endif %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}</span>{% endif %}</p>
     </div>
-    {#- Their years at the faculty, bottom right; '~' and a dimmer year where no source says it (an estimate). -#}
-    {%- set s = t.span %}
-    {%- if s and s.to %}
-    <p class="pc__yrs"><span class="pc__yl">na fakultetu</span>
-      {%- if s['from'] and s['from'] != s.to %}{{ est(s['from'], s.from_est) }}–{% elif not s['from'] %}do {% endif %}{{ est(s.to, s.to_est) }}</p>
-    {%- endif %}
   </li>
 {%- endmacro %}
