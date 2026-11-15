@@ -15,7 +15,7 @@
 <ol class="vz">
   {%- for d in days %}
   <li class="vz__day">
-    <div class="vz__h"><h2>{{ d.date }}</h2><span class="vz__v" title="Poslednja verzija tog dana">{{ d.last }}</span></div>
+    <div class="vz__h"><h2>{{ d.date }}</h2><span class="vz__v" title="Poslednja verzija tog dana">{{ d.span.split('–')[-1] }}</span></div>
     {#- The lead above the first heading, if the day has headings. p['items']: p.items is the dict's method. -#}
     {%- if d.lead %}<ul class="vz__list"><li class="vz__lead">{{ d.lead }}</li></ul>{% endif %}
     {%- for p in d.parts if p['items'] %}
