@@ -3,6 +3,11 @@ target-version = "py311"
 # Python files only: not the code blocks in the plans (.md).
 extend-exclude = ["*.md"]
 
+# Pyflakes only (undefined names, unused imports, ...): ci/deploy.sh fails on them. The code's style (lambdas, dict())
+# is its own, so not the rest of ruff's defaults.
+[lint]
+select = ["F"]
+
 [format]
 quote-style = "double"
 indent-style = "space"

@@ -97,7 +97,7 @@ def moodle(page, out, urls):
         page.wait_for_url(re.compile(r"/course/view\.php\?id=\d+"), timeout=WAIT)
         page.wait_for_load_state("networkidle")
         run(page, "moodle/moodle-export.js", out)
-    print(f"\nNext: moodle.py add <zip> /predmet/<smer>/<subject>/ <teacher's username> [week 1's Monday] (README).")
+    print("\nNext: moodle.py add <zip> /predmet/<smer>/<subject>/ <teacher's username> [week 1's Monday] (README).")
 
 
 if __name__ == "__main__":

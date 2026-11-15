@@ -14,7 +14,7 @@ with sync_playwright() as p:
     shown = lambda: page.locator("[data-rows] > li:visible").count()
     page.goto(base + "/nastavnici/")
     print("all:", shown(), "| heading:", page.inner_text("#title"))
-    page.screenshot(path="test/nastavnici.png")
+    page.screenshot(path="test/shots/nastavnici.png")
     for q in ["djukic", "Ђукић", "matematika 1", "termotehnik", "440"]:
         page.fill("#q", q)  # the header search filters the list on this page
         print(f"{q!r}:", shown(), page.locator("[data-rows] > li:visible .pc__a").all_inner_texts()[:3])
@@ -50,7 +50,7 @@ with sync_playwright() as p:
         "| posts:",
         page.locator(".tp__posts li").count(),
     )
-    page.screenshot(path="test/nastavnik.png")
+    page.screenshot(path="test/shots/nastavnik.png")
     page.click("#pismo")
     print("cyrillic h1:", page.inner_text("h1"), "| button:", page.get_attribute("#pismo", "data-pismo"))
     page.click("#pismo")

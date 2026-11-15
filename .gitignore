@@ -9,6 +9,8 @@ mail/**
 !mail/**/*.json
 __pycache__/
 .build/
+# Screenshots and page dumps of browser checks: test/shots/ (the old places too, for a stray one).
+test/shots/
 test/*.png
 test/browser/*.png
 test/dom.html

@@ -71,6 +71,7 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	# (it downloads attachments). A failure stops the run here: a broken parser must not scrape.
 	run_tests() {  # in a function set -e is off: each failure returns itself
 		local t
+		uvx -q ruff check -q . || return  # ruff.toml: pyflakes only (undefined names, unused imports)
 		for t in test/*_test.py; do
 			[[ $t == test/build_test.py || $t == test/docs_test.py ]] && continue
 			uv run -q "$t" || return
