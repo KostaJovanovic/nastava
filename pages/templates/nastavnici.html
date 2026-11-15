@@ -65,8 +65,9 @@
 <div class="groups" data-groups>
 <ol class="people" data-rows>
   {#- The archive is by departure, newest first: a milestone of the faculty's history goes above the first teacher who
-      left before its year (the ones before 1873 under the last dated teacher). The last ones: no source gives a year.
-      site.js hides these once regrouped or reordered. -#}
+      left before its year (the ones before 1873 under the last dated teacher). Under it first, a second card of each
+      teacher at the faculty across it (came before its year, left in or after it). The last ones: no source gives a
+      year. site.js hides these once regrouped or reordered. -#}
   {%- set milestones = [
     (1948, 'Tehnički fakultet podeljen na šest fakulteta, među njima i Mašinski'),
     (1905, 'Velika škola postaje Univerzitet u Beogradu, Tehnički fakultet jedan od njegovih fakulteta'),
@@ -79,6 +80,7 @@
     <p class="ms__t">{{ m[1] }}</p>
     <p class="ms__y">{{ m[0] }}.</p>
   </li>
+  {%- for t in teachers if t.span and t.span['from'] and t.span['from'] < m[0] <= (t.last_seen[:4] | int) %}{{ card(t, dup=true) }}{% endfor %}
   {%- endmacro %}
   {%- set ns = namespace(sep=false, m=0) %}
   {%- for t in teachers %}

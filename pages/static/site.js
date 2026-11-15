@@ -435,6 +435,8 @@
     var runRows = function () {
       var p = new URLSearchParams(), ids = {};
       ctl.concat([gsel, ssel]).forEach(function (c) { if (c && c.value.trim()) p.set(c.name, c.value.trim()); });
+      // Regrouped or reordered: the archive's headings and its second cards (data-dup) go.
+      var arranged = !!(gsel && gsel.value) || !!(ssel && ssel.value);
       rows.forEach(function (r, i) {
         var ok = ctl.every(function (c) {
           var v = c.value.trim(), have = field(r, c.dataset.f);
@@ -445,7 +447,7 @@
         // A subject not followed while only the followed show (head.js hides it too).
         var m = window.mojiNow;
         if (m && m.only && r.dataset.pid !== undefined && !m.has(r.dataset.pid)) ok = false;
-        r.hidden = !ok;
+        r.hidden = !ok || (arranged && r.hasAttribute('data-dup'));
         // Counted once per subject, among the rows on view.
         if (ok && (!made || made.contains(r)) && (!left || !left.contains(r))) ids[r.dataset.id || i] = 1;
       });
@@ -472,7 +474,6 @@
       if (n) n.textContent = shown;
       // The archive's headings, in the page's own order only: 'no year' while a row under it is on view, a milestone
       // while one above it is (it marks where they end).
-      var arranged = !!(gsel && gsel.value) || !!(ssel && ssel.value);
       var onView = function (s, way) {
         for (var r = s[way]; r; r = r[way]) if (!r.hasAttribute('data-sep') && !r.hidden) return true;
         return false;
