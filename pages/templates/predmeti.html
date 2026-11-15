@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "rows.html" import empty %}
+{% from "rows.html" import empty, kp_tabs %}
 {% set origin = 'https://www.mas.bg.ac.rs/studije/predmeti/start' %}
 
 {% block title %}Predmeti{% endblock %}
@@ -30,6 +30,7 @@
   <h1 id="title">Predmeti</h1>
   <p class="mh__sub">Svi predmeti iz Knjige predmeta, po nastavnim planovima: godina, semestar i izborne grupe. Broj threadova je sa foruma nastave.</p>
 </div>
+{{ kp_tabs('/predmeti/') }}
 {#- Its own search filters this list (site.js); its text is ?q=. -#}
 <form class="people__bar" data-filter onsubmit="return false">
   <input class="field" type="search" name="q" data-f="find" placeholder="Naziv, šifra, nastavnik, katedra, modul…" aria-label="Pretraži predmete" autocomplete="off" enterkeyhint="search">

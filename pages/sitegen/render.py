@@ -232,7 +232,7 @@ def render_teachers(site, teachers, items, book):
 def render_katedre(site, db, teachers, subjects, topics, sajt=None):
     """A page per katedra with listed teachers (/katedra/<name>/): the faculty's text about it and its own site,
     its teachers' cards, its subjects (those whose row has its icon, build.py row_katedra) by smer, the newest
-    topics in them, and its own site's pages, folded (load_sajtovi)."""
+    topics in them, and its own site's pages, folded (load_sajtovi). And their list, /katedre/."""
     dept = {}
     if db.execute("SELECT 1 FROM sqlite_master WHERE name = 'departments'").fetchone():
         dept = {r["name"]: r for r in db.execute("SELECT * FROM departments")}
@@ -241,14 +241,16 @@ def render_katedre(site, db, teachers, subjects, topics, sajt=None):
     for t in topics:  # newest first
         if t["subj"] and t["subj"].get("katedra") and len(newest[t["subj"]["katedra"]]) < 15:
             newest[t["subj"]["katedra"]].append(t)
-    for k in sorted(katedra_pages):
+    rows = []  # the list at /katedre/ (katedre.html), by the short name
+    for k in sorted(katedra_pages, key=lambda k: azbuka(katedra(k))):
         d = dept.get(k)
         intro, own = department_intro(d["html"]) if d else ("", None)
         subs = sorted(
             (s for s in subjects.values() if s.get("katedra") == k),
             key=lambda s: (HOME_ORDER.index(s["smer"]["key"]) if s["smer"].get("key") in HOME_ORDER else 99, -s["topics"], fold(s["name"])),
         )
-        groups = [(m["label"], list(rows)) for m, rows in groupby(subs, key=lambda s: s["smer"])]
+        groups = [(m["label"], list(g)) for m, g in groupby(subs, key=lambda s: s["smer"])]
+        rows.append(dict(k=k, find=fold(k), t=sum(t["katedra"] == k for t in listed), s=len(subs), topics=sum(s["topics"] for s in subs)))
         write(
             site / katedra_href(k).strip("/") / "index.html",
             env.get_template("katedra.html").render(
@@ -263,6 +265,7 @@ def render_katedre(site, db, teachers, subjects, topics, sajt=None):
                 sajt=(sajt or {}).get(k),
             ),
         )
+    write(site / "katedre" / "index.html", env.get_template("katedre.html").render(rows=rows))
 
 
 def render_book(site, book):

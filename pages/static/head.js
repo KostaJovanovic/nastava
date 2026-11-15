@@ -94,8 +94,8 @@ window.showSaved = function () {
 	const d = document, n = window.mojiNow.n, iz = d.querySelector("[data-izbor]");
 	if (iz) {
 		iz.hidden = false;
-		const count = iz.querySelector("[data-moji-n]");
-		if (count.textContent !== String(n || "")) count.textContent = n || "";
+		// With subjects chosen, no heading: the switch says what the panel is, with the count.
+		iz.querySelector("#moji-h").hidden = n > 0;
 		iz.querySelector("[data-moji-scope]").hidden = !n;
 		let all = false;
 		try { all = localStorage.getItem("sve") === "1"; } catch (e) {}
@@ -107,7 +107,6 @@ window.showSaved = function () {
 			open.querySelector("span").textContent = n ? "Izmeni predmete" : "Izaberi predmete";
 			open.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (n ? "-on" : ""));
 		}
-		// A phone's switch has the count too, the heading being hidden there (style.css).
 		const chip = iz.querySelector("[data-moji-c]");
 		if (chip.textContent !== String(n || "")) chip.textContent = n || "";
 	}

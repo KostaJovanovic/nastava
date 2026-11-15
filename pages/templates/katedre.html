@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "rows.html" import empty, kp_tabs %}
+{#- The katedre with a page of their own (render_katedre): a card each, as /nastavnici/ lists the teachers. -#}
+
+{% block title %}Katedre{% endblock %}
+{% block og %}-nastavnici{% endblock %}
+{% block description %}Katedre Mašinskog fakulteta u Beogradu: nastavnici, predmeti i threadovi sa foruma nastave za svaku.{% endblock %}
+
+{% block main %}
+<div class="mh">
+  <h1 id="title">Katedre</h1>
+  <p class="mh__sub">Katedre fakulteta sa nastavnicima na spisku: njihovi nastavnici, predmeti i najnoviji threadovi.</p>
+</div>
+{{ kp_tabs('/katedre/') }}
+{#- Its own search filters this list (site.js); its text is ?q=. -#}
+<form class="people__bar" data-filter onsubmit="return false">
+  <input class="field" type="search" name="q" data-f="find" placeholder="Naziv katedre…" aria-label="Pretraži katedre" autocomplete="off" enterkeyhint="search">
+  <span class="fbar__n">prikazano <b data-shown>{{ rows | length }}</b></span>
+  <div class="arrange" data-arrange>
+    <label class="pick">Poređaj
+    <select id="k-s" name="red" data-sort>
+      <option value="">po nazivu</option>
+      <option value="-t">po broju nastavnika</option>
+      <option value="-s">po broju predmeta</option>
+      <option value="-c">po broju threadova</option>
+    </select></label>
+  </div>
+</form>
+<div class="groups" data-groups>
+<ol class="people" data-rows>
+  {%- for r in rows %}
+  <li class="pc kc" data-find="{{ r.find }}" data-t="{{ r.t }}" data-s="{{ r.s }}" data-c="{{ r.topics }}">
+    <span class="pc__img pc__img--none kc__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ r.k | slug }}"></use></svg></span>
+    <div class="pc__t">
+      <a class="pc__a" href="{{ r.k | katedra_href }}">{{ r.k | katedra | capitalize }}</a>
+      <p>{{ r.k }}</p>
+      <p class="pc__m">{{ r.t | n }} {{ r.t | pl('nastavnik') }} · {{ r.s | n }} {{ r.s | pl('predmet') }}</p>
+    </div>
+  </li>
+  {%- endfor %}
+</ol>
+</div>
+{{ empty('users', 'Nijedna katedra ne odgovara pretrazi.', hidden=true) }}
+{% endblock %}

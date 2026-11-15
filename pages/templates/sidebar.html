@@ -10,8 +10,9 @@
     <a href="/raspored/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg><span class="snav__long">Kalendar i rasporedi</span><span class="snav__short">Raspored</span></a>
     <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
     <a href="/link/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-link"></use></svg>Linkovi</a>
-    {#- Phone: not in the tab bar (Linkovi in its place); the subjects are on the home page and in the search. -#}
-    <a href="/predmeti/" class="snav__wide"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Predmeti</a>
+    {#- Phone: not in the tab bar (Linkovi in its place); the subjects are on the home page and in the search, the
+        katedre a button on /nastavnici/. /predmeti/ and /katedre/ are its two tabs (rows.html kp_tabs). -#}
+    <a href="/predmeti/" class="snav__wide"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Katedre i predmeti</a>
     <a href="/vesti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-news"></use></svg>Vesti</a>  </nav>
   {#- Phone: the panel's parts are blocks of the page (style.css .side): the followed subjects above it, the year
       at its bottom. -#}
@@ -23,9 +24,9 @@
           followed, the switch "Samo moji predmeti" applies to the whole site (head.js) and the search; off, all show. -#}
       {#- A div, not a fieldset: Safari keeps a legend out of the phone's grid (style.css), floated or not. -#}
       <div class="fgroup" role="group" aria-labelledby="moji-h" data-izbor hidden>
-        <p class="sec" id="moji-h">Obaveštenja <span data-moji-n></span></p>
+        <p class="sec" id="moji-h">Obaveštenja</p>
         <div data-moji-scope hidden>
-          <label class="tgl"><span>Samo moji<span class="tgl__more"> predmeti</span> <span class="tgl__n" data-moji-c></span></span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
+          <label class="tgl"><span>Prikaži moje<span class="tgl__more"> predmete</span><span class="tgl__n" data-moji-c></span></span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
           {#- The notifications switch, as on /mojipredmeti/ (site.js): a phone's is a bell. Greyed where the browser
               can't send them or has them blocked. -#}
           <label class="tgl tgl--push" data-push hidden><span>Obaveštenja</span><input type="checkbox" role="switch" data-push-on><i class="tgl__s" aria-hidden="true"></i><svg class="i tgl__bell" aria-hidden="true"><use href="/static/icons.svg#i-bell"></use></svg><svg class="i tgl__bell tgl__bell--on" aria-hidden="true"><use href="/static/icons.svg#i-bell-on"></use></svg></label>

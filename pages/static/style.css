@@ -665,9 +665,8 @@ body:has(#res) .filters--years { display: none; }
   .fgroup[data-izbor] .is-set > span, .fgroup[data-izbor]:has(.is-set) > .sec { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 }
 /* The phone's count is the switch's; a wide screen has it in the heading. */
-@media (min-width: 900px) { .tgl__n { display: none; } }
-.tgl__n { color: var(--dim); font-weight: 400; font-size: 12px; }
-/* A very narrow phone: "Izaberi predmete" without the star, "Samo moji" without "predmeti". */
+.tgl__n { margin-left: 4px; color: var(--dim); font-weight: 400; font-size: 12px; }
+/* A very narrow phone: "Izaberi predmete" without the star, "Prikaži moje" without "predmete". */
 @media (max-width: 359px) {
   .fgroup[data-izbor] .moji__open .btn:not(.is-set) .i { display: none; }
   .tgl__more { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
@@ -1566,6 +1565,14 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
   font-size: 14px; font-weight: 600; }
 .arch:hover { border-color: var(--head-2); color: var(--head-fg); filter: brightness(1.12); }
 .arch .i { color: inherit; }
+/* Beside it, the way to the katedre (/nastavnici/, /predmeti/): the same size, a plain white button. */
+.mh__btns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.arch.kat { padding-right: 14px; background: var(--card); border-color: var(--line); color: var(--fg); }
+.arch.kat:hover { border-color: var(--slate); color: var(--fg); filter: none; }
+.arch.kat .i { color: var(--slate); }
+/* The katedre's cards (katedre.html): the icon in the photo's place. */
+.kc__i .i { width: 34px; height: 34px; color: var(--slate); }
+.kc:hover .kc__i .i { color: var(--accent-t); }
 .arch__n { padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--head-fg) 22%, transparent);
   font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .arch-all .i { color: var(--slate); }
