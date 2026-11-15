@@ -213,6 +213,9 @@ def render_teachers(site, teachers, items, book):
         html = re.sub(r"<h[12][^>]*>.*?</h[12]>", "", t["html"] or "", count=1, flags=re.S)
         # Its bibliography is the page's own section (bibliography); clean_html closes what this leaves open.
         html = re.sub(r'<h2[^>]*id="библиографија".*?(?=<h2|$)', "", html, flags=re.S)
+        # No teacher's phone on the site: the profile's 'Телефон: локал …' line and masinac.org's 'Broj telefona' row.
+        html = re.sub(r"<strong>телефон</strong>:[^<]*<br/>\n?", "", html, flags=re.I)
+        html = re.sub(r"<tr>\s*<td[^>]*>Broj telefona</td>.*?</tr>\s*", "", html, flags=re.S)
         # base: the profile's relative links are the faculty's (or masinac.org's), even when shown from the Wayback copy.
         html = clean_html(re.sub(r"<img[^>]+_media/fakultet/nastavnici/[^>]+>", "", html, count=1), base, local)
         write(

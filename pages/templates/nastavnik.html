@@ -48,7 +48,6 @@
       {%- if t.office %}<dt>Kabinet</dt><dd>{{ t.office }}</dd>{% endif %}
       {%- endif %}
       {%- if t.email %}<dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd>{% endif %}
-      {%- if t.phone %}<dt>Telefon</dt><dd>{{ t.phone }}</dd>{% endif %}
       {%- if t.research %}<dt>Oblast</dt><dd class="tp__long" title="{{ t.research }}">{{ t.research }}</dd>{% endif %}
       {%- if h and h.home %}<dt>Matični fakultet</dt><dd>{{ h.home }}; na Mašinskom fakultetu honorarno</dd>{% endif %}
     </dl>
@@ -245,17 +244,17 @@
 {%- endif %}
 
 {%- if h and h.card %}
-{#- Their card on the faculty's old site (2005-2014), from the Wayback Machine: as it was then, so office, phone and
-    e-mail are those of that time. -#}
+{#- Their card on the faculty's old site (2005-2014), from the Wayback Machine: as it was then, so office and e-mail
+    are those of that time. No phone: the site shows no teacher's. -#}
 {%- set labels = {'title': 'Zvanje', 'katedra': 'Katedra', 'role': 'Funkcija', 'research': 'Istraživačka oblast',
                   'teaching': 'Nastavna oblast, predmeti', 'education': 'Obrazovanje', 'publications': 'Publikacije, priznanja, nagrade',
-                  'memberships': 'Članstva', 'office': 'Kabinet', 'phone': 'Telefon', 'email': 'Mejl', 'web': 'Lična veb stranica'} %}
+                  'memberships': 'Članstva', 'office': 'Kabinet', 'email': 'Mejl', 'web': 'Lična veb stranica'} %}
 <details class="tp__bio"{% if past %} open{% endif %}>
   <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>Profil sa starog sajta fakulteta ({{ h.card.date[:4] }})</summary>
   <dl class="tp__dl tp__card">
     {%- for k, label in labels.items() if h.card.fields[k] %}<dt>{{ label }}</dt><dd>{{ h.card.fields[k] }}</dd>{% endfor %}
   </dl>
-  <p class="tp__src">Stanje od {{ h.card.date[6:8] }}.{{ h.card.date[4:6] }}.{{ h.card.date[:4] }}. (kabinet, telefon i mejl su iz tog vremena), sa <a href="{{ h.card.url }}" rel="noopener" target="_blank">web.archive.org <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+  <p class="tp__src">Stanje od {{ h.card.date[6:8] }}.{{ h.card.date[4:6] }}.{{ h.card.date[:4] }}. (kabinet i mejl su iz tog vremena), sa <a href="{{ h.card.url }}" rel="noopener" target="_blank">web.archive.org <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
 </details>
 {%- endif %}
 
