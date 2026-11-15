@@ -201,7 +201,7 @@ LINKS = [
             ("O sajtu", "/o-sajtu/", "file", None),
             ("Statistika", "/statistika/", "file", None),
             ("Privatnost", "/privatnost/", "file", None),
-            ("Verzije", "/verzije/", "file", None),
+            ("Šta je novo", "/verzije/", "file", None),
             ("Kod na GitHub-u", "https://github.com/KostaJovanovic/nastava", "globe", None),
             ("Prijavi grešku", "https://github.com/KostaJovanovic/nastava/issues", "msg", None),
             ("Knjiga utisaka", "https://valjdakosta.com/guestbook", "msgs", None),

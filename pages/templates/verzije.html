@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Verzije{% endblock %}
+{% block title %}Šta je novo{% endblock %}
 {% block description %}Šta se menjalo na arhivi foruma nastave Mašinskog fakulteta, po danima i verzijama.{% endblock %}
 
 {#- The changelog, from verzije.md (build.py load_verzije): one panel, a day per part (05:00 to 05:00), newest first,
@@ -9,7 +9,7 @@
 {% block main %}
 {%- set total = days | sum(attribute='n') %}
 <div class="mh">
-  <h1 id="title">Verzije</h1>
+  <h1 id="title">Šta je novo</h1>
   <p class="mh__sub">Šta se menjalo na sajtu, od najnovijeg. {{ total }} {{ total | pl('verzija') }} od {{ days[-1].date }}</p>
 </div>
 <ol class="vz">

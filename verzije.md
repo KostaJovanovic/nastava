@@ -28,8 +28,8 @@ Profesori emeritusi su u arhivi.
 - 578, 581 **Kartice nastavnika su niže.** Slike nastavnika se pojave postepeno.
 - 580, 582–583 [ispravka] **Scrollbar u Firefox-u** više ne prekriva stranu.
 - 590–591 [novo] **Strana Privatnost** kaže kratko šta sajt čuva o tebi.
-- 586–589 **Verzije su preglednije.** Uz svaki dan piše njegova poslednja verzija.
-- 592, 594–597 **Footer je kraći.** Ima linkove na Verzije i `Piši mi :)`.
+- 586–589, 600 **Verzije se sad zovu Šta je novo.** Uz svaki dan piše njegova poslednja verzija.
+- 592, 594–597 **Footer je kraći.** Ima linkove na Šta je novo i `Piši mi :)`.
 - 585, 593, 599 **Održavanje:** ova strana.
 
 ## 14. novembra 2026.
