@@ -15,6 +15,84 @@ above the first `## ` is this note and is not shown.
 - Write for someone who uses the site, in plain Serbian: what is different for them. Internal work (plans, CI,
   tests, tools) goes into one `Održavanje` entry a day, not a line each.
 
+## 15. novembra 2026.
+Profesori emeritusi u arhivi, strana sa svim katedrama.
+
+- 584 [novo] **Strana Katedre:** sve katedre na jednom mestu, sa brojem nastavnika, predmeta i threadova. U side
+  panelu je sad `Katedre i predmeti`, sa dva taba, a prekidač se zove `Prikaži moje predmete`.
+- 577, 579 [novo] **Profesori emeritusi su u arhivi,** jer više ne predaju, kao posebna grupa na vrhu. Uz svakog
+  piše kad je došao na fakultet i kad je otišao u penziju, i godina rođenja gde je znamo. Svi nastavnici sad imaju
+  godinu od kad su na fakultetu (`od 2014`); `~` znači procenu.
+- 575–576 [novo] **Oznaka Studentske liste „Studenti pobeđuju“** na kartici i strani nastavnika koji su na njoj, sa
+  mestom na listi.
+- 578, 581 **Kartice nastavnika** su niže: kabinet, godine i broj postova su u jednom redu. Slike nastavnika se
+  pojave postepeno, a ne odjednom.
+- 580, 582–583 [ispravka] **Scrollbar u Firefox-u** više ne prekriva stranu, i traka pored footer-a je uvek iste
+  širine.
+- 585 **Održavanje:** ova strana.
+
+## 14. novembra 2026.
+Biografije i godine za skoro sve nastavnike iz arhive, i sajtovi katedri na njihovim stranama.
+
+- 541–545, 547–550, 553–562, 564–565, 567–573 [novo] **Arhiva nastavnika:** kratka biografija za skoro svakog
+  nastavnika iz arhive, iz monografije fakulteta, starog sajta i sajtova katedri. Uz to godine rođenja i godine na
+  fakultetu, nove slike (Katedra za procesnu tehniku i drugi) i osoblje mašinskog odseka pre 1948.
+- 563, 566 [novo] **Istorija fakulteta u arhivi:** između nastavnika stoje godine osnivanja (Velika škola 1863,
+  Mašinski fakultet 1948…), a ko je bio na fakultetu i pre i posle takve godine, pojavi se i ispod nje.
+- 551–552 [novo] **Sajtovi katedri, ceo sadržaj:** strane sa sajta katedre su na strani te katedre, a lične strane
+  nastavnika na strani nastavnika, sklopljene. Osvežavaju se dva puta godišnje.
+- 525, 534 [novo] **Materijal sa Moodle-a** za Optimizaciju proizvodnih procesa i Primenjenu mehatroniku: obaveštenja
+  nastavnika su postovi predmeta, a fajlovi su u delu `Materijal sa Moodle-a`.
+- 539–540 **Najnoviji threadovi** se menjaju zajedno sa Studijama kad uključiš `Samo moji predmeti`.
+- 538 **`RSS` u prozoru za obaveštenja** je sklopljen, otvori se na klik.
+- 520 **Strana predmeta** ima link ka svojoj katedri.
+- 521 **Moji predmeti:** veće ikonice u traci.
+- 546 [ispravka] **Stavke sa cent-a bez naslova** su otvorene, a ne prazna sklopljena polja.
+- 518 [brže] **Ćirilica** se primenjuje jednom po strani.
+- 498–517, 519, 522–524, 526–533, 535–537, 574 **Održavanje:** kod sajta podeljen u manje delove, alat za preuzimanje
+  Moodle i Teams kurseva, oblak reči na statistici se pravi jednom nedeljno, planovi.
+
+## 13. novembra 2026.
+Novi izgled za Moje predmete, objave su sad threadovi, i ostatak sajta fakulteta u Linkovima.
+
+### Moji predmeti i obaveštenja
+- 381–382, 386–390, 392–402, 405–407, 411–412, 414–418, 421, 480 **Prekidač `Samo moji predmeti` na početnoj:**
+  smerovi sa tvojim predmetima idu na vrh, ostali se posive i suze, uz animaciju. Spiskovi ispod su odmah tu.
+- 434–438 **Izbor predmeta:** prvo biraš program, pa predmete sa liste. Izborni predmeti su u svojim grupama, a grupe
+  su sklopljene, osim onih u kojima već pratiš neki predmet. Na telefonu je traka za potvrdu uvek dole, a strana
+  nema footer.
+- 425, 427–428 **Obaveštenja u side panelu:** prekidač i dugme za izbor predmeta u jednom redu, sa zvoncem; na telefonu
+  u jednom redu sa brojem predmeta.
+- 431, 487, 490–491 [novo] **Kad obaveštenja ne mogu da se uključe,** klik na prekidač kaže zašto i šta da uradiš, za
+  tvoj telefon i browser (iPhone: samo sa početnog ekrana, od iOS 16.4). Ili `RSS`: link za svaki tvoj predmet i
+  fajl za čitač vesti.
+- 475 [novo] **Statistika** pokazuje koliko je browsera prijavljeno za obaveštenja.
+
+### Ostalo
+- 439 **Objava je sad thread** (ćirilicom niz), svuda na sajtu.
+- 403 [novo] **Strana Threadovi:** svi threadovi po godinama, sa filterom; link je ispod Najnovijih na početnoj.
+- 404, 408 **Thread sa više postova se otvori na najnovijem postu.**
+- 481 [novo] **Oznake u spisku threadova:** da li thread ima fajl ili link.
+- 446–447, 455, 465–467, 477 [novo] **Linkovi:** ceo sajt fakulteta je arhiviran i složen po temama (Upis i
+  studiranje, Fakultet, Biblioteka…), a strane za studente su sad tu. Upis ima tabove, a linkovi za upis su i na
+  Rasporedu, ispod rasporeda ispita.
+- 419–420, 423–424, 444, 492 **Ime sajta je `masinci.org`,** sa podnaslovom „Mašinski fakultet, na jednom mestu“.
+  Nova favicon.
+- 371 **Nove slike za preview linkova** svake sekcije.
+- 450–454, 468 [novo] **Strana Stil:** logo, boje i fontovi sajta, za preuzimanje.
+- 374–380, 383–384 [novo] **Kratka biografija** na strani skoro svakog nastavnika, napisana iz izvora sa te strane.
+- 445, 448 **Slike nastavnika:** siva silueta sa sajta fakulteta se ne računa kao slika (umesto nje ide slika
+  nađena na drugom mestu, ili inicijali), i 11 novih slika.
+- 410, 413 **Nastavnici sa dva prezimena** (Vasić-Milovanović, Lazović-Kapor…) se van svoje strane zovu samo po
+  prvom.
+- 462, 464 **Pretraga:** linkovi imaju ikonicu, a `Svi rezultati` je uvek na dnu liste.
+- 432–433 **Tekst:** browser, fajl, tab umesto prevoda.
+- 422 [brže] **Talas u footer-u** stoji dok nije na ekranu, pa telefon ne troši na njega.
+- 372, 409, 426, 429–430, 440–443, 449, 484–486, 493–494 **Sitnice u izgledu:** dugmići u header-u, prekidači,
+  kartica kalendara u tamnoj temi, traka za filtere na telefonu u dva reda, footer kaže samo „nastava“.
+- 373, 385, 391, 456–461, 463, 469–474, 476, 478–479, 482–483, 488–489, 495–497 **Održavanje:** čuvanje stanja
+  između osvežavanja, sređivanje koda, planovi.
+
 ## 12. novembra 2026.
 Nova adresa masinci.org, a sajt se osvežava pet puta dnevno, na vreme.
 
@@ -38,6 +116,31 @@ Nova adresa masinci.org, a sajt se osvežava pet puta dnevno, na vreme.
 - 310–311, 313–314 [novo] **Početna:** Najnovije objave su iznad vesti. Kad otvoriš stranu, ta dva spiska blede ka
   dnu ekrana, a čim skroluješ, pojave se cela. Donji meni na telefonu je bez senke.
 - 316 **Održavanje:** ova strana.
+- 367 [novo] **Strane katedri:** svaka katedra ima svoju stranu, sa opisom sa sajta fakulteta, nastavnicima,
+  predmetima po smerovima i najnovijim threadovima iz njih.
+- 368–369 [novo] **Na strani nastavnika:** spisak radova (časopisi, konferencije, knjige), najnoviji prvi, i kratka
+  biografija za prve nastavnike (Katedra za opšte mašinske konstrukcije).
+- 370 **Predmeti nastavnika** su desno od podataka, a na telefonu se vidi prvih pet, ostali na `Prikaži još`.
+- 338 [novo] **Pretraga u header-u radi na svakoj strani** i traži sve: postove, vesti, predmete i nastavnike.
+- 364–365 **U pretrazi svaki predmet ima ikonicu svoje katedre.** Prazni spiskovi (kad pretraga ništa ne nađe)
+  imaju ikonicu i objašnjenje.
+- 342 [novo] **Najnovije objave na početnoj** pokazuju samo tvoje predmete dok je uključeno `Samo moji predmeti`,
+  a ostali smerovi u Studijama su posiveli.
+- 318–323, 325, 327–328, 339–341 **Početna:** spiskovi ispod Studija izviruju sa dna ekrana i podignu se tek kad
+  skroluješ nadole. Kartica sa vestima se zove Vesti fakulteta, a razmaci između kartica su isti svuda.
+- 324, 326 **Scrollbar** počinje ispod header-a i menja boju zajedno sa temom.
+- 343–347, 351 [novo] **Novi logo,** po uzoru na znak fakulteta. 344: ista ikonica na početnom ekranu telefona i u
+  obaveštenjima.
+- 330–332, 353–356, 358–359, 366 **Nove ikonice katedri:** motori, industrijsko inženjerstvo, biomedicinsko
+  inženjerstvo i druge.
+- 333–336 [novo] **Istraživači i demonstratori** imaju svoju stranu (`Nastavnici › Istraživači`) i nisu više među
+  nastavnicima. Spisak koautora nastavnika je uklonjen.
+- 329 **Moji predmeti** imaju dugme `Poništi izbor`. `RSS` linkovi su skinuti iz footer-a i sa vesti.
+- 337 **Statistika nije više na početnoj;** link ka njoj i ka strani O sajtu je u footer-u.
+- 349 [ispravka] **Manje treperenja** kad se strana otvori, i strana Predmeti se brže učita.
+- 363 **Raspored:** tabovi imaju kratka imena (`OAS - MI`, `MAS - IND4.0`, `DAS`), a ceo naziv piše kad pređeš
+  mišem preko.
+- 348, 350, 352, 357, 360–362 **Održavanje:** server za pregled izmena, plan za sređivanje koda.
 
 ## 11. novembra 2026.
 Sajtovi deset katedri su u arhivi, a strane sa cent-a izgledaju kao na cent-u.
