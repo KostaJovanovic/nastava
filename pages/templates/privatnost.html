@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Privatnost{% endblock %}
+{% block description %}Šta sajt nastava pamti o posetiocima: skoro ništa.{% endblock %}
+
+{#- Keep in step with the code: the visitor counter and push (src/index.js visit, push), the localStorage keys
+    (static/site.js, head.js, pismo.js). -#}
+{% block main %}
+<div class="mh">
+  <h1 id="title">Privatnost</h1>
+  <p class="mh__sub">Kratko: nema cookie-ja, nema reklama, nema praćenja.</p>
+</div>
+
+<section class="st">
+  <h2 class="st__h">Brojač poseta</h2>
+  <div class="prose prose--html">
+    <p>Svaka stranica javi brojaču da je neko došao. Da se isti posetilac ne bi brojao stalno, IP adresa se pamti tri dana, pa se briše. Ostaje samo ukupan broj, koji se vidi na <a href="/statistika/">Statistici</a>.</p>
+  </div>
+</section>
+
+<section class="st">
+  <h2 class="st__h">Obaveštenja</h2>
+  <div class="prose prose--html">
+    <p>Ako uključiš obaveštenja, čuva se adresa koju ti browser da za slanje obaveštenja, predmeti koje pratiš i nastavnici koje si izabrao. Nema imena, mejla ni naloga. Kad isključiš obaveštenja, sve to se briše.</p>
+  </div>
+</section>
+
+<section class="st">
+  <h2 class="st__h">U tvom browseru</h2>
+  <div class="prose prose--html">
+    <p>Tema, font, ćirilica ili latinica, moji predmeti, raspored i pretraga po svim predmetima pamte se samo u tvom browseru i ne šalju se sajtu (osim predmeta za obaveštenja, ako ih uključiš). Brišu se kad obrišeš podatke sajta u browseru.</p>
+  </div>
+</section>
+
+<section class="st">
+  <h2 class="st__h">Hosting</h2>
+  <div class="prose prose--html">
+    <p>Sajt je na GitHub Pages, a ide preko Cloudflare-a. Oni vide zahteve kao za svaki sajt, po svojim pravilima. Nema skripti, fontova ni analitike sa drugih sajtova.</p>
+  </div>
+</section>
+{% endblock %}

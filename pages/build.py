@@ -197,6 +197,9 @@ def main(db_path, out, dev_mode=False):
     about = env.get_template("o_sajtu.html").render()
     write(site / "o-sajtu" / "index.html", about)
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page
+    privacy = env.get_template("privatnost.html").render()
+    write(site / "privatnost" / "index.html", privacy)
+    write(site / "privacy" / "index.html", privacy, canonical="/privatnost/")  # the English address, same page
     write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()))
     write(site / "link" / "index.html", env.get_template("link.html").render(icons=link_icons(), groups=links))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
