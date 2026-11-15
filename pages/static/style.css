@@ -625,9 +625,8 @@ body:has(#res) .filters--years { display: none; }
 .moji__edit { display: none; }
 /* Under the switches: the notifications' state, the OPML link. */
 .moji__more { margin: -4px 16px 10px; color: var(--dim); font-size: 12.5px; }
-/* Phone: the heading and the button on one row, the switches under them. :not([hidden]): the grid would show it
-   without the script. */
-@media (max-width: 899px) {
+/* The heading and the button on one row, the switches under them; phone and wide screen alike. :not([hidden]): the
+   grid would show it without the script. */
   .fgroup[data-izbor]:not([hidden]) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 12px; margin: 0; }
   .fgroup[data-izbor] > .sec { width: auto; margin: 0; padding-right: 0; }
   /* The card as much under the row as over it (.filters__body has 2px less at the bottom). */
@@ -662,13 +661,21 @@ body:has(#res) .filters--years { display: none; }
   .fgroup[data-izbor] .tgl__bell, .fgroup[data-izbor] .moji__edit { width: 20px; height: 20px; }
   /* The words stay the names for a screen reader. */
   .fgroup[data-izbor] .is-set > span, .fgroup[data-izbor]:has(.is-set) > .sec { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-}
-/* The phone's count is the switch's; a wide screen has it in the heading. */
+/* The followed subjects' count, in the switch. */
 .tgl__n { margin-left: 4px; color: var(--dim); font-weight: 400; font-size: 12px; }
 /* A very narrow phone: "Izaberi predmete" without the star, "Prikaži moje" without "predmete". */
 @media (max-width: 359px) {
   .fgroup[data-izbor] .moji__open .btn:not(.is-set) .i { display: none; }
+}
+/* The side panel too: in its width "Prikaži moje predmete" would wrap. */
+@media (max-width: 359px), (min-width: 900px) {
   .tgl__more { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+/* The side panel: a mouse's cells, smaller than a finger's 44px, so "Prikaži moje" keeps to one line. */
+@media (min-width: 900px) {
+  .fgroup[data-izbor] .tgl { min-height: 36px; padding-inline: 10px; white-space: nowrap; }
+  .fgroup[data-izbor] .tgl--push, .fgroup[data-izbor] .btn.is-set { width: 36px; min-height: 36px; }
+  .fgroup[data-izbor] .tgl__bell, .fgroup[data-izbor] .moji__edit { width: 17px; height: 17px; }
 }
 
 /* ---- Moji predmeti: the picker (moji.js) ---------------------------------- */
