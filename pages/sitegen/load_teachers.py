@@ -150,10 +150,10 @@ def load_teachers(db, subjects):
             t["shown"] = t["shown"].split("-")[0]
         # The title's rank, for the list's order by title (site.js sorts the digit as text); an unknown title last.
         t["rank"] = RANKS.index(t["title"]) if t["title"] in RANKS else 9
+        t["lista"] = STUDENTSKA_LISTA.get(t["id"])
     for name, left in (("nastavnici-foto.jsonl", fotos), ("nastavnici-biografije.jsonl", bios), (SUMMARIES.name, sums)):
         if left:
             print(f"{name}: no page for {', '.join(left)}", file=sys.stderr)
-        t["lista"] = STUDENTSKA_LISTA.get(t["id"])
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
 
