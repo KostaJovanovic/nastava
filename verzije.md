@@ -30,7 +30,11 @@ Profesori emeritusi su u arhivi.
 - 590–591 [novo] **Strana Privatnost** kaže kratko šta sajt čuva o tebi.
 - 586–589, 600 **Verzije se sad zovu Šta je novo.** Uz svaki dan piše njegova poslednja verzija.
 - 592, 594–597 **Footer je kraći.** Ima linkove na Šta je novo i `Piši mi :)`.
-- 585, 593, 599 **Održavanje:** ova strana.
+- 601–603 **Oznaka „Studenti pobeđuju“** je jača i stoji u uglu kartice. Na telefonu je ispod ikonice katedre.
+- 604 **Obaveštenja u side panelu** zauzimaju manje mesta na desktopu.
+- 606 **Sajt se lakše nalazi na Google-u.** Naslov taba je sad uvek latinicom.
+- 605 [ispravka] **`www.masinci.org`** sad vodi na sajt.
+- 585, 593, 599, 607 **Održavanje:** ova strana.
 
 ## 14. novembra 2026.
 Arhiva nastavnika ima biografije za skoro sve.
