@@ -37,6 +37,24 @@
   if (q && sf) {
     var onHome = location.pathname === '/';
     var studije = [], folded = [];
+    var show = function () {
+      if (!list) return;
+      var v = q.value.trim();
+      // The matches scroll inside (scroll), so the list's rounded corners clip the scrollbar; "all results" stays under them.
+      list.textContent = '';
+      var scroll = list.appendChild(el('div', 'cmd__scroll'));
+      asked++;
+      if (!fold(v).trim()) { examples(scroll); list.hidden = !scroll.children.length; return; }
+      matches(scroll, v);
+      // The texts (posts, news): off the home page, their best hits as they come; the home page lists them itself.
+      if (!onHome) {
+        var box = scroll.appendChild(el('div', 'cmd__g'));
+        var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima i vestima'));
+        a.href = '/?q=' + encodeURIComponent(fold(v));
+        textHits(box, a, fold(v), asked);
+      }
+      list.hidden = !scroll.children.length;
+    };
     // The empty bar: what it finds, as three examples picked anew each time: a word of the posts, a subject's acronym
     // with a number (ME1), a teacher still at the faculty. A click searches it, as Enter would.
     var examples = function (scroll) {
@@ -63,15 +81,12 @@
         });
       });
     };
-    var show = function () {
-      if (!list) return;
-      var v = q.value.trim(), w = fold(v).split(/\s+/).filter(Boolean);
+    // The matches of v but the texts, by type, into scroll: the list under the bar, and the home page's results
+    // after Enter (search.js, window.masinciMatches).
+    // onPage: the home page's results (not the list under the bar): also who teaches the subjects found.
+    var matches = function (scroll, v, onPage) {
+      var w = fold(v).split(/\s+/).filter(Boolean);
       var has = function (s) { return w.every(function (x) { return s.indexOf(x) > -1; }); };
-      // The matches scroll inside (scroll), so the list's rounded corners clip the scrollbar; "all results" stays under them.
-      list.textContent = '';
-      var scroll = list.appendChild(el('div', 'cmd__scroll'));
-      asked++;
-      if (!w.length) { examples(scroll); list.hidden = !scroll.children.length; return; }
       // rows: [subgroup, name, hint, href, decorate(a)]: the first 5 of a type with a list page (3 of the katedre),
       // and a link to the rest.
       var section = function (key, title, rows) {
@@ -104,27 +119,40 @@
           a.insertBefore(svg, a.firstChild).appendChild(use);
         };
       };
-      var subj = [];
+      var subj = [], found = {};
       studije.forEach(function (s) {
         s[1].forEach(function (i) {
-          if (has(folded[i])) subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0], icon((data.ki || [])[i] || 'book')]);
+          if (!has(folded[i])) return;
+          subj.push([s[0], data.subjects[i][1], '', data.subjects[i][0], icon((data.ki || [])[i] || 'book')]);
+          found[i] = 1;
         });
       });
       section('predmeti', 'Predmeti', subj);
-      // A teacher as on /nastavnici/: the photo (or the initials), the title; one who left under its own subheading,
-      // with the cards' grey corner (style.css .pc--gone). The listed first, so those show where there is room.
+      // A teacher as on /nastavnici/: the photo (or the initials), the title (hint: in its place); one who left under
+      // its own subheading, with the cards' grey corner (style.css .pc--gone).
+      var person = function (t, hint) {
+        var gone = t.length > 4;
+        return [gone ? 'Više nisu na fakultetu' : '', t[0], hint || t[3], t[1], function (a) {
+          var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
+          if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
+          a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
+          // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
+          if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
+          a.insertBefore(img, a.firstChild);
+        }];
+      };
+      // The home page's results: who teaches the subjects found (build.py picker teachers), with which of them.
+      if (onPage) {
+        var byName = {};
+        data.people.forEach(function (t) { byName[t[0]] = t; });
+        section('predaju', 'Predaju', (data.teachers || []).map(function (t) {
+          var taught = t[1].filter(function (i) { return found[i]; });
+          return taught.length && byName[t[0]] ? person(byName[t[0]], taught.map(function (i) { return data.subjects[i][1]; }).join(', ')) : null;
+        }).filter(Boolean));
+      }
+      // The listed first, so those show where there is room.
       section('nastavnici', 'Nastavnici', data.people.filter(function (t) { return has(fold(t[0])); })
-        .map(function (t) {
-          var gone = t.length > 4;
-          return [gone ? 'Više nisu na fakultetu' : '', t[0], t[3], t[1], function (a) {
-            var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
-            if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
-            a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
-            // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
-            if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
-            a.insertBefore(img, a.firstChild);
-          }];
-        }));
+        .map(function (t) { return person(t); }));
       // A katedra: its icon, and its teachers' list.
       // Found by its short name's initials too ('omk': Opšte mašinske konstrukcije).
       section('katedre', 'Katedre', (data.katedre || []).filter(function (k) {
@@ -142,14 +170,6 @@
       // Linkovi's cards (build.py LINKS), by name and address; the drive's keeps its data-domain (the dialog before it).
       section('linkovi', 'Linkovi', (data.linkovi || []).filter(function (r) { return has(fold(r[0] + ' ' + r[1])); })
         .map(function (r) { return ['', r[0], r[1], r[2], function (a) { icon('link')(a); if (r[3]) a.setAttribute('data-domain', r[3]); }]; }));
-      // The texts (posts, news): off the home page, their best hits as they come; the home page lists them itself.
-      if (!onHome) {
-        var box = scroll.appendChild(el('div', 'cmd__g'));
-        var a = list.appendChild(el('a', 'cmd__all', 'Traži „' + v + '“ u postovima i vestima'));
-        a.href = '/?q=' + encodeURIComponent(fold(v));
-        textHits(box, a, fold(v), asked);
-      }
-      list.hidden = !scroll.children.length;
     };
     // The texts' first 5 hits in Pagefind (loaded at the first word), as search.js would find them: the followed
     // subjects only while "Samo moji predmeti" is on. my: the show() that asked; a later one wins.
@@ -179,7 +199,7 @@
     };
     // Enter: the texts (the form's own submit); the list under the bar closes.
     sf.addEventListener('submit', function () { if (list) list.hidden = true; });
-    if (izbor) izbor.then(function (j) {
+    var ready = izbor && izbor.then(function (j) {
       data = j;
       // A subject is found by its acronyms too (build.py acronyms: OOK, ME1).
       folded = j.subjects.map(function (s, i) { return fold(s[1]) + ' ' + j.acr[i]; });
@@ -208,7 +228,30 @@
       d.addEventListener('click', function (e) { if (!sf.contains(e.target)) list.hidden = true; });
       // Typed before the lists loaded.
       if (d.activeElement === q) show();
-    }).catch(function () {});
+    });
+    if (ready) ready.catch(function () {});
+    // The home page's results (search.js): the same matches as the list under the bar, into box; resolves to how many
+    // types matched (0 without the lists).
+    window.masinciMatches = function (v, box) {
+      return ready ? ready.then(function () { matches(box, v, true); return box.children.length; }, function () { return 0; }) : Promise.resolve(0);
+    };
+    // The home page's text search (search.js): a word of the query that is a subject's acronym (izbor.json acr: TMO,
+    // ME1) is searched as the subject's name too. The queries with the word in its place, folded, at most 8; '' none.
+    // Not a two-letter one without a digit ('od', 'je' are some subject's too).
+    window.masinciExpand = function (v) {
+      return ready ? ready.then(function () {
+        var words = fold(v).split(/\s+/).filter(Boolean), alts = [], seen = {};
+        words.forEach(function (w, k) {
+          if (w.length < 3 && !/\d/.test(w)) return;
+          data.subjects.forEach(function (s, i) {
+            if ((' ' + data.acr[i] + ' ').indexOf(' ' + w + ' ') < 0) return;
+            var alt = words.slice(0, k).concat([fold(s[1])], words.slice(k + 1)).join(' ');
+            if (!seen[alt]) { seen[alt] = 1; alts.push(alt); }
+          });
+        });
+        return alts.slice(0, 8);
+      }, function () { return []; }) : Promise.resolve([]);
+    };
   }
 
   /* The page links: the current page's is marked (the phone's tab bar shows it); a section's pages count as it
@@ -546,6 +589,159 @@
     d.addEventListener('moji', runRows);
   }
 
+  /* A paged list (vesti.html, objave.html; build.py render_paged). The page has the first rows as built; every row is
+     in <base>rows-<year>.json ([search text, select values, subject href, HTML]), fetched only as needed: paging
+     through, the years up to the page shown (data-counts says how many each has); a search, the select or "Samo moji
+     predmeti", every year in view (once; then the browser's cache). The URL keeps the view: the year as the path
+     (<base><year>/), then ?q=, the select, strana=, po= (the page size, also kept in localStorage). */
+  var pgBar = d.querySelector('[data-pager]');
+  if (pgBar) (function () {
+    var base = pgBar.dataset.base, counts = JSON.parse(pgBar.dataset.counts);
+    var years = Object.keys(counts).sort().reverse(), all = years.reduce(function (s, y) { return s + counts[y]; }, 0);
+    var ysel = pgBar.querySelector('[data-pg-year]'), findBox = pgBar.querySelector('[data-f="find"]');
+    var sel = pgBar.querySelector('select[data-f]'), per = d.querySelector('[data-pg-per]');
+    var ol = d.querySelector('[data-rows]'), navs = [].slice.call(d.querySelectorAll('[data-pg]'));
+    var shown = pgBar.querySelector('[data-shown]'), none = d.querySelector('[data-none]'), h1 = d.querySelector('[data-pg-h]');
+    var moji = pgBar.hasAttribute('data-moji'), data = {}, loads = {}, page = 1, asBuilt = true, ask = 0;
+    // ?v=: a deploy with new rows changes the counts, so no cache keeps an old year's file.
+    var load = function (y) {
+      return loads[y] = loads[y] || fetch(base + 'rows-' + y + '.json?v=' + all).then(function (r) { return r.json(); }).then(function (rows) { data[y] = rows; });
+    };
+    var num = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
+    var size = function () { return +per.value || 50; };
+    var title = d.title.indexOf(' · ') > -1 ? d.title.slice(d.title.indexOf(' · ')) : '';
+    var href = function (p) {
+      var q = new URLSearchParams(), y = ysel.value;
+      if (findBox.value.trim()) q.set('q', findBox.value.trim());
+      if (sel.value) q.set(sel.name, sel.value);
+      if (p > 1) q.set('strana', p);
+      if (size() !== 50) q.set('po', size());
+      return base + (y ? y + '/' : '') + (String(q) ? '?' + q : '');
+    };
+    // The page links: first, last, and two either side of this one; ' …' between.
+    var drawNav = function (pages) {
+      var ks = [];
+      for (var k = 1; k <= pages; k++) if (k === 1 || k === pages || Math.abs(k - page) <= 2) ks.push(k);
+      var a = function (k, text, label) {
+        return k < 1 || k > pages || k === page && text ? '<span class="lp__a lp__a--off" aria-hidden="true">' + text + '</span>'
+          : k === page ? '<span class="lp__a" aria-current="page">' + k + '</span>'
+          : '<a class="lp__a" href="' + href(k) + '" data-p="' + k + '"' + (label ? ' aria-label="' + label + '"' : '') + '>' + (text || k) + '</a>';
+      };
+      var html = a(page - 1, '‹', 'Prethodna strana');
+      ks.forEach(function (k, i) {
+        if (i && k - ks[i - 1] > 1) html += '<span class="lp__gap">…</span>';
+        html += a(k);
+      });
+      html += a(page + 1, '›', 'Sledeća strana');
+      navs.forEach(function (n) {
+        n.querySelector('[data-pg-pages]').innerHTML = pages > 1 ? html : '';
+        // The top one also has the page size: shown while a smaller size would page the list.
+        n.hidden = n.classList.contains('lp--top') ? total <= 25 : pages < 2;
+      });
+    };
+    var total = 0;
+    var run = function (push) {
+      var y = ysel.value, inView = y ? [y] : years, n = size(), start;
+      var words = fold(findBox.value.trim()).split(/\s+/).filter(Boolean), v = sel.value;
+      var m = moji && window.mojiNow && window.mojiNow.only ? window.mojiNow : null;
+      var filtering = words.length || v || m;
+      if (push) history.pushState(null, '', href(page));
+      // Not filtering: the counts give the pages, and which years hold this one.
+      if (!filtering) {
+        total = y ? counts[y] : all;
+        page = Math.max(1, Math.min(page, Math.ceil(total / n)));
+        start = (page - 1) * n;
+        history.replaceState(null, '', href(page));
+        drawNav(Math.ceil(total / n));
+        shown.textContent = total ? num(start + 1) + '–' + num(Math.min(start + n, total)) + ' od ' + num(total) : '0';
+        if (asBuilt && page === 1 && n === 50) return;
+      }
+      asBuilt = false;
+      var acc = 0, want = filtering ? inView : inView.filter(function (yy) {
+        var hit = acc < start + n && acc + counts[yy] > start;
+        acc += counts[yy];
+        return hit;
+      });
+      var missing = want.filter(function (yy) { return !data[yy]; }), mine = ++ask;
+      if (missing.length) {
+        shown.textContent = 'učitavam…';
+        Promise.all(missing.map(load)).then(function () { if (mine === ask) run(false); });
+        return;
+      }
+      var rows;
+      if (filtering) {
+        rows = [].concat.apply([], inView.map(function (yy) { return data[yy]; })).filter(function (r) {
+          if (!words.every(function (w) { return r[0].indexOf(w) > -1; })) return false;
+          if (v && ('|' + r[1] + '|').indexOf('|' + v + '|') < 0) return false;
+          return !m || m.has(r[2]);
+        });
+        total = rows.length;
+        page = Math.max(1, Math.min(page, Math.ceil(total / n)));
+        start = (page - 1) * n;
+        drawNav(Math.ceil(total / n));
+        shown.textContent = total ? num(start + 1) + '–' + num(Math.min(start + n, total)) + ' od ' + num(total) : '0';
+        history.replaceState(null, '', href(page));
+        rows = rows.slice(start, start + n);
+      } else {
+        // The years before the first one wanted, skipped by their counts.
+        var skip = 0;
+        for (var i = 0; inView[i] !== want[0]; i++) skip += counts[inView[i]];
+        rows = [].concat.apply([], want.map(function (yy) { return data[yy]; })).slice(start - skip, start - skip + n);
+      }
+      ol.innerHTML = rows.map(function (r) { return r[3]; }).join('');
+      markNew();
+      if (none) none.hidden = total > 0;
+    };
+    var fromUrl = function () {
+      var q = new URLSearchParams(location.search), y = location.pathname.slice(base.length).replace(/\/$/, '');
+      ysel.value = counts[y] ? y : '';
+      findBox.value = q.get('q') || '';
+      sel.value = q.get(sel.name) || '';
+      if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+      var po = q.get('po');
+      try { po = po || localStorage.getItem('po'); } catch (e) {}
+      per.value = po || '50';
+      if (per.selectedIndex < 0) per.value = '50';
+      page = +q.get('strana') || 1;
+    };
+    fromUrl();
+    run(false);
+    var again = function () { page = 1; run(false); };
+    // The heading and the tab's title name the year (pismo.js converts them as they change).
+    var named = function () {
+      h1.textContent = h1.dataset.pgH + (ysel.value ? ' ' + ysel.value : '');
+      d.title = h1.textContent + title;
+    };
+    findBox.addEventListener('input', again);
+    sel.addEventListener('change', again);
+    ysel.addEventListener('change', function () { page = 1; named(); run(true); });
+    per.addEventListener('change', function () {
+      try { localStorage.setItem('po', per.value); } catch (e) {}
+      page = 1;
+      run(true);
+    });
+    navs.forEach(function (n) {
+      n.addEventListener('click', function (e) {
+        var a = e.target.closest('a[data-p]');
+        if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        e.preventDefault();
+        page = +a.dataset.p;
+        run(true);
+        // From the bottom one, back up to the list's top.
+        if (!n.classList.contains('lp--top')) pgBar.scrollIntoView({ block: 'start' });
+      });
+    });
+    window.addEventListener('popstate', function () { fromUrl(); named(); run(false); });
+    if (moji) d.addEventListener('moji', again);
+    // Enter in the box: the text search of the whole site (data-enter).
+    findBox.addEventListener('keydown', function (e) {
+      var v = findBox.value.trim();
+      if (e.key !== 'Enter' || !v) return;
+      e.preventDefault();
+      location.href = pgBar.dataset.enter + 'q=' + encodeURIComponent(fold(v));
+    });
+  })();
+
   /* My subjects: the subjects this browser follows, [{href, name}] in localStorage. A subject's page has the star;
      the home page shows their newest topics, merged from each subject's novo.json (build.py, rows as the home page's).
      shortcut: a followed subject whose URL changes (a rename) shows no rows until it is followed again. */
@@ -653,9 +849,11 @@
       if (brow === 'Safari') return ['Safari je blokirao obaveštenja ovom sajtu.',
         'U meniju Safari → Settings → Websites → Notifications.', 'Kod masinci.org izaberi „Allow”.',
         'Osveži stranicu i uključi prekidač.'];
+      // Not the address bar: a block there doesn't always show, and the global "Block new requests" never does.
       if (brow === 'Firefox') return ['Firefox je blokirao obaveštenja ovom sajtu.',
-        'Klikni ikonicu levo od adrese.', 'Kod „Send Notifications: Blocked” klikni ×.',
-        'Osveži stranicu, uključi prekidač i izaberi „Allow”.'];
+        'Otvori meni ☰ → Settings → Privacy & Security.', 'Kod Permissions → Notifications klikni „Settings…”.',
+        'Kod ' + location.hostname + ' izaberi „Allow”. Ako je štiklirano „Block new requests asking to allow notifications”, odštikliraj ga.',
+        'Klikni „Save Changes”, osveži stranicu i uključi prekidač.'];
       return [(brow || 'Browser') + ' je blokirao obaveštenja ovom sajtu.',
         'Klikni ikonicu levo od adrese' + (brow === 'Edge' ? ' → „Permissions for this site”.' : ' → „Site settings”.'),
         'Kod „Notifications” izaberi „Allow”.', 'Osveži stranicu i uključi prekidač.'];

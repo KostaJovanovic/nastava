@@ -42,10 +42,11 @@
 {%- endmacro -%}
 
 {#- Smerovi (home) or the subjects of a smer; icon: 'folder' or 'book'. filter: a search box above them filters the
-    subjects (site.js), by their folded name and teachers (build.py render_places). -#}
-{%- macro forum_rows(title, places, icon, filter=false) -%}
-<section class="fb fb--forums"{% if filter %} data-filter{% endif %}>
-  {%- if filter %}
+    subjects (site.js), by their folded name and teachers (build.py render_places). fold: only the header and a toggle
+    until a tap (style.css .fb--fold); its rows answer the page's filter bar, not one of its own. -#}
+{%- macro forum_rows(title, places, icon, filter=false, fold=false) -%}
+<section class="fb fb--forums{% if fold %} fb--fold{% endif %}"{% if filter and not fold %} data-filter{% endif %}>
+  {%- if filter and not fold %}
   <form class="fbar" onsubmit="return false">
     <input class="field" type="search" name="q" data-f="find" placeholder="Naziv predmeta ili nastavnik…" aria-label="Pretraži predmete smera" autocomplete="off" enterkeyhint="search">
     <span class="fbar__n">prikazano <b data-shown>{{ places | length }}</b></span>
@@ -58,7 +59,7 @@
     <li class="fr"{% if filter %} data-find="{{ s.find }}"{% endif %}{% if s.pids is defined %} data-pids="{{ s.pids }}"{% elif icon == 'book' %} data-pid="{{ s.href }}"{% endif %}>
       {#- A subject: its katedra's icon (build.py row_katedra), else the book. -#}
       {%- set k = s.katedra %}
-      <span class="fr__i" aria-hidden="true"{% if k %} title="{{ k }}"{% endif %}><svg class="i"><use href="/static/icons.svg#i-{{ k | slug if k else s.key if s.key in smer_icons else icon }}"></use></svg></span>
+      <span class="fr__i" aria-hidden="true"{% if k %} title="{{ k }}"{% endif %}><svg class="i"><use href="/static/icons.svg#i-{{ s.icon or (k | slug if k else s.key if s.key in smer_icons else icon) }}"></use></svg></span>
       <div class="fr__t">
         {#- A smer's program in full, or on a phone its abbreviation (style.css). -#}
         <a class="fr__a" href="{{ s.href }}">{% if s.abbr and s.abbr != s.label %}<span class="fr__long">{{ s.label }}</span><span class="fr__abbr">{{ s.abbr }}</span>{% else %}{{ s.label or s.name }}{% endif %}</a>
@@ -70,7 +71,8 @@
     </li>
     {%- endfor %}
   </ol>
-  {%- if filter %}{{ empty('book', 'Nijedan predmet ne odgovara pretrazi.', hidden=true) }}{% endif %}
+  {%- if fold %}<label class="fb__more"><input type="checkbox"><span>Prikaži {{ places | length }} {{ places | length | pl('predmet') }}</span></label>
+  {%- elif filter %}{{ empty('book', 'Nijedan predmet ne odgovara pretrazi.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
 
@@ -129,36 +131,60 @@
 {#- News of vesti.mas.bg.ac.rs, newest first: the home page's newest (more: the list's link on the heading) and a
     year's list (filter: the list filter's data, its title and categories). Enrollment news: the enrollment icon and
     a mark. -#}
+{#- A paged list's pages (site.js pager fills it; without the script, hidden: the first page only). top: also the
+    page size select. -#}
+{%- macro pager(top=false) -%}
+<nav class="lp{% if top %} lp--top{% endif %}" aria-label="Strane" data-pg hidden>
+  <span class="lp__pages" data-pg-pages></span>
+  {%- if top %}
+  <label class="lp__per"><span>Po strani</span><select class="field" data-pg-per>{% for n in [25, 50, 100, 200] %}<option{% if n == 50 %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+  {%- endif %}
+</nav>
+{%- endmacro -%}
+
+{#- A paged list's year: '' all of them (its page, base), else /<base><year>/'s (site.js pager). -#}
+{%- macro year_select(id, years, year) -%}
+<label class="vh" for="{{ id }}">Godina</label>
+  <select class="field" id="{{ id }}" name="godina" data-pg-year>
+    <option value="">Sve godine</option>
+    {%- for y in years %}<option value="{{ y }}"{% if y == year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+  </select>
+{%- endmacro -%}
+
+{#- One news row; build.py also renders it alone, into /vesti/'s rows-<year>.json (site.js pager). -#}
+{%- macro vest_row(v, paint=false) -%}
+    <li class="fr"{% if paint %} id="paint"{% endif %}>
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'enter' if v.upis else 'news' }}"></use></svg></span>
+      <div class="fr__t"><a class="fr__a" href="{{ v.href }}">{{ v.title }}</a>{% if v.upis %}<span class="tag">upis</span>{% endif %}{% if v.gone %}<span class="gone">uklonjeno sa sajta vesti</span>{% endif %}</div>
+      <div class="fr__more"><span class="fr__s">{{ v.cats | join(', ') }}</span><time class="fr__d" datetime="{{ v.date or '' }}">{{ v.date | dmy }}</time></div>
+    </li>
+{%- endmacro -%}
+
 {%- macro vest_rows(title, vesti, more=none, filter=false) -%}
 <section class="fb fb--posts">
   {%- if caller is defined %}{{ caller() }}{% endif %}
   <div class="fb__h"><h2>{% if more %}<a href="{{ more }}">{{ title }}</a>{% else %}{{ title }}{% endif %}</h2><span>Kategorija</span><span>Datum</span></div>
   <ol class="fb__rows"{% if filter %} data-rows{% endif %}>
     {%- for v in vesti %}
-    <li class="fr"{% if filter %} data-find="{{ v.find }}" data-k="{{ v.cat_keys }}"{% if loop.index == 20 %} id="paint"{% endif %}{% endif %}>
-      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'enter' if v.upis else 'news' }}"></use></svg></span>
-      <div class="fr__t"><a class="fr__a" href="{{ v.href }}">{{ v.title }}</a>{% if v.upis %}<span class="tag">upis</span>{% endif %}{% if v.gone %}<span class="gone">uklonjeno sa sajta vesti</span>{% endif %}</div>
-      <div class="fr__more"><span class="fr__s">{{ v.cats | join(', ') }}</span><time class="fr__d" datetime="{{ v.date or '' }}">{{ v.date | dmy }}</time></div>
-    </li>
+    {{ vest_row(v, paint=filter and loop.index == 20) }}
     {%- endfor %}
   </ol>
   {%- if filter %}{{ empty('news', 'Nema vesti za ovaj filter.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
 
-{#- Single posts, newest first (a teacher's page). -#}
-{%- macro post_rows(title, items) -%}
+{#- Topics as single posts, newest first, without the reply and last post columns (a smer's notices): each opens at
+    its first post, its replies under it. -#}
+{%- macro post_rows(title, topics) -%}
 <section class="fb fb--posts">
-  <div class="fb__h"><h2>{{ title }}</h2><span>Predmet</span><span>Datum</span></div>
+  <div class="fb__h"><h2>{{ title }}</h2><span>Datum</span></div>
   <ol class="fb__rows">
-    {%- for r in items %}
+    {%- for t in topics %}{% set r = t.first %}
     <li class="fr">
-      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ 'file' if r.kind == 'document' else 'msg' }}"></use></svg></span>
-      <div class="fr__t"><a class="fr__a" href="{{ post_href(r) }}">{{ r.title }}</a></div>
-      <div class="fr__more">
-        <span class="fr__s">{% if r.subj %}<a href="{{ r.subj.href }}">{{ r.subj.name }}</a>{% elif r.smer %}<a href="{{ r.smer.href }}">{{ r.smer.label }}</a>{% endif %}</span>
-        <time class="fr__d" datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time>
-      </div>
+      <span class="fr__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-msg"></use></svg></span>
+      <div class="fr__t"><a class="fr__a" href="{{ post_href(r) }}">{{ t.title }}</a>{{ gone(t) }}
+        <p class="fr__sub">od {{ who(r) }}</p></div>
+      <div class="fr__more"><time class="fr__d" datetime="{{ r.date or '' }}">{{ r.when or r.date or '' }}</time></div>
     </li>
     {%- endfor %}
   </ol>

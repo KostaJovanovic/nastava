@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "rows.html" import forum_rows, topic_rows %}
+{% from "rows.html" import forum_rows %}
 
 {% block title %}{{ smer.label }}{% endblock %}
 {% block og %}-predmeti{% endblock %}
@@ -15,11 +15,10 @@
     </div>
   </div>
 </div>
-{#- The subjects without posts at the bottom, after the smer's own notices; the bar filters them too (site.js filters
-    every [data-rows] list). -#}
-{%- set used = subjects | selectattr('topics') | list %}
+{#- The smer's own notices first, as one row (render.py render_places); the subjects without posts at the bottom, which
+    the bar filters too (site.js filters every [data-rows] list). -#}
+{%- set used = ([notices] if notices else []) + subjects | selectattr('topics') | list %}
 {%- set empty = subjects | rejectattr('topics') | list %}
 {% if used %}{{ forum_rows('Predmeti', used, 'book', filter=true) }}{% endif %}
-{% if topics %}{{ topic_rows('Opšta obaveštenja smera', topics, filter=true) }}{% endif %}
-{% if empty %}{{ forum_rows('Predmeti bez threadova', empty, 'book', filter=true) }}{% endif %}
+{% if empty %}{{ forum_rows('Predmeti bez threadova', empty, 'book', filter=true, fold=true) }}{% endif %}
 {% endblock %}

@@ -101,7 +101,19 @@ def render_places(site, topics, smerovi, subjects):
         m["pids"] = " ".join(s["href"] for s in subs)
         m["count"] = sum(len(t["posts"]) for t in rows) + sum(s["count"] for s in subs)
         m["last"] = max([t["last"] for t in rows[:1]] + [s["last"] for s in subs if s["last"]], key=lambda r: r["posted"], default=None)
-        write(site / m["href"].strip("/") / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, topics=rows))
+        # The smer's own topics (on the board, its threads outside any subject): one row among its subjects, its own page.
+        notices = rows and dict(
+            name="Opšta obaveštenja sa smera",
+            href=f"{m['href']}obavestenja/",
+            icon="bell",
+            topics=len(rows),
+            count=sum(len(t["posts"]) for t in rows),
+            last=rows[0]["last"],
+            find=fold("Opšta obaveštenja sa smera"),
+        )
+        if notices:
+            write(site / notices["href"].strip("/") / "index.html", env.get_template("smer_obavestenja.html").render(smer=m, n=notices, topics=rows))
+        write(site / m["href"].strip("/") / "index.html", env.get_template("smer.html").render(smer=m, subjects=subs, notices=notices))
     for t in topics:
         if len(t["posts"]) > 1:
             write(site / "tema" / str(t["id"]) / "index.html", env.get_template("tema.html").render(t=t), index=False)
@@ -390,52 +402,79 @@ def picker(subjects, book, teachers, items=()):
     )
 
 
+PER_PAGE = 50  # a paged list's rows in its page's HTML (site.js pager: its default page size)
+
+
+def render_paged(site, base, template, by_year, row, keys, **data):
+    """A list paged in the browser (site.js pager), newest first: <base> all years, <base><year>/ one, each page with
+    its first PER_PAGE rows; every row in <base>rows-<year>.json, fetched as the pages need them. A row there:
+    [its folded search text, its select's values ("a|b"), its subject's href (data-pid, for "Samo moji predmeti"), its
+    HTML]. keys(item) gives the first three."""
+    years = sorted(by_year, reverse=True)
+    folder = site / base.strip("/")
+    folder.mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
+    for y in years:
+        (folder / f"rows-{y}.json").write_text(
+            json.dumps([[*keys(i), versioned(str(row(i)))] for i in by_year[y]], ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8",
+        )
+    counts = {y: len(by_year[y]) for y in years}
+    first = [i for y in years for i in by_year[y][:PER_PAGE]][:PER_PAGE]
+    for y in [None, *years]:
+        write(
+            folder / (str(y) if y else "") / "index.html",
+            env.get_template(template).render(
+                rows=by_year[y][:PER_PAGE] if y else first, year=y, years=years, counts=counts, base=base, total=sum(counts.values()), **data
+            ),
+        )
+
+
 def render_vesti(site, vesti):
-    """The news: a page each at /vest/<id>/ (what search finds; an id can be a year, so not under /vesti/), a list per
-    year with a category filter (the newest year at /vesti/, each other at /vesti/<year>/), and /vesti/feed.xml."""
+    """The news: a page each at /vest/<id>/ (what search finds; an id can be a year, so not under /vesti/), the list of
+    all of them with a category filter (render_paged), and /vesti/feed.xml."""
     if not vesti:
         return
-    years = sorted({v["year"] for v in vesti}, reverse=True)
-    year_href = {y: "/vesti/" if y == years[0] else f"/vesti/{y}/" for y in years}
     page = env.get_template("vest.html")
+    by_year = defaultdict(list)
     for v in vesti:
-        v["year_href"] = year_href[v["year"]]
+        v["year_href"] = f"/vesti/{v['year']}/"
         write(site / v["href"].strip("/") / "index.html", mark_for_pagefind(page.render(v=v), v), lastmod=v.get("modified"))
-    for y in years:
-        rows = [v for v in vesti if v["year"] == y]
-        cats = sorted({c for v in rows for c in v["cats"]}, key=fold)
-        write(
-            site / year_href[y].strip("/") / "index.html",
-            env.get_template("vesti.html").render(vesti=rows, year=y, years=years, year_href=year_href, cats=cats, total=len(vesti)),
-        )
-    (site / "vesti").mkdir(exist_ok=True)  # dev mode writes no page there
+        by_year[v["year"]].append(v)
+    cats = sorted({c for v in vesti for c in v["cats"]}, key=fold)
+    vest_row = env.get_template("rows.html").module.vest_row
+    render_paged(site, "/vesti/", "vesti.html", by_year, vest_row, lambda v: (v["find"], v["cat_keys"], ""), cats=cats)
     (site / "vesti" / "feed.xml").write_text(atom("Vesti · Mašinski fakultet", "/vesti/", vesti[:FEED_ALL]), encoding="utf-8")
 
 
 def render_objave(site, topics):
-    """All the board's topics, newest last post first, as /vesti/: a list per year of the last post (the newest year
-    at /objave/, each other at /objave/<year>/), with a filter. The home page's Najnovije objave link here."""
-    years = sorted({t["last"]["year"] for t in topics if t["last"]["year"]}, reverse=True)
-    if not years:
+    """All the board's topics, newest last post first, by the year of their last post, with a filter (render_paged).
+    The home page's Najnoviji threadovi link here."""
+    by_year = defaultdict(list)
+    for t in topics:
+        if t["last"]["year"]:
+            by_year[t["last"]["year"]].append(t)
+    if not by_year:
         return
-    year_href = {y: "/objave/" if y == years[0] else f"/objave/{y}/" for y in years}
-    for y in years:
-        rows = [t for t in topics if t["last"]["year"] == y]
-        authors = sorted(
-            {
-                (r["author"] or "").lower(): r["who"]
-                for t in rows
-                for r in t["posts"]
-                if r["author"] and not r["author"].startswith("Student #")
-            }.items(),
-            key=lambda a: fold(a[1] or a[0]),
-        )
-        write(
-            site / year_href[y].strip("/") / "index.html",
-            env.get_template("objave.html").render(
-                topics=rows, year=y, years=years, year_href=year_href, authors=authors, total=len(topics)
-            ),
-        )
+    authors = sorted(
+        {
+            (r["author"] or "").lower(): r["who"]
+            for rows in by_year.values()
+            for t in rows
+            for r in t["posts"]
+            if r["author"] and not r["author"].startswith("Student #")
+        }.items(),
+        key=lambda a: fold(a[1] or a[0]),
+    )
+    topic_row = env.get_template("rows.html").module.topic_row
+    render_paged(
+        site,
+        "/objave/",
+        "objave.html",
+        by_year,
+        lambda t: topic_row(t, place=True),
+        lambda t: (t["find"], t["authors"], t["subj"]["href"] if t["subj"] else ""),
+        authors=authors,
+    )
 
 
 def render_home(topics, smerovi, side, n_teachers, vesti):

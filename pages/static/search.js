@@ -4,7 +4,6 @@ const PAGE = 20;
 const form = document.getElementById("sf");
 const res = document.getElementById("res");
 const heading = document.querySelector(".mh");
-const status = document.querySelector("nav.status");
 const rowTpl = document.getElementById("row-tpl");
 const resTpl = document.getElementById("res-tpl");
 const years = JSON.parse(document.querySelector("script[data-years]").dataset.years);
@@ -70,7 +69,7 @@ function readState() {
 	return s;
 }
 
-function writeUrl(s, page) {
+function writeUrl(s, pages) {
 	const p = new URLSearchParams();
 	// The query folded (Latin, no diacritics), so a URL never has Cyrillic; the search folds it anyway.
 	if (s.q) p.set("q", fold(s.q));
@@ -81,7 +80,9 @@ function writeUrl(s, page) {
 	for (const x of s.authors) p.append("autor", x);
 	if (s.from) p.set("from", s.from);
 	if (s.to) p.set("to", s.to);
-	if (page > 1) p.set("page", page);
+	// Each list's page (showPages): the subjects' (or the one kind's) page=, the news' vpage=.
+	if (pages.p > 1) p.set("page", pages.p);
+	if (pages.v > 1) p.set("vpage", pages.v);
 	// String(p), not p.size: Safari before 17 has no size.
 	history.replaceState(null, "", String(p) ? `?${p}` : location.pathname);
 }
@@ -150,7 +151,7 @@ function lead(title, text) {
 // "još 1 post", "još 3 posta", "još 5 postova" of the same thread.
 const posta = (n) => (n % 10 === 1 && n % 100 !== 11 ? "post" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "posta" : "postova");
 
-// more: the other results of its thread on this page, merged into this row (showPage).
+// more: the other results of its thread on this page, merged into this row (showPages).
 function renderRow(data, more = 0) {
 	const li = rowTpl.content.firstElementChild.cloneNode(true);
 	const kind = { dokument: "file", vest: "news" }[data.meta.vrsta];
@@ -233,20 +234,31 @@ function renderEmpty(s) {
 	res.replaceChildren(box);
 }
 
+// A list's pages under it, as /vesti/'s (style.css .lp): first, last, two either side of this one; go(n) opens one.
 function renderPager(page, pages, go) {
-	status.querySelector(".pg")?.remove();
-	if (pages < 2) return;
-	const btn = (parts, target, rel) => {
-		const b = build("button", { type: "button", className: "btn" }, parts);
-		if (target < 1 || target > pages) b.setAttribute("aria-disabled", "true");
-		else b.addEventListener("click", () => go(target));
-		b.rel = rel;
+	const ks = [];
+	for (let k = 1; k <= pages; k++) if (k === 1 || k === pages || Math.abs(k - page) <= 2) ks.push(k);
+	const btn = (k, text, label) => {
+		if (k < 1 || k > pages) return build("span", { className: "lp__a lp__a--off", textContent: text, ariaHidden: "true" }, []);
+		if (k === page && !text) {
+			const cur = build("span", { className: "lp__a", textContent: String(k) }, []);
+			cur.setAttribute("aria-current", "page");
+			return cur;
+		}
+		const b = build("button", { type: "button", className: "lp__a", textContent: text || String(k) }, []);
+		if (label) b.setAttribute("aria-label", label);
+		b.addEventListener("click", () => go(k));
 		return b;
 	};
-	const info = build("span", {}, ["stranica ", build("b", { textContent: String(page) }, []), ` od ${pages}`]);
-	const prev = btn([icon("arrow-left"), "nazad"], page - 1, "prev");
-	const next = btn(["dalje", icon("arrow-right")], page + 1, "next");
-	status.append(build("span", { className: "pg" }, [prev, info, next]));
+	const parts = [btn(page - 1, "‹", "Prethodna strana")];
+	ks.forEach((k, i) => {
+		if (i && k - ks[i - 1] > 1) parts.push(build("span", { className: "lp__gap", textContent: "…" }, []));
+		parts.push(btn(k));
+	});
+	parts.push(btn(page + 1, "›", "Sledeća strana"));
+	const nav = build("nav", { className: "lp" }, [build("span", { className: "lp__pages" }, parts)]);
+	nav.setAttribute("aria-label", "Strane");
+	return nav;
 }
 
 function icon(name) {
@@ -260,41 +272,85 @@ function icon(name) {
 	return svg;
 }
 
-let results = [];
+// The results of a run: total, and get(from, to) -> their data. One search's in its own order; several (a subject's
+// acronym searched as its name too, site.js masinciExpand) merged, each text once: by score, or newest first, merged
+// as the pages ask (each list is newest first already; only the heads' dates are read).
+function pool(lists, newest) {
+	const byId = new Map();
+	for (const l of lists) for (const r of l) if (!byId.has(r.id) || byId.get(r.id).score < r.score) byId.set(r.id, r);
+	if (lists.length < 2 || !newest) {
+		const all = lists.length < 2 ? lists[0] ?? [] : [...byId.values()].sort((a, b) => b.score - a.score);
+		return { total: all.length, get: (a, b) => Promise.all(all.slice(a, b).map((r) => r.data())) };
+	}
+	const out = [], pos = lists.map(() => 0), taken = new Set(), cache = new Map();
+	const data = (r) => (cache.has(r.id) || cache.set(r.id, r.data()), cache.get(r.id));
+	const fill = async (n) => {
+		while (out.length < n) {
+			const heads = [];
+			lists.forEach((l, i) => {
+				while (pos[i] < l.length && taken.has(l[pos[i]].id)) pos[i]++;
+				if (pos[i] < l.length) heads.push(i);
+			});
+			if (!heads.length) return;
+			const ds = await Promise.all(heads.map((i) => data(lists[i][pos[i]])));
+			let best = 0;
+			ds.forEach((x, k) => { if ((x.meta.datum ?? "") > (ds[best].meta.datum ?? "")) best = k; });
+			taken.add(lists[heads[best]][pos[heads[best]]].id);
+			out.push(ds[best]);
+		}
+	};
+	// One fill at a time: two pages asked at once would take the same heads.
+	let chain = Promise.resolve();
+	return { total: byId.size, get: (a, b) => (chain = chain.then(() => fill(b))).then(() => out.slice(a, b)) };
+}
+
+// The lists of a run (run): [{key, title, side, pool}]: the subjects' texts (posts, documents) and the news apart, or
+// the one kind a link asked for (?kind=).
+let lists = [];
 let state = null;
 
-// id: the run that asked; a newer run's page wins. Returns false when it was too late to draw.
-async function showPage(page, id = runs) {
-	const pages = Math.max(1, Math.ceil(results.length / PAGE));
-	page = Math.min(Math.max(1, page), pages);
-	writeUrl(state, page);
-	if (!results.length) {
+// pages: each list's page by its key ({p, v}). id: the run that asked; a newer run's page wins. Returns false when
+// it was too late to draw.
+async function showPages(pages, id = runs) {
+	const shown = lists.filter((l) => l.pool.total);
+	for (const l of lists) pages[l.key] = Math.min(Math.max(1, pages[l.key] || 1), Math.max(1, Math.ceil(l.pool.total / PAGE)));
+	writeUrl(state, pages);
+	if (!shown.length) {
 		renderEmpty(state);
-	} else {
-		const batch = await Promise.all(results.slice((page - 1) * PAGE, page * PAGE).map((r) => r.data()));
-		if (id !== runs) return false;
-		// A teacher or a subject from a link (/?autor=username, /?subject=slug): the chip shows the name, which every
-		// result has.
-		for (const [name, meta] of [["autor", "autor"], ["subject", "predmet"], ["smer", "smer"]]) {
-			const input = form.querySelectorAll(`input[name="${name}"]`);
-			if (input.length === 1 && batch[0].meta[meta]) input[0].dataset.name = batch[0].meta[meta];
-		}
+		return true;
+	}
+	const batches = await Promise.all(shown.map((l) => l.pool.get((pages[l.key] - 1) * PAGE, pages[l.key] * PAGE)));
+	if (id !== runs) return false;
+	// A teacher or a subject from a link (/?autor=username, /?subject=slug): the chip shows the name, which every
+	// result has.
+	const first = batches[0][0];
+	for (const [name, meta] of [["autor", "autor"], ["subject", "predmet"], ["smer", "smer"]]) {
+		const input = form.querySelectorAll(`input[name="${name}"]`);
+		if (input.length === 1 && first.meta[meta]) input[0].dataset.name = first.meta[meta];
+	}
+	res.replaceChildren(...shown.map((l, i) => {
 		// One row per thread: its best result, with a link to the whole thread for the others on this page.
 		// shortcut: only within a page; a thread can show again on the next one. Merge across pages if that bothers.
 		const rows = [], of = {};
-		for (const data of batch) {
+		for (const data of batches[i]) {
 			const t = data.meta.tema;
 			if (t && of[t]) of[t].more++;
 			else rows.push(of[t || data.url] = { data, more: 0 });
 		}
 		const table = resTpl.content.firstElementChild.cloneNode(true);
+		const h = table.querySelector(".fb__h");
+		h.querySelector("h2").replaceChildren(l.title, build("span", { className: "fb__n", textContent: ` · ${l.pool.total}` }, []));
+		h.querySelector(":scope > span").textContent = l.side;
 		table.querySelector("ol").append(...rows.map((r) => renderRow(r.data, r.more)));
-		res.replaceChildren(table);
-	}
-	renderPager(page, pages, (n) => {
-		showPage(n);
-		heading.scrollIntoView({ block: "start" });
-	});
+		const box = build("div", { className: "res__list" }, [table]);
+		box.dataset.list = l.key;
+		// A page of one list: the other keeps its own; back up to this list's top.
+		const n = Math.ceil(l.pool.total / PAGE);
+		if (n > 1) box.append(renderPager(pages[l.key], n, (k) => {
+			showPages({ ...pages, [l.key]: k }).then(() => res.querySelector(`[data-list="${l.key}"]`)?.scrollIntoView({ block: "start" }));
+		}));
+		return box;
+	}));
 	return true;
 }
 
@@ -302,10 +358,10 @@ async function showPage(page, id = runs) {
 const shown = () => document.documentElement.classList.remove("searching");
 
 function showHome() {
-	writeUrl(readState(), 1);
+	writeUrl(readState(), {});
 	heading.innerHTML = home.heading;
 	res.innerHTML = home.res;
-	status.querySelector(".pg")?.remove();
+	other.hidden = true;
 	state = null;
 	shown();
 	// site.js fills "Moji predmeti" again.
@@ -315,22 +371,45 @@ function showHome() {
 // wait: the debounce in ms. Only typing needs one; a click searches at once.
 let runs = 0;
 
-async function run(page = 1, wait = 0) {
+async function run(pages = {}) {
 	// A slow search that ends after a newer run must not draw over it.
 	const id = ++runs;
 	const s = readState();
 	if (!s.q && !s.kind && !s.smer && !s.subjects.length && !s.authors.length && !s.from && !s.to) return showHome();
 	const query = s.q ? fold(s.q) : null;
 	const sort = s.q && !s.newest ? undefined : { datum: "desc" };
-	const search = await pagefind.debouncedSearch(query, { filters: filtersOf(s), sort }, wait);
-	if (search === null || id !== runs) return;
+	// The subjects' texts and the news apart (each its own vrsta filter); a link's ?kind= is one list.
+	const kinds = s.kind
+		? [{ key: "p", title: KINDS[s.kind] ?? "Rezultati", side: s.kind === "vest" ? "Kategorija" : "Predmet · autor", filters: filtersOf(s) }]
+		: [
+			{ key: "p", title: "Predmeti", side: "Predmet · autor", filters: { ...filtersOf(s), vrsta: { any: ["obavestenje", "dokument"] } } },
+			{ key: "v", title: "Vesti", side: "Kategorija", filters: filtersOf({ ...s, kind: "vest" }) },
+		];
+	// A subject's acronym in the query: its name searched too (TMO: Tehnologija mašinske obrade).
+	const queries = [query, ...(s.q && window.masinciExpand ? await window.masinciExpand(s.q) : [])];
+	const found = await Promise.all(kinds.map((k) => Promise.all(queries.map((q) => pagefind.search(q, { filters: k.filters, sort })))));
+	if (id !== runs) return;
 	state = s;
-	results = search.results;
+	lists = kinds.map((k, i) => ({ ...k, pool: pool(found[i].map((r) => r.results), Boolean(sort)) }));
 	// The heading with the rows, in one frame: a new count never stands over the old rows.
-	if (await showPage(page, id)) {
-		renderHeading(s, results.length);
+	if (await showPages(pages, id)) {
+		renderHeading(s, lists.reduce((n, l) => n + l.pool.total, 0));
 		shown();
+		showMatches(s, id);
 	}
+}
+
+// Over the texts' results, what the list under the bar finds for the query: subjects, teachers, katedre, the schedule,
+// Linkovi (site.js masinciMatches).
+const other = build("div", { className: "cmd__list cmd__list--page", hidden: true }, []);
+heading.after(other);
+async function showMatches(s, id) {
+	if (!s.q || !window.masinciMatches) return void (other.hidden = true);
+	const box = build("div", { className: "cmd__scroll" }, []);
+	const n = await window.masinciMatches(s.q, box);
+	if (id !== runs) return;
+	other.replaceChildren(box);
+	other.hidden = !n;
 }
 
 function restoreFromUrl() {
@@ -355,7 +434,11 @@ form.addEventListener("submit", (e) => {
 	e.preventDefault();
 	run();
 });
-form.elements.q.addEventListener("input", () => run(1, 200));
+// Typing shows only the list under the bar (site.js); Enter searches. A box cleared puts the home page back.
+form.elements.q.addEventListener("input", () => { if (state && !form.elements.q.value.trim()) run(); });
 // A subject followed or no longer followed: a search on view covers the new list.
 document.addEventListener("moji", () => { if (state) run(); });
-if (restoreFromUrl()) run(Number(new URLSearchParams(location.search).get("page")) || 1);
+if (restoreFromUrl()) {
+	const p = new URLSearchParams(location.search);
+	run({ p: Number(p.get("page")) || 1, v: Number(p.get("vpage")) || 1 });
+}

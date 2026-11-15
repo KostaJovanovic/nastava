@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "rows.html" import crumb, post_rows %}
+
+{#- A smer's own notices (on the board, its threads outside any subject), as posts (render.py render_places). -#}
+{% block title %}{{ n.name }}{% endblock %}
+{% block title_more %} · {{ smer.short }}{% endblock %}
+{% block description %}{{ n.name }} {{ smer.label }}, Mašinski fakultet u Beogradu: {{ n.topics | n }} {{ n.topics | pl('thread') }} sa foruma nastave.{% endblock %}
+{% block og %}-predmeti{% endblock %}
+{% block crumbs %}{{ crumb(smer.href, smer.label) }}{% endblock %}
+
+{% block main %}
+<div class="mh mh--card">
+  <div class="mh__top">
+    <span class="mh__ki"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ n.icon }}"></use></svg></span>
+    <h1 id="title">{{ n.name }}</h1>
+  </div>
+  <p class="mh__sub">{{ n.topics | n }} {{ n.topics | pl('thread') }} · {{ n.count | n }} {{ n.count | pl('post') }}</p>
+</div>
+{{ post_rows('Obaveštenja', topics | sort(attribute='first.posted', reverse=true)) }}
+{% endblock %}

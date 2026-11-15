@@ -281,6 +281,11 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   display: flex; flex-direction: column; max-height: min(70vh, 560px); overflow: hidden;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
 }
+/* The home page's results: the subjects' texts, then the news, each with its count and its pages (search.js). */
+.res__list + .res__list { margin-top: 18px; }
+.fb__h .fb__n { font-weight: 400; opacity: .8; }
+/* The same matches on the home page's results, over the texts' (search.js showMatches): in the page, not over it. */
+.cmd__list--page { position: static; z-index: auto; max-height: none; margin-bottom: 12px; box-shadow: none; }
 /* The matches scroll here; the list's overflow clips its scrollbar to the rounded corners. */
 .cmd__scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px; }
 .cmd__g + .cmd__g { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; }
@@ -1186,6 +1191,22 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fbar > .field { flex: 1 1 200px; max-width: 280px; }
 .fbar__n { margin-left: auto; color: var(--dim); font-size: 13px; white-space: nowrap; }
 .fbar__n b { color: var(--fg); font-variant-numeric: tabular-nums; }
+.fbar > [data-pg-year] { flex: none; width: auto; }
+.fbar__n[data-shown] { font-variant-numeric: tabular-nums; }
+/* A paged list's pages (rows.html pager, site.js): the top one under the filter, with the page size; the bottom one
+   under the list. */
+.lp { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; font-size: 13.5px; }
+.lp--top { border-bottom: 1px solid var(--line-2); }
+.lp:not(.lp--top) { justify-content: center; margin-top: 10px; }
+.lp__pages { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.lp__a { display: grid; place-items: center; min-width: 32px; height: 32px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px;
+  font: inherit; background: var(--card); color: var(--link); font-variant-numeric: tabular-nums; text-decoration: none; cursor: pointer; }
+.lp__a:hover { border-color: var(--accent); }
+.lp__a[aria-current] { border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 700; }
+.lp__a--off { color: var(--dim); opacity: .45; }
+.lp__gap { padding: 0 2px; color: var(--dim); }
+.lp__per { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--dim); }
+.lp__per .field { width: auto; }
 /* The lists' own search box: typed in, not picked (the bar's selects show a pointer). */
 .people__bar > input.field { cursor: text; }
 
@@ -1203,6 +1224,10 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* Najnoviji threadovi (rows.html topic_rows mine): the followed subjects' rows in place of its own while "Samo moji
    predmeti" is on. */
 .moji-only .fb__rows:has(~ [data-mine]), :root:not(.moji-only) :is([data-mine], .moji__none) { display: none; }
+/* A folded list (a smer's subjects without threads, rows.html forum_rows fold): its header and the toggle only; all
+   of it while the page's filter has text, so no match is hidden, or only "Moji predmeti" show. */
+:root:not(.moji-only):not(:has(.fbar .field:not(:placeholder-shown))) .fb--fold:not(:has(.fb__more input:checked)) .fb__rows { display: none; }
+:root:has(.fbar .field:not(:placeholder-shown)) .fb--fold .fb__more { display: none; }
 .fb__more:has(input:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: -2px; }
 .fb__more input { position: absolute; opacity: 0; pointer-events: none; }
 /* The home page's two lists (Najnoviji threadovi, vesti): faded out at load, whole at the first scroll (search.html). */
@@ -1840,11 +1865,6 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 .code li::before { content: counter(ln); text-align: right; color: var(--dim); opacity: .7; user-select: none; }
 
 /* ---- Pager -------------------------------------------------------------- */
-.status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; color: var(--dim); font-size: 13px; }
-.status b { color: var(--fg); }
-.status .pg { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.status .btn { min-height: 34px; font-size: 13px; }
-.status .btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
 
 /* ---- Empty, error --------------------------------------------------------- */
 .empty { padding: 24px 16px; color: var(--dim); font-size: 14px; }
@@ -1878,22 +1898,27 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 :root[data-vt="light"]::view-transition-old(root), :root[data-vt="dark"]::view-transition-new(root) { color-scheme: dark; }
 
 /* ---- Without JavaScript --------------------------------------------------- */
-/* Scripts off (scripting: none; a script still loading counts as on, so none of this shows then): what needs a script
-   is not shown (the search and the links into it, the script and theme buttons, the list filters), and the
+/* Scripts off (no data-js: head.js sets it before the first paint): what needs a script is not shown (the links into
+   the search, the script and theme buttons, /mojipredmeti/'s steps), the search boxes say why they are empty, and the
    folded sections are open. */
-@media (scripting: none) {
-  .cmd, .hd__ctl, form[data-filter], .tp__h a[href^="/?"], .err li:has(a[href^="/?"]) { display: none; }
+:root:not([data-js]) {
+  .hd__ctl, .mp__steps, .tp__h a[href^="/?"], .err li:has(a[href^="/?"]) { display: none; }
+  /* The search and the list filters: in place of the box, the warning. */
+  :is(.cmd, form[data-filter], .fbar) { justify-content: center; text-align: center; }
+  :is(.cmd, form[data-filter], .fbar) > * { display: none; }
+  :is(.cmd, form[data-filter], .fbar)::before {
+    content: "⚠ JavaScript je isključen, pa deo sajta ne radi.";
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--dim); font-size: 13.5px;
+  }
   /* The statistics' years and words open a search: kept as figures, not links. */
   .ch__c[href^="/?"], .wc a { pointer-events: none; text-decoration: none; }
-  /* A phone's header has room for the name, with no search beside it. */
-  .brand__name { opacity: 1; visibility: visible; translate: 0 0; }
 }
 /* Apart: a browser without ::details-content drops this rule, and its sections stay folded, opened by a click. */
-@media (scripting: none) {
+:root:not([data-js]) {
   details.sg::details-content, .tp__bio::details-content { height: auto; content-visibility: visible; }
 }
 /* Only where they are open: their headings say so and no longer fold them. */
-@media (scripting: none) {
+:root:not([data-js]) {
   @supports selector(::details-content) {
     details.sg > summary.sg__h::before { transform: rotate(45deg); }
     .tp__bio summary .i { transform: rotate(90deg); }
@@ -1937,7 +1962,7 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
   .cmd select option { min-height: 44px; padding: 0 14px; align-items: center; font-size: 15px; }
 }
 @media print {
-  .hd, .side, .status, .acts, .skip, .crumbs, .fbar { display: none !important; }
+  .hd, .side, .lp, .acts, .skip, .crumbs, .fbar { display: none !important; }
   .frame { display: block; padding: 0; }
   body { background: #fff; color: #000; }
 }

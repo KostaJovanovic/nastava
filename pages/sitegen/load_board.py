@@ -58,9 +58,23 @@ def load_items(db, place):
     docs = {r["id"]: dict(r) for r in db.execute("SELECT * FROM documents WHERE fetched = 1 AND error IS NULL")}
     posts = {r["id"]: dict(r) for r in db.execute("SELECT * FROM posts")}
     items = []
+    # A smer's own thread about a završni predmet or rad (teachers post them outside the subject) goes to the smer's
+    # "Završni predmet" subject; by the thread's first title, so its replies ("Re: …") go with it.
+    final = {s["smer"]["id"]: s for _, s in place.values() if s and fold(s["name"]) == "zavrsni predmet"}
+    first_title = {}
+    for p in sorted(posts.values(), key=lambda p: p["id"]):
+        first_title.setdefault(p["topic"], p["title"] or "")
+
+    def where(p):
+        smer, subj = place.get(p.get("forum"), (None, None))
+        title = fold(first_title.get(p.get("topic"), ""))
+        if smer and not subj and ("zavrsni predmet" in title or "zavrsni rad" in title):
+            subj = final.get(smer["id"])
+        return smer, subj
+
     for p in posts.values():
         iso, year = parse_date(p["date"], p["posted"])
-        smer, subj = place.get(p["forum"], (None, None))
+        smer, subj = where(p)
         html = clean_html(p["html"])
         items.append(
             dict(
@@ -87,7 +101,7 @@ def load_items(db, place):
     for d in docs.values():
         p = posts.get(d["post"]) or {}
         iso, year = parse_date(p.get("date"), d["uploaded_at"])
-        smer, subj = place.get(p.get("forum"), (None, None))
+        smer, subj = where(p)
         items.append(
             dict(
                 id=f"d{d['id']}",

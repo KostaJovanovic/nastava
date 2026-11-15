@@ -1,5 +1,8 @@
 // Runs in <head>, before the first paint (base.html): the saved theme, so a dark choice does not flash light.
 // site.js has the button's click.
+// Scripts run (style.css "Without JavaScript"): not @media (scripting), which a blocker such as NoScript or uBlock
+// leaves at "enabled".
+document.documentElement.dataset.js = "";
 try {
 	const t = localStorage.getItem("tema");
 	if (t) document.documentElement.dataset.tema = t;

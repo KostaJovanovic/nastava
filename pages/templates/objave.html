@@ -1,32 +1,31 @@
 {% extends "base.html" %}
-{% from "rows.html" import crumb, topic_rows %}
+{% from "rows.html" import crumb, topic_rows, pager, year_select %}
 
-{#- A year of the board's topics, by their last post (build.py render_objave): the newest year at /objave/, each
-    other at /objave/<year>/, with the years as tabs, as vesti.html. -#}
-{%- set _newest = year == years[0] %}
-{% block title %}Threadovi{% if not _newest %} {{ year }}{% endif %}{% endblock %}
-{% block description %}Threadovi sa foruma nastave Mašinskog fakulteta u Beogradu iz {{ year }}. godine, i oni koji su uklonjeni sa foruma.{% endblock %}
-{% block crumbs %}{% if not _newest %}{{ crumb('/objave/', 'Threadovi') }}{% endif %}{% endblock %}
+{#- The board's topics, newest last post first (build.py render_objave, render_paged): all years at /objave/, one (of
+    the last post) at /objave/<year>/, paged in the browser as vesti.html. -#}
+{% block title %}Threadovi{% if year %} {{ year }}{% endif %}{% endblock %}
+{% block description %}Threadovi sa foruma nastave Mašinskog fakulteta u Beogradu{% if year %} iz {{ year }}. godine{% endif %}, i oni koji su uklonjeni sa foruma.{% endblock %}
+{% block crumbs %}{% if year %}{{ crumb('/objave/', 'Threadovi') }}{% endif %}{% endblock %}
 
 {% block main %}
 <div class="mh">
-  <h1 id="title">Threadovi {{ year }}</h1>
+  <h1 id="title" data-pg-h="Threadovi">Threadovi{% if year %} {{ year }}{% endif %}</h1>
   <p class="mh__sub">sa foruma nastave · {{ total | n }} {{ total | pl('thread') }} od {{ years[-1] }}.</p>
 </div>
-<nav class="mp__tabs rs__tabs" aria-label="Godina">
-  {%- for y in years %}<a class="mp__tab" href="{{ year_href[y] }}"{% if y == year %} aria-current="page"{% endif %}><span>{{ y }}</span></a>{% endfor %}
-</nav>
-{% call topic_rows('Threadovi ' ~ year, topics, place=true, filter=true) %}
-{#- Its own search filters this year's list (site.js); Enter searches the text of all the posts. -#}
-<form class="fbar" data-filter data-enter="/?" onsubmit="return false">
+{% call topic_rows('Threadovi', rows, place=true, filter=true) %}
+{#- Its own search filters the list (site.js pager); Enter searches the text of all the posts. -#}
+<form class="fbar" data-pager data-moji data-base="{{ base }}" data-counts="{{ counts | tojson | forceescape }}" data-enter="/?" onsubmit="return false">
   <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži threadove" autocomplete="off" enterkeyhint="search">
+  {{ year_select('f-g', years, year) }}
   <label class="vh" for="f-a">Autor</label>
   {#- value: the username; pismo.js changes the option text, not the value. -#}
   <select class="field" id="f-a" name="autor" data-f="a">
     <option value="">Svi autori</option>
     {%- for key, name in authors %}<option value="{{ key }}">{{ name or key }}</option>{% endfor %}
   </select>
-  <span class="fbar__n">prikazano <b data-shown>{{ topics | length }}</b></span>
+  <span class="fbar__n" data-shown>{{ (counts[year] if year else total) | n }}</span>
 </form>
+{{ pager(true) }}
 {% endcall %}
+{{ pager() }}
 {% endblock %}

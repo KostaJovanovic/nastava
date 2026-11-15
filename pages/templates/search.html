@@ -42,7 +42,8 @@
       const lists = () => s.parentElement.querySelector(":scope > .lists") || h;
       const set = (drop, end) => { const l = lists(); l.style.setProperty("--drop", drop + "px"); l.style.setProperty("--end", end + "px"); };
       // Pinned 72px above the edge. Not while falling: fallFirst moves them itself.
-      const place = () => { if (cl.contains("falling")) return; const b = edge(), top = under(), drop = Math.max(0, b - 72 - top); set(drop, Math.max(b - top - drop, 50)); };
+      // Not once a search has replaced the page (search.js): Studije is out of it, and the observer fires once more.
+      const place = () => { if (cl.contains("falling") || !s.isConnected) return; const b = edge(), top = under(), drop = Math.max(0, b - 72 - top); set(drop, Math.max(b - top - drop, 50)); };
       const ro = new ResizeObserver(place);
       let y0 = 0;
       const down = { scroll: () => scrollY > 0, wheel: e => e.deltaY > 0, touchstart: e => (y0 = e.touches[0].clientY, false), touchmove: e => e.touches[0].clientY < y0, keydown: e => ["ArrowDown", "PageDown", "End", " "].includes(e.key) && !e.target.closest("input, select, textarea") };
@@ -114,7 +115,6 @@
   </div>
   <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · threadova <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b></p>
 </div>
-<nav class="status" aria-label="Stranice"></nav>
 {#- search.js fills #res from Pagefind with this markup. -#}
 <template id="res-tpl">
   <section class="fb fb--posts">
