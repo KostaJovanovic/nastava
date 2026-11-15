@@ -8,7 +8,7 @@ Dev mode (the default): no build. build.py reads nastava.db in dev mode (main(de
 template and data; a page is rendered when asked for, from the templates as they are then, so an edit to a template,
 the CSS, the JS or the icons shows on the next reload. A change to nastava.db or build.py restarts the server (a
 child process: the parent watches them). /static/ is pages/static; the small files the build writes (izbor.json,
-novo.json, the feeds, the photos) are in pages/.build/dev; the text search (Pagefind) is the last real build's.
+novo.json, the feeds, the photos) are in pages/.build/dev-<port>; the text search (Pagefind) is the last real build's.
 build.py's devcheck.py checks that dev mode renders what a build writes.
 
 --built: the last build in pages/.build/site, as deployed. Most pages are fragments there: join() puts them into
@@ -34,7 +34,7 @@ from qr import qr_terminal
 
 HERE = Path(__file__).resolve().parent
 SITE = HERE / ".build" / "site"
-DEV = HERE / ".build" / "dev"  # dev mode's build.py out dir: its site/ has the small files, no pages
+DEV = None  # dev mode's build.py out dir, .build/dev-<port> (set in __main__): its site/ has the small files, no pages
 DB = HERE.parent / "nastava.db"
 FRAGMENT = '<html lang="sr"><title>'
 # What dev mode's data comes from: a change restarts it. build.py imports the three scrapers (and common.py, translit.py) and wiki_tidy.py. The database's -wal: a
@@ -162,6 +162,7 @@ if __name__ == "__main__":
     ) == ('<title>T</title><meta name="snav" content="/x/"><a href="/x/" aria-current="page">X</a><a href="/x/">M')
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     port = int(args[0]) if args else 15497  # server.bat's PORT, drawn at random
+    DEV = HERE / ".build" / f"dev-{port}"  # one per server: two sharing it crash each other's restarts (rmtree vs copytree)
     if "--child" in sys.argv:
         # Dev mode's server: loads the data, then serves until the parent stops it.
         t = time.time()
