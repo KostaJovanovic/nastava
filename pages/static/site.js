@@ -12,6 +12,12 @@
     gutRo.observe(ft);
     gutRo.observe(d.body);
   }
+  // The window's scrollbar width (0 where bars float, a phone's), for Firefox's right paddings (style.css --sbw).
+  var sbProbe = d.createElement('div');
+  sbProbe.style.cssText = 'position:absolute;top:-99px;width:50px;height:50px;overflow:scroll';
+  d.body.appendChild(sbProbe);
+  de.style.setProperty('--sbw-m', (sbProbe.offsetWidth - sbProbe.clientWidth) + 'px');
+  sbProbe.remove();
   // The side panel's picker and the header search's lists (build.py picker).
   var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
   var el = function (tag, cls, text) {

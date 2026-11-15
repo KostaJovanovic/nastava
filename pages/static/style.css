@@ -164,7 +164,8 @@ html { scrollbar-color: auto; }
 .cmd__scroll, .filters, .fl__l { scrollbar-gutter: stable; }
 @supports (-moz-appearance: none) {
   html { scrollbar-color: var(--sb-scroll, var(--scroll)) var(--sb-paper, var(--paper)); transition: scrollbar-color .15s; overflow-x: hidden; }
-  body { width: 100vw; }
+  /* --sbw: the bar's width (site.js measures it), added to the right paddings so it never covers the content. */
+  body { width: 100vw; --sbw: var(--sbw-m, 0px); }
 }
 @supports not (-moz-appearance: none) { html { overflow-y: scroll; } }
 html::-webkit-scrollbar { background: var(--gut); }
@@ -217,7 +218,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   gap: 8px;
   /* max(): an iPhone in landscape (viewport-fit=cover) has the notch at a side; the bar's colour reaches it, its
      content clears it. The same on the frame, the footer and the tab bar. */
-  padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+  padding: 8px calc(max(10px, env(safe-area-inset-right)) + var(--sbw, 0px)) 8px max(10px, env(safe-area-inset-left));
   background: var(--head);
   color: var(--head-fg);
   border-bottom: 3px solid var(--head-line);
@@ -345,7 +346,7 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
   /* Equal side columns, so the search is in the middle of the header; never narrower than the name and the buttons
      (a narrow window shrinks the search instead of sliding them under it). */
   .hd { grid-template-columns: minmax(max-content, 1fr) minmax(0, 560px) minmax(max-content, 1fr); grid-template-areas: "brand cmd pismo"; gap: 24px;
-    padding: 10px max(24px, env(safe-area-inset-right)) 10px max(24px, env(safe-area-inset-left)); }
+    padding: 10px calc(max(24px, env(safe-area-inset-right)) + var(--sbw, 0px)) 10px max(24px, env(safe-area-inset-left)); }
   .cmd input { font-size: 14px; }
   .tg span { display: inline; }
   .brand__name span { display: block; }
@@ -357,16 +358,16 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 :root { --gap: 12px; }
 @media (min-width: 900px) { :root { --gap: 16px; } }
 .frame { flex: 1; display: flex; flex-direction: column; gap: var(--gap); width: 100%; max-width: 1560px; margin: 0 auto;
-  padding: var(--gap) max(var(--gap), env(safe-area-inset-right)) var(--gap) max(var(--gap), env(safe-area-inset-left)); }
+  padding: var(--gap) calc(max(var(--gap), env(safe-area-inset-right)) + var(--sbw, 0px)) var(--gap) max(var(--gap), env(safe-area-inset-left)); }
 .main { container: main / inline-size; flex: 1; display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 /* The footer (base.html): under the frame, which fills the screen, so at its bottom however short the page. Blue as
    the header, its line on top. */
 .ft {
   display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 14px 32px;
-  padding: 18px max(16px, env(safe-area-inset-right)) 20px max(16px, env(safe-area-inset-left));
+  padding: 18px calc(max(16px, env(safe-area-inset-right)) + var(--sbw, 0px)) 20px max(16px, env(safe-area-inset-left));
   background: var(--head); color: var(--head-dim); border-top: 3px solid var(--head-line); font: 400 14px/1.5 var(--sans);
 }
-@media (min-width: 900px) { .ft { padding: 22px max(24px, env(safe-area-inset-right)) 24px max(24px, env(safe-area-inset-left)); } }
+@media (min-width: 900px) { .ft { padding: 22px calc(max(24px, env(safe-area-inset-right)) + var(--sbw, 0px)) 24px max(24px, env(safe-area-inset-left)); } }
 .ft__in { display: grid; gap: 8px; }
 /* The links as a row with room between them, not underlined (their place says they are links). */
 .ft__links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
@@ -383,7 +384,7 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
    to tap, then the note under a line. The wrappers step aside so all of them are items of one grid. */
 @media (max-width: 759px) {
   .ft { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px;
-    padding: 16px max(16px, env(safe-area-inset-right)) 18px max(16px, env(safe-area-inset-left)); }
+    padding: 16px calc(max(16px, env(safe-area-inset-right)) + var(--sbw, 0px)) 18px max(16px, env(safe-area-inset-left)); }
   .ft__in, .ft__side, .ft__links { display: contents; }
   .ft a { padding: 7px 0; justify-self: center; text-align: center; }
   /* A wider phone has room for three links a row. */
@@ -466,7 +467,7 @@ body:has(#res) .filters--years { display: none; }
   .snav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
     display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
-    padding: 4px max(6px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+    padding: 4px calc(max(6px, env(safe-area-inset-right)) + var(--sbw, 0px)) calc(4px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
     overflow: visible;
     background: var(--card); border-top: 1px solid var(--line); border-bottom: 0;
   }
@@ -777,7 +778,7 @@ body:has(.mp) .ft { display: none; }
   /* A slim bar over the tab bar (.snav, 64px), once a subject is picked: Dalje in reach without scrolling the list
      to its end. No "Poništi izbor" there (the selection stays one tap from gone otherwise). */
   .mp__foot { position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 14; margin: 0;
-    padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); background: var(--card); box-shadow: 0 -2px 8px rgba(0, 0, 0, .08); }
+    padding: 6px calc(max(12px, env(safe-area-inset-right)) + var(--sbw, 0px)) 6px max(12px, env(safe-area-inset-left)); background: var(--card); box-shadow: 0 -2px 8px rgba(0, 0, 0, .08); }
   .mp__foot .btn { min-height: 36px; }
   .mp__foot [data-mp-reset] { display: none; }
   .mp__foot--idle { display: none; }
