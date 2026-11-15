@@ -55,12 +55,38 @@
       }
       list.hidden = !scroll.children.length;
     };
+    // A katedra's icon (icons.svg) left of the row: a katedra's, and a subject's katedra's (build.py picker ki), else the book.
+    var icon = function (id) {
+      return id && function (a) {
+        var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
+        svg.setAttribute('class', 'i cmd__img');
+        svg.setAttribute('aria-hidden', 'true');
+        use.setAttribute('href', '/static/icons.svg#i-' + id);
+        a.className = 'cmd__p';
+        a.insertBefore(svg, a.firstChild).appendChild(use);
+      };
+    };
+    // A teacher as on /nastavnici/: the photo (or the initials), the title (hint: in its place); one who left under
+    // its own subheading, with the cards' grey corner (style.css .pc--gone).
+    var person = function (t, hint) {
+      var gone = t.length > 4;
+      return [gone ? 'Više nisu na fakultetu' : '', t[0], hint || t[3], t[1], function (a) {
+        var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
+        if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
+        a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
+        // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
+        if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
+        a.insertBefore(img, a.firstChild);
+      }];
+    };
     // The empty bar: what it finds, as three examples picked anew each time: a word of the posts, a subject's acronym
     // with a number (ME1), a teacher still at the faculty. A click searches it, as Enter would.
     var examples = function (scroll) {
       if (!data) return;
       var pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
-      var acr = pick(data.acr.join(' ').split(' ').filter(function (a) { return /\d/.test(a); })) || '';
+      // A subject with an acronym with a number: that acronym, the subject's katedra's icon.
+      var si = pick(data.acr.map(function (a, i) { return /\d/.test(a) ? i : -1; }).filter(function (i) { return i > -1; }));
+      var acr = si == null ? '' : data.acr[si].split(' ').filter(function (a) { return /\d/.test(a); })[0];
       var who = pick(data.people.filter(function (t) { return t.length <= 4; })) || [];
       var g = scroll.appendChild(el('div', 'cmd__g'));
       g.setAttribute('role', 'group');
@@ -68,14 +94,17 @@
       g.appendChild(el('p', 'cmd__h', 'Na primer')).setAttribute('aria-hidden', 'true');
       var word = pick(['Rezultati', 'Kolokvijum', 'Ispitni rok', 'Konsultacije', 'Predavanja', 'Uvid u radove', 'Upis', 'Usmeni', 'Domaći zadatak', 'Prijava ispita']);
       // The word in quotes, to show an exact search (search.js readState): "Upis" finds upis, not upisa.
-      [['"' + word + '"', (/ /.test(word) ? 'tačno ovaj izraz' : 'tačno ova reč') + ' u postovima i vestima'], [acr.toUpperCase(), 'skraćenica predmeta'], [who[0], 'nastavnik']].forEach(function (x) {
+      // [text, hint, decorate(a)]: each with its icon as in the matches (a teacher's photo).
+      [['"' + word + '"', (/ /.test(word) ? 'tačno ovaj izraz' : 'tačno ova reč') + ' u postovima i vestima', icon('msgs')],
+        [acr.toUpperCase(), 'skraćenica predmeta', icon((data.ki || [])[si] || 'book')], [who[0], 'nastavnik', who[0] && person(who)[4]]].forEach(function (x) {
         if (!x[0]) return;
         var a = g.appendChild(el('a', null, x[0]));
         a.href = '/?q=' + encodeURIComponent(fold(x[0]));
         a.appendChild(el('small', null, x[1]));
+        if (x[2]) x[2](a);
         a.addEventListener('click', function (e) {
           e.preventDefault();
-          q.value = a.firstChild.textContent; // as shown: Latin or Cyrillic (pismo.js)
+          q.value = a.firstChild.nodeType === 3 ? a.firstChild.textContent : a.childNodes[1].textContent; // as shown: Latin or Cyrillic (pismo.js)
           list.hidden = true;
           if (sf.requestSubmit) sf.requestSubmit(); else location.href = a.href;
         });
@@ -108,17 +137,6 @@
           m.href = ENTER[key] + 'q=' + encodeURIComponent(v);
         }
       };
-      // A katedra's icon (icons.svg) left of the row: a katedra's, and a subject's katedra's (build.py picker ki), else the book.
-      var icon = function (id) {
-        return id && function (a) {
-          var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
-          svg.setAttribute('class', 'i cmd__img');
-          svg.setAttribute('aria-hidden', 'true');
-          use.setAttribute('href', '/static/icons.svg#i-' + id);
-          a.className = 'cmd__p';
-          a.insertBefore(svg, a.firstChild).appendChild(use);
-        };
-      };
       var subj = [], found = {};
       studije.forEach(function (s) {
         s[1].forEach(function (i) {
@@ -128,19 +146,6 @@
         });
       });
       section('predmeti', 'Predmeti', subj);
-      // A teacher as on /nastavnici/: the photo (or the initials), the title (hint: in its place); one who left under
-      // its own subheading, with the cards' grey corner (style.css .pc--gone).
-      var person = function (t, hint) {
-        var gone = t.length > 4;
-        return [gone ? 'Više nisu na fakultetu' : '', t[0], hint || t[3], t[1], function (a) {
-          var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
-          if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
-          a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
-          // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
-          if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
-          a.insertBefore(img, a.firstChild);
-        }];
-      };
       // The home page's results: who teaches the subjects found (build.py picker teachers), with which of them.
       if (onPage) {
         var byName = {};
@@ -226,6 +231,16 @@
         (i < 0 ? q : links[i]).focus();
       });
       d.addEventListener('click', function (e) { if (!sf.contains(e.target)) list.hidden = true; });
+      // A phone: scrolling the page (not the list) closes the list and the keyboard. Not the scroll the keyboard makes
+      // as it opens (iOS brings the bar into view): only past 40px from where the focus was, once it has settled.
+      var focusY = 0, focusT = 0;
+      q.addEventListener('focus', function () { focusY = scrollY; focusT = Date.now(); });
+      addEventListener('scroll', function () {
+        if (list.hidden && d.activeElement !== q) return;
+        if (!matchMedia('(max-width: 759px)').matches || Date.now() - focusT < 500 || Math.abs(scrollY - focusY) < 40) return;
+        list.hidden = true;
+        if (d.activeElement === q) q.blur();
+      }, { passive: true });
       // Typed before the lists loaded.
       if (d.activeElement === q) show();
     });
@@ -956,11 +971,15 @@
       want = pushOn.checked;
       showPush(want, '');
       said('');
+      // The prompt is asked in the click itself, not when its turn in the queue comes: Firefox and Safari show it
+      // only right after a click, and a write still going (the page's own resave) would make it fail unasked.
+      if (want && Notification.permission === 'default') asked = Notification.requestPermission();
       queue = queue.then(applyPush);
     }); });
+    var asked;
     var applyPush = function () {
       var on = want;
-      return (on ? Notification.requestPermission().then(function (p) {
+      return (on ? Promise.resolve(Notification.permission === 'granted' ? 'granted' : asked).then(function (p) {
         if (p !== 'granted') throw new Error('dozvola');
         var key = Uint8Array.from(atob(PUSH_PUBLIC.replace(/-/g, '+').replace(/_/g, '/')), function (c) { return c.charCodeAt(0); });
         return reg.then(function (r) { return r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }); });
@@ -1332,7 +1351,7 @@
   var here = location.pathname + location.search;
   addEventListener('pagehide', function () { try { sessionStorage.setItem('y' + here, scrollY); } catch (e) {} });
   d.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('.crumbs a');
+    var a = e.target.closest && e.target.closest('.crumbs a, .back');
     if (a) try { sessionStorage.setItem('crumb', a.pathname + a.search); } catch (e) {}
   });
   var back = function () {
@@ -1344,6 +1363,40 @@
   };
   // A page prerendered on hover (base.html's speculation rules) sees the tab's sessionStorage only once shown.
   if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
+  /* "Nazad" under the crumbs (base.html): the page visited before this one in the tab. 'hist' (sessionStorage) holds
+     the last two pages, [{u, t}]: a reload keeps them; the page's own entry takes its address as it is left (the home
+     page's search changes it), and its title (the tab's first part, Latin: pismo.js converts the link). It opens at
+     the place it was left (the crumbs' scroll above); a page reached by the browser's own back goes back the same way. */
+  var pageTitle = function () {
+    var sq = new URLSearchParams(location.search).get('q');
+    return location.pathname === '/' ? (location.search ? 'Pretraga' + (sq ? ' „' + sq + '“' : '') : 'Početna') : d.title.split(' · ')[0];
+  };
+  var showBack = function () {
+    var a = d.querySelector('[data-back]'), hist = [];
+    try { hist = JSON.parse(sessionStorage.getItem('hist')) || []; } catch (e) {}
+    if (!hist.length || hist[hist.length - 1].u !== here) hist = hist.concat({ u: here, t: pageTitle() }).slice(-2);
+    try { sessionStorage.setItem('hist', JSON.stringify(hist)); } catch (e) {}
+    var prev = hist.length > 1 && hist[0];
+    if (!a || !prev) return;
+    a.href = prev.u;
+    a.querySelector('b').textContent = prev.t;
+    a.hidden = false;
+    a.addEventListener('click', function (e) {
+      if (e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || d.referrer !== location.origin + prev.u) return;
+      e.preventDefault();
+      history.back();
+    });
+  };
+  addEventListener('pagehide', function () {
+    try {
+      var hist = JSON.parse(sessionStorage.getItem('hist')) || [];
+      if (hist.length && hist[hist.length - 1].u === here) {
+        hist[hist.length - 1] = { u: location.pathname + location.search, t: pageTitle() };
+        sessionStorage.setItem('hist', JSON.stringify(hist));
+      }
+    } catch (e) {}
+  });
+  if (d.prerendering) d.addEventListener('prerenderingchange', showBack, { once: true }); else showBack();
   // Nor does it go to its #fragment once shown (a topic opened at its newest post, rows.html topic_row): there it goes.
   if (d.prerendering) d.addEventListener('prerenderingchange', function () {
     var t = location.hash && d.getElementById(decodeURIComponent(location.hash.slice(1)));

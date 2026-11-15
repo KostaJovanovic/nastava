@@ -10,6 +10,7 @@ from wiki_tidy import CLASSES as WIKI_CLASSES, lexicon, recase, tidy as wiki_tid
 from .known import LINKS, UPIS, UPIS_TABS
 from .output import HERE
 from .text import slug
+from .upis_summary import UPIS_SUMMARY
 
 
 def link_groups(archived):
@@ -108,7 +109,7 @@ def upis_tabs(raw, pages, shown, hrefs):
     tabs = []
     for path in paths:
         body = BeautifulSoup(shown[path], "html.parser")
-        rok, seen = [], set()
+        rok, seen, used = [], set(), [path]
         for a in body.select("a[href]"):
             dates = by_href.get(a["href"].split("#")[0])
             if not dates or "datum" not in dates:
@@ -119,12 +120,14 @@ def upis_tabs(raw, pages, shown, hrefs):
             if dates in seen:  # linked again further down
                 continue
             seen.add(dates)
+            used.append(dates)
             page = BeautifulSoup(shown[dates], "html.parser")
             if page.select_one("ol.wt-tl"):
                 rok.append(("", from_timeline(page)))
                 continue
             # A program's link: "МАШИНСКО ИНЖЕЊЕРСТВО и за студије на српском и …", named by its program alone.
             subs = [(re.split(r"\s+[иi]\s+за\s", s.get_text(" ", strip=True))[0], by_href.get(s["href"])) for s in page.select("a[href]")]
+            used += [p for _, p in subs if p in shown]
             subs = [(t, BeautifulSoup(shown[p], "html.parser")) for t, p in subs if p in shown]
             lines = {str(s.select_one("ol.wt-tl")) for _, s in subs}
             if subs and len(lines) == 1:
@@ -132,8 +135,20 @@ def upis_tabs(raw, pages, shown, hrefs):
             else:
                 rok += [(t, from_timeline(s)) for t, s in subs] or [("", str(page))]
         short, name = UPIS_TABS.get(path, (pages[path][0]["title"], pages[path][0]["title"]))
-        tabs.append(dict(key=slug(short), short=short, name=name, href=hrefs[path], rok=rok, html=str(body)))
+        tabs.append(dict(key=slug(short), short=short, name=name, href=hrefs[path], rok=rok, html=str(body), summary=summary(path, used, pages)))
     return tabs
+
+
+def summary(path, used, pages):
+    """A tab's short version (upis_summary.py), only while the pages it was written from are unchanged."""
+    s = UPIS_SUMMARY.get(path)
+    if not s:
+        return None
+    now = {p: pages[p][0]["sha"][:10] for p in used}
+    if s["seen"] != now:
+        print(f"[warn] mf/{path}: changed since its summary was written, left out; check it, then seen={now}", file=sys.stderr)
+        return None
+    return s["rows"]
 
 
 def from_timeline(page):

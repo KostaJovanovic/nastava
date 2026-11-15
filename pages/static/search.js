@@ -15,7 +15,7 @@ if (!pagefind) {
 	// A failed import does not say why; asking for the file again does: no network, no index, the server, or the file.
 	const r = await fetch("/pagefind/pagefind.js", { method: "HEAD", cache: "no-store" }).catch(() => null);
 	const why = !r ? "nema mreže" : r.status === 404 ? "nema indeksa" : !r.ok ? `greška servera (${r.status})` : "indeks neispravan";
-	heading.append(build("p", { className: "note note--plain", textContent: `Pretraga nije dostupna: ${why}.` }, []));
+	heading.append(build("p", { className: "note", textContent: `Pretraga nije dostupna: ${why}.` }, []));
 	throw loadError;
 }
 await pagefind.options({ excerptLength: 30 });

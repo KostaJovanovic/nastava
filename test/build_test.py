@@ -592,3 +592,14 @@ assert teacher_of("hidro", "https://hidro.mas.bg.ac.rs/profesori_gajic.html", {}
 assert teacher_of("hidro", "https://hidro.mas.bg.ac.rs/istorijat.html", {}, _byk) is None
 assert teacher_of("etc", "https://etc.mas.bg.ac.rs/zradakovic/EM1.htm", {"zradakovic": _rad}, {}) is _rad
 assert teacher_of("etc", "https://etc.mas.bg.ac.rs/", {"zradakovic": _rad}, {}) is None
+
+# An upis tab's summary (wiki.summary): shown while the pages it was written from are unchanged, left out after.
+from sitegen import wiki  # noqa: E402
+
+_pages = {"upis/x": [{"sha": "aaaaaaaaaa11"}], "upis/x/datumi": [{"sha": "bbbbbbbbbb22"}]}
+wiki.UPIS_SUMMARY["upis/x"] = dict(seen={"upis/x": "aaaaaaaaaa", "upis/x/datumi": "bbbbbbbbbb"}, rows=[("Rok", "1. 9.")])
+assert wiki.summary("upis/x", ["upis/x", "upis/x/datumi"], _pages) == [("Rok", "1. 9.")]
+_pages["upis/x/datumi"] = [{"sha": "cccccccccc33"}]
+assert wiki.summary("upis/x", ["upis/x", "upis/x/datumi"], _pages) is None
+assert wiki.summary("upis/y", ["upis/y"], {"upis/y": [{"sha": "d"}]}) is None
+del wiki.UPIS_SUMMARY["upis/x"]

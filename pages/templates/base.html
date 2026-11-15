@@ -84,6 +84,8 @@
     {%- block crumbs %}{% endblock %}
     <svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><span class="crumbs__here" aria-current="page">{{ self.title() }}</span>
   </nav>
+  {#- The page visited before this one in the tab, where there is one (site.js). -#}
+  <a class="back" href="/" data-back hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg><span>Nazad: <b></b></span></a>
   {%- endblock %}
 {% block main %}{% endblock %}
 </main>

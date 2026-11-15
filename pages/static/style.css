@@ -281,6 +281,12 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   display: flex; flex-direction: column; max-height: min(70vh, 560px); overflow: hidden;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
 }
+/* A phone: the screen's whole width, right under the header (.hd, sticky, holds it once .cmd is static): the bar is
+   too narrow there for a teacher's name and its hint. site.js closes it when the page scrolls. */
+@media (max-width: 759px) {
+  .cmd { position: static; }
+  .cmd__list { top: calc(100% + 3px); left: 0; right: 0; border-width: 0 0 1px; border-radius: 0 0 var(--r) var(--r); }
+}
 /* The home page's results: the subjects' texts, then the news, each with its count and its pages (search.js). */
 .res__list + .res__list { margin-top: 18px; }
 .fb__h .fb__n { font-weight: 400; opacity: .8; }
@@ -574,7 +580,7 @@ body:has(#res) .filters--years { display: none; }
   .rs .rs__tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rs .rs__tabs .mp__tab { align-content: start; padding: 6px 10px; font-size: 13px; }
 }
-.rs-note { padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--icon-bg); color: var(--text); }
+.rs-note { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--alt); color: var(--text); }
 
 /* ---- Side panel's cards: the filters, the options, the switches ------------- */
 .sec {
@@ -885,7 +891,8 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 /* The word cloud (stats.html): --s, 0 to 1, sets a word's size and how strong its colour is. */
 .wc { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 12px; margin: 0; padding: 4px 0; list-style: none; }
 .wc a {
-  color: color-mix(in srgb, var(--accent-t) calc(var(--s) * 100%), var(--link)); text-decoration: none;
+  /* Dark: --accent-t is the text's white there, so the pink of .src instead. */
+  color: color-mix(in srgb, light-dark(var(--accent-t), #f07a94) calc(var(--s) * 100%), var(--link)); text-decoration: none;
   font: 800 calc(12px + var(--s) * 36px)/1.15 var(--sans);
 }
 .wc a:hover { text-decoration: underline; }
@@ -984,6 +991,14 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .crumbs a .i { margin-right: 6px; }
 .crumbs__sep { color: var(--dim); opacity: .6; }
 .crumbs__here { flex: 1 1 0; min-width: 4ch; color: var(--fg); font-weight: 800; }
+/* Under the crumbs: the page visited before this one (site.js), its title cut to the width. */
+.back { display: flex; align-items: center; gap: 6px; width: fit-content; max-width: 100%; padding: 0 2px; color: var(--link); font-size: 13.5px; line-height: 24px; text-decoration: none; white-space: nowrap; }
+.back[hidden] { display: none; }
+.back span { overflow: hidden; text-overflow: ellipsis; }
+.back b { font-weight: 600; }
+.back:hover { color: var(--accent-t); }
+.back:hover span { text-decoration: underline; }
+.back .i { flex: none; width: 15px; height: 15px; }
 /* Phone: only "‹ parent", a way back that fits the width. */
 @media (max-width: 899px) {
   .crumbs > :not(a:last-of-type) { display: none; }
@@ -1288,8 +1303,7 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
   .post__k { display: block; }
   .post__body { padding: 10px 18px 16px; }
 }
-.note { padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: var(--r); background: var(--card); font-size: 14px; }
-.note--plain { border-left-width: 1px; border-left-color: var(--line); }
+.note { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); font-size: 14px; }
 .prose { max-width: 78ch; color: var(--text); font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-hyphens: auto; hyphens: auto; }
 .prose--html { white-space: normal; }
 .prose--html > :first-child { margin-top: 0; }
@@ -1309,7 +1323,7 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--wiki strong { color: var(--fg); }
 .prose--wiki .wt-hl { color: var(--accent-t); }
 .prose--wiki .wt-amt { color: var(--fg); font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.prose--wiki .wt-note { padding: 10px 12px; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--icon-bg); }
+.prose--wiki .wt-note { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--alt); }
 .prose--wiki .wt-lbl { margin: 1em 0 .3em; color: var(--dim); font: 800 11.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 .prose--wiki .wt-box { margin-block: 0 1em; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--alt); }
 .prose--wiki .wt-box > :last-child { margin-bottom: 0; }
@@ -1358,6 +1372,15 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .wt-rok__h .i { width: 18px; height: 18px; }
 .wt-rok__h span { color: var(--dim); letter-spacing: .02em; text-transform: none; font-weight: 400; }
 .wt-rok .wt-tl__i::before { border-color: var(--alt); }
+/* An upis tab's short version (studije.html t.summary): label and text in two columns, one under the other on a phone. */
+.wt-sum { margin-bottom: 12px; }
+.wt-sum__l { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: 14px; line-height: 1.45; }
+.wt-sum__l dt { color: var(--dim); font-weight: 700; }
+.wt-sum__l dd { margin: 0; color: var(--fg); }
+@container main (max-width: 559.98px) {
+  .wt-sum__l { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .wt-sum__l dd { margin-bottom: 8px; }
+}
 .prose--html a { color: var(--accent-t); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
 .prose--html table { border-collapse: collapse; margin-block: 1rem; font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: normal; display: block; overflow-x: auto; max-width: 100%; }
 .prose--html th, .prose--html td { border: 1px solid var(--line); padding: .3rem .6rem; text-align: start; vertical-align: top; }

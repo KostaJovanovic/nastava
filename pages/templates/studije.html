@@ -32,6 +32,17 @@
   {%- for t in tabs %}
   <section class="rs-prog" id="{{ t.key }}" data-prog aria-label="{{ t.name }}">
     <h2 class="wt-tab__h">{{ t.name }} <a href="{{ t.href }}">cela stranica</a></h2>
+    {%- if t.summary %}
+    {#- Written by hand (sitegen/upis_summary.py), left out once the faculty's page changes. -#}
+    <div class="wt-rok wt-sum">
+      <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg>Ukratko <span>· za sve detalje vidi ispod</span></p>
+      <dl class="wt-sum__l">
+        {%- for label, text in t.summary %}
+        <dt>{{ label }}</dt><dd>{{ text | safe }}</dd>
+        {%- endfor %}
+      </dl>
+    </div>
+    {%- endif %}
     {%- for label, rok in t.rok %}
     <div class="wt-rok">
       <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>Važni datumi{% if label %} <span>· {{ label }}</span>{% endif %}</p>
