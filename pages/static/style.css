@@ -1605,6 +1605,9 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
 .people__ms .ms__y { grid-column: 2; grid-row: 2; margin: 2px 0 0; color: var(--fg); font: 800 22px/1.2 var(--sans); }
 .pc:has(.pc__a:focus-visible) { outline: 2px solid var(--accent-t); outline-offset: 2px; }
 .pc__img { display: block; width: 76px; aspect-ratio: 6 / 7; object-fit: cover; object-position: 50% 25%; border-radius: 4px; background: var(--icon-bg); }
+/* A photo fades in once loaded (head.js sets [data-fade] and the photo's [data-in]). */
+img:is(.pc__img, .tp__img) { transition: opacity .2s ease-out; }
+[data-fade] img:is(.pc__img, .tp__img):not([data-in]) { opacity: 0; }
 .pc__img--none { display: grid; place-items: center; color: var(--slate); font: 800 20px var(--sans); }
 .pc__t { min-width: 0; padding-top: 2px; padding-right: 24px; }
 /* The katedra's icon, top right: above the card's link (z-index), so its title shows on hover. */

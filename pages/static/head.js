@@ -10,6 +10,12 @@ try {
 	if (f) document.documentElement.style.setProperty("--sans", f);
 } catch (e) {}
 
+// Teacher photos fade in once loaded (style.css [data-fade]): too small for a progressive JPG's passes to show, they
+// would otherwise appear all at once. Set here, before any <img> is parsed, so no load is missed; a failed one shows too.
+document.documentElement.dataset.fade = "";
+for (const ev of ["load", "error"])
+	document.addEventListener(ev, (e) => e.target.matches?.(".pc__img, .tp__img") && (e.target.dataset.in = ""), true);
+
 // "Moji predmeti": while the side panel's choice is "Samo moji predmeti" ("sve" not "1") and some subjects are
 // followed ("moji", site.js), the site shows only them. A style made here hides the others before the first paint:
 // [data-pid] is a row of a subject or of a topic in one, [data-pids] a smer's row (its subjects); a box or group left
