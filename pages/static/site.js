@@ -37,6 +37,32 @@
   if (q && sf) {
     var onHome = location.pathname === '/';
     var studije = [], folded = [];
+    // The empty bar: what it finds, as three examples picked anew each time: a word of the posts, a subject's acronym
+    // with a number (ME1), a teacher still at the faculty. A click searches it, as Enter would.
+    var examples = function (scroll) {
+      if (!data) return;
+      var pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+      var acr = pick(data.acr.join(' ').split(' ').filter(function (a) { return /\d/.test(a); })) || '';
+      var who = pick(data.people.filter(function (t) { return t.length <= 4; })) || [];
+      var g = scroll.appendChild(el('div', 'cmd__g'));
+      g.setAttribute('role', 'group');
+      g.setAttribute('aria-label', 'Primeri');
+      g.appendChild(el('p', 'cmd__h', 'Na primer')).setAttribute('aria-hidden', 'true');
+      var word = pick(['Rezultati', 'Kolokvijum', 'Ispitni rok', 'Konsultacije', 'Predavanja', 'Uvid u radove', 'Upis', 'Usmeni', 'Domaći zadatak', 'Prijava ispita']);
+      // The word in quotes, to show an exact search (search.js readState): "Upis" finds upis, not upisa.
+      [['"' + word + '"', (/ /.test(word) ? 'tačno ovaj izraz' : 'tačno ova reč') + ' u postovima i vestima'], [acr.toUpperCase(), 'skraćenica predmeta'], [who[0], 'nastavnik']].forEach(function (x) {
+        if (!x[0]) return;
+        var a = g.appendChild(el('a', null, x[0]));
+        a.href = '/?q=' + encodeURIComponent(fold(x[0]));
+        a.appendChild(el('small', null, x[1]));
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          q.value = a.firstChild.textContent; // as shown: Latin or Cyrillic (pismo.js)
+          list.hidden = true;
+          if (sf.requestSubmit) sf.requestSubmit(); else location.href = a.href;
+        });
+      });
+    };
     var show = function () {
       if (!list) return;
       var v = q.value.trim(), w = fold(v).split(/\s+/).filter(Boolean);
@@ -45,7 +71,7 @@
       list.textContent = '';
       var scroll = list.appendChild(el('div', 'cmd__scroll'));
       asked++;
-      if (!w.length) { list.hidden = true; return; }
+      if (!w.length) { examples(scroll); list.hidden = !scroll.children.length; return; }
       // rows: [subgroup, name, hint, href, decorate(a)]: the first 5 of a type with a list page (3 of the katedre),
       // and a link to the rest.
       var section = function (key, title, rows) {
@@ -566,6 +592,7 @@
       ol.innerHTML = rows.slice(0, 10).map(function (r) { return r[1]; }).join('');
       sec.querySelector('.moji__none').hidden = rows.length > 0;
       if (mineFor === key) mineIn = true;
+      markNew();
       measureNext();
     });
   };
@@ -860,6 +887,21 @@
     }, function () {});
   });
 
+  /* "Podeli" under a post or topic (detail.html, tema.html): the phone's share sheet, else the link copied. */
+  [].forEach.call(d.querySelectorAll('[data-share]'), function (b) {
+    if (!navigator.share && !navigator.clipboard) return;
+    b.hidden = false;
+    var label = b.querySelector('span');
+    b.addEventListener('click', function () {
+      var url = (d.querySelector('link[rel="canonical"]') || location).href.split('#')[0];
+      if (navigator.share) return navigator.share({ title: d.title, url: url }).catch(function () {});
+      navigator.clipboard.writeText(url).then(function () {
+        label.textContent = 'Link kopiran';
+        setTimeout(function () { label.textContent = 'Podeli'; }, 1500);
+      }, function () {});
+    });
+  });
+
   /* Theme button: light ↔ dark. Light until the first click; head.js applies the saved one before the first paint. */
   var root = d.documentElement, tb = d.getElementById('tema');
   var THEMES = { light: ['sun', 'svetla'], dark: ['moon', 'tamna'] };
@@ -1034,6 +1076,46 @@
       links[n].focus(); links[n].closest('.fr, .pc, .sr').scrollIntoView({ block: 'nearest' });
     }
   });
+
+  /* The 404 page (error.html): the words of the address as a search, '/predmet/oas-mi/termodinamika-x/' as
+     'termodinamika x': without the first part (the route), a subject's smer, ids and file endings. */
+  var q404 = d.querySelector('[data-404q]');
+  if (q404) {
+    var parts404 = decodeURIComponent(location.pathname).split('/').filter(Boolean);
+    parts404.splice(0, parts404.length > 1 ? (parts404[0] === 'predmet' ? 2 : 1) : 0);
+    var words404 = parts404.join(' ').split(/[\s\-_.+]+/).filter(function (w) {
+      return w.length > 1 && !/^([a-z]?\d+|html?|php|pdf|cent)$/i.test(w);
+    }).join(' ');
+    if (words404) {
+      q404.querySelector('a').href = '/?q=' + encodeURIComponent(words404);
+      q404.querySelector('span').textContent = words404;
+      q404.hidden = false;
+    }
+  }
+
+  /* New since the last visit: a row whose last post (rows.html last, data-t) is newer than the visit before this one
+     gets a dot (style.css .fr--new). A visit ends after 30 minutes without a page, so the pages of one visit, and its
+     tabs, keep the same mark. The first visit marks nothing. */
+  var since = 0;
+  try {
+    var visits = JSON.parse(localStorage.getItem('poseta')) || {}, nowMs = Date.now();
+    if (visits.seen && nowMs - visits.seen > 30 * 60e3) visits.mark = visits.seen;
+    since = visits.mark || 0;
+    visits.seen = nowMs;
+    localStorage.setItem('poseta', JSON.stringify(visits));
+  } catch (e) {}
+  function markNew() {
+    if (!since) return;
+    [].forEach.call(d.querySelectorAll('.fr__last time[data-t]'), function (t) {
+      var row = t.closest('.fr');
+      if (row.classList.contains('fr--new') || !(Date.parse(t.getAttribute('data-t')) > since)) return;
+      row.classList.add('fr--new');
+      var a = row.querySelector('.fr__a');
+      if (a) a.insertAdjacentHTML('beforeend', '<span class="vh"> (novo)</span>');
+    });
+  }
+  markNew();
+  d.addEventListener('pocetna', markNew);
 
   /* Back up the crumbs to where you were: each page's scroll is kept for the tab (sessionStorage) as it is left, and a
      page opened from the crumbs goes back to it. Other links open a page at the top, as usual. 'crumb': the page the

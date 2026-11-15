@@ -53,7 +53,9 @@ function readState() {
 	const f = new FormData(form);
 	const s = {
 		newest,
-		q: String(f.get("q") ?? "").trim(),
+		// Words in quotes are an exact word or phrase (Pagefind's own): "ispit" not ispita. The quotes as typed („…“, a
+		// phone's “…”) become the plain " Pagefind reads.
+		q: String(f.get("q") ?? "").trim().replace(/[„“”«»]/g, '"'),
 		kind: String(f.get("kind") ?? ""),
 		smer: String(f.get("smer") ?? ""),
 		subjects: f.getAll("subject").map(String),
@@ -176,10 +178,16 @@ function renderRow(data, more = 0) {
 }
 
 // The active filters as chips; a chip's × clears that choice.
+// The count for a screen reader: one live region that stays, as a region made anew with each search is not read.
+const live = build("p", { className: "vh", role: "status" }, []);
+document.body.append(live);
+// The query in the heading in Serbian quotes: „ispit“; one with an exact part as typed, its quotes Serbian: „ispit“ rok.
+const quoted = (q) => (q.includes('"') ? `${q.replace(/"([^"]*)"?/g, "„$1“")} (tačno)` : `„${q}“`);
 function renderHeading(s, total) {
-	const h1 = build("h1", { id: "res-h", role: "status" }, [build("b", { textContent: String(total) }, []), rezultata(total)]);
-	if (s.q) h1.append(" za ", build("span", { className: "q", textContent: `„${s.q}“` }, []));
+	const h1 = build("h1", { id: "res-h" }, [build("b", { textContent: String(total) }, []), rezultata(total)]);
+	if (s.q) h1.append(" za ", build("span", { className: "q", textContent: quoted(s.q) }, []));
 	heading.replaceChildren(h1);
+	live.textContent = h1.textContent;
 	if (s.q) {
 		const order = build("p", { className: "order" }, ["Redosled: "]);
 		for (const [value, label] of [[false, "najrelevantnije"], [true, "najnovije"]]) {
@@ -217,7 +225,7 @@ function renderHeading(s, total) {
 }
 
 function renderEmpty(s) {
-	const box = build("div", { className: "empty" }, [build("h2", { textContent: `0 rezultata${s.q ? ` za „${s.q}“` : ""}` }, [])]);
+	const box = build("div", { className: "empty" }, [build("h2", { textContent: `0 rezultata${s.q ? ` za ${quoted(s.q)}` : ""}` }, [])]);
 	box.append(build("ul", {}, [
 		build("li", { textContent: "proverite pravopis ili upišite kraći pojam" }, []),
 		build("li", { textContent: "uklonite filtere i tražite u celoj arhivi" }, []),

@@ -37,10 +37,12 @@
 </article>
 <p class="acts">
   <a class="btn btn--pri" href="{{ download_url }}" download>Preuzmi {{ doc.filename }}</a>
+  <button type="button" class="btn" data-share hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-link"></use></svg><span>Podeli</span></button>
   {%- if source_url %}<a class="btn" href="{{ source_url }}" rel="noopener" target="_blank">Post na sajtu nastave <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}
 </p>
 {% else %}
 {{ post(it, 'h1', link=false) }}<p class="acts">
+  <button type="button" class="btn" data-share hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-link"></use></svg><span>Podeli</span></button>
   {%- if _many %}<a class="btn btn--pri" href="{{ it.thread.href }}#p{{ it.num }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-msgs"></use></svg>Ceo thread</a>{% endif %}
   {%- if it.prev %}<a class="btn" href="/item/{{ it.prev.id }}/" rel="prev" title="{{ it.prev.title }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg>Prethodni post</a>{% endif %}
   {%- if it.next %}<a class="btn" href="/item/{{ it.next.id }}/" rel="next" title="{{ it.next.title }}">Sledeći post<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg></a>{% endif %}

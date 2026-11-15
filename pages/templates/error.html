@@ -10,6 +10,8 @@
   <h1 id="err-title">Stranica nije pronađena</h1>
   <p>Obaveštenje ili dokument ne postoji u arhivi, ili je adresa pogrešna.</p>
   <ul>
+    {#- The words of the address that was not found, as a search (site.js). -#}
+    <li hidden data-404q><a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg>traži „<span></span>“</a></li>
     <li><a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg>najnovije u arhivi</a></li>
     <li><a href="/?q=rezultati+ispita"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg>rezultati ispita</a></li>
     <li><a href="/?q=raspored"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg>raspored</a></li>
