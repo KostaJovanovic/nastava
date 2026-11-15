@@ -375,7 +375,6 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
 .ft a:hover { color: var(--head-fg); text-decoration: underline; text-underline-offset: 3px; }
 /* Only the credit's name is bold; the other sites (masinci.org, the drive, mas.bg.ac.rs) are underlined. */
 .ft__by a { font-weight: 600; }
-.ft .ft__site { text-decoration: underline; text-underline-offset: 3px; }
 .ft__note { font-size: 13px; }
 .ft__side { display: grid; gap: 8px; }
 /* Desktop: the credit a little bigger, centred on the height of the links and the note. */
