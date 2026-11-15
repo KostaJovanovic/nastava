@@ -765,9 +765,6 @@
 
   /* Links: a PDF opens in a new tab; a link off this site (the board, the faculty's site) first says so in a dialog,
      and opens in a new tab. A click with a modifier key (a new tab or window asked for) goes on as the browser does. */
-  /* The footer's first link: the part of the faculty's sites this page copies (base.html data-origin). */
-  var orig = d.querySelector('[data-origin]'), ftOrig = d.querySelector('[data-ft-origin]');
-  if (orig && ftOrig) { ftOrig.href = orig.href; ftOrig.textContent = orig.hostname.replace(/^www\./, ''); }
   // "Provereno": the build's time (UTC) in the reader's own.
   var built = d.querySelector('.ft time'), bt = built && new Date(built.dateTime);
   if (bt && !isNaN(bt)) {

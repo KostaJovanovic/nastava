@@ -84,15 +84,11 @@
   </nav>
   {%- endblock %}
 {% block main %}{% endblock %}
-  {#- The part of the faculty's sites this page copies, for the footer's first link (site.js): set by the template, in
-      <main> since the footer is in the shell all pages share (build.py split_page). Without it, the board. -#}
-  {%- if origin %}<a hidden data-origin href="{{ origin }}"></a>{% endif %}
 </main>
 </div>
 <footer class="ft" id="ft">
   <div class="ft__in">
     <nav class="ft__links" aria-label="Linkovi">
-      <a href="https://nastava.mas.bg.ac.rs/nastava/" data-ft-origin>nastava</a>
       <a href="/statistika/">Statistika</a>
       <a href="/o-sajtu/">O sajtu</a>
       <a href="/verzije/">Verzije</a>
