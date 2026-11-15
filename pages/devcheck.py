@@ -32,7 +32,7 @@ def main(db):
                 if hasattr(m, name):
                     setattr(m, name, f)
 
-    def keep(path, html, index=True, canonical=None):
+    def keep(path, html, index=True, canonical=None, lastmod=None):
         built[f"/{path.parent.relative_to(output.site_dir).as_posix()}/"] = html
         path.parent.mkdir(parents=True, exist_ok=True)
 

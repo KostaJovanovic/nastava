@@ -2,9 +2,10 @@
 {% from "rows.html" import crumb, topic_rows, post_href %}
 
 {% block title %}{{ subj.name }}{% endblock %}
-{#- One name is a subject in several smerovi. -#}
-{% block title_more %} · {{ subj.smer.short }}{% endblock %}
-{% block description %}{{ subj.name }} ({{ subj.smer.label }}), Mašinski fakultet u Beogradu: svi threadovi sa foruma nastave, {{ subj.topics | n }} {{ subj.topics | pl('thread') }} — rezultati, termini ispita i obaveštenja.{% endblock %}
+{#- One name is a subject in several smerovi. The kind of page: the subject's description (predmet_opis.html) has
+    the same name. -#}
+{% block title_more %} · {{ subj.smer.short }} · obaveštenja i rezultati{% endblock %}
+{% block description %}{{ subj.name }} ({{ subj.smer.label }}), Mašinski fakultet u Beogradu: {{ subj.topics | n }} {{ subj.topics | pl('thread') }} sa foruma — rezultati, rokovi i obaveštenja.{% endblock %}
 {% block og %}-predmeti{% endblock %}
 {% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{% endblock %}
 

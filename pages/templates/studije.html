@@ -5,7 +5,7 @@
     (/mf/<path>/), each older one under its first date (build.py render_study_pages). crumb_to: (href, name) above it. -#}
 {%- set _old = page is not sameas current %}
 {% block title %}{{ page.title }}{% if _old %} ({{ page.first_seen | dmy }}){% endif %}{% endblock %}
-{% block description %}{{ page.title }}, Mašinski fakultet u Beogradu: {{ html | striptags | desc }}{% endblock %}
+{% block description %}{{ page.title }}, Mašinski fakultet u Beogradu: {{ html | striptags | desc(100) }}{% endblock %}
 {% block og %}{% if crumb_to[0] == '/raspored/' %}-raspored{% endif %}{% endblock %}
 {% block crumbs %}{{ crumb(*crumb_to) }}{% if _old %}{{ crumb(current.href, current.title) }}{% endif %}{% endblock %}
 

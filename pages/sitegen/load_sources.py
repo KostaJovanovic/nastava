@@ -39,6 +39,7 @@ def load_vesti(db):
                 year=year,
                 upis=8 in json.loads(r["categories"]),
                 posted=f"{r['date_gmt']}Z",
+                modified=(r["modified"] or "")[:10] or None,  # the day, for sitemap.xml's lastmod
                 cats=names,
                 cat_keys="|".join(slug(c) for c in names),
                 find=fold(" ".join([title] + names)),

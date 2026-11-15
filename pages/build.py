@@ -200,7 +200,8 @@ def main(db_path, out, dev_mode=False):
     privacy = env.get_template("privatnost.html").render()
     write(site / "privatnost" / "index.html", privacy)
     write(site / "privacy" / "index.html", privacy, canonical="/privatnost/")  # the English address, same page
-    write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()))
+    # The site's own logo and colours: nothing a search for the faculty wants.
+    write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()), index=False)
     write(site / "link" / "index.html", env.get_template("link.html").render(icons=link_icons(), groups=links))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())

@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "rows.html" import forum_rows, topic_rows, vest_rows %}
 
-{% block title %}Forum nastave{% endblock %}
-{#- A whole page, not written by build.py write(): its canonical link here. A search (/?q=) is this page too. -#}
-{% block head %}<link rel="canonical" href="{{ site_url }}/">{% endblock %}
+{% block title %}Forum nastave Mašinskog fakulteta{% endblock %}
+{#- A whole page, not written by build.py write(): its canonical link here. A search (/?q=) is this page too.
+    WebSite: the name Google shows for the site. -#}
+{% block head %}<link rel="canonical" href="{{ site_url }}/">{{ {"@context": "https://schema.org", "@type": "WebSite", "name": "masinci.org", "alternateName": "Forum nastave Mašinskog fakulteta", "url": site_url ~ "/", "inLanguage": "sr"} | ld }}{% endblock %}
 
 {% block navbar %}{% endblock %}
 
@@ -11,6 +12,8 @@
 {#- The home page is the board index; search.js shows the results in #res when the URL has a search or a filter.
     Until then the board index is hidden, so it never shows under a search (style.css .searching). -#}
 <script>if (/[?&](q|kind|smer|subject|autor|from|to)=./.test(location.search)) document.documentElement.classList.add("searching");</script>
+{#- The page's heading, for screen readers and search engines; the board index under it is what shows. -#}
+<h1 class="vh">masinci.org: forum nastave Mašinskog fakulteta u Beogradu</h1>
 {#- Empty on the home page (style.css hides it); search.js writes the result count here. -#}
 <div class="mh"></div>
 <div id="res">

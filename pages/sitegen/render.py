@@ -74,9 +74,11 @@ def render_places(site, topics, smerovi, subjects):
         # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
         quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
         s["katedra"] = row_katedra(s, rows)  # before its page: predmet.html links it
+        # An empty one is not for search engines: a page with nothing on it counts against the whole site.
         write(
             site / s["href"].strip("/") / "index.html",
             env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet),
+            index=bool(rows),
         )
         # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
         (site / s["href"].strip("/")).mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
@@ -398,7 +400,7 @@ def render_vesti(site, vesti):
     page = env.get_template("vest.html")
     for v in vesti:
         v["year_href"] = year_href[v["year"]]
-        write(site / v["href"].strip("/") / "index.html", mark_for_pagefind(page.render(v=v), v))
+        write(site / v["href"].strip("/") / "index.html", mark_for_pagefind(page.render(v=v), v), lastmod=v.get("modified"))
     for y in years:
         rows = [v for v in vesti if v["year"] == y]
         cats = sorted({c for v in rows for c in v["cats"]}, key=fold)

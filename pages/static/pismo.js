@@ -108,7 +108,8 @@
 		b.setAttribute("aria-label", "Pismo: " + short + rest);
 	};
 
-	const title = document.title;
+	// The <title> is in Latin already (base.html); the original, as the page's text, is in pismo-title.
+	const title = document.querySelector('meta[name="pismo-title"]')?.content ?? document.title;
 	const lang = () => { document.documentElement.lang = mode === "cyr" ? "sr-Cyrl" : "sr-Latn"; };
 	function set(m, kept) {
 		mode = m;

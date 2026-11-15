@@ -123,8 +123,8 @@ shell = None  # shell.html, set by main()
 
 site_dir = None  # the site's folder, set by main(): write() makes a page's URL from its path in it
 
-# Every page's canonical URL, for sitemap.xml (write).
-urls = {f"{SITE_URL}/"}
+# Every page's canonical URL -> the day its content last changed (or None), for sitemap.xml (write).
+urls = {f"{SITE_URL}/": None}
 
 # The /static/ files the pages link get ?v=<hash of the file> (version_static): each deploy that changes one changes
 # its URL, so no cache (the browser's, Cloudflare's, GitHub's) pairs new pages with an old file. Not sw.js (its URL
@@ -208,11 +208,13 @@ def snav_href(path, hrefs):
     return next((h for h in hrefs if (here == "/" if h == "/" else here.startswith(h))), None)
 
 
-def write(path, html, index=True, canonical=None):
+def write(path, html, index=True, canonical=None, lastmod=None):
     """Write only the page's fragment: every page but the home and 404 pages shares shell.html. Its canonical link:
     its URL on the main domain, for search engines (also for its copy on github.io), or that of the page canonical
     names (a site path) that shows the same. index=False: search engines leave it out (the posts, which name
-    students; their subjects' pages are indexed), and so does the sitemap. Dev mode: kept for serve.py, whole."""
+    students; their subjects' pages are indexed), and so does the sitemap. lastmod: the day ("2024-05-31") its content
+    last changed, for the sitemap; only where it is known for sure (a search engine ignores a site's lastmod once it
+    sees wrong ones). Dev mode: kept for serve.py, whole."""
     # As path.parent.relative_to(site_dir), by string: pathlib's took ~4 s of dev mode's start (33k pages, Windows).
     folder, root = path.parent.as_posix(), site_dir.as_posix()
     if folder != root and not folder.startswith(root + "/"):
@@ -229,7 +231,7 @@ def write(path, html, index=True, canonical=None):
     if h := snav_href(own, snav):
         head += f'<meta name="snav" content="{h}">'
     if index:
-        urls.add(url)
+        urls[url] = lastmod
         end = fragment.rindex("</html>")
         fragment = fragment[:end] + breadcrumbs(fragment, url) + fragment[end:]
     else:
@@ -244,7 +246,8 @@ def breadcrumbs(page, url):
     here = nav and re.search(r'<span class="crumbs__here"[^>]*>(.*?)</span>', nav[0], re.S)
     if not here:
         return ""
-    path = [(urljoin(SITE_URL, unescape(h)), strip_tags(t)) for h, t in LINK.findall(nav[0])] + [(url, strip_tags(here[1]))]
+    # In Latin, as the page's <title> (base.html): Google shows these in place of the URL.
+    path = [(urljoin(SITE_URL, unescape(h)), lat(strip_tags(t))) for h, t in LINK.findall(nav[0])] + [(url, lat(strip_tags(here[1])))]
     # str: a str + Markup would escape the whole page.
     return str(
         env.filters["ld"](
@@ -263,7 +266,7 @@ def write_sitemap(site):
     (site / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-        + "".join(f"<url><loc>{escape(u)}</loc></url>" for u in sorted(urls))
+        + "".join(f"<url><loc>{escape(u)}</loc>{f'<lastmod>{d}</lastmod>' if d else ''}</url>" for u, d in sorted(urls.items()))
         + "</urlset>\n",
         encoding="utf-8",
     )

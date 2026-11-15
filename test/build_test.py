@@ -508,7 +508,7 @@ _bc = breadcrumbs(
 assert [(i["position"], i["name"], i["item"]) for i in json.loads(re.search(r">(.*)</script>", _bc)[1])["itemListElement"]] == [
     (1, "Početna", f"{SITE_URL}/"),
     (2, "A & B", f"{SITE_URL}/smer/x/"),
-    (3, "Мата", f"{SITE_URL}/p/"),
+    (3, "Mata", f"{SITE_URL}/p/"),  # in Latin, as the <title>
 ], _bc
 assert breadcrumbs("<p>no crumbs</p>", SITE_URL) == "" and type(_bc) is str
 assert drop_empty_tables("<table><tr><th>Predmet</th></tr><tr><td> &nbsp;</td></tr></table><p>x</p>") == "<p>x</p>"

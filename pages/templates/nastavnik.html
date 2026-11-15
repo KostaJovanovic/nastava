@@ -4,7 +4,7 @@
 
 {% block title %}{{ t.page_name }}{% endblock %}
 {#- past (set in each block): known only from the faculty's history (build.py load_history), never on its list here. -#}
-{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.page_name }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.page_name }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl, predmeti i threadovi na forumu nastave.{% endif %}{% endblock %}
+{% block description %}{% set h = t.history %}{% if h and not t.first_seen %}{{ t.page_name }}{% if t.title %}, {{ t.title }}{% endif %}{% if t.katedra %}, {{ t.katedra }}{% endif %}, nastavnik Mašinskog fakulteta u Beogradu{% if h.years %} (na fakultetu {{ h.years }}){% endif %}: izvori iz istorije fakulteta.{% else %}{{ t.page_name }}, {{ t.title }}{% if t.katedra %}, {{ t.katedra }}{% endif %}, Mašinski fakultet u Beogradu: konsultacije, kabinet, mejl i predmeti.{% endif %}{% endblock %}
 {% block og_type %}profile{% endblock %}
 {% block og %}-{{ 'arhiva' if t.gone else 'nastavnici' }}{% endblock %}
 {% block crumbs %}{{ crumb('/nastavnici/', 'Nastavnici') }}{% if t.aside %}{{ crumb('/nastavnici/istrazivaci/', 'Istraživači i demonstratori') }}{% endif %}{% if t.gone %}{{ crumb('/nastavnici/arhiva/', 'Arhiva') }}{% endif %}{% endblock %}
@@ -18,7 +18,7 @@
 {#- tp--gone: the grey corner of the departed. -#}
 <section class="tp{% if t.gone %} tp--gone" style="--p: {{ t.age }}%{% endif %}" aria-labelledby="title">
   {%- if t.photo %}
-  <img class="tp__img" src="{{ t.photo }}" alt="" fetchpriority="high">
+  <img class="tp__img" src="{{ t.photo }}" alt="{{ t.page_name | lat }}" fetchpriority="high">
   {%- else %}
   {%- set w = t.name.split() %}
   <span class="tp__img tp__img--none" aria-hidden="true">{{ w[0][0] }}{{ w[-1][0] }}</span>
@@ -268,7 +268,8 @@
 </details>
 {%- endif %}
 {#- A teacher who left: no longer the faculty's (worksFor). -#}
-{%- set _person = {"@type": "Person", "name": t.page_name, "jobTitle": t.title, "url": site_url ~ t.href} %}
+{#- The name in Latin, as the page's <title>; in Cyrillic too, for a search in either. -#}
+{%- set _person = {"@type": "Person", "name": t.page_name | lat, "alternateName": t.page_name, "jobTitle": t.title | lat or none, "url": site_url ~ t.href} %}
 {%- if t.photo %}{% set _ = _person.update(image=(site_url ~ t.photo) if t.photo.startswith('/') else t.photo) %}{% endif %}
 {%- if not t.gone %}{% set _ = _person.update(worksFor={"@type": "CollegeOrUniversity", "name": "Mašinski fakultet Univerziteta u Beogradu", "url": "https://www.mas.bg.ac.rs/"}) %}{% endif %}
 {{ {"@context": "https://schema.org", "@type": "ProfilePage", "mainEntity": _person} | ld }}

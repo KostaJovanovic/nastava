@@ -10,13 +10,15 @@
 {#- From <title> to <!--/head-->: the page's own head, kept in its fragment (build.py split_page, which adds the
     canonical link). title_more: words only the tab and search results show (the crumbs show the title alone).
     description: for search results and link previews (Viber, Discord). These are in Latin (build.py lat), as the
-    page shows by default: no script converts them (pismo.js converts only the page and its title). -#}
-<title>{% block title %}Pretraga{% endblock %}{% block title_more %}{% endblock %} · arhiva nastave</title>
+    page shows by default: no script converts them (pismo.js converts only the page and its title). The <title> too,
+    so a search engine that runs no script shows it as the page does; pismo.js converts the original (pismo-title). -#}
+<title>{% filter lat %}{% block title %}Pretraga{% endblock %}{% block title_more %}{% endblock %}{% endfilter %} · masinci.org</title>
+<meta name="pismo-title" content="{{ self.title() }}{{ self.title_more() }} · masinci.org">
 <meta name="description" content="{% filter lat %}{% block description %}Arhiva foruma nastave Mašinskog fakulteta u Beogradu: svi threadovi od 2014, vesti, rasporedi, predmeti i nastavnici, sa pretragom ćirilicom i latinicom.{% endblock %}{% endfilter %}">
 <meta property="og:title" content="{{ self.title() | lat }}">
 <meta property="og:description" content="{{ self.description() | lat }}">
 <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-<meta property="og:site_name" content="arhiva nastave · Mašinski fakultet">
+<meta property="og:site_name" content="masinci.org">
 <meta property="og:locale" content="sr_RS">
 {#- The section's image (static/og*.png, posters from Claude Design): block og is its name after "og", as "-predmeti"; the home page, the forum's
     posts and the rest keep og.png. The alt: the image's headline. summary_large_image: X and Discord show it wide. -#}

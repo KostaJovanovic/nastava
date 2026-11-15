@@ -2,7 +2,10 @@
 {% from "rows.html" import crumb %}
 
 {% block title %}{{ v.title }}{% endblock %}
-{% block description %}{{ (v.body or v.title) | desc }}{% endblock %}
+{#- The date: many posts share a title ("Одбрана докторске дисертације"). The crumbs show the title alone. -#}
+{% block title_more %}{% if v.date %} · {{ v.date | dmy }}{% endif %}{% endblock %}
+{#- A body of a few words ("Zadaci Rešenja") says nothing alone: the title before it. -#}
+{% block description %}{% set d = (v.body or '') | desc %}{{ d if d | length >= 70 else v.title ~ (': ' ~ d if d else '') }}{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og %}-vesti{% endblock %}
 {% block crumbs %}{{ crumb(v.year_href, 'Vesti ' ~ v.year) }}{% endblock %}
@@ -20,7 +23,7 @@
     <div class="prose prose--html">{{ v.html | safe }}</div>
   </div>
 </article>
-{{ {"@context": "https://schema.org", "@type": "NewsArticle", "headline": v.title, "datePublished": v.posted,
+{{ {"@context": "https://schema.org", "@type": "NewsArticle", "headline": v.title | lat, "datePublished": v.posted,
     "url": site_url ~ v.href, "publisher": {"@type": "CollegeOrUniversity", "name": "Mašinski fakultet Univerziteta u Beogradu",
     "url": "https://www.mas.bg.ac.rs/"}} | ld }}
 {% endblock %}
