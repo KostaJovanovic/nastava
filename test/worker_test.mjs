@@ -45,27 +45,33 @@ test("shell.html is fetched once per deploy; a shell from another deploy is used
 	const real = { fetch: globalThis.fetch, caches: globalThis.caches };
 	const store = new Map(), got = [];
 	globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res) } };
-	let deploy = "D1", shellDeploy = "D1";
+	// A deploy's files are stamped seconds apart (D1, D1b); the next deploy is minutes later (D2).
+	const D1 = "Sun, 15 Nov 2026 19:09:18 GMT", D1b = "Sun, 15 Nov 2026 19:09:20 GMT", D2 = "Sun, 15 Nov 2026 19:31:02 GMT";
+	let deploy = D1, shellDeploy = D1b;
 	globalThis.fetch = async (u) => {
 		got.push(u.slice(u.lastIndexOf("/")));
 		const shell = u.endsWith("/shell.html");
-		const body = shell ? `<html><title></title><!--main-->${shellDeploy}</html>` : '<html lang="sr"><title>T</title><!--/head-->p</html>';
+		const body = shell ? `<html><title></title><!--main-->${shellDeploy.slice(17, 25)}</html>` : '<html lang="sr"><title>T</title><!--/head-->p</html>';
 		return new Response(body, { headers: { "Content-Type": "text/html", "Last-Modified": shell ? shellDeploy : deploy } });
 	};
 	const ctx = { waitUntil: (p) => p };
 	const get = async (path) => (await worker.fetch(new Request(`https://masinci.org${path}`), {}, ctx)).text();
 	try {
-		assert.equal(await get("/a"), "<html><title>T</title>pD1</html>");
+		assert.equal(await get("/a"), "<html><title>T</title>p19:09:20</html>");
+		deploy = D1b; // the same deploy, another second: the kept shell
 		await get("/b");
 		assert.deepEqual(got.splice(0), ["/a", "/shell.html", "/b"]);
-		deploy = "D2"; // the pages are out, shell.html not yet: used each time, never kept
-		assert.equal(await get("/c"), "<html><title>T</title>pD1</html>");
+		deploy = D2; // the pages are out, shell.html not yet: used each time, never kept
+		assert.equal(await get("/c"), "<html><title>T</title>p19:09:20</html>");
 		await get("/d");
 		assert.deepEqual(got.splice(0), ["/c", "/shell.html", "/d", "/shell.html"]);
-		shellDeploy = "D2";
-		assert.equal(await get("/e"), "<html><title>T</title>pD2</html>");
+		shellDeploy = D2;
+		assert.equal(await get("/e"), "<html><title>T</title>p19:31:02</html>");
 		await get("/f");
 		assert.deepEqual(got.splice(0), ["/e", "/shell.html", "/f"]);
+		deploy = "", shellDeploy = ""; // no dates: fetched each time
+		await get("/g");
+		assert.deepEqual(got.splice(0), ["/g", "/shell.html"]);
 	} finally {
 		Object.assign(globalThis, real);
 	}

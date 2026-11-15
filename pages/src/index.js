@@ -27,19 +27,24 @@ function cacheControl(url) {
 	return "public, max-age=300";
 }
 
-// shell.html once per deploy, not once per page: GitHub Pages stamps every file of a deploy with the same
-// Last-Modified, so the fragment's names its shell. A path GitHub Pages 404s, so the page cache never stores one there.
+// shell.html once per deploy, not once per page. GitHub Pages stamps a deploy's files with Last-Modified seconds apart
+// (19:09:18 to 19:09:20 on 2026-11-15), and two deploys are minutes apart: a shell stamped within SAME_DEPLOY of the
+// fragment is its deploy's. One kept shell, at a path GitHub Pages 404s, so the page cache never stores one there.
 // A shell from another deploy (one still going out) is used but not kept.
+const SAME_DEPLOY = 120e3;
+const near = (a, b) => Math.abs(a - b) < SAME_DEPLOY; // false for a missing date (NaN)
+
 async function shellFor(url, fragment, ctx) {
-	const deploy = fragment.headers.get("Last-Modified");
-	const key = deploy && new Request(`${url.origin}/__shell/${encodeURIComponent(deploy)}`);
-	const kept = key && (await caches.default.match(key));
-	if (kept) return kept.text();
+	const deploy = Date.parse(fragment.headers.get("Last-Modified"));
+	const key = new Request(`${url.origin}/__shell/`);
+	const kept = await caches.default.match(key);
+	if (kept && near(Date.parse(kept.headers.get("X-Deploy")), deploy)) return kept.text();
 	const shell = await fetch(PAGES + "/shell.html");
 	if (!shell.ok) return null;
-	if (key && shell.headers.get("Last-Modified") === deploy) {
-		const copy = new Response(shell.clone().body, { headers: { "Content-Type": "text/html", "Cache-Control": "public, max-age=86400" } });
-		ctx.waitUntil(caches.default.put(key, copy));
+	const stamped = shell.headers.get("Last-Modified");
+	if (near(Date.parse(stamped), deploy)) {
+		const headers = { "Content-Type": "text/html", "Cache-Control": "public, max-age=86400", "X-Deploy": stamped };
+		ctx.waitUntil(caches.default.put(key, new Response(shell.clone().body, { headers })));
 	}
 	return shell.text();
 }

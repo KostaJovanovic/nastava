@@ -285,9 +285,10 @@ long page, both scripts.
 keyed by the deploy (the shell's `?v=` asset versions), so a deploy brings the new shell. `test/worker_test.mjs`
 gets a case; then `wrangler deploy` (the user's).
 
-As built: the key is the fragment's `Last-Modified`, not `?v=`: GitHub Pages stamps every file of a deploy with the
-same one (checked 2026-11-14), and a fragment carries only one `?v=`. A shell whose `Last-Modified` differs (a deploy
-still going out) is used but not kept. No change to the built pages.
+As built: by the fragment's `Last-Modified`, not `?v=` (a fragment carries only one `?v=`). GitHub Pages stamps a
+deploy's files seconds apart (19:09:18 to 19:09:20 on 2026-11-15; first thought the same one), so one shell is kept
+and used for a fragment stamped within two minutes of it. A shell further off (a deploy still going out) is used but
+not kept. No change to the built pages.
 
 ## Open question (asked, not answered)
 
