@@ -34,7 +34,12 @@ Profesori emeritusi su u arhivi.
 - 604 **Obaveštenja u side panelu** zauzimaju manje mesta na desktopu.
 - 606 **Sajt se lakše nalazi na Google-u.** Naslov taba je sad uvek latinicom.
 - 605 [ispravka] **`www.masinci.org`** sad vodi na sajt.
-- 585, 593, 599, 607 **Održavanje:** ova strana.
+- 608 [novo] **Novi postovi od tvoje poslednje posete** imaju crvenu tačku.
+- [novo] **Tačna pretraga:** reč u navodnicima, npr. `"ispit"`, ne nalazi `ispita`. Radi i za ceo izraz.
+- [novo] **Pretraga daje primere** čim klikneš na nju.
+- [novo] **Dugme Podeli** stoji ispod posta i threada.
+- **Strana koja ne postoji** nudi pretragu po rečima iz linka.
+- 585, 593, 599, 607, 609–610 **Održavanje:** ova strana.
 
 ## 14. novembra 2026.
 Arhiva nastavnika ima biografije za skoro sve.
