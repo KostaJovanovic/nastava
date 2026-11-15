@@ -10,6 +10,12 @@
 </details>
 {%- endmacro %}
 
+{#- The "Studenti pobeđuju" badge (known.py STUDENTSKA_LISTA): its text on hover, or on a tap (focus) on a phone. -#}
+{%- macro sp_badge(t, cls) %}
+{%- set tip = 'Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: ' ~ t.lista ~ '. na listi' %}
+<span class="sp {{ cls }}" tabindex="0" role="img" aria-label="{{ tip }}"><img src="/static/studenti-pobedjuju.png" alt="" width="64" height="64"><span class="sp__tip" aria-hidden="true">{{ tip }}</span></span>
+{%- endmacro %}
+
 {#- dup: a second card of the same teacher (the archive's earlier period they were at the faculty in too), left out
     once the list is regrouped or reordered (site.js). -#}
 {%- macro card(t, id='', dup=false) %}
@@ -23,6 +29,7 @@
       {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra | capitalize }}</p>
       {#- title: the name on hover; the text above already says it, so the icon is hidden from screen readers. -#}
       <span class="pc__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
+      {%- if t.lista %}{{ sp_badge(t, 'pc__sp') }}{% endif %}
       {#- .pc__p: the post count, shown only while the list is ordered by it (style.css). -#}
       {%- set office = t.office and not t.gone %}
       <p class="pc__m">{% if office %}kabinet {{ t.office }}{% endif %}{% if t.posts %}<span class="pc__p">{% if office %}, {% endif %}{{ t.posts | length | n }} {{ t.posts | length | pl('post') }}</span>{% endif %}</p>

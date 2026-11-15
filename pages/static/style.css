@@ -1401,7 +1401,7 @@ div.cent-head::before { content: ""; flex: none; width: 11px; }
 }
 .tp__img {
   display: block; width: 100%; aspect-ratio: 6 / 7; object-fit: cover; object-position: 50% 25%;
-  grid-row: span 2; border-radius: 4px; background: var(--icon-bg);
+  grid-area: 1 / 1 / span 2; border-radius: 4px; background: var(--icon-bg); /* placed: the badge (.tp__sp) shares its cell */
 }
 .tp__img--none { display: grid; place-items: center; color: var(--slate); font: 800 28px var(--sans); }
 .tp__who { display: contents; color: var(--dim); font-size: 14px; }
@@ -1449,7 +1449,10 @@ div.cent-head::before { content: ""; flex: none; width: 11px; }
 @container main (max-width: 859.98px) { .tp__subj .ext { display: none; } }
 @container main (min-width: 860px) {
   .tp { grid-template-columns: 170px minmax(0, 1fr) minmax(0, 330px); grid-template-rows: auto; gap: 22px; padding: 16px; }
-  .tp__img { grid-row: auto; }
+  .tp__img { grid-row: 1; }
+  /* The badge in the empty corner under the photo, its bubble opening upward. */
+  .tp__sp { grid-area: 1 / 1; justify-self: start; width: 44px; height: 44px; margin: 0; }
+  .tp__sp .sp__tip { top: auto; bottom: calc(100% + 6px); }
   .tp__who { display: block; }
   .tp__who h1 { margin-bottom: 4px; font-size: 24px; }
   .tp__dl { margin-top: 14px; }
@@ -1592,6 +1595,19 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
 .pc__t { min-width: 0; padding-top: 2px; padding-right: 24px; }
 /* The katedra's icon, top right: above the card's link (z-index), so its title shows on hover. */
 .tp__ki { position: absolute; top: 14px; right: 14px; z-index: 1; display: flex; color: var(--slate); font-size: 30px; }
+/* The "Studenti pobeđuju" badge (cards.html sp_badge): its text in a bubble on hover, or on a tap (focus). On a card
+   under the katedra's icon, above the card's link; on a page under the photo, a phone's on the photo's corner. */
+.sp { position: absolute; z-index: 1; display: flex; cursor: help; border-radius: 50%; }
+.sp img { width: 100%; height: 100%; }
+.sp__tip {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: max-content; max-width: 240px; padding: 7px 10px;
+  background: var(--fg); color: var(--card); font: 500 13px/1.35 var(--sans); border-radius: 6px;
+  opacity: 0; pointer-events: none; transition: opacity .15s;
+}
+.sp:hover .sp__tip, .sp:focus .sp__tip { opacity: 1; }
+.pc__sp { top: 40px; right: 10px; width: 26px; height: 26px; }
+.tp__sp { position: relative; grid-area: 1 / 1 / span 2; align-self: end; justify-self: end; width: 34px; height: 34px; margin: 0 -6px -6px 0; }
+.tp__sp .sp__tip { right: auto; left: 0; }
 /* A departed teacher's years at the faculty; an estimated year dimmer, with a '~' (title: 'procena'). */
 .pc__yrs { position: absolute; right: 12px; bottom: 9px; margin: 0; color: var(--dim); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .pc__yrs { text-align: right; line-height: 1.25; }

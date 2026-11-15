@@ -396,6 +396,10 @@ OTHER_TEACHERS += [
 # Lazović-Kapor, Milošević-Mitić, Sretenović-Dobrić.
 SHORT_SURNAME = {"30", "90", "115", "191"}
 
+# Teachers on the "Studentska lista – Studenti pobeđuju" for the 2026 parliamentary elections: id -> place on the
+# list (gg.studenti.org.rs/lat/kandidati/). A badge on their page and card (cards.html sp_badge).
+STUDENTSKA_LISTA = {"244": 20, "190": 123, "506": 203, "39": 221, "180": 230}
+
 RANKS = ["професор емеритус", "редовни професор", "ванредни професор", "доцент", "асистент са докторатом", "асистент"]
 
 # The faculty profile's bibliography headings, as a short kind ('ван SCI' before 'SCI').
