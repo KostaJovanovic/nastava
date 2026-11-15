@@ -3,8 +3,8 @@
 {% block title %}Verzije{% endblock %}
 {% block description %}Šta se menjalo na arhivi foruma nastave Mašinskog fakulteta, po danima i verzijama.{% endblock %}
 
-{#- The changelog, from verzije.md (build.py load_verzije): a card per day (05:00 to 05:00), newest first, its entries
-    each led by the versions (commits) it covers. -#}
+{#- The changelog, from verzije.md (build.py load_verzije): a card per day (05:00 to 05:00), newest first. The commit
+    numbers stay in verzije.md (its check that every commit is listed), not on the page. -#}
 {% block main %}
 {%- set total = days | sum(attribute='n') %}
 <div class="mh">
@@ -16,7 +16,6 @@
   <li class="vz__day">
     <div class="vz__h">
       <h2>{{ d.date }}</h2>
-      <span class="vz__v">{{ d.span }}</span>
       <span class="vz__n">{{ d.n }} {{ d.n | pl('verzija') }}</span>
     </div>
     {%- if d.lead %}<p class="vz__lead">{{ d.lead }}</p>{% endif %}
@@ -25,7 +24,7 @@
     {%- if p.head %}<h3>{{ p.head }}</h3>{% endif %}
     <ul class="vz__list">
       {%- for it in p['items'] %}
-      <li><span class="vz__v">{{ it.v }}</span><p>{% if it.tag %}<span class="vz__tag vz__tag--{{ it.tag[1] }}">{{ it.tag[0] }}</span> {% endif %}{{ it.html }}</p></li>
+      <li><p>{% if it.tag %}<span class="vz__tag vz__tag--{{ it.tag[1] }}">{{ it.tag[0] }}</span> {% endif %}{{ it.html }}</p></li>
       {%- endfor %}
     </ul>
     {%- endfor %}
