@@ -3,8 +3,9 @@
 {% block title %}Verzije{% endblock %}
 {% block description %}Šta se menjalo na arhivi foruma nastave Mašinskog fakulteta, po danima i verzijama.{% endblock %}
 
-{#- The changelog, from verzije.md (build.py load_verzije): a card per day (05:00 to 05:00), newest first. The commit
-    numbers stay in verzije.md (its check that every commit is listed), not on the page. -#}
+{#- The changelog, from verzije.md (build.py load_verzije): one panel, a day per part (05:00 to 05:00), newest first,
+    in the manner of the file analyser's: the date and, top right, the day's last version, then the day's lead as its first, bold bullet. The
+    commit numbers stay in verzije.md (its check that every commit is listed), not on the page. -#}
 {% block main %}
 {%- set total = days | sum(attribute='n') %}
 <div class="mh">
@@ -14,17 +15,14 @@
 <ol class="vz">
   {%- for d in days %}
   <li class="vz__day">
-    <div class="vz__h">
-      <h2>{{ d.date }}</h2>
-      <span class="vz__n">{{ d.n }} {{ d.n | pl('verzija') }}</span>
-    </div>
-    {%- if d.lead %}<p class="vz__lead">{{ d.lead }}</p>{% endif %}
-    {#- p['items']: p.items is the dict's method. -#}
+    <div class="vz__h"><h2>{{ d.date }}</h2><span class="vz__v" title="Poslednja verzija tog dana">{{ d.last }}</span></div>
+    {#- The lead above the first heading, if the day has headings. p['items']: p.items is the dict's method. -#}
+    {%- if d.lead %}<ul class="vz__list"><li class="vz__lead">{{ d.lead }}</li></ul>{% endif %}
     {%- for p in d.parts if p['items'] %}
     {%- if p.head %}<h3>{{ p.head }}</h3>{% endif %}
     <ul class="vz__list">
       {%- for it in p['items'] %}
-      <li><p>{% if it.tag %}<span class="vz__tag vz__tag--{{ it.tag[1] }}">{{ it.tag[0] }}</span> {% endif %}{{ it.html }}</p></li>
+      <li>{% if it.tag %}<span class="src vz__tag vz__tag--{{ it.tag[1] }}">{{ it.tag[0] }}</span>{% endif %}{{ it.html }}</li>
       {%- endfor %}
     </ul>
     {%- endfor %}

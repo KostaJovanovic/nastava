@@ -479,7 +479,7 @@ def load_verzije(text):
                 assert not day["lead"], f"verzije.md, {date}: one lead line a day, then the entries"
                 day["lead"] = inline(r)
         lo, hi = min(day["nums"]), max(day["nums"])
-        day.update(n=len(day["nums"]), span=f"0.{lo}" if lo == hi else f"0.{lo}–0.{hi}")
+        day.update(n=len(day["nums"]), span=f"0.{lo}" if lo == hi else f"0.{lo}–0.{hi}", last=f"0.{hi}")
         seen += day.pop("nums")
         days.append(day)
     missing, twice = set(range(1, max(seen) + 1)) - set(seen), {n for n in seen if seen.count(n) > 1}
