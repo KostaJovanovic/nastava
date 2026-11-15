@@ -150,20 +150,21 @@ h1, h2, h3, p { margin: 0; }
    window's full height. */
 /* --sb-*: the old theme's colours, kept while a theme switch's circle has not yet reached the bar (site.js). */
 html { scrollbar-color: auto; }
-/* The bar's room kept even when nothing scrolls, so a page (or a list) is as wide with it as without. That strip in the
-   page's colours (--gut): the header's beside the header, the footer's beside the footer (--ft-h, site.js: only while
-   the page does not scroll, so the footer is at the window's bottom), the paper between. Firefox keeps the room
-   (scrollbar-gutter) and paints the root's background in it; Chromium drops the room on this page, so its bar is always
-   there (overflow-y: scroll), an empty one in the same colours. */
+/* A page as wide with its bar as without. Chromium: the bar always there (overflow-y: scroll; it drops a
+   scrollbar-gutter's room on this page), an empty one when nothing scrolls, in the page's colours (--gut): the header's
+   beside the header, the footer's beside the footer (--ft-h, site.js: only while the page does not scroll, so the
+   footer is at the window's bottom), the paper between. Firefox paints a kept room in the bar's one track colour, so
+   there the page is laid out at the window's whole width (body 100vw) and its bar, when it comes, lies over the right
+   edge (the frame's --gap). A list keeps its bar's room (its track is transparent). */
 :root {
   --gut: linear-gradient(var(--sb-head, var(--head)) calc(var(--hd) - 3px), var(--sb-head-line, var(--head-line)) 0 var(--hd),
     var(--sb-paper, var(--paper)) 0 calc(100% - var(--ft-h, 0px)), var(--sb-head-line, var(--head-line)) 0 calc(100% - var(--ft-h, 0px) + 3px),
     var(--sb-head, var(--head)) 0);
 }
-html, .cmd__scroll, .filters, .fl__l { scrollbar-gutter: stable; }
-html { background: var(--gut); }
+.cmd__scroll, .filters, .fl__l { scrollbar-gutter: stable; }
 @supports (-moz-appearance: none) {
-  html { scrollbar-color: var(--sb-scroll, var(--scroll)) var(--sb-paper, var(--paper)); transition: scrollbar-color .15s; }
+  html { scrollbar-color: var(--sb-scroll, var(--scroll)) var(--sb-paper, var(--paper)); transition: scrollbar-color .15s; overflow-x: hidden; }
+  body { width: 100vw; }
 }
 @supports not (-moz-appearance: none) { html { overflow-y: scroll; } }
 html::-webkit-scrollbar { background: var(--gut); }
