@@ -137,8 +137,9 @@ def load_teachers(db, subjects):
         if photo in placeholder or thumb in placeholder:
             t["thumb"] = t["photo"] = None
         # One without: a portrait found elsewhere (nastavnici-foto.jsonl), its source shown among the page's sources.
+        # One the user saved (no page) replaces even the faculty's photo.
         f = fotos.pop(t["id"], None)
-        if f and not t["photo"] and f["image"] in local:
+        if f and (not t["photo"] or not f["page"]) and f["image"] in local:
             t["photo"] = t["thumb"] = local[f["image"]]
             m = re.search(r"Monografija.*#page=(\d+)", f["page"])
             # One the user saved from a search has no page to cite.
