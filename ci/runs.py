@@ -366,9 +366,13 @@ def save(code, args):
     if os.getenv("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
             f.write(summary(entry))
-    # Append to runs.jsonl on the "runs" release.
-    # shortcut: download, append, upload: a local run and a GitHub run ending in the same minute can lose one line;
-    # a lock (or one asset per run) if that ever matters.
+    append_log(line)
+
+
+def append_log(line):
+    """Append line to runs.jsonl on the "runs" release.
+    shortcut: download, append, upload: a local run and a GitHub run ending in the same minute can lose one line;
+    a lock (or one asset per run) if that ever matters."""
     d = Path(tempfile.mkdtemp())
     if gh("release", "view", "runs", "-R", REPO).returncode:
         gh(
@@ -383,7 +387,12 @@ def save(code, args):
             "--notes",
             "The scrape runs' log (ci/runs.py): one JSON line a run.",
         )
-    gh("release", "download", "runs", "-R", REPO, "-p", "runs.jsonl", "-D", str(d))
+    r = gh("release", "download", "runs", "-R", REPO, "-p", "runs.jsonl", "-D", str(d))
+    # Only a log not made yet starts anew: after any other failure (the network) the upload would replace it with
+    # this one line.
+    if r.returncode and "no assets match" not in r.stderr:
+        print(f"run log not saved: {r.stderr.strip()}", file=sys.stderr)
+        return
     with open(d / "runs.jsonl", "a", encoding="utf-8") as f:
         f.write(line + "\n")
     r = gh("release", "upload", "runs", "-R", REPO, str(d / "runs.jsonl"), "--clobber")

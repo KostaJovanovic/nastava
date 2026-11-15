@@ -13,6 +13,8 @@ import datetime as dt  # noqa: E402
 import json  # noqa: E402
 import tempfile  # noqa: E402
 from pathlib import Path  # noqa: E402
+import subprocess  # noqa: E402
+import runs  # noqa: E402
 from runs import hhmm, replay, scrapers  # noqa: E402
 
 # A post at 10:00 waits for 10:52; one after the day's last run for the next day's first.
@@ -45,3 +47,22 @@ assert (_s["requests"], _s["errors"], _s["hosts"]["a"]["etag"], _s["hosts"]["b"]
     1,
     "https://b/y",
 ), _s
+
+
+# The run log on the release: a failed download (the network) must not upload, or the log would be this one line;
+# a log not made yet ("no assets match") starts with it.
+def _fake_gh(download_err):
+    calls = []
+
+    def gh(*args):
+        calls.append(args[:2])
+        err = download_err if args[:2] == ("release", "download") else ""
+        return subprocess.CompletedProcess(args, 1 if err else 0, "", err)
+
+    runs.gh = gh
+    runs.append_log('{"v": 1}')
+    return calls
+
+
+assert ("release", "upload") not in _fake_gh("HTTP 502: Bad Gateway"), "a failed download uploaded the log"
+assert ("release", "upload") in _fake_gh("no assets match the file pattern")
