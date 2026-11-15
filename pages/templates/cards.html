@@ -10,10 +10,11 @@
 </details>
 {%- endmacro %}
 
-{#- The "Studenti pobeđuju" badge (known.py STUDENTSKA_LISTA): its text on hover, or on a tap (focus) on a phone. -#}
+{#- The "Studenti pobeđuju" badge (known.py STUDENTSKA_LISTA): its text on hover, or on a tap (focus) on a phone.
+    The owl's lines are thickened per size (a 2x PNG each): -26 for the 26px card badge, the plain one for 34/44px. -#}
 {%- macro sp_badge(t, cls) %}
 {%- set tip = 'Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: ' ~ t.lista ~ '. na listi' %}
-<span class="sp {{ cls }}" tabindex="0" role="img" aria-label="{{ tip }}"><img src="/static/studenti-pobedjuju.png" alt="" width="64" height="64"><span class="sp__tip" aria-hidden="true">{{ tip }}</span></span>
+<span class="sp {{ cls }}" tabindex="0" role="img" aria-label="{{ tip }}"><img src="/static/studenti-pobedjuju{{ '-26' if cls == 'pc__sp' }}.png" alt="" width="64" height="64"><span class="sp__tip" aria-hidden="true">{{ tip }}</span></span>
 {%- endmacro %}
 
 {#- dup: a second card of the same teacher (the archive's earlier period they were at the faculty in too), left out
