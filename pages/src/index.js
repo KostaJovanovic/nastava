@@ -124,8 +124,12 @@ async function push(request, env, url) {
 		// 500 a call (a KV read each, under the 1000 a Worker call may make); ci/push.py asks again with the cursor.
 		const page = await env.PUSH.list({ limit: 500, cursor: url.searchParams.get("cursor") || undefined });
 		const subs = await Promise.all(page.keys.map(async (k) => ({ endpoint: k.name, ...(await env.PUSH.get(k.name, "json")) })));
-		// The count's list (push_subs) gets every subscription listed: the ones from before it, and any it missed.
-		if (subs.length) await counted(env, (db) => subs.map((x) => db.prepare("INSERT OR IGNORE INTO push_subs (endpoint) VALUES (?)").bind(x.endpoint)));
+		// The count's list (push_subs) gets every subscription listed: the ones from before it, and any it missed. All of
+		// them in one page: the list is set to exactly them, so a row whose delete failed goes too.
+		// shortcut: only while every subscription fits one page (500); past that, rows are only added.
+		const whole = !url.searchParams.get("cursor") && page.list_complete;
+		const add = (db) => subs.map((x) => db.prepare("INSERT OR IGNORE INTO push_subs (endpoint) VALUES (?)").bind(x.endpoint));
+		await counted(env, (db) => (whole ? [db.prepare("DELETE FROM push_subs"), ...add(db)] : add(db)));
 		return Response.json({ subs, cursor: page.list_complete ? null : page.cursor });
 	}
 	if (request.method !== "POST") return status(405);

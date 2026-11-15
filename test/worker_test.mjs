@@ -96,6 +96,7 @@ function d1(made = true) {
 		run: async () => {
 			if (!made && /push_subs/.test(sql)) throw new Error("no such table: push_subs");
 			if (/^INSERT OR IGNORE INTO push_subs/.test(sql)) subs.add(args[0]);
+			else if (sql === "DELETE FROM push_subs") subs.clear();
 			else if (/^DELETE FROM push_subs/.test(sql)) subs.delete(args[0]);
 			return { meta: { changes: 0 } };
 		},
@@ -118,6 +119,11 @@ test("the count of browsers with notifications: on subscribe, off, the listing; 
 	assert.deepEqual(await visit(), { n: 7, push: 0 });
 	// One made before the count: the listing (ci/push.py, every run) adds it.
 	env.PUSH.m.set(EP, JSON.stringify({ k: keys.p256dh, a: keys.auth, s: [S] }));
+	await call(env, "/push/subs", { headers: { Authorization: "Bearer k" } });
+	assert.deepEqual(await visit(), { n: 7, push: 1 });
+	// A row with no subscription (its delete failed): the listing of them all drops it.
+	env.DB.subs.add("https://fcm.googleapis.com/fcm/send/gone");
+	assert.deepEqual(await visit(), { n: 7, push: 2 });
 	await call(env, "/push/subs", { headers: { Authorization: "Bearer k" } });
 	assert.deepEqual(await visit(), { n: 7, push: 1 });
 });
