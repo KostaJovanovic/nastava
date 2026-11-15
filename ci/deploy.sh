@@ -47,6 +47,13 @@ finish() {
 }
 
 if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
+	# On this PC, not beside a scheduled run (sync.yml's concurrency does not see it): both would notify the same posts,
+	# and the state saved last would lose the other's rows.
+	if [[ -z ${GITHUB_ACTIONS:-} ]] && (($(gh run list -R "$repo" -w sync.yml -L 20 --json status \
+		-q '[.[] | select(.status | test("in_progress|queued|waiting|pending"))] | length'))); then
+		echo "a sync.yml run is going (gh run list -R $repo -w sync.yml): run this after it" >&2
+		exit 1
+	fi
 	# The saved state first: the scheduled run may be newer, and an older copy would scrape and notify its posts again.
 	# Merged with this PC's copy (ci/state_merge.py): what only this PC has stays, and goes up with the next save.
 	step pull bash ci/state.sh pull
