@@ -24,13 +24,13 @@ Profesori emeritusi su u arhivi.
 - 577, 579 [novo] **Profesori emeritusi su u arhivi** jer više ne predaju. Uz svakog piše kad je došao i kad je
   otišao u penziju.
 - **Svi nastavnici imaju godinu od kad su na fakultetu.** Znak `~` znači procenu.
-- 575–576 [novo] **Oznaka „Studenti pobeđuju“** stoji uz nastavnike sa Studentske liste.
+- 575–576, 598 [novo] **Oznaka „Studenti pobeđuju“** stoji uz nastavnike sa Studentske liste.
 - 578, 581 **Kartice nastavnika su niže.** Slike nastavnika se pojave postepeno.
 - 580, 582–583 [ispravka] **Scrollbar u Firefox-u** više ne prekriva stranu.
 - 590–591 [novo] **Strana Privatnost** kaže kratko šta sajt čuva o tebi.
 - 586–589 **Verzije su preglednije.** Uz svaki dan piše njegova poslednja verzija.
-- 592 **Footer ima link na Verzije.** Mašinci i Veliki drajv su sad samo na strani Linkovi.
-- 585, 593 **Održavanje:** ova strana.
+- 592, 594–597 **Footer je kraći.** Ima linkove na Verzije i `Piši mi :)`.
+- 585, 593, 599 **Održavanje:** ova strana.
 
 ## 14. novembra 2026.
 Arhiva nastavnika ima biografije za skoro sve.
