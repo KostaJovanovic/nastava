@@ -339,7 +339,14 @@
      subject's posts, of the news), else the one row left, if one is. */
   var bar = d.querySelector('[data-filter]'), runRows = null;
   if (bar) {
-    var rows = [].slice.call(d.querySelectorAll('[data-rows] > li:not([data-sep])')), sep = d.querySelector('[data-sep]');
+    var rows = [].slice.call(d.querySelectorAll('[data-rows] > li:not([data-sep])'));
+    // The archive's headings between rows (its milestones, its 'no year' one): each with the row it stands above (none:
+    // the list's end), to go back there once the rows are moved.
+    var seps = [].map.call(d.querySelectorAll('[data-sep]'), function (s) {
+      var a = s.nextElementSibling;
+      while (a && a.hasAttribute('data-sep')) a = a.nextElementSibling;
+      return [s, a, s.parentNode];
+    });
     var ctl = [].slice.call(bar.querySelectorAll('[data-f]'));
     // The subjects' list keeps each subject's search text once (predmeti.html #finds), by the row's id before any '-'.
     var finds = d.getElementById('finds');
@@ -379,9 +386,8 @@
     var arrange = function () {
       var g = gsel ? gsel.value : '', s = ssel ? ssel.value : '';
       home.forEach(function (h) { h[1].appendChild(h[0]); });
-      // The archive's 'no year' heading back before its first row (the rows were moved to the end past it).
-      var u = sep && box.querySelector('.pc--undated');
-      if (u) u.parentNode.insertBefore(sep, u);
+      // The archive's headings back above their rows (the rows were moved to the end past them), in their order.
+      seps.forEach(function (s) { if (s[1]) s[1].parentNode.insertBefore(s[0], s[1]); else s[2].appendChild(s[0]); });
       if (made) { made.remove(); made = null; }
       own.forEach(function (c) { c.hidden = !!g; });
       if (g) {
@@ -464,8 +470,16 @@
         left.hidden = !gone || !ctl.some(function (c) { return c.tagName !== 'SELECT' && c.value.trim(); });
       }
       if (n) n.textContent = shown;
-      // The archive's 'no year' heading: in the page's own order only, while a row under it is on view.
-      if (sep) sep.hidden = !!(gsel && gsel.value) || !!(ssel && ssel.value) || !d.querySelector('[data-sep] ~ li:not([hidden])');
+      // The archive's headings, in the page's own order only: 'no year' while a row under it is on view, a milestone
+      // while one above it is (it marks where they end).
+      var arranged = !!(gsel && gsel.value) || !!(ssel && ssel.value);
+      var onView = function (s, way) {
+        for (var r = s[way]; r; r = r[way]) if (!r.hasAttribute('data-sep') && !r.hidden) return true;
+        return false;
+      };
+      seps.forEach(function (s) {
+        s[0].hidden = arranged || !onView(s[0], s[0].dataset.sep === 'ms' ? 'previousElementSibling' : 'nextElementSibling');
+      });
       if (none) none.hidden = shown > 0 || (left && !left.hidden);
       // While a filter is set, a list with no row on view goes with its heading (a smer's subjects, its notices, its
       // subjects without posts); the one that says nothing matched stays.
