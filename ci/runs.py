@@ -15,7 +15,7 @@ Usage: runs.py snap | save EXIT ARGS... | report [--last N] [--file runs.jsonl] 
   schedule  replay the board's posts since --since (default 2022-10-01, UTC times) against the schedule in use and
             against the best 2–6 runs a day for each season (hot: registration, an exam period and the 7 days after
             it; quiet: the rest; plan.py hot); --delay: minutes GitHub starts a run late, added to every run. The
-            candidates are every hour's :52, as sync.yml. Times in UTC and in Belgrade (winter +1, summer +2).
+            candidates are every hour's :17, as the Worker's cron (pages/wrangler.toml). Times in UTC and in Belgrade (winter +1, summer +2).
 """
 
 import bisect
@@ -41,6 +41,7 @@ BG = ZoneInfo("Europe/Belgrade")
 # The schedule in use (pages/wrangler.toml crons, src/index.js SLOTS): UTC minute of day -> its slot, every day.
 NOW = {6 * 60 + 17: "morning", 10 * 60 + 17: "noon", 14 * 60 + 17: "afternoon", 18 * 60 + 17: "evening", 21 * 60 + 17: "late"}
 BIN = 10  # minutes: the optimizer's histogram
+MINUTE = 17  # the minute of the hour the Worker's cron runs at (pages/wrangler.toml): the optimizer's candidates
 
 
 def hhmm(m):
@@ -117,14 +118,14 @@ def stats(ws):
 
 
 def best(posts, season, n, delay=0, top=3):
-    """The best n run times a day for the posts of a season, from every hour's :52, by the mean wait: [(mean minutes,
+    """The best n run times a day for the posts of a season, from every hour's :17 (MINUTE), by the mean wait: [(mean minutes,
     [minutes])]. On a histogram of the minute of day (BIN), each run's next as the same season's (a shortcut: a
     season's last run of the day waits for the next day's first)."""
     hist = np.zeros(1440 // BIN)
     for t, s in posts:
         if s == season:
             hist[(t.hour * 60 + t.minute) // BIN] += 1
-    cands = np.array([(h * 60 + 52 + delay) % 1440 for h in range(24)])
+    cands = np.array([(h * 60 + MINUTE + delay) % 1440 for h in range(24)])
     centers = np.arange(1440 // BIN) * BIN + BIN / 2
     dist = (cands[None, :] - centers[:, None]) % 1440  # bins x candidates: minutes to that run
     res = []
@@ -177,7 +178,7 @@ def schedule(since, delay):
     for (slot, s), n in sorted(total.items(), key=lambda x: (x[0][1], x[0][0])):
         print(f"    {s:5} {slot:9} {useful[slot, s]}/{n} = {useful[slot, s] / n:.0%}")
 
-    print("\nThe best n runs a day (mean wait; every hour's :52):")
+    print(f"\nThe best n runs a day (mean wait; every hour's :{MINUTE}):")
     for s in ("hot", "quiet"):
         for n in range(2, 7):
             for i, (mean, ms) in enumerate(best(posts, s, n, delay, top=1)):
@@ -238,7 +239,7 @@ def github():
         out["created"] = iso(created)
         if j["jobs"] and j["jobs"][0].get("startedAt"):
             out["job_started"] = j["jobs"][0]["startedAt"]
-        if cron := os.getenv("CRON"):  # "52 10 * * *": the last time it was due, at or before the run was made
+        if cron := os.getenv("CRON"):  # "17 10 * * *": the last time it was due, at or before the run was made
             m, h = map(int, cron.split()[:2])
             due = created.replace(hour=h, minute=m, second=0, microsecond=0)
             if due > created:
