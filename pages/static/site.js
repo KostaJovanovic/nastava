@@ -4,6 +4,14 @@
   var d = document;
   var fold = window.pismoFold;
   var sf = d.getElementById('sf'), q = d.getElementById('q');
+  // The scrollbar's strip beside the footer in its colours (style.css --gut), while the page does not scroll.
+  var ft = d.querySelector('.ft'), de = d.documentElement;
+  if (ft && window.ResizeObserver) {
+    var gut = function () { de.style.setProperty('--ft-h', de.scrollHeight > innerHeight ? '0px' : Math.floor(ft.getBoundingClientRect().height) + 'px'); };
+    var gutRo = new ResizeObserver(gut);
+    gutRo.observe(ft);
+    gutRo.observe(d.body);
+  }
   // The side panel's picker and the header search's lists (build.py picker).
   var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
   var el = function (tag, cls, text) {

@@ -150,10 +150,23 @@ h1, h2, h3, p { margin: 0; }
    window's full height. */
 /* --sb-*: the old theme's colours, kept while a theme switch's circle has not yet reached the bar (site.js). */
 html { scrollbar-color: auto; }
+/* The bar's room kept even when nothing scrolls, so a page (or a list) is as wide with it as without. That strip in the
+   page's colours (--gut): the header's beside the header, the footer's beside the footer (--ft-h, site.js: only while
+   the page does not scroll, so the footer is at the window's bottom), the paper between. Firefox keeps the room
+   (scrollbar-gutter) and paints the root's background in it; Chromium drops the room on this page, so its bar is always
+   there (overflow-y: scroll), an empty one in the same colours. */
+:root {
+  --gut: linear-gradient(var(--sb-head, var(--head)) calc(var(--hd) - 3px), var(--sb-head-line, var(--head-line)) 0 var(--hd),
+    var(--sb-paper, var(--paper)) 0 calc(100% - var(--ft-h, 0px)), var(--sb-head-line, var(--head-line)) 0 calc(100% - var(--ft-h, 0px) + 3px),
+    var(--sb-head, var(--head)) 0);
+}
+html, .cmd__scroll, .filters, .fl__l { scrollbar-gutter: stable; }
+html { background: var(--gut); }
 @supports (-moz-appearance: none) {
   html { scrollbar-color: var(--sb-scroll, var(--scroll)) var(--sb-paper, var(--paper)); transition: scrollbar-color .15s; }
 }
-html::-webkit-scrollbar { background: linear-gradient(var(--sb-head, var(--head)) calc(var(--hd) - 3px), var(--sb-head-line, var(--head-line)) 0 var(--hd), var(--sb-paper, var(--paper)) 0); }
+@supports not (-moz-appearance: none) { html { overflow-y: scroll; } }
+html::-webkit-scrollbar { background: var(--gut); }
 html::-webkit-scrollbar-track { margin-top: var(--hd); }
 html::-webkit-scrollbar-thumb { background-color: var(--sb-scroll, var(--scroll)); }
 
