@@ -8,9 +8,9 @@
 #              subjects
 #   forum ...  the board, the news and the departments' sites (cent and the others), and the scrapers named after it
 #   (none)     build and publish this copy's nastava.db, nothing scraped
-# A scrape first gets the saved state (ci/state.sh pull), so this PC goes on from the last scheduled run. When the
-# scrapers changed nothing (ci/plan.py fingerprint), the state is not saved. Then: build, publish (the footer shows
-# when the board was read), then the web push of the new posts. Missing posts, a failed scraper, a failed push or an unreadable
+# A scrape first gets the saved state (ci/state.sh pull), so this PC goes on from the last scheduled run. Then: build,
+# publish (the footer shows when the board was read), save the state (not when the scrapers changed nothing:
+# ci/plan.py fingerprint), then the web push of the new posts. Missing posts, a failed scraper, a failed push or an unreadable
 # calendar do not stop the rest, but the script exits 1 at the end (a red run: GitHub's e-mail).
 set -euo pipefail
 repo=KostaJovanovic/nastava
@@ -103,13 +103,6 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	# /statistika/'s word cloud, made again when a week old (pages/build.py words): it goes up with the state, and the
 	# builds of the week skip it. Not in the fingerprint: a run that changed nothing else does not save it (the next does).
 	step words uv run -q pages/build.py words nastava.db || failed+=(words)
-	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time. Rows
-	# the pull kept from this PC (ci/state_merge.py, $RUN_DIR/merged) are a change the saved state lacks.
-	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" && ! -s $RUN_DIR/merged ]]; then
-		echo "nothing changed: no save; build and publish for the time checked"
-	else
-		step state bash ci/state.sh push
-	fi
 fi
 
 # build.py's asserts (they ran with the build until they moved to test/): a failure stops the build, as it did.
@@ -133,6 +126,17 @@ upload() {
 }
 step upload upload
 echo "uploaded $name ($(du -h "$tmp/$name" | cut -f1)); deploy started: gh run list -R $repo -w deploy"
+# The state only once its site is up: after a failed build or upload the saved state stays the old one, so the next
+# run scrapes these posts again and notifies them (saved first, its "before" would already hold them).
+if [[ -n ${print:-} ]]; then
+	# Nothing changed: no save, but still a build and publish, so the footer's "Provereno" shows this run's time. Rows
+	# the pull kept from this PC (ci/state_merge.py, $RUN_DIR/merged) are a change the saved state lacks.
+	if [[ $(uv run -q ci/plan.py fingerprint | tr -d '\r') == "$print" && ! -s $RUN_DIR/merged ]]; then
+		echo "nothing changed: no save"
+	else
+		step state bash ci/state.sh push
+	fi
+fi
 # It waits until the new posts are on the site. Without the keys (push-secret.json; on Actions the secret PUSH_SECRET)
 # there is no push.
 if [[ -n ${before:-} && -f push-secret.json ]]; then

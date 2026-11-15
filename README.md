@@ -20,7 +20,8 @@ pipeline and site, with new scrapers for phpBB.
   `ci/plan.py` reads the exam dates from the faculty's teaching calendar (the PDF `studije.py` archives): the morning
   run also takes the schedule pages on the 1st of the month and on the first day of each registration and exam
   period, and the teachers and the subjects on 1 October.
-  A run that finds nothing new stops before saving and publishing. By hand, on GitHub:
+  A run that finds nothing new does not save the state (it still builds and publishes, for the time checked). By
+  hand, on GitHub:
   `gh workflow run sync.yml -f what=forum` (or `"forum studije"`, `sync`); on a PC: `bash ci/deploy.sh forum`
   (or `forum studije`, `sync`), which first gets the saved state. A run:
   1. gets the state (`ci/state.sh pull`) and runs the tests that need no network (`test/*_test.py`; the build's before the build);
@@ -29,9 +30,10 @@ pipeline and site, with new scrapers for phpBB.
   3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and the schedules, the
      teachers and the subjects when they are due (the departments' sites only with `sync`). A failure in these does
      not stop the run;
-  4. saves the state (`nastava.db`) to the `state` release (`ci/state.sh push`);
-  5. builds the static site with Pagefind search, uploads it to the `site` release and starts the `deploy` workflow,
+  4. builds the static site with Pagefind search, uploads it to the `site` release and starts the `deploy` workflow,
      which only publishes it to GitHub Pages;
+  5. saves the state (`nastava.db`) to the `state` release (`ci/state.sh push`), only after the upload: a failed build
+     keeps the old state, so the next run scrapes and notifies those posts again;
   6. sends the web push of the new posts once they are on the site (`ci/push.py`);
   7. exits 1 (a red run, GitHub's e-mail) when the count check, a scraper, the push or the calendar check failed.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
