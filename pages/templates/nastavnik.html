@@ -51,8 +51,6 @@
       {%- if t.email %}<dt>Mejl</dt><dd><a href="mailto:{{ t.email }}" data-notx>{{ t.email }}</a></dd>{% endif %}
       {%- if t.phone %}<dt>Telefon</dt><dd>{{ t.phone }}</dd>{% endif %}
       {%- if t.research %}<dt>Oblast</dt><dd class="tp__long" title="{{ t.research }}">{{ t.research }}</dd>{% endif %}
-      {#- From an election report (Izvori below): the first year at the faculty, in any role. -#}
-      {%- if h and h.start %}<dt>Na fakultetu od</dt><dd>{{ h.start }}.</dd>{% endif %}
       {%- if h and h.home %}<dt>Matični fakultet</dt><dd>{{ h.home }}; na Mašinskom fakultetu honorarno</dd>{% endif %}
     </dl>
   </div>
