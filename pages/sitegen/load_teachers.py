@@ -9,7 +9,7 @@ from html import unescape
 from nastavnici import photo_urls
 from translit import fold
 from .clean import clean_html
-from .known import BIB_KINDS, FORUM_ACCOUNT, OTHER_TEACHERS, RANKS, SHORT_SURNAME, STUDENTSKA_LISTA
+from .known import BIB_KINDS, FORUM_ACCOUNT, OTHER_TEACHERS, RANKS, SAME_AS, SHORT_SURNAME, STUDENTSKA_LISTA
 from .output import HERE
 from .text import LINK, azbuka, set_hrefs, slug, strip_tags
 
@@ -101,7 +101,11 @@ def load_teachers(db, subjects):
     for r in db.execute("SELECT * FROM teacher_subjects ORDER BY name"):
         taught[r["teacher"]].append(dict(code=r["code"], name=r["name"], subj=by_code.get(r["code"])))
     # A teacher who left the faculty's list (gone) keeps their page and their posts' links; only the list hides them.
-    teachers = [dict(t, subjects=taught[t["id"]]) for t in map(dict, db.execute("SELECT * FROM teachers ORDER BY rowid"))]
+    teachers = [
+        dict(t, subjects=taught[t["id"]])
+        for t in map(dict, db.execute("SELECT * FROM teachers ORDER BY rowid"))
+        if t["id"] not in SAME_AS
+    ]
     teachers += [dict(t, subjects=[]) for t in OTHER_TEACHERS]
     teachers += load_history(teachers)
     for t in teachers:

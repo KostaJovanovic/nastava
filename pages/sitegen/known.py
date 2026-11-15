@@ -397,6 +397,10 @@ OTHER_TEACHERS += [
 # Lazović-Kapor, Milošević-Mitić, Sretenović-Dobrić.
 SHORT_SURNAME = {"30", "90", "115", "191"}
 
+# The faculty's old record of a teacher it now lists under another id (a new surname): old id -> current id. The old
+# one gets no page; she is at the faculty. 1062 'Рада М. Мутавџић' (asistent 2014-2015) is 494 Mutavdžić-Đukić.
+SAME_AS = {"1062": "494"}
+
 # Teachers on the "Studentska lista – Studenti pobeđuju" for the 2026 parliamentary elections: id -> place on the
 # list (gg.studenti.org.rs/lat/kandidati/). A badge on their page and card (cards.html sp_badge).
 STUDENTSKA_LISTA = {"244": 20, "190": 123, "506": 203, "39": 221, "180": 230}
