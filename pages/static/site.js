@@ -932,12 +932,14 @@
     };
     // Also a change made just before leaving a page: the next page sends it.
     var resave = function () { return current().then(function (sub) { if (sub) return save(sub, withPosts()); }).catch(function () {}); };
-    resave();
+    // Every write to the Worker waits for the one before it (the switch's, below): a resave between an "off"'s write
+    // and its unsubscribe would keep the subscription.
+    var queue = resave(), want;
     var timer;
     d.addEventListener('moji', function () {
       // Picking subjects is many clicks: one write a few seconds after the last.
       clearTimeout(timer);
-      timer = setTimeout(resave, 3000);
+      timer = setTimeout(function () { queue = queue.then(resave); }, 3000);
     });
     var denied = function () {
       if (Notification.permission !== 'denied') return '';
@@ -947,11 +949,18 @@
     current().then(function (sub) {
       showPush(!!sub && Notification.permission === 'granted', denied());
     }).catch(function () {});
+    // One change at a time, each for the switch as it is when its turn comes: clicks faster than the network left
+    // the Worker a subscription the browser had dropped (an "off" unsubscribing after an "on" saved it), and the
+    // count one too high until a notification to it failed.
     pushOns.forEach(function (pushOn) { pushOn.addEventListener('change', function () {
-      var on = pushOn.checked;
-      showPush(on, '');
+      want = pushOn.checked;
+      showPush(want, '');
       said('');
-      (on ? Notification.requestPermission().then(function (p) {
+      queue = queue.then(applyPush);
+    }); });
+    var applyPush = function () {
+      var on = want;
+      return (on ? Notification.requestPermission().then(function (p) {
         if (p !== 'granted') throw new Error('dozvola');
         var key = Uint8Array.from(atob(PUSH_PUBLIC.replace(/-/g, '+').replace(/_/g, '/')), function (c) { return c.charCodeAt(0); });
         return reg.then(function (r) { return r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }); });
@@ -960,12 +969,14 @@
       }) : current().then(function (sub) {
         if (sub) return save(sub, []).then(function () { return sub.unsubscribe(); });
       })).catch(function (e) {
+        // A newer click is queued: it decides what the switch shows.
+        if (on !== want) return;
         showPush(!on, denied());
         said(e.message === 'dozvola' ? blocked : 'Nije uspelo, pokušaj ponovo.');
         // Subscribed in the browser but not kept by the Worker: undone, so the switch shows the truth next time.
-        if (on) current().then(function (sub) { if (sub) sub.unsubscribe(); }).catch(function () {});
+        if (on) return current().then(function (sub) { if (sub) return sub.unsubscribe(); }).catch(function () {});
       });
-    }); });
+    };
   } else {
     var iphone = navigator.standalone === false;
     pushKind = iphone ? 'install' : 'none';
