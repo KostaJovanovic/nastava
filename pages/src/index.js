@@ -1,5 +1,6 @@
 // Serve the site from GitHub Pages through the edge cache. The board's attachments link straight to the faculty's
-// site; the mails' and Teams files (mail/) come from the GitHub release "mail" (/files/). The site is public: no auth.
+// site, but those of the posts since October 2026 (documents.py host); these and the mails' and Teams files (mail/)
+// come from GitHub releases (/files/). The site is public: no auth.
 const PAGES = "https://kostajovanovic.github.io/nastava";
 const RELEASES = "https://github.com/KostaJovanovic/nastava/releases/download";
 // Most pages are stored as a fragment, <html lang="sr"> with their <title> and main part; join() puts it into
@@ -77,15 +78,21 @@ async function releaseFile(path) {
 	}
 	const response = await fetch(`${RELEASES}/${encodeURIComponent(tag)}/${encodeURIComponent(asset)}`);
 	if (!response.ok) return null;
-	// Always a download: an uploaded HTML or SVG file must not run on this origin.
+	// A PDF or an image shows in the browser (detail.html's preview, the thumbnails), as its own type only: with nosniff a
+	// file that is HTML under a .pdf name stays a broken PDF. Anything else is a download: an uploaded HTML or SVG file
+	// must not run on this origin.
+	const type = INLINE[filename.toLowerCase().split(".").pop()];
 	return new Response(response.body, {
 		headers: {
-			"Content-Type": "application/octet-stream",
-			"Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+			"Content-Type": type || "application/octet-stream",
+			"Content-Disposition": `${type ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(filename)}`,
 			"X-Content-Type-Options": "nosniff",
 		},
 	});
 }
+
+// scrapers/common.py PREVIEW.
+const INLINE = { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif" };
 
 // The fragment's own head (<title>, description, canonical) ends at this mark; the main part follows.
 const HEAD_END = "<!--/head-->";

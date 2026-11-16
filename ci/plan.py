@@ -107,6 +107,7 @@ def fingerprint(db):
     queries = [
         "select count(*), max(id), sum(gone), total(length(html)), total(length(title)) from posts",
         "select count(*), sum(gone), total(length(title)) from topics",
+        "select count(*), sum(fetched), count(release) from documents",
         "select count(*), sum(gone) from vesti",
         "select count(*) from study_pages",
         "select count(*) from study_files",

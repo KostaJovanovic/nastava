@@ -18,9 +18,7 @@ import email
 import hashlib
 import json
 import re
-import subprocess
 import sys
-import tempfile
 from datetime import timezone
 from email import policy
 from email.utils import parseaddr, parsedate_to_datetime
@@ -29,55 +27,31 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from common import ROOT, redact_students
+from common import ROOT, asset_name, redact_students, release_assets, thumb_asset, thumbnail, upload_assets
 
 MAIL = ROOT / "mail"
-REPO, TAG = "KostaJovanovic/nastava", "mail"
-
-
-def asset_name(path):
-    """A file's asset name, from its path in mail/: GitHub changes spaces and non-ASCII letters in a name (dlwms's)."""
-    base = path.rsplit("/", 1)[-1]
-    ext = base.rsplit(".", 1)[-1].lower() if "." in base else ""
-    ext = ext if re.fullmatch(r"[a-z0-9]{1,8}", ext) else "bin"
-    return f"{hashlib.sha256(path.encode()).hexdigest()[:20]}.{ext}"
+TAG = "mail"
+THUMBS = MAIL / "thumbs.json"  # the files of mail/ with a thumbnail asset (upload)
 
 
 def upload():
-    gh = lambda *a: subprocess.run(["gh", *a], check=True, capture_output=True, text=True).stdout
-    try:
-        rid = json.loads(gh("api", f"repos/{REPO}/releases/tags/{TAG}"))["id"]
-        have = set(
-            gh(
-                "api", "--paginate", f"repos/{REPO}/releases/{rid}/assets?per_page=100", "-q", '.[] | select(.state == "uploaded") | .name'
-            ).split()
-        )
-    except subprocess.CalledProcessError:
-        gh(
-            "release",
-            "create",
-            TAG,
-            "-R",
-            REPO,
-            "--latest=false",
-            "--title",
-            "Mails and Teams files",
-            "--notes",
-            "The files of mail/ (mail.py, teams.py). An asset's name is a hash of its path in mail/.",
-        )
-        have = set()
-    todo = {asset_name(p.relative_to(MAIL).as_posix()): p for p in MAIL.rglob("*") if p.is_file() and p.suffix != ".json"}
-    todo = {name: p for name, p in todo.items() if name not in have}
-    with tempfile.TemporaryDirectory() as tmp:
-        # gh names an asset after its file: each file is copied under its asset name, 20 to an upload.
-        names = list(todo)
-        for i in range(0, len(names), 20):
-            batch = []
-            for name in names[i : i + 20]:
-                (Path(tmp) / name).write_bytes(todo[name].read_bytes())
-                batch.append(str(Path(tmp) / name))
-            gh("release", "upload", TAG, "-R", REPO, "--clobber", *batch)
-            print(f"{min(i + 20, len(names))}/{len(names)}", flush=True)
+    """The files of mail/ the release lacks, and a thumbnail of each PDF and image (common.thumbnail); the paths with
+    one go into THUMBS (git keeps it), for the build's file rows."""
+    have = release_assets(TAG, "Mails and Teams files", "The files of mail/ (mail.py, teams.py). An asset's name is a hash of its path in mail/.")
+    thumbs = set(json.loads(THUMBS.read_text(encoding="utf-8"))) if THUMBS.exists() else set()
+    todo = {}
+    for p in MAIL.rglob("*"):
+        if not p.is_file() or p.suffix == ".json":
+            continue
+        path = p.relative_to(MAIL).as_posix()
+        if asset_name(path) not in have:
+            todo[asset_name(path)] = p.read_bytes()
+        if thumb_asset(path) not in have and (t := thumbnail(path, todo.get(asset_name(path)) or p.read_bytes())):
+            todo[thumb_asset(path)] = t
+        if thumb_asset(path) in have or thumb_asset(path) in todo:
+            thumbs.add(path)
+    upload_assets(TAG, todo)
+    THUMBS.write_text(json.dumps(sorted(thumbs), ensure_ascii=False, indent=0) + "\n", encoding="utf-8")
     print(f"{len(todo)} uploaded, {len(have)} were there")
 
 

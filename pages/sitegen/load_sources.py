@@ -9,7 +9,7 @@ from html import unescape
 from urllib.parse import quote
 from bs4 import BeautifulSoup
 from translit import fold
-from mail import asset_name, TAG as MAIL_TAG
+from mail import asset_name, thumb_asset, TAG as MAIL_TAG
 from .clean import CENT_CLASSES, cent_tidy, clean_html, file_rows, linkify
 from .known import FORUMS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
 from .load_board import book_subject
@@ -274,11 +274,18 @@ def mail_href(path):
     return f"/files/{MAIL_TAG}/{asset_name(path)}/{quote(path.rsplit('/', 1)[-1])}"
 
 
+def mail_file(path, note, thumbs):
+    """A file of mail/ as a file_rows row: with its thumbnail when mail.py upload made one (thumbs: mail/thumbs.json)."""
+    thumb = f"/files/{MAIL_TAG}/{thumb_asset(path)}/thumb.jpg" if path in thumbs else None
+    return (mail_href(path), path.rsplit("/", 1)[-1], note, thumb)
+
+
 def load_mail(subjects, folder=MAIL):
     """mail.py's mails as board posts of their subject (post.json's page). A reply is in the topic of the oldest mail
     here it answers; its number (the post's anchor, its order in the topic) is its time, so a mail added later never
     renumbers the others. Its files are the release's (mail_href)."""
     by_href = {s["href"]: s for s in subjects.values()}
+    thumbs = set(json.loads((folder / "thumbs.json").read_text(encoding="utf-8"))) if (folder / "thumbs.json").exists() else set()
     mails = [dict(json.loads(p.read_text(encoding="utf-8")), dir=p.parent.name) for p in sorted(folder.glob("*/post.json"))]
     key = {m["id"]: m["dir"][-8:] for m in mails}
     items = []
@@ -289,7 +296,7 @@ def load_mail(subjects, folder=MAIL):
             continue
         # Only a "Re:": a new subject line on a reply is a new notice, sent as a reply to keep the list of students.
         root = next((r for r in m["refs"] if r in key), m["id"]) if re.match(r"re:", m["title"], re.I) else m["id"]
-        files = [(mail_href(f"{m['dir']}/{f}"), f, f"{m['sizes'][f] / 1024:.1f} KiB") for f in m["files"]]
+        files = [mail_file(f"{m['dir']}/{f}", f"{m['sizes'][f] / 1024:.1f} KiB", thumbs) for f in m["files"]]
         html = linkify(clean_html(m["html"]) or "") + file_rows(files)
         day = m["posted"][:10]
         # Where it came from, as a tag beside the author (rows.html who): a Teams or Moodle post, or a mail to the students.
@@ -331,11 +338,7 @@ def load_mail(subjects, folder=MAIL):
             sources[s["href"]].append(src)
         year = (re.search(r"20\d\d/\d+", m["name"]) or [None])[0]
         material[s["href"]] += [
-            (
-                mail_href(f"{p.parent.name}/{f}"),
-                f.rsplit("/", 1)[-1],
-                " · ".join(filter(None, [year, f.rsplit("/", 1)[0] if "/" in f else None])),
-            )
+            mail_file(f"{p.parent.name}/{f}", " · ".join(filter(None, [year, f.rsplit("/", 1)[0] if "/" in f else None])), thumbs)
             for f in m["files"]
         ]
     names = {"teams": "Teams", "moodle": "Moodle"}

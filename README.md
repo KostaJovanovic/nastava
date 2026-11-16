@@ -39,10 +39,12 @@ pipeline and site, with new scrapers for phpBB.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
   edge cache for a day at most (Pagefind's hashed files: a year). Most pages are stored as only their title and main
   part; the Worker puts them into `shell.html` (head, header, sidebar), which saves about 190 MB on GitHub Pages.
-- The attachments and images link straight to nastava.mas.bg.ac.rs. The site does not host them. The mails' and
-  Teams files (`mail/`) are assets of the GitHub release `mail`, which the Worker serves under `/files/`. The local
-  `files/` folder keeps a copy of each one; dlwms's `release_files.py` and Worker `/files/` route (in `ref/dlwms`)
-  can host them later.
+- The attachments of the posts since 1 October 2026 are the site's own, as dlwms's: every scrape downloads the new
+  ones (`documents.py host`) into the release `files-<school year>` (a new `-2`, `-3` one at 490 files), each with a
+  thumbnail of its first page (PDFs and images). The older attachments and the images link straight to
+  nastava.mas.bg.ac.rs; the local `files/` folder keeps a copy of each one. The mails' and Teams files (`mail/`) are
+  assets of the release `mail` (`mail.py upload`, thumbnails listed in `mail/thumbs.json`). The Worker serves the
+  releases under `/files/`: a PDF or an image inline (the document page's preview), anything else as a download.
 - Search finds Cyrillic and Latin alike: the index holds the text in Latin without diacritics, and the search box
   converts the query the same way ("распоред", "raspored", "rasporedjen").
 - Nothing is deleted: a post that disappears from the board stays in the archive.

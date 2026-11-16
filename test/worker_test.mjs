@@ -165,6 +165,26 @@ test("each cron hour starts sync.yml as its slot; a failed dispatch throws", asy
 	}
 });
 
+test("a /files/ PDF or image shows inline as its own type; anything else is a download", async () => {
+	const real = globalThis.fetch;
+	globalThis.fetch = async () => new Response("<html>x</html>");
+	try {
+		for (const [name, type, how] of [
+			["a.PDF", "application/pdf", "inline"],
+			["thumb.jpg", "image/jpeg", "inline"],
+			["x.html", "application/octet-stream", "attachment"],
+			["x.svg", "application/octet-stream", "attachment"],
+		]) {
+			const r = await call({}, `/files/files-2026-2027/h.bin/${name}`);
+			assert.equal(r.headers.get("Content-Type"), type);
+			assert.ok(r.headers.get("Content-Disposition").startsWith(how + ";"), name);
+			assert.equal(r.headers.get("X-Content-Type-Options"), "nosniff");
+		}
+	} finally {
+		globalThis.fetch = real;
+	}
+});
+
 test("a /files/ path without its three parts is a 404, with no request to GitHub", async () => {
 	for (const path of ["/files/mail/a.pdf", "/files/mail/a.pdf/b.pdf/c"]) assert.equal((await call({}, path)).status, 404);
 });

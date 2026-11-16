@@ -4,11 +4,13 @@
 # ///
 """Archive every attachment of nastava.mas.bg.ac.rs.
 
-Usage: documents.py download | extract [--all] | sync | stats
+Usage: documents.py download | extract [--all] | sync | stats | host
   download  fetch the pending attachments: the ones the posts link, and every id from 1 up to
             the highest linked id that no post links (an attachment can outlive its post link)
   extract   extract text from the downloaded files (no network)
   sync      download + extract
+  host      the attachments of the posts since HOST_FROM: download, extract, thumbnail, upload to
+            the release files-<school year> (ci/deploy.sh, every scrape)
 
 Files go to files/<id>/<file name>. The download is a plain GET of download/file.php?id=N.
 """
@@ -30,7 +32,7 @@ from urllib.parse import unquote
 
 import requests
 
-from common import DELAY, ROOT, is_html_page, session
+from common import DELAY, ROOT, asset_name, is_html_page, release_assets, session, thumb_asset, thumbnail, upload_assets
 from nastava import BASE, WORKERS, connect
 
 FILES = os.getenv("FILES", str(ROOT / "files"))
@@ -357,6 +359,79 @@ def run_extract(db, everything):
     db.commit()
 
 
+# ---------- host ----------
+
+# The attachments of the posts from this day on are the site's own: assets of a release per school year, as dlwms's.
+HOST_FROM = "2026-10-01"
+# Files to a release: each has a thumbnail asset too, and a release holds at most 1000 assets.
+PER_RELEASE = 490
+
+
+def release_base(posted):
+    """'files-2026-2027' for a post of that school year (from 1 October)."""
+    y, m = int(posted[:4]), int(posted[5:7])
+    y = y if m >= 10 else y - 1
+    return f"files-{y}-{y + 1}"
+
+
+def host(db):
+    """Download the attachments of the posts since HOST_FROM that no release has yet, extract their text, render
+    their thumbnails (common.thumbnail) and upload both. Then documents.release is the file's release tag and
+    documents.thumb 1 when it has a thumbnail. A failed upload leaves release null: the next run tries again."""
+    cols = {r[1] for r in db.execute("pragma table_info(documents)")}
+    for col, kind in (("release", "text"), ("thumb", "integer not null default 0")):
+        if col not in cols:
+            db.execute(f"alter table documents add column {col} {kind}")
+    rows = db.execute(
+        "select d.id, p.posted, d.path from documents d join posts p on p.id = d.post "
+        "where p.posted >= ? and d.release is null and (d.error is null or d.error != '404') order by d.id",
+        (HOST_FROM,),
+    ).fetchall()
+    print(f"{len(rows)} attachments to host", flush=True)
+    if not rows:
+        return
+    # In CI the files are not on disk: fetched again, as the first time.
+    need = [i for i, _, path in rows if not (path and os.path.exists(os.path.join(FILES, path)))]
+    with ThreadPoolExecutor(WORKERS) as pool:
+        for file_id, result in zip(need, pool.map(_try_fetch, need)):
+            if isinstance(result, Exception):
+                db.execute("update documents set error = ? where id = ?", (f"{type(result).__name__}: {result}"[:500], file_id))
+            else:
+                save(db, file_id, result)
+    db.commit()
+    used = dict(db.execute("select release, count(*) from documents where release is not null group by release").fetchall())
+    by_tag, done = {}, []
+    for file_id, posted, _ in rows:
+        path = db.execute("select path from documents where id = ? and fetched = 1 and error is null", (file_id,)).fetchone()
+        if not path:
+            continue
+        path = path[0]
+        data = Path(FILES, path).read_bytes()
+        # A failed extraction (an old .doc without LibreOffice) leaves no text, not an error: an error hides the page.
+        text = extract_file((file_id, path))[1]
+        base = release_base(posted)
+        tag = next(t for n in range(1, 100) if used.get(t := base if n == 1 else f"{base}-{n}", 0) < PER_RELEASE)
+        used[tag] = used.get(tag, 0) + 1
+        files = by_tag.setdefault(tag, {})
+        files[asset_name(path)] = data
+        if thumb := thumbnail(path, data):
+            files[thumb_asset(path)] = thumb
+        done.append((tag, int(bool(thumb)), text, file_id))
+    for tag, files in by_tag.items():
+        release_assets(tag, tag, "The board's attachments of one school year (documents.py host). An asset's name is a hash of the file's path.")
+        upload_assets(tag, files)
+    db.executemany("update documents set release = ?, thumb = ?, text = ? where id = ?", done)
+    db.commit()
+    print(f"hosted {len(done)} of {len(rows)}", flush=True)
+
+
+def _try_fetch(file_id):
+    try:
+        return fetch(file_id)
+    except (requests.RequestException, OSError) as error:
+        return error
+
+
 # ---------- stats ----------
 
 
@@ -388,6 +463,8 @@ def main():
         run_extract(db, "--all" in sys.argv)
     if command in ("sync", "stats"):
         show_stats(db)
+    if command == "host":
+        host(db)
 
 
 if __name__ == "__main__":

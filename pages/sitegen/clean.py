@@ -167,17 +167,28 @@ def downloads(html):
     ]
 
 
-def attachments(html):
+def thumb_img(src):
+    """A hosted file's thumbnail in its attachment row (style.css .att__img); decorative: the name says what it is."""
+    return f'<img class="att__img" src="{escape(src)}" alt="" loading="lazy" decoding="async">' if src else ""
+
+
+def attachments(html, hosted=None):
     """A post's attachments as rows (style.css .att): the file's type as a badge, its name, its comment, its size and
     downloads. It runs on clean_html's output and only moves its parts, which are sanitized already; the type is
-    letters only."""
+    letters only. hosted: {attachment id: (href, thumbnail href or None)} of the files the site keeps (load_board):
+    their link is the release's, with the thumbnail."""
 
     def row(m):
         ext = re.search(r"\.([a-z0-9]{1,5})\s*$", unescape(m[2]).lower())
         ext = ext[1] if ext else ""
         note = f'<span class="att__c">{m[3].strip()}</span>' if m[3] and m[3].strip() else ""
+        i = re.search(r"file\.php\?id=(\d+)", m[1])
+        mine = (hosted or {}).get(int(i[1])) if i else None
+        # m[1] is clean_html's, escaped already; the release's href is ours.
+        href, thumb = (escape(mine[0]), mine[1]) if mine else (m[1], None)
         return (
-            f'<a class="att" href="{m[1]}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
+            f'<a class="att" href="{href}" rel="noopener noreferrer">{thumb_img(thumb)}'
+            f'<span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
             f'{ext.upper() or "FAJL"}</span><span class="att__n">{m[2]}{note}<small>{m[4]} · {m[5].strip()}</small></span></a>'
         )
 
@@ -203,18 +214,18 @@ def linkify(html):
 
 
 def file_rows(files, title="Prilozi"):
-    """Files [(href, name, note)] as a post's attachments (style.css .att): the type's badge, the name, a note under
-    it. A file's name loses ie's upload number ("1815_РЕЗУЛТАТИ_2.docx"); one without (katedre.py's "link") is the
-    address's."""
+    """Files [(href, name, note[, thumbnail href])] as a post's attachments (style.css .att): the type's badge, the
+    name, a note under it, and a hosted file's thumbnail (thumb_img). A file's name loses ie's upload number
+    ("1815_РЕЗУЛТАТИ_2.docx"); one without (katedre.py's "link") is the address's."""
 
-    def row(href, name, note):
+    def row(href, name, note, thumb=None):
         path = unquote(urlsplit(href).path)
         ext = (re.search(r"\.([a-z0-9]{1,5})$", path.lower()) or [None, ""])[1]
         file = re.sub(r"^\d+_", "", path.rsplit("/", 1)[-1])
         name, note = (file if x in (None, "", "link") or re.fullmatch(r"\d+_.+", x) else x for x in (name, note))
         note = None if note == name else note
         return (
-            f'<dd><a class="att" href="{escape(href)}" rel="noopener noreferrer"><span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
+            f'<dd><a class="att" href="{escape(href)}" rel="noopener noreferrer">{thumb_img(thumb)}<span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
             f'{ext.upper() or "FAJL"}</span><span class="att__n">{escape(name)}'
             + (f"<small>{escape(note)}</small>" if note else "")
             + "</span></a></dd>"

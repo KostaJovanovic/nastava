@@ -2,6 +2,8 @@
 
 import re
 from collections import Counter, defaultdict
+from urllib.parse import quote
+from common import asset_name, thumb_asset
 from translit import fold
 from .clean import attachments, clean_html, downloads, has_kinds, preuzeto
 from .known import RENAMED
@@ -54,8 +56,21 @@ def load_places(db):
     return place, smerovi, subjects
 
 
+def hosted_files(docs):
+    """{attachment id: (href, thumbnail href or None)} of the attachments in a release (documents.py host), as the
+    Worker serves them under /files/."""
+    out = {}
+    for d in docs.values():
+        if d.get("release"):
+            base = f"/files/{d['release']}"
+            thumb = f"{base}/{thumb_asset(d['path'])}/thumb.jpg" if d.get("thumb") else None
+            out[d["id"]] = (f"{base}/{asset_name(d['path'])}/{quote(d['filename'], safe='')}", thumb)
+    return out
+
+
 def load_items(db, place):
     docs = {r["id"]: dict(r) for r in db.execute("SELECT * FROM documents WHERE fetched = 1 AND error IS NULL")}
+    hosted = hosted_files(docs)
     posts = {r["id"]: dict(r) for r in db.execute("SELECT * FROM posts")}
     items = []
     # A smer's own thread about a završni predmet or rad (teachers post them outside the subject) goes to the smer's
@@ -92,7 +107,7 @@ def load_items(db, place):
                 posted=p["posted"] or "",
                 author=p["author"],
                 body=preuzeto(p["content"]),
-                html=attachments(html),
+                html=attachments(html, hosted),
                 files=downloads(html),
                 gone=p["gone"],
                 source_url=f"{BASE}viewtopic.php?p={p['id']}#p{p['id']}",
@@ -120,8 +135,15 @@ def load_items(db, place):
                 body=(d["text"] or "")[:PAGE_TEXT],
                 html=None,
                 source_url=f"{BASE}viewtopic.php?p={d['post']}#p{d['post']}" if d["post"] else None,
-                doc=dict(filename=d["filename"], size=round((d["size"] or 0) / 1024), uploaded_at=d["uploaded_at"]),
-                download_url=f"{BASE}download/file.php?id={d['id']}",
+                # preview: the file itself, inline (detail.html), when the release has it and it got a thumbnail.
+                doc=dict(
+                    filename=d["filename"],
+                    size=round((d["size"] or 0) / 1024),
+                    uploaded_at=d["uploaded_at"],
+                    preview=hosted[d["id"]][0] if d["id"] in hosted and hosted[d["id"]][1] else None,
+                    image=d["mime"] in ("image/jpeg", "image/png", "image/gif"),
+                ),
+                download_url=hosted[d["id"]][0] if d["id"] in hosted else f"{BASE}download/file.php?id={d['id']}",
             )
         )
     return items

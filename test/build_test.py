@@ -14,7 +14,7 @@ import json  # noqa: E402
 import re  # noqa: E402
 import sqlite3  # noqa: E402
 from collections import Counter  # noqa: E402
-from mail import asset_name  # noqa: E402
+from mail import asset_name, thumb_asset  # noqa: E402
 from markupsafe import Markup  # noqa: E402
 from pathlib import Path  # noqa: E402
 from sitegen.clean import CENT_CLASSES  # noqa: E402
@@ -30,6 +30,7 @@ from sitegen.clean import preuzeto  # noqa: E402
 from sitegen.feeds import atom  # noqa: E402
 from sitegen.links import mark_elsewhere  # noqa: E402
 from sitegen.links import service  # noqa: E402
+from sitegen.load_board import hosted_files  # noqa: E402
 from sitegen.load_board import row_katedra  # noqa: E402
 from sitegen.load_board import subject_name  # noqa: E402
 from sitegen.load_sources import load_katedre  # noqa: E402
@@ -430,19 +431,29 @@ assert [p["short"] for p in parse_lectures(_pr.replace("DOKTORSKE", "MASTER AKAD
 ]
 assert _l["programs"][1]["cards"] == [("BMI", "Biomedicina", "/f/b.pdf"), ("3", "3. godina", "/f/i.pdf")]
 assert _l["programs"][2]["notes"] == ["Biće objavljen!"] and parse_lectures("<p>x</p>") is None
-_at = attachments(
-    clean_html(
-        '<dl class="attachbox"><dt>Attachments</dt><dd><dl class="file"><dt><span class="imageset"></span> '
-        '<a class="postlink" href="./download/file.php?id=7">Rok &amp; B.PDF</a></dt><dd>(58.7 KiB) Downloaded 4 times'
-        "</dd></dl></dd></dl>"
-    )
+_at_html = clean_html(
+    '<dl class="attachbox"><dt>Attachments</dt><dd><dl class="file"><dt><span class="imageset"></span> '
+    '<a class="postlink" href="./download/file.php?id=7">Rok &amp; B.PDF</a></dt><dd>(58.7 KiB) Downloaded 4 times'
+    "</dd></dl></dd></dl>"
 )
+_at = attachments(_at_html)
 assert (
     '<a class="att" href="https://nastava.mas.bg.ac.rs/nastava/download/file.php?id=7" rel="noopener noreferrer">'
     '<span class="att__t att__t--pdf">PDF</span><span class="att__n">Rok &amp; B.PDF<small>58.7 KiB · preuzeto 4 puta</small>'
     "</span></a>"
 ) in _at and "<dt>Prilozi</dt>" in _at, _at
 assert attachments(None) is None and attachments("<p>x</p>") == "<p>x</p>"
+# A file the site keeps (documents.py host): the release's link and its thumbnail; another attachment is unchanged.
+_ah = attachments(_at_html, {7: ("/files/files-2026-2027/ab.pdf/Rok%20%26%20B.PDF", "/files/files-2026-2027/cd.jpg/thumb.jpg")})
+assert (
+    '<a class="att" href="/files/files-2026-2027/ab.pdf/Rok%20%26%20B.PDF" rel="noopener noreferrer"><img class="att__img" '
+    'src="/files/files-2026-2027/cd.jpg/thumb.jpg" alt="" loading="lazy" decoding="async"><span class="att__t'
+) in _ah, _ah
+assert attachments(_at_html, {8: ("/x", None)}) == _at
+_hf = hosted_files({7: dict(id=7, release="files-2026-2027", thumb=1, path="7/a b.pdf", filename="a/b.pdf"), 8: dict(id=8, path="8/c")})
+assert list(_hf) == [7] and _hf[7] == (f"/files/files-2026-2027/{asset_name('7/a b.pdf')}/a%2Fb.pdf", f"/files/files-2026-2027/{thumb_asset('7/a b.pdf')}/thumb.jpg"), _hf
+assert thumb_asset("7/a.jpg") != asset_name("7/a.jpg") and thumb_asset("7/a.jpg").endswith(".jpg")
+assert 'src="/t.jpg"' in file_rows([("/files/mail/a.pdf/a.pdf", "a.pdf", None, "/t.jpg")]) and "<img" not in file_rows([("/files/mail/a.pdf/a.pdf", "a.pdf", None)])
 _dl = clean_html(
     '<dl class="file"><dt><a class="postlink" href="./download/file.php?id=11&amp;sid=b0c">R&amp;T.zip</a></dt>'
     "<dd><em>овде</em></dd> <dd>(45.16 KiB) Downloaded 642 times</dd></dl>"

@@ -31,6 +31,79 @@ FILE = re.compile(r"\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|dwg|txt|m|py|csv|odt|ods
 VIDEO = re.compile(r"(drive\.google\.com|docs\.google\.com|youtube\.com|youtu\.be|vimeo\.com)", re.I)
 
 
+REPO = "KostaJovanovic/nastava"
+# The kinds the Worker serves inline (pages/src/index.js INLINE) and that get a thumbnail.
+PREVIEW = {"pdf", "jpg", "jpeg", "png", "gif"}
+THUMB_WIDTH = 240  # px: twice the width style.css .att__img shows
+
+
+def asset_name(path):
+    """A file's asset name, from its path: GitHub changes spaces and non-ASCII letters in a name (dlwms's)."""
+    import hashlib
+
+    base = path.rsplit("/", 1)[-1]
+    ext = base.rsplit(".", 1)[-1].lower() if "." in base else ""
+    ext = ext if re.fullmatch(r"[a-z0-9]{1,8}", ext) else "bin"
+    return f"{hashlib.sha256(path.encode()).hexdigest()[:20]}.{ext}"
+
+
+def thumb_asset(path):
+    """The asset name of a file's thumbnail (thumbnail): its own hash, so an image's thumbnail is not the image."""
+    return asset_name(f"{path}#thumb.jpg")
+
+
+def thumbnail(name, data):
+    """A PDF's first page or an image as a small JPEG (THUMB_WIDTH wide), or None: another kind, or one PyMuPDF cannot
+    open."""
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    # PyMuPDF "repairs" any bytes into a blank PDF page: a PDF must have its header (within 1 KiB, as readers allow).
+    if ext not in PREVIEW or (ext == "pdf" and b"%PDF" not in data[:1024]):
+        return None
+    import pymupdf
+
+    try:
+        with pymupdf.open(stream=data, filetype=ext) as doc:
+            page = doc[0]
+            zoom = THUMB_WIDTH / page.rect.width
+            return page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False).tobytes("jpg", jpg_quality=75)
+    except Exception:  # a broken or encrypted file: no thumbnail, the file is still published
+        return None
+
+
+def gh(*args):
+    import subprocess
+
+    return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
+
+
+def release_assets(tag, title, notes):
+    """The uploaded assets' names of the release tag in REPO; the release is made when missing."""
+    import subprocess
+
+    try:
+        rid = json.loads(gh("api", f"repos/{REPO}/releases/tags/{tag}"))["id"]
+    except subprocess.CalledProcessError:
+        gh("release", "create", tag, "-R", REPO, "--latest=false", "--title", title, "--notes", notes)
+        return set()
+    q = '.[] | select(.state == "uploaded") | .name'
+    return set(gh("api", "--paginate", f"repos/{REPO}/releases/{rid}/assets?per_page=100", "-q", q).split())
+
+
+def upload_assets(tag, files):
+    """Upload {asset name: bytes} to the release tag, 20 to an upload (gh names an asset after its file)."""
+    import tempfile
+
+    names = list(files)
+    with tempfile.TemporaryDirectory() as tmp:
+        for i in range(0, len(names), 20):
+            batch = []
+            for name in names[i : i + 20]:
+                (Path(tmp) / name).write_bytes(files[name])
+                batch.append(str(Path(tmp) / name))
+            gh("release", "upload", tag, "-R", REPO, "--clobber", *batch)
+            print(f"{tag}: {min(i + 20, len(names))}/{len(names)}", flush=True)
+
+
 def connect(schema=""):
     """nastava.db (DB), in WAL, with the scraper's tables made if missing."""
     db = sqlite3.connect(DB, timeout=60)
