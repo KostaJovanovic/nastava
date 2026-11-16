@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0"]
+# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1"]
 # ///
 """The asserts of pages/build.py (were its __main__ block), no network: uv run test/build_test.py"""
 
@@ -629,3 +629,23 @@ _em = dict(history=_h, first_seen="2026-11-08", emeritus=1, gone=1, last_seen="2
 assert faculty_span(_em, "2014") == {"from": 1979, "to": 2025, "from_est": False, "to_est": True}
 assert faculty_span(dict(_em, posts=[]), "2014")["to"] == 2020
 assert faculty_span(dict(_em, history=dict(_h, retired=2016, retired_est=False)), "2014")["to"] == 2016
+
+# Teacher photos (load_teachers.fit_photo): a JPEG wider than 300 px scaled to 300, a narrower one or another kind
+# served as stored; the small copy (the app's offline one) always a JPEG, at most 150 px wide.
+from PIL import Image as _Image  # noqa: E402
+from sitegen.load_teachers import fit_photo, small_path  # noqa: E402
+
+
+def _photo(w, h, kind="JPEG", mode="RGB"):
+    out = io.BytesIO()
+    _Image.new(mode, (w, h), "gray").save(out, kind)
+    return out.getvalue()
+
+
+_big, _narrow, _png = _photo(900, 1050), _photo(130, 155), _photo(400, 500, "PNG", "RGBA")
+assert _Image.open(io.BytesIO(fit_photo(_big))).size == (300, 350)
+assert fit_photo(_narrow) is _narrow and fit_photo(_png) is _png
+_small = _Image.open(io.BytesIO(fit_photo(_png, 150, always=True)))
+assert (_small.format, _small.size, _small.mode) == ("JPEG", (150, 188), "RGB")
+assert _Image.open(io.BytesIO(fit_photo(_narrow, 150, always=True))).size == (130, 155)
+assert small_path("/foto/ab12.png") == "/foto/mala/ab12.jpg"

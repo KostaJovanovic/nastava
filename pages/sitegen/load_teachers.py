@@ -1,11 +1,13 @@
 """The teachers: the faculty's list, their history, photos, biographies, bibliographies, departments."""
 
 import hashlib
+import io
 import json
 import re
 import sys
 from collections import Counter, defaultdict
 from html import unescape
+from PIL import Image, ImageOps
 from nastavnici import photo_urls
 from translit import fold
 from .clean import clean_html
@@ -29,14 +31,44 @@ def placeholders(db):
     return {u for urls in same.values() if len({u.split("?")[0] for u in urls}) >= 2 for u in urls}
 
 
+PHOTO_WIDTH = 300  # the widest any page shows one (.tp__img, 170 px wide on a wide screen) with room for 2x screens
+SMALL_WIDTH = 150  # the app's offline copy of a teacher no longer on the list (docs/PLAN-app.md, step 9)
+
+
+def fit_photo(data, width=PHOTO_WIDTH, always=False):
+    """A photo as the site serves it: a JPEG wider than width scaled down to it (JPEG 85, 4:2:2), turned as its EXIF
+    says first (the copy drops the EXIF); a narrower one, or any other kind (all narrower in 2026-11), as stored.
+    always: a JPEG in any case (the small copies). The table keeps the original."""
+    im = Image.open(io.BytesIO(data))
+    if not always and (im.format != "JPEG" or im.width <= width):
+        return data
+    icc = im.info.get("icc_profile")
+    im = ImageOps.exif_transpose(im)
+    # A transparent PNG on white, as the page's light frame shows it.
+    im = Image.alpha_composite(Image.new("RGBA", im.size, "white"), im.convert("RGBA")) if im.mode in ("RGBA", "LA", "P") else im
+    im = im.convert("RGB")
+    if im.width > width:
+        im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
+    out = io.BytesIO()
+    im.save(out, "JPEG", quality=85, subsampling=1, optimize=True, icc_profile=icc)
+    return out.getvalue()
+
+
+def small_path(path):
+    """A photo's small copy (fit_photo SMALL_WIDTH), for the app's offline copy: /foto/mala/<name>.jpg."""
+    return "/foto/mala/" + path.rsplit("/", 1)[1].rsplit(".", 1)[0] + ".jpg"
+
+
 def write_photos(db, site):
-    """The teacher photos nastavnici.py stored, as files: the faculty removes a departed teacher's. Not its
-    placeholder: no page shows it (load_teachers)."""
-    (site / "foto").mkdir(parents=True, exist_ok=True)
+    """The teacher photos nastavnici.py stored, as files (fit_photo), each with its small copy (small_path): the
+    faculty removes a departed teacher's. Not its placeholder: no page shows it (load_teachers)."""
+    (site / "foto" / "mala").mkdir(parents=True, exist_ok=True)
     skip = placeholders(db)
     for url, kind, data in db.execute("SELECT url, type, data FROM photos"):
         if url not in skip:
-            (site / photo_path(url, kind).lstrip("/")).write_bytes(data)
+            path = photo_path(url, kind)
+            (site / path.lstrip("/")).write_bytes(fit_photo(data))
+            (site / small_path(path).lstrip("/")).write_bytes(fit_photo(data, SMALL_WIDTH, always=True))
 
 
 HISTORY = HERE.resolve().parent / "data" / "nastavnici-istorija.jsonl"

@@ -277,8 +277,12 @@ The draft (decided 2026-11-16: the APK base, and the user's picks 1, 2, 4, 5, 6,
 
 Expected: the APK some 10–15 MB bigger, a daily download of a few hundred KB, 15–20 MB on the phone.
 
-Open (to settle one at a time): professor photos in the APK as they are (13.3 MB) or left out (option 3, smaller
-copies, not picked); refresh on any network or Wi-Fi only; a line on offline pages saying the copy's date, and its
+Photos (decided 2026-11-16): the site serves every teacher photo at most 300 px wide (JPEG 85, 4:2:2; the
+originals stay in `nastava.db`), 13.3 MB → 9.9 MB, and the build writes a 150 px copy of each at
+`/foto/mala/<name>.jpg` (3.8 MB for all; `load_teachers.fit_photo`). The APK ships the 300 px photo for teachers on
+the faculty's current list, the 150 px copy for the rest (former, emeriti, the past).
+
+Open (to settle one at a time): refresh on any network or Wi-Fi only; a line on offline pages saying the copy's date, and its
 wording; what happens to the copy when a subject is unfollowed.
 
 ## Effort

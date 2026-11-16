@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0"]
+# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1"]
 # ///
 """Dev mode (build.py main(dev=True), pages/serve.py) shows what a build writes: uv run pages/devcheck.py [nastava.db]
 
