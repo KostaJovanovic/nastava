@@ -203,6 +203,8 @@ def main(db_path, out, dev_mode=False):
     write(site / "privacy" / "index.html", privacy, canonical="/privatnost/")  # the English address, same page
     # The site's own logo and colours: nothing a search for the faculty wants.
     write(site / "stil" / "index.html", env.get_template("stil.html").render(**stil_data()), index=False)
+    # Every day's "Profesor dana": linked from nowhere, out of search and the sitemap. Dev mode: the days ahead too.
+    write(site / "profdana" / "index.html", env.get_template("profdana.html").render(dev=dev), index=False)
     write(site / "link" / "index.html", env.get_template("link.html").render(icons=link_icons(), groups=links))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())

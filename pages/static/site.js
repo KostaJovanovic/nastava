@@ -1406,15 +1406,34 @@
     if (t) t.scrollIntoView();
   }, { once: true });
 
-  /* "Profesor dana" (sidebar.html): one of /izbor.json dana (load_teachers.of_the_day), the same all day: the
-     browser's date, hashed so the days don't go down the list in order. */
+  /* "Profesor dana" (sidebar.html): one of /izbor.json dana (load_teachers.of_the_day), the same all day (the
+     browser's date). The days since DANA_START go through the list in rounds, each round in its own shuffled order:
+     no one comes again before everyone has had a day. /profdana/ shows every day's.
+     shortcut: picked from today's list: a past day's changes when the list does (a teacher added, gone, a new
+     photo); store each day's pick if the calendar must stay as it was. */
+  var DANA_START = new Date(2026, 10, 16);
+  var pickDay = function (list, n) {
+    var days = Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - DANA_START) / 864e5);
+    var len = list.length, round = Math.floor(days / len), order = list.map(function (_, i) { return i; });
+    // mulberry32, seeded by the round: the same order in every browser.
+    var s = round + 0x9e3779b9;
+    var rnd = function () {
+      s = s + 0x6d2b79f5 | 0;
+      var t = Math.imul(s ^ s >>> 15, 1 | s);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+    for (var i = len - 1; i > 0; i--) {
+      var k = Math.floor(rnd() * (i + 1)), x = order[i];
+      order[i] = order[k]; order[k] = x;
+    }
+    return list[order[days - round * len]];
+  };
   var dana = d.querySelector('[data-dana]');
   if (dana && izbor) izbor.then(function (j) {
     var list = j.dana || [];
     if (!list.length) return;
-    var n = new Date(), h = n.getFullYear() * 10000 + (n.getMonth() + 1) * 100 + n.getDate();
-    h = Math.imul(h ^ h >>> 16, 0x45d9f3b); h = Math.imul(h ^ h >>> 16, 0x45d9f3b); h ^= h >>> 16;
-    var t = list[(h >>> 0) % list.length];
+    var t = pickDay(list, new Date());
     var a = dana.querySelector('a');
     a.href = t[2];
     a.querySelector('.sec').textContent = t[0];
@@ -1427,6 +1446,38 @@
       a.querySelector('.dana__ki').removeAttribute('hidden');
     }
     dana.hidden = false;
+  }).catch(function () {});
+
+  /* /profdana/ (profdana.html): every day's pick from DANA_START to today (+ data-ahead days, dev mode), newest
+     first, a section per month. */
+  var pd = d.querySelector('[data-profdana]');
+  if (pd && izbor) izbor.then(function (j) {
+    var list = j.dana || [];
+    if (!list.length) return;
+    var MES = ['januar', 'februar', 'mart', 'april', 'maj', 'jun', 'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
+    var DAN = ['ned', 'pon', 'uto', 'sre', 'čet', 'pet', 'sub'];
+    var first = DANA_START;
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var day = new Date(today), ol = null, month = -1;
+    day.setDate(day.getDate() + (+pd.dataset.ahead || 0));
+    for (; day >= first; day.setDate(day.getDate() - 1)) {
+      if (day.getMonth() !== month) {
+        month = day.getMonth();
+        var sec = el('section', 'st');
+        sec.appendChild(el('h2', 'st__h', MES[month] + ' ' + day.getFullYear()));
+        ol = sec.appendChild(el('ol', 'pd__days'));
+        pd.appendChild(sec);
+      }
+      var t = pickDay(list, day), li = el('li', 'pd__d' + (day > today ? ' pd__d--next' : day.getTime() === today.getTime() ? ' pd__d--today' : ''));
+      var a = li.appendChild(el('a'));
+      a.href = t[2];
+      a.appendChild(el('span', 'pd__when', DAN[day.getDay()] + ' ' + day.getDate() + '.'));
+      var img = a.appendChild(el('img', 'pc__img'));
+      img.src = t[3]; img.alt = ''; img.loading = 'lazy';
+      a.appendChild(el('b', null, t[1]));
+      a.appendChild(el('small', null, t[0]));
+      ol.appendChild(li);
+    }
   }).catch(function () {});
 
   /* Visitor counter: every page tells the Worker (/visit, each IP once in three days); only /statistika/ shows the
