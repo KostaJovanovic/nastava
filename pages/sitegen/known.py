@@ -401,6 +401,13 @@ SHORT_SURNAME = {"30", "90", "115", "191"}
 # one gets no page; she is at the faculty. 1062 'Рада М. Мутавџић' (asistent 2014-2015) is 494 Mutavdžić-Đukić.
 SAME_AS = {"1062": "494"}
 
+# Pages that are gone, and where their content is now (render.py writes a redirect page at the old address): two
+# records of one teacher, merged.
+MOVED = {
+    "/nastavnik/ivana-markovic/": "/nastavnik/ivana-m-medojevic/",  # her maiden name (nastavnici-istorija.jsonl, 454)
+    "/nastavnik/rada-m-mutavdzic/": "/nastavnik/rada-m-mutavdzic-djukic/",  # SAME_AS
+}
+
 # Teachers on the "Studentska lista – Studenti pobeđuju" for the 2026 parliamentary elections: id -> place on the
 # list (gg.studenti.org.rs/lat/kandidati/). A badge on their page and card (cards.html sp_badge).
 STUDENTSKA_LISTA = {"244": 20, "190": 123, "506": 203, "39": 221, "180": 230}

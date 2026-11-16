@@ -13,12 +13,12 @@ from studije import SITE as STUDY_SITE
 from translit import fold
 from .clean import book_page, clean_html
 from .feeds import atom
-from .known import HOME_ORDER, OWN_SITES, QUIET, VZ_ITEM, VZ_TAGS
+from .known import HOME_ORDER, MOVED, OWN_SITES, QUIET, VZ_ITEM, VZ_TAGS
 from .load_board import row_katedra
 from .load_book import plan_groups
 from .load_teachers import bibliography, department_intro
-from .output import FEED_ALL, HERE, MINE, RECENT, VESTI_HOME, env, katedra_href, katedra_pages, mark_for_pagefind, versioned, write
-from .text import PROGRAMS, azbuka, katedra, slot_label, slug
+from .output import FEED_ALL, HERE, MINE, RECENT, VESTI_HOME, env, katedra_href, katedra_pages, mark_for_pagefind, versioned, write, write_page
+from .text import PROGRAMS, SITE_URL, azbuka, katedra, slot_label, slug
 
 
 def render_cent(site, subjects):
@@ -221,6 +221,18 @@ def render_teachers(site, teachers, items, book):
         write(
             site / t["href"].strip("/") / "index.html",
             env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name),
+        )
+    # A merged teacher's old address: a page that sends the browser on (GitHub Pages has no redirects), its canonical
+    # link the new one for search engines; no sitemap entry.
+    hrefs = {t["href"] for t in teachers}
+    for old, new in MOVED.items():
+        assert old not in hrefs and new in hrefs, f"MOVED {old} -> {new}"
+        (site / old.strip("/")).mkdir(parents=True, exist_ok=True)
+        write_page(
+            site / old.strip("/") / "index.html",
+            f'<!doctype html><html lang="sr"><meta charset="utf-8"><title>Premešteno</title>'
+            f'<link rel="canonical" href="{SITE_URL}{new}"><meta name="robots" content="noindex">'
+            f'<meta http-equiv="refresh" content="0; url={new}"><p>Stranica je premeštena: <a href="{new}">{SITE_URL}{new}</a></p>',
         )
     listed = [t for t in teachers if not t["gone"] and not t.get("aside")]
     katedre = sorted({t["katedra"] for t in listed if t["katedra"]})
