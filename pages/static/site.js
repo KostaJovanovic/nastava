@@ -284,14 +284,12 @@
   var brand = d.querySelector('.brand'), brandT;
   /* And on every screen, the logo drawn away and on again (style.css .brand__mark svg.rev, .play): backwards 1.65 s,
      0.1 s of nothing, forwards 1.65 s; each step when the last line of the one before ends (the ring going, the M
-     coming). A tap during it starts it over. */
+     coming). A tap during it changes nothing: it runs to its end. */
   var mark = brand && brand.querySelector('.brand__mark svg'), markT;
   if (mark) {
     brand.addEventListener('click', function () {
       if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      clearTimeout(markT);
-      mark.classList.remove('play', 'rev');
-      void mark.getBoundingClientRect(); // a new animation, not the one already running
+      if (mark.classList.contains('rev') || mark.classList.contains('play')) return;
       mark.classList.add('rev');
     });
     mark.addEventListener('animationend', function (e) {
@@ -300,12 +298,17 @@
         markT = setTimeout(function () { mark.classList.replace('rev', 'play'); }, 100);
       } else if (e.animationName === 'brand-draw' && c.contains('brand__m')) mark.classList.remove('play');
     });
+    // Stopped half way (the logo hidden): ready for the next tap, not stuck as running.
+    mark.addEventListener('animationcancel', function () {
+      clearTimeout(markT);
+      mark.classList.remove('play', 'rev');
+    });
   }
+  // The name stays its 3 s from the first tap: another tap while it shows does not start them again.
   if (brand && window.matchMedia) {
     brand.addEventListener('click', function () {
-      if (!matchMedia('(max-width: 759px)').matches) return;
+      if (!matchMedia('(max-width: 759px)').matches || brand.classList.contains('is-open')) return;
       brand.classList.add('is-open');
-      clearTimeout(brandT);
       brandT = setTimeout(function () { brand.classList.remove('is-open'); }, 3000);
     });
   }
@@ -1499,6 +1502,9 @@
     return list[order[days - round * len]];
   };
   var dana = d.querySelector('[data-dana]');
+  // Not on a phone under a post, a topic or a news item: the same as style.css .frame:has(article.post), for a browser
+  // without :has().
+  if (dana && window.matchMedia && matchMedia('(max-width: 899px)').matches && d.querySelector('.frame article.post')) dana = null;
   if (dana && izbor) izbor.then(function (j) {
     var list = j.dana || [];
     if (!list.length) return;
