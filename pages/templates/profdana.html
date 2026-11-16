@@ -2,7 +2,7 @@
 
 {% block title %}Profesor dana{% endblock %}
 
-{#- Every day's "Profesor dana" (sidebar.html), in date order, by month: site.js fills it from /izbor.json dana with
+{#- Every day's "Profesor dana" (sidebar.html), newest first, by month: site.js fills it from /izbor.json dana with
     the side panel's pick, from its first day on the site (site.js DANA_START). Linked from nowhere, noindex (build.py).
     data-ahead: days after today to show too (dev mode: a year; the site: none, only the days that have been). -#}
 {% block main %}
