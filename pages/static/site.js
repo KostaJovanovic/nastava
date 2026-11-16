@@ -1435,7 +1435,7 @@
     var days = Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - DANA_START) / 864e5);
     var len = list.length, round = Math.floor(days / len), order = list.map(function (_, i) { return i; });
     // mulberry32, seeded by the round: the same order in every browser. Another constant: another order.
-    var s = round + 0x5bd1e995;
+    var s = round + 0x27d4eb2f;
     var rnd = function () {
       s = s + 0x6d2b79f5 | 0;
       var t = Math.imul(s ^ s >>> 15, 1 | s);
