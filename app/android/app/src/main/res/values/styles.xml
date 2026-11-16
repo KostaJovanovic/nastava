@@ -16,7 +16,11 @@
     </style>
 
 
+    <!-- The system splash: the site's blue alone. MainActivity then draws the logo on over the same blue (splash_logo.xml,
+         app/splash.py) until the page shows. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">#0076B1</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

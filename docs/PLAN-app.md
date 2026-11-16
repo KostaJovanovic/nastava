@@ -41,7 +41,12 @@ remote `server.url`?
    ```
    `webDir` (`app/www/`) holds only `offline.html`: what the WebView shows with no network, instead of Chrome's error
    page (one Serbian line, "Nema interneta", and a retry link to `https://masinci.org/`).
-3. `npx cap add android`, `npx cap sync`, `npx cap run android` with the phone on USB.
+3. `npx cap add android`, `npx cap sync`, `npx cap run android` with the phone on USB. The user's phone won't
+   connect over USB (2026-11-16): the APK goes over by hand (Desktop → phone), and `adb` reaches the phone through
+   Android's Wireless debugging (`adb pair`, then `adb connect`, same Wi-Fi), which chrome://inspect sees as well.
+   Neither (the phone is the PC's VPN, the user won't connect it): checks on the phone are test builds that say
+   what they find in a toast (the bridge check: `native`, `AppLauncher`, `PushNotifications`, `FileOpener` on each
+   page), never committed.
 4. On the phone, in `chrome://inspect` on the PC: `Capacitor.isNativePlatform()` is `true` and
    `Capacitor.Plugins.AppLauncher` exists on a masinci.org page, also after following a link to another page.
 
@@ -56,11 +61,12 @@ this plan, not onward).
 - Notification icon: Android shows the small icon as a white silhouette. `static/badge.png` (white logo on clear) is
   that already: copied as `android/app/src/main/res/drawable/ic_notify.png`, named in `AndroidManifest.xml` as
   `com.google.firebase.messaging.default_notification_icon`, with `default_notification_color` `#0076b1`.
-- Splash (decided 2026-11-16): on the blue (`#0076b1`) system splash, the header logo draws on as on the site (ring →
-  line → diagonal → M, 1.65 s, same easing), as an animated vector drawable (`res/drawable/splash_logo.xml`, made by
-  `app/splash.py` from the logo's paths). The crossings' gaps are there from the start (a vector's clip can't animate
-  as the site's masks do). `MainActivity` keeps the splash up until the page has loaded and the animation has ended
-  (at most 8 s). Android 11 and older: the logo still.
+- Splash (decided 2026-11-16): the header logo draws on as on the site (ring → line → diagonal → M, 1.65 s, same
+  easing, the gaps opening as the crossing line arrives). The system splash is the blue (`#0076b1`) alone: Android 17
+  on the user's phone (Nothing Phone 4a) showed its icon still, and an animated vector drawable, tried first, showed
+  the gaps from the start and chipped the M. So `LogoView` draws it in code as the browser does (each line on a
+  layer, the crossing lines' cut strokes cleared out of it, the site's paths, widths, `--len`s and timings), and
+  `MainActivity` shows it over the same blue until it has drawn on and the page shows (at most 8 s), then fades it.
 - The page under the status bar (found on the phone): the site's `viewport-fit=cover` makes Capacitor 8 draw it
   edge to edge, so `style.css`'s header adds `env(safe-area-inset-top)` (0 in a browser). Android's overscroll stretch
   pulled the sticky header and tab bar: off in `MainActivity` (`OVER_SCROLL_NEVER`).
