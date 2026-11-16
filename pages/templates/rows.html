@@ -36,7 +36,7 @@
     same: the last post is the topic's only one; a phone shows nothing (the row has its date). -#}
 {%- macro last(r, title=true, same=false) -%}
 <div class="fr__last{% if same %} fr__last--same{% endif %}">
-  {%- if r %}{% if title %}<a class="lt" href="{{ post_href(r) }}">{{ r.title }}</a>{% endif %}<span>od {{ who(r) }}</span><time datetime="{{ r.date or '' }}" data-t="{{ r.posted or '' }}">{{ r.when or r.date or '' }}</time>
+  {%- if r %}{% if title %}<a class="lt" href="{{ post_href(r) }}">{{ r.title }}</a>{% endif %}<span>od {{ who(r) }}</span><time datetime="{{ r.date or '' }}" data-t="{{ r.posted or '' }}" data-p="{{ r.subj.href if r.subj else '' }}">{{ r.when or r.date or '' }}</time>
   {%- else %}<span>nema postova</span>{% endif -%}
 </div>
 {%- endmacro -%}

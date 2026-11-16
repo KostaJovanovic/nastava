@@ -1342,27 +1342,43 @@
 
   /* New since the last visit: a row whose last post (rows.html last, data-t) is newer than the visit before this one
      gets a dot (style.css .fr--new). A visit ends after 30 minutes without a page, so the pages of one visit, and its
-     tabs, keep the same mark. The first visit marks nothing. */
-  var since = 0;
+     tabs, keep the same mark. The first visit marks nothing. A row whose last post's page was opened after that post
+     ('procitano': path → when) has none; nor, on the home page while only "Moji predmeti" show, one whose last post
+     (data-p) is in a subject not followed.
+     shortcut: a smer row goes by its last post only, so a followed subject's new post under a newer one of another
+     subject gets no dot; carry each subject's last time if that matters. */
+  var since = 0, read = {};
   try {
     var visits = JSON.parse(localStorage.getItem('poseta')) || {}, nowMs = Date.now();
     if (visits.seen && nowMs - visits.seen > 30 * 60e3) visits.mark = visits.seen;
     since = visits.mark || 0;
     visits.seen = nowMs;
     localStorage.setItem('poseta', JSON.stringify(visits));
+    read = JSON.parse(localStorage.getItem('procitano')) || {};
+    // Opened before the mark: no post it could hide is new any more.
+    for (var k in read) if (read[k] < since) delete read[k];
+    read[location.pathname] = nowMs;
+    localStorage.setItem('procitano', JSON.stringify(read));
   } catch (e) {}
   function markNew() {
     if (!since) return;
+    try { read = JSON.parse(localStorage.getItem('procitano')) || {}; } catch (e) {}
+    var m = window.mojiNow;
     [].forEach.call(d.querySelectorAll('.fr__last time[data-t]'), function (t) {
-      var row = t.closest('.fr');
-      if (row.classList.contains('fr--new') || !(Date.parse(t.getAttribute('data-t')) > since)) return;
-      row.classList.add('fr--new');
+      var row = t.closest('.fr'), at = Date.parse(t.getAttribute('data-t')), last = row.querySelector('.lt') || row.querySelector('.fr__a');
+      var on = at > since && !(last && read[last.pathname] > at) && !(m && m.only && t.closest('#res') && !m.has(t.dataset.p));
+      if (row.classList.contains('fr--new') === on) return;
+      row.classList.toggle('fr--new', on);
       var a = row.querySelector('.fr__a');
-      if (a) a.insertAdjacentHTML('beforeend', '<span class="vh"> (novo)</span>');
+      if (on && a) a.insertAdjacentHTML('beforeend', '<span class="vh"> (novo)</span>');
+      else if (a && a.querySelector('.vh')) a.querySelector('.vh').remove();
     });
   }
   markNew();
   d.addEventListener('pocetna', markNew);
+  d.addEventListener('moji', markNew);
+  // Back from a post (the page from the cache): its row has been read since.
+  addEventListener('pageshow', function (e) { if (e.persisted) markNew(); });
 
   /* Back up the crumbs to where you were: each page's scroll is kept for the tab (sessionStorage) as it is left, and a
      page opened from the crumbs goes back to it. Other links open a page at the top, as usual. 'crumb': the page the
