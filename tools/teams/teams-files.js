@@ -52,7 +52,8 @@
 
   for (const group of CLASSES) {
     const drive = (await get(`${GRAPH}/groups/${group}/drive`)).id;
-    const files = [], folders = [['', `${GRAPH}/drives/${drive}/root/children`]];
+    // Who uploaded each file (teams.py publishes only a teacher's): {path: account id}, in the zip as UPLOADERS.
+    const files = [], uploaders = {}, folders = [['', `${GRAPH}/drives/${drive}/root/children`]];
     while (folders.length) {
       let [prefix, url] = folders.pop();
       while (url) {
@@ -66,11 +67,13 @@
             const r = await fetch(item['@microsoft.graph.downloadUrl']);
             if (!r.ok) throw new Error(`${r.status} ${path}`);
             files.push({name: path, data: new Uint8Array(await r.arrayBuffer())});
+            uploaders[path] = item.createdBy?.user?.id || null;
           }
         }
         url = page['@odata.nextLink'];
       }
     }
+    files.push({name: '_teams-uploaders.json', data: new TextEncoder().encode(JSON.stringify(uploaders))});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(zip(files));
     a.download = `${group.slice(0, 8)}.zip`;

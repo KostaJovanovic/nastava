@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4", "tzdata"]
+# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx"]
 # ///
 """The posts of the faculty's Teams classes, as posts of their subjects (build.py's load_mail, as mail.py's mails):
 each thread a teacher started, with its replies; a student's reply is "Student #N" (numbered per thread), with no name,
@@ -27,7 +27,7 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
-from common import ROOT
+from common import ROOT, lists_students
 from translit import FOLD
 
 MAIL = ROOT / "mail"
@@ -61,6 +61,8 @@ POSTS = ("RichText/Html", "Text")  # not the joins and other notices, nor the bo
 NOT_MATERIAL = re.compile(r"(^|/)(Recordings|Snimci)/", re.I)
 # Files about the students that a teacher put in a library: the class list, the students' own work. Not published.
 PRIVATE = re.compile(r"spisak|списак|radovi studenata|радови студената", re.I)
+# In a library's zip (teams-files.js): {path: the uploader's account id (Graph's createdBy)}.
+UPLOADERS = "_teams-uploaders.json"
 TZ = ZoneInfo("Europe/Belgrade")
 # An index number (385-2023, 385/2023), not a school year (2023/2024).
 INDEX = re.compile(r"\b(\d{1,4})\s*[-/]\s*(20\d\d)\b")
@@ -181,6 +183,12 @@ def title_of(m):
     return first if len(first) <= 80 else first[:80].rsplit(" ", 1)[0] + "…"
 
 
+def clean_title(title, name_re):
+    """A teacher's thread title, cleaned as its text is (body): it is often the post's first sentence, a results list's
+    too."""
+    return redact(name_re.sub("Student", title) if name_re else title, teacher=True)
+
+
 def add(export, zips):
     data = json.loads(Path(export).read_text(encoding="utf-8"))
     archives = [zipfile.ZipFile(p) for p in sorted(Path(zips).glob("*.zip"))]
@@ -226,7 +234,7 @@ def add(export, zips):
                 for m in thread[1:]:
                     if who(m) not in TEACHERS:
                         label(who(m))
-                title = title_of(root)
+                title = clean_title(title_of(root), name_re)
                 root_key = f"teams:{c['id']}:{root_id}"
                 for m in thread:
                     mid = f"teams:{c['id']}:{m['id']}"
@@ -246,9 +254,13 @@ def add(export, zips):
                         if not z:
                             missing.append(f"{t['name']}: {path or f.get('fileName')}")
                             continue
+                        data = z.read(path)
+                        if why := lists_students(path, data):
+                            print(f"  not published ({why}): {path}")
+                            continue
                         out.mkdir(parents=True, exist_ok=True)
                         name = Path(path).name
-                        (out / name).write_bytes(z.read(path))
+                        (out / name).write_bytes(data)
                         names.append(name)
                     out.mkdir(parents=True, exist_ok=True)
                     post = dict(
@@ -271,22 +283,43 @@ def add(export, zips):
         print(f"{len(missing)} files of posts not in the zips:\n  " + "\n  ".join(missing), file=sys.stderr)
 
 
+def own_zip(z, group):
+    """Whether z is the class's zip by its name: teams-files.js's "<group>.zip", teams-files-all.js's "<name> (<group>).zip"
+    (group: the id's first 8 characters)."""
+    stem = Path(z.filename).stem
+    return stem == group or stem.endswith(f"({group})")
+
+
 def material(t, page, archives, posted_files, student_files):
-    """The rest of a class's library: its zip is the one with most of the class's posted files. Not the files of a
-    student's post, the recordings, the files about the students, nor a copy of a file listed already (a folder the
-    teacher copied)."""
-    known = posted_files | student_files
-    z = next((z for z in archives if Path(z.filename).stem == t["groupId"][:8]), None) or max(
+    """The rest of a class's library: its zip is the one with most of the class's posted files. Only the files a
+    teacher uploaded (UPLOADERS, which teams-files.js writes into the zip): a student's own file in the library (put in
+    the Files tab, or posted in a message since deleted, whose export lists no files) is not the teacher's material.
+    Not the files of a student's post, the recordings, the files about the students, nor a copy of a file listed
+    already (a folder the teacher copied)."""
+    known, group = posted_files | student_files, t["groupId"][:8]
+    z = next((z for z in archives if own_zip(z, group)), None) or max(
         archives, key=lambda z: len(known & set(z.namelist())), default=None
     )
-    if not z or not (known & set(z.namelist()) or Path(z.filename).stem == t["groupId"][:8]):
+    if not z or not (known & set(z.namelist()) or own_zip(z, group)):
         print(f"no library zip for {t['name']}", file=sys.stderr)
         return
-    out, rest, seen = MAIL / f"teams-{t['groupId'][:8]}", [], set()
+    if UPLOADERS not in z.namelist():
+        # A zip from before the list: who put each file there is unknown, so none is published (any already in mail/
+        # stays).
+        print(f"{t['name']}: no {UPLOADERS} in {Path(z.filename).name}: run teams-files.js again for its material", file=sys.stderr)
+        return
+    uploader = json.loads(z.read(UPLOADERS))
+    out, rest, seen = MAIL / f"teams-{group}", [], set()
     for p in sorted(z.namelist()):
-        if p.endswith("/") or p in known or NOT_MATERIAL.search(p) or PRIVATE.search(p):
+        if p.endswith("/") or p == UPLOADERS or p in known or NOT_MATERIAL.search(p) or PRIVATE.search(p):
+            continue
+        if f"8:orgid:{uploader.get(p)}" not in TEACHERS:
+            print(f"  not published (not a teacher's upload): {p}")
             continue
         data = z.read(p)
+        if why := lists_students(p, data):
+            print(f"  not published ({why}): {p}")
+            continue
         if (h := hashlib.sha1(data).digest()) in seen:
             continue
         seen.add(h)

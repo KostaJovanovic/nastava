@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4", "tzdata"]
+# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx"]
 # ///
 """The asserts of scrapers/teams.py (were its __main__ block), no network: uv run test/teams_test.py"""
 
@@ -10,7 +10,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scrapers"))
 import json  # noqa: E402
-from teams import body, name_key, names_pattern, redact, title_of  # noqa: E402
+import io  # noqa: E402
+import tempfile  # noqa: E402
+import zipfile  # noqa: E402
+import openpyxl  # noqa: E402
+import teams  # noqa: E402
+from common import lists_students  # noqa: E402
+from teams import body, clean_title, name_key, names_pattern, own_zip, redact, title_of  # noqa: E402
 
 
 def check():
@@ -46,4 +52,51 @@ def check():
     assert title_of(dict(content="<p>Prvi red. Drugi</p>", properties={})) == "Prvi red."
 
 
+def xlsx(rows):
+    wb = openpyxl.Workbook()
+    for r in rows:
+        wb.active.append(r)
+    b = io.BytesIO()
+    wb.save(b)
+    return b.getvalue()
+
+
+def check_private():
+    """What a closed class's file must not publish: lists_students, a thread's title, a student's upload."""
+    # A results sheet by its column; a handout with only school years and a subscript "индекс" passes.
+    assert lists_students("Rezultati.xlsx", xlsx([["р.бр.", "ШПАН", "име"], [1, "Petrović", "Petar"]]))
+    assert lists_students("OPP.xlsx", xlsx([["Презиме", "Име", "Бр. Инд."], ["Ilić", "Ana", 12]]))
+    assert not lists_students("plan.xlsx", xlsx([["Nedelja", "Tema"], [1, "Uvod 2025/2026"]]))
+    assert lists_students("r.txt", "\n".join(f"{i}/2023 Ime Prezime 7" for i in range(5)).encode()) == "5 index numbers"
+    assert not lists_students("HO1.txt", "школска 2025/2026. индекс i, 4/2023".encode())
+    assert not lists_students("x.SLDPRT", b"\x00\x01") and not lists_students("bad.xlsx", b"not a zip")
+    # A thread's title: the index and the known student's name go, as in its text.
+    assert clean_title("Petar Petrović 385/2023 položio", names_pattern(["Petar Petrovic"])) == "███████ ████████ položio"
+    assert clean_title("Čestitke Petru, Petar Petrović je prvi", names_pattern(["Petar Petrovic"])) == "Čestitke Petru, Student je prvi"
+    assert clean_title("Rezultati 2025/2026", None) == "Rezultati 2025/2026"
+    # The library: only a teacher's upload, and not a results list of theirs; a zip without the uploaders list, none.
+    teacher = next(k for k in teams.TEACHERS if k.startswith("8:orgid:")).removeprefix("8:orgid:")
+    with tempfile.TemporaryDirectory() as tmp:
+        teams.MAIL = Path(tmp)
+        for name, with_list in (("Klasa (abcd1234).zip", True), ("abcd1234.zip", False)):
+            z = Path(tmp) / name
+            with zipfile.ZipFile(z, "w") as w:
+                w.writestr("General/predavanje.pdf", b"%PDF")
+                w.writestr("General/moj rad.pdf", b"%PDF")
+                w.writestr("General/rezultati.xlsx", xlsx([["ШПАН", "име"], ["1/2023", "Ana"]]))
+                if with_list:
+                    up = {"General/predavanje.pdf": teacher, "General/moj rad.pdf": "student-id", "General/rezultati.xlsx": teacher}
+                    w.writestr(teams.UPLOADERS, json.dumps(up))
+            assert own_zip(zipfile.ZipFile(z), "abcd1234")
+            teams.material(dict(groupId="abcd1234-0000", name="Klasa"), "/predmet/x/y/", [zipfile.ZipFile(z)], set(), set())
+            m = Path(tmp) / "teams-abcd1234" / "material.json"
+            if with_list:
+                assert json.loads(m.read_text(encoding="utf-8"))["files"] == ["General/predavanje.pdf"], m.read_text()
+                m.unlink()
+            else:
+                assert not m.exists()
+    teams.MAIL = ROOT / "mail"
+
+
 check()
+check_private()

@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "scrapers"))
 import email  # noqa: E402
 import re  # noqa: E402
 from email import policy  # noqa: E402
-from mail import asset_name, text_of  # noqa: E402
+from mail import asset_name, text_of, unique  # noqa: E402
 
 
 def check():
@@ -27,6 +27,9 @@ def check():
     plain = email.message_from_string("Content-Type: text/plain\n\nNovo\n\nOn Mon, X wrote:\n> Staro\n", policy=policy.default)
     assert text_of(plain) == "Novo<br>", text_of(plain)
     assert re.fullmatch(r"[0-9a-f]{20}\.pdf", asset_name("2026-01-01-ab/Резултати 1.PDF")) and asset_name("a/b.tar gz").endswith(".bin")
+    # Two attachments with one name (Gmail's inline image.png): both kept.
+    assert unique("image.png", ["image.png", "image (2).png"]) == "image (3).png" and unique("prilog", ["prilog"]) == "prilog (2)"
+    assert unique("a.pdf", []) == "a.pdf"
 
 
 check()

@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4", "tzdata"]
+# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx"]
 # ///
 """A Moodle course, as posts of its subject (build.py's load_mail, as mail.py's mails and teams.py's posts): each
 note of the teacher's (a label, an activity's description, an assignment's text) a post with that activity's files;
@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
-from common import ROOT
+from common import ROOT, lists_students
 
 MAIL = ROOT / "mail"
 TZ = ZoneInfo("Europe/Belgrade")
@@ -74,6 +74,14 @@ def title_of(name, html):
     return first if len(first) <= 80 else first[:80].rsplit(" ", 1)[0] + "…"
 
 
+def published(z, f):
+    """A course is for its enrolled students only: a results list or a roster in it stays there (told)."""
+    why = lists_students(f, z.read(f))
+    if why:
+        print(f"  not published ({why}): {f}")
+    return not why
+
+
 def add(zpath, page, author, week1=None):
     z = zipfile.ZipFile(zpath)
     ix = json.loads(z.read("index.json"))
@@ -101,7 +109,7 @@ def add(zpath, page, author, week1=None):
         day = day or first
         for ai, a in enumerate(s["activities"]):
             order += 1
-            files = [f for f in a.get("files", []) if f in z.namelist()]
+            files = [f for f in a.get("files", []) if f in z.namelist() and published(z, f)]
             if a["type"] == "forum":
                 if a.get("discussions"):
                     print(f"  not published (a forum, students' posts too): {a['name']}")

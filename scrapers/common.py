@@ -114,6 +114,60 @@ def is_html_page(data):
     return head.startswith((b"<!doctype html", b"<html"))
 
 
+# A student's index number (259/2023), not a school year (2025/2026): its first number is under 1900.
+INDEX_NO = re.compile(r"\b(\d{1,4})\s*/\s*(20\d\d)\b")
+# A spreadsheet's column of who a student is: index (ШПАН, Бр. Инд.) or surname. Only in a spreadsheet: a handout's
+# "индекс" is a subscript.
+ROSTER_HEAD = re.compile(r"^\s*(шпан|špan|span|индекс|indeks|index|бр\.?\s*инд|br\.?\s*ind|презиме|prezime)\b", re.I)
+SHEETS = (".xlsx", ".xlsm", ".xls", ".ods", ".csv")
+
+
+def file_text(name, data):
+    """A file's text, for lists_students: [cells] of a spreadsheet's rows, else [the text]; [] for another kind (an
+    image, a CAD file) or one that cannot be read. The readers are imported here: only teams.py and moodle.py use them."""
+    import io
+
+    ext = os.path.splitext(name.lower())[1]
+    try:
+        if ext in (".xlsx", ".xlsm"):
+            import openpyxl
+
+            wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+            return [str(c) for ws in wb.worksheets for row in ws.iter_rows(values_only=True) for c in row if c is not None]
+        if ext == ".xls":
+            import xlrd
+
+            book = xlrd.open_workbook(file_contents=data)
+            return [str(c) for s in book.sheets() for i in range(s.nrows) for c in s.row_values(i) if c != ""]
+        if ext == ".csv":
+            return [c for line in data.decode("utf-8", "ignore").splitlines() for c in re.split(r"[,;\t]", line)]
+        if ext == ".pdf":
+            from pypdf import PdfReader
+
+            return ["\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(data)).pages)]
+        if ext == ".docx":
+            import docx
+
+            d = docx.Document(io.BytesIO(data))
+            return ["\n".join([p.text for p in d.paragraphs] + [c.text for t in d.tables for r in t.rows for c in r.cells])]
+        if ext == ".txt":
+            return [data.decode("utf-8", "ignore")]
+    except Exception:  # a file the reader cannot open is not a list it can see
+        return []
+    return []
+
+
+def lists_students(name, data):
+    """Why a file from a closed class (Teams, Moodle: only its students see it) must not be published here, or None:
+    a spreadsheet with a column of index numbers or surnames, or any file with five index numbers or more (exam
+    results). shortcut: a scan (a PDF with no text) or an .ods is not read; a list in one passes."""
+    text = file_text(name, data)
+    if name.lower().endswith(SHEETS) and (head := next((c for c in text if ROSTER_HEAD.match(c)), None)):
+        return f"a list of students (column {head.strip()!r})"
+    n = sum(int(m[1]) < 1900 for t in text for m in INDEX_NO.finditer(t))
+    return f"{n} index numbers" if n >= 5 else None
+
+
 def name_icons(soup, page_url):
     """A link whose content is only an icon gets text: the file's name, "video", or the image's alt. A link to the
     page itself (an icon in a heading) or to nowhere (href="", an icon with no file yet) goes."""

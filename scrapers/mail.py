@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4"]
+# dependencies = ["beautifulsoup4", "openpyxl", "xlrd", "pypdf", "python-docx"]
 # ///
 """Mails a teacher sent a subject's students, as posts of that subject (build.py's load_mail): each mail is a folder
 mail/<date>-<key>/ with post.json (sender, date, subject line, the text without the quoted mail it answers, the reply
@@ -29,7 +29,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from common import ROOT
+from common import ROOT, lists_students
 
 MAIL = ROOT / "mail"
 REPO, TAG = "KostaJovanovic/nastava", "mail"
@@ -101,6 +101,16 @@ def text_of(m):
     return str(soup).strip()
 
 
+def unique(name, taken):
+    """name, or "name (2).ext", "name (3).ext"…: two attachments of a mail can share a name (Gmail's inline image.png)."""
+    stem, dot, ext = name.rpartition(".") if "." in name else (name, "", "")
+    n = 1
+    while name in taken:
+        n += 1
+        name = f"{stem} ({n}){dot}{ext}"
+    return name
+
+
 def add(folder, page):
     MAIL.mkdir(exist_ok=True)
     added = 0
@@ -117,7 +127,13 @@ def add(folder, page):
         for a in m.iter_attachments():
             # The file's own name only: a name with a path or a drive cannot write outside the folder.
             name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", a.get_filename() or f"prilog-{len(files) + 1}").strip(" .") or "prilog"
-            (out / name).write_bytes(a.get_payload(decode=True) or b"")
+            data = a.get_payload(decode=True) or b""
+            # A mail goes to a class only: its results list or roster is not published.
+            if why := lists_students(name, data):
+                print(f"  {path.name}: not published ({why}): {name}")
+                continue
+            name = unique(name, files)
+            (out / name).write_bytes(data)
             files.append(name)
         refs = list(dict.fromkeys(re.findall(r"<[^>]+>", f"{m['References'] or ''} {m['In-Reply-To'] or ''}")))
         post = dict(
