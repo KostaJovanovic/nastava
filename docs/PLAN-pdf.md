@@ -18,7 +18,8 @@ loads the site, so no new APK). Built on PDF.js (`pdfjs-dist`, 6.5.x), Mozilla's
 - Zoom and pan: pinch, double-tap, Ctrl+wheel on desktop; opens fit to width.
 - Text selection (PDF.js text layer) and the PDF's own links (annotation layer): ours in the viewer or the page,
   outside ones as other outside links (app: the phone's browser).
-- Find: all matches highlighted, next and previous; Ctrl+F on desktop opens it.
+- Find: every match highlighted on the page, the current one in a stronger colour and scrolled into view; next and
+  previous; Ctrl+F on desktop opens it.
 - Page number and count; a tap on the number jumps to a page; arrows on desktop.
 - Contents: the PDF's own outline, when it has one.
 - Reopens at the last page read (localStorage, per address).
