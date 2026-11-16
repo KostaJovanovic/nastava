@@ -614,7 +614,10 @@ _pages = {"upis/x": [{"sha": "aaaaaaaaaa11"}], "upis/x/datumi": [{"sha": "bbbbbb
 wiki.UPIS_SUMMARY["upis/x"] = dict(seen={"upis/x": "aaaaaaaaaa", "upis/x/datumi": "bbbbbbbbbb"}, rows=[("Rok", "1. 9.")])
 assert wiki.summary("upis/x", ["upis/x", "upis/x/datumi"], _pages) == [("Rok", "1. 9.")]
 _pages["upis/x/datumi"] = [{"sha": "cccccccccc33"}]
-assert wiki.summary("upis/x", ["upis/x", "upis/x/datumi"], _pages) is None
+# The warning it gives is the test's, not the build's: kept off the run's output, but checked.
+with contextlib.redirect_stderr(_err := io.StringIO()):
+    assert wiki.summary("upis/x", ["upis/x", "upis/x/datumi"], _pages) is None
+assert "mf/upis/x: changed since its summary was written" in _err.getvalue(), _err.getvalue()
 assert wiki.summary("upis/y", ["upis/y"], {"upis/y": [{"sha": "d"}]}) is None
 del wiki.UPIS_SUMMARY["upis/x"]
 
