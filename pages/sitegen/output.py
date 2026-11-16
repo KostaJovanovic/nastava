@@ -68,28 +68,6 @@ env.filters["ld"] = lambda d: Markup(f'<script type="application/ld+json">{htmls
 env.globals["site_url"] = SITE_URL
 
 
-# A student's index number: 348/20, 156/2020, Д09/2018, 145-2022 (a dash only before a 4-digit year: 1-3, 10-14h are
-# ranges).
-INDEX_NO = re.compile(r"(?<![\d/.,-])(\d{1,4})(?:\s?/\s?(\d{2}|(?:19|20)\d{2})|-((?:19|20)\d{2}))(?![\d/.,-]?\d)")
-
-
-def _is_index(m):
-    a, y = m[1], m[2] or m[3]
-    # A school year (2025/26, 24/25, 2014-2015), not a student.
-    return int(y[-2:]) != (int(a) + 1) % 100
-
-
-def unsearchable(body):
-    """The text without its lines that name a student by index number (results, lists for the oral exam): the page
-    shows them, the search does not find them."""
-    return "\n".join(line for line in body.split("\n") if not any(map(_is_index, INDEX_NO.finditer(line))))
-
-
-def search_text(it):
-    """The indexed text: the title, then the text without students (unsearchable)."""
-    return f"{it['title']}\n{unsearchable(it['body'] or '')}"
-
-
 def pagefind_tags(it):
     kind = KIND[it["kind"]]
     tags = [("meta", "title", it["title"] or ""), ("filter", "vrsta", kind), ("meta", "vrsta", kind)]
@@ -111,7 +89,7 @@ def pagefind_tags(it):
     if it.get("thread") and len(it["thread"]["posts"]) > 1:
         tags.append(("meta", "tema", it["thread"]["href"]))
     # The text as written, word for word the indexed folded copy: search.js shows the excerpt in it.
-    tags.append(("meta", "tekst", search_text(it)))
+    tags.append(("meta", "tekst", f"{it['title']}\n{it['body'] or ''}"))
     return "".join(f'<meta data-pagefind-{t}="{k}[content]" content="{escape(v)}">' for t, k, v in tags)
 
 
@@ -121,7 +99,7 @@ def mark_for_pagefind(page, it):
     if dev:
         return page
     assert page.count("</article>") == 1, it["id"]
-    folded = escape(fold(search_text(it)))
+    folded = escape(fold(f"{it['title']}\n{it['body'] or ''}"))
     return page.replace("</article>", f'<div class="pf" data-pagefind-body>{pagefind_tags(it)}{folded}</div></article>', 1)
 
 
