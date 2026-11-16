@@ -20,7 +20,7 @@ from urllib.parse import quote, unquote, urljoin, urlsplit
 import requests
 from bs4 import BeautifulSoup
 
-from common import DB, FILE, ROOT
+from common import DB, FILE, ROOT, is_html_page
 from studije import SITE as STUDY_SITE, media_path
 
 OUT = ROOT / "files" / "sites"
@@ -83,6 +83,11 @@ def download(urls):
         try:
             r = s.get(url, timeout=60)
             r.raise_for_status()
+            # A login or error page in place of the file: not saved, or "already here" would keep it for good.
+            if is_html_page(r.content):
+                failed += 1
+                print(f"failed {url}: a web page, not the file", file=sys.stderr, flush=True)
+                continue
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(r.content)
             done += 1
