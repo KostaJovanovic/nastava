@@ -285,6 +285,7 @@ Risks:
 6. Attachments in the app open in the phone's apps (PDF reader, Word…), not the browser (2026-11-16, step 2).
 
 7. The app's name under the icon: **Mašinci** (2026-11-16; `appName` in step 0, and "Apps → Mašinci" in the denied
-   steps of step 3). The web manifest's "Nastava" stays as it is.
+   steps of step 3). The web manifest's "Nastava" stays as it is. The long name, **Mašinci - Mašinski fakultet, na
+   jednom mestu**, is the release's title (`app.yml`), as a store listing's; Android itself says "Mašinci" everywhere.
 
 All decided: next is step 0, the phone check.
