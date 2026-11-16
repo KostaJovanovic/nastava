@@ -133,6 +133,9 @@ shape, the queue, the debounced `resave` on `moji`, and `showPush`/`said`:
   `register()`, then `save`. "Off": `save(token, [])` then `unregister()`.
 - Each app start: `register()` again when permission is granted; a new token (FCM rotates them) is saved under its own
   key, and the old one is dropped when FCM later says it is gone (step 5).
+- On by itself (decided 2026-11-16): in the app, choosing the first subject with posts turns the bell on (the
+  permission asked) unless the reader turned it off before (`push-off` in localStorage). Not in a browser: Chrome
+  asks only right after a tap on its own switch, and blocks sites that ask unprompted.
 - Denied: a new `pushSteps` kind `'app'`: "Settings na telefonu → Apps → Mašinci → Notifications → uključi", then
   "Vrati se ovde i uključi prekidač". The RSS part of the dialog stays.
 - A tap on a notification: `pushNotificationActionPerformed` gives the message's `data.url`; `location.href = url`
