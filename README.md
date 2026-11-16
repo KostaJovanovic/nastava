@@ -153,8 +153,9 @@ For notifications, once: `uv run ci/push.py keys` (writes `push-secret.json`; it
 from `push-secret.json`), before `wrangler deploy`. For the visitor counter, once: `wrangler d1 create nastava` (its id
 into `pages/wrangler.toml`) and `wrangler d1 execute nastava --remote --file schema.sql`. `/push` takes any
 browser's subscription with no sign-in, so a rate limit keeps a script from filling KV: in Cloudflare, masinci.org →
-Security → WAF → Rate limiting rules, a rule for URI Path equals `/push` and Request Method equals `POST`, by IP,
-10 requests per 1 minute (the shortest period the Free plan allows is 10 seconds: 2 per 10 seconds there), action Block.
+Security → WAF → Rate limiting rules, a rule for URI Path equals `/push`, by IP, action Block. The Free plan has one
+such rule, matches the path only (no method: the Worker answers anything but a POST there with 405 anyway) and counts
+over 10 seconds only: 2 requests per 10 seconds, blocked for 10 seconds. A paid plan: 10 requests per 1 minute.
 
 When the attachments are wanted: `uv run scrapers/documents.py sync`. Old .doc/.xls/.ppt files need LibreOffice (`soffice`) for their text; without it they stay pending and the next
 `uv run scrapers/documents.py extract` on a machine with LibreOffice reads them.
