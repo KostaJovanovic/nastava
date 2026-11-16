@@ -177,15 +177,20 @@ def load_teachers(db, subjects):
 # The side panel's card (sidebar.html): a title's word -> the card's head, without the kind (redovni, vanredni…).
 OF_THE_DAY = (("професор", "Profesor dana"), ("доцент", "Docent dana"), ("асистент", "Asistent dana"))
 
+# Of the faculty's past, besides the emeriti and those who left after 2024: the user's picks.
+OF_THE_DAY_PAST = {"ist-kosta-alkovic-1834-1909", "ist-ljubomir-kleric-1844-1910", "ist-todor-tosa-seleskovic-1856-1901"}
+
 
 def of_the_day(teachers):
-    """The side panel's teacher of the day to pick from (site.js, by the date): each listed teacher with a photo and a
-    title of OF_THE_DAY, as [head, name, href, photo, katedra, its icon in icons.svg]."""
+    """The side panel's teacher of the day to pick from (site.js, by the date): each teacher with a photo and a title
+    of OF_THE_DAY who is listed, emeritus, left after 2024 (last on the faculty's list in 2025 or later) or in
+    OF_THE_DAY_PAST, as [head, name, href, photo, katedra, its icon in icons.svg]."""
     head = lambda t: next((h for k, h in OF_THE_DAY if k in (t["title"] or "")), None)
+    here = lambda t: not t["gone"] or t["emeritus"] or (t["last_seen"] or "") >= "2025" or t["id"] in OF_THE_DAY_PAST
     return [
         [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize(), t["katedra"] and slug(t["katedra"])]
         for t in teachers
-        if t["thumb"] and not t["gone"] and head(t)
+        if t["thumb"] and here(t) and head(t)
     ]
 
 
