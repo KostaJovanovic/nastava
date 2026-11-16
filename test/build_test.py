@@ -606,3 +606,19 @@ _pages["upis/x/datumi"] = [{"sha": "cccccccccc33"}]
 assert wiki.summary("upis/x", ["upis/x", "upis/x/datumi"], _pages) is None
 assert wiki.summary("upis/y", ["upis/y"], {"upis/y": [{"sha": "d"}]}) is None
 del wiki.UPIS_SUMMARY["upis/x"]
+
+# A student's line (index number) is left out of the search copy; school years and ranges stay.
+from sitegen.output import unsearchable  # noqa: E402
+
+_body = "\n".join([
+    "Rezultati (školska 24/25), 2014-2015, 2025/26",
+    "348/20 Milutinović Aleksandar 16",
+    "Д09/2018 (55)",
+    "- Стевановић марко 543-2020 65/100",
+    "poziva se Mišić Elena 522/22 sa 71 poenom",
+    "zadaci 1-3 i 6-10, vežbe 10-14h, 0/10/0",
+])
+assert unsearchable(_body).split("\n") == [
+    "Rezultati (školska 24/25), 2014-2015, 2025/26",
+    "zadaci 1-3 i 6-10, vežbe 10-14h, 0/10/0",
+], unsearchable(_body)
