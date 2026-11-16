@@ -8,7 +8,7 @@
 {% block main %}
 <div class="mh">
   <h1 id="title">Profesor dana</h1>
-  <p class="mh__sub">Svaki dan od {{ '2026-11-16' | dmy }}</p>
+  <p class="mh__sub">Svaki dan, nasumično odabrano, od {{ '2026-11-16' | dmy }}</p>
 </div>
 <noscript><p class="mp__none">Za kalendar je potreban JavaScript.</p></noscript>
 <div class="pd" data-profdana data-ahead="{{ 365 if dev else 0 }}"></div>
