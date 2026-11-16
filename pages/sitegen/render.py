@@ -133,9 +133,14 @@ def faculty_span(t, first_list):
     if h.get("start"):
         seen.append((h["start"], False))
     start, est = min(seen, key=lambda s: (s[0], s[1]))
-    # An emeritus: to, the year they retired (a source's, else their last on the teachers' list: an estimate).
+    # An emeritus: to, the year they retired (a source's, else their last on the teachers' list: an estimate, and then
+    # not before their last post here: Sedmak's list ends in 2020, his posts in 2025).
     if t["emeritus"]:
-        return {"from": start, "to": h.get("retired"), "from_est": est, "to_est": bool(h.get("retired_est"))}
+        to = h.get("retired")
+        last = max((p["date"] for p in t.get("posts") or () if p["date"]), default=None)
+        if h.get("retired_est") and last:
+            to = max(to or 0, int(last[:4]))
+        return {"from": start, "to": to, "from_est": est, "to_est": bool(h.get("retired_est"))}
     return {"from": start, "to": int(t["last_seen"][:4]) if t["gone"] else None, "from_est": est, "to_est": False}
 
 

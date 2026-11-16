@@ -606,3 +606,12 @@ _pages["upis/x/datumi"] = [{"sha": "cccccccccc33"}]
 assert wiki.summary("upis/x", ["upis/x", "upis/x/datumi"], _pages) is None
 assert wiki.summary("upis/y", ["upis/y"], {"upis/y": [{"sha": "d"}]}) is None
 del wiki.UPIS_SUMMARY["upis/x"]
+
+# An emeritus's years (render.faculty_span): an estimated retirement is not before their last post; an exact one stays.
+from sitegen.render import faculty_span  # noqa: E402
+
+_h = {"start": 1979, "retired": 2020, "retired_est": True, "years": "2008–2013"}
+_em = dict(history=_h, first_seen="2026-11-08", emeritus=1, gone=1, last_seen="2026-11-11", posts=[{"date": "2025-07-08"}, {"date": None}])
+assert faculty_span(_em, "2014") == {"from": 1979, "to": 2025, "from_est": False, "to_est": True}
+assert faculty_span(dict(_em, posts=[]), "2014")["to"] == 2020
+assert faculty_span(dict(_em, history=dict(_h, retired=2016, retired_est=False)), "2014")["to"] == 2016
