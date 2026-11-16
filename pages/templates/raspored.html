@@ -49,7 +49,9 @@
     <h4 class="rs-lbl">Obavezni predmeti</h4>
     <ul class="rs-cards">
       {%- for badge, name, href in p.cards %}
-      <li><a class="rs-card" href="{{ href }}">{% if thumbs[href] %}<img class="rs-card__img" src="{{ thumbs[href] }}" alt="" loading="lazy" decoding="async">{% endif %}<span class="rs-card__b{% if badge | length > 1 %} rs-card__b--code{% endif %}">{{ badge }}</span><span class="rs-card__n">{{ name }}</span>{{ pdf() }}</a></li>
+      <li><a class="rs-card" href="{{ href }}">{% if thumbs[href] %}<img class="rs-card__img" src="{{ thumbs[href] }}" alt="" loading="lazy" decoding="async">{% endif %}
+        {#- A year's number says what its name does: beside a thumbnail it goes; a module's code (BMI) stays. -#}
+        {%- if badge | length > 1 or not thumbs[href] %}<span class="rs-card__b{% if badge | length > 1 %} rs-card__b--code{% endif %}">{{ badge }}</span>{% endif %}<span class="rs-card__n">{{ name }}</span>{{ pdf() }}</a></li>
       {%- endfor %}
     </ul>
     {%- endif %}
