@@ -1468,9 +1468,9 @@
     var list = j.dana || [];
     if (!list.length) return;
     var t = pickDay(list, new Date());
-    var a = dana.querySelector('a');
+    var a = dana.querySelector('.dana__b');
     a.href = t[2];
-    a.querySelector('.sec').textContent = t[0];
+    dana.querySelector('.sec').textContent = t[0];
     a.querySelector('img').src = t[3];
     a.querySelector('b').textContent = t[1];
     a.querySelector('small').textContent = t[4] || '';

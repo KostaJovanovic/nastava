@@ -38,12 +38,13 @@
     </div>
   </div>
   {#- "Profesor dana" (Docent, Asistent): site.js picks one a day from /izbor.json dana (load_teachers.of_the_day) and
-      fills it in; without the script it stays hidden. -#}
+      fills it in; without the script it stays hidden. Two links: the heading to every day's (/profdana/), the rest to
+      the teacher's page. -#}
   <div class="filters filters--dana" data-dana hidden>
-    <a class="hcard dana">
-      <span class="sec"></span>
-      <span class="dana__b"><img class="pc__img" alt="" decoding="async"><span class="dana__t"><b></b><small></small></span><svg class="i dana__ki" aria-hidden="true" hidden><use></use></svg></span>
-    </a>
+    <div class="hcard dana">
+      <a class="sec" href="/profdana/"></a>
+      <a class="dana__b"><img class="pc__img" alt="" decoding="async"><span class="dana__t"><b></b><small></small></span><svg class="i dana__ki" aria-hidden="true" hidden><use></use></svg></a>
+    </div>
   </div>
   {#- The saved choices (head.js showSaved), before the first frame (base.html rel=expect). -#}
   <script>showSaved()</script>
