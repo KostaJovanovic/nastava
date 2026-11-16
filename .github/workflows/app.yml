@@ -1,0 +1,54 @@
+name: app
+
+# The Android app (docs/PLAN-app.md): a pushed tag app-v<version> builds app/, signs it with the key in the secret
+# APP_SIGNING ({"keystore": <base64 of nastava.jks>, "password": …}) and puts it in the release "app" as masinci.apk,
+# the fixed address the site's "Skini aplikaciju" links to.
+on:
+  push:
+    tags: ["app-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+      - name: Sync the plugins
+        working-directory: app
+        run: npm ci && npx cap sync android
+      - name: Build and sign
+        working-directory: app/android
+        env:
+          APP_SIGNING: ${{ secrets.APP_SIGNING }}
+        run: |
+          [[ -n $APP_SIGNING ]] || { echo "no APP_SIGNING secret" >&2; exit 1; }
+          jq -r .keystore <<<"$APP_SIGNING" | base64 -d > "$RUNNER_TEMP/nastava.jks"
+          pass=$(jq -r .password <<<"$APP_SIGNING")
+          echo "::add-mask::$pass"
+          ./gradlew assembleRelease --no-daemon \
+            -PversionCode=${{ github.run_number }} -PversionName="${GITHUB_REF_NAME#app-v}" \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/nastava.jks" \
+            -Pandroid.injected.signing.store.password="$pass" \
+            -Pandroid.injected.signing.key.alias=nastava \
+            -Pandroid.injected.signing.key.password="$pass"
+          rm "$RUNNER_TEMP/nastava.jks"
+      - name: Publish
+        run: |
+          cp app/android/app/build/outputs/apk/release/app-release.apk masinci.apk
+          # The release is the app's store page: the long name here, "Mašinci" on the phone (as a store's listing).
+          title="Mašinci - Mašinski fakultet, na jednom mestu"
+          gh release view app >/dev/null 2>&1 || gh release create app --title "$title" \
+            --notes "Aplikacija Mašinci za Android: masinci.apk. Uvek najnovija verzija."
+          gh release upload app masinci.apk --clobber
+          gh release edit app --title "$title" --notes "Aplikacija Mašinci za Android: masinci.apk, verzija ${GITHUB_REF_NAME#app-v}."
