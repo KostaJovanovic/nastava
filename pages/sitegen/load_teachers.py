@@ -19,11 +19,24 @@ def photo_path(url, kind):
     return f"/foto/{hashlib.sha1(url.encode()).hexdigest()[:16]}.{kind.split('/')[1].replace('jpeg', 'jpg')}"
 
 
+def placeholders(db):
+    """The URLs of the faculty's placeholder (a silhouette, 21 teachers in 2026-11, in two copies of 19 and 2): the
+    same file under several teachers' URLs; two teachers never share a real photo.
+    shortcut: byte-equal only: a silhouette only one teacher has stays; compare the pixels if one turns up."""
+    same = defaultdict(set)
+    for url, data in db.execute("SELECT url, data FROM photos WHERE url LIKE '%/_media/fakultet/nastavnici/%'"):
+        same[hashlib.sha1(data).digest()].add(url)
+    return {u for urls in same.values() if len({u.split("?")[0] for u in urls}) >= 2 for u in urls}
+
+
 def write_photos(db, site):
-    """The teacher photos nastavnici.py stored, as files: the faculty removes a departed teacher's."""
+    """The teacher photos nastavnici.py stored, as files: the faculty removes a departed teacher's. Not its
+    placeholder: no page shows it (load_teachers)."""
     (site / "foto").mkdir(parents=True, exist_ok=True)
+    skip = placeholders(db)
     for url, kind, data in db.execute("SELECT url, type, data FROM photos"):
-        (site / photo_path(url, kind).lstrip("/")).write_bytes(data)
+        if url not in skip:
+            (site / photo_path(url, kind).lstrip("/")).write_bytes(data)
 
 
 HISTORY = HERE.resolve().parent / "data" / "nastavnici-istorija.jsonl"
@@ -112,12 +125,8 @@ def load_teachers(db, subjects):
         t["username"] = FORUM_ACCOUNT.get(t["username"], t["username"])
     set_hrefs(teachers, lambda t: f"/nastavnik/{slug(t['name'])}/")
     local = {url: photo_path(url, kind) for url, kind in db.execute("SELECT url, type FROM photos")}
-    # The faculty's placeholder (a silhouette, 19 teachers in 2026-11): the same file under several teachers' URLs.
     # Theirs counts as no photo, so a portrait found elsewhere shows instead, else the initials.
-    same = defaultdict(set)
-    for url, data in db.execute("SELECT url, data FROM photos WHERE url LIKE '%/_media/fakultet/nastavnici/%'"):
-        same[hashlib.sha1(data).digest()].add(url)
-    placeholder = {u for urls in same.values() if len({u.split("?")[0] for u in urls}) >= 3 for u in urls}
+    placeholder = placeholders(db)
     # So is one URL kept as several departed teachers' photo (masinac.org's nema_slike.jpg).
     placeholder |= {u for u, n in Counter(t.get("photo") for t in teachers if t.get("photo")).items() if n >= 3}
     fotos = {f["id"]: f for f in map(json.loads, FOTOS.read_text(encoding="utf-8").splitlines())} if FOTOS.exists() else {}
