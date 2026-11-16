@@ -15,8 +15,9 @@ test/*.png
 test/browser/*.png
 test/dom.html
 .wrangler/
-# The web push keys (ci/push.py keys): keep a copy elsewhere, never commit.
+# The web push keys (ci/push.py keys): keep a copy elsewhere, never commit. And the app's: Firebase's service account.
 push-secret.json
+fcm-secret.json
 # The raw Teams and Moodle exports (tools/): every student's messages and names, before teams.py / moodle.py clean them.
 teams-export*.json
 moodle-*.zip

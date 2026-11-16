@@ -9,7 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "ci"))
-from push import PUSH_HOST, SITE, message, nove, wait_url, wanted  # noqa: E402
+import push  # noqa: E402
+from push import PUSH_HOST, SITE, deliver, fcm_body, fcm_gone, message, nove, wait_url, wanted  # noqa: E402
 
 assert [nove(n) for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == [
     "1 nova objava",
@@ -31,3 +32,33 @@ _s = dict(s=["/predmet/a/b/"], t={"/predmet/a/b/": ["pera"]})
 assert wanted(_s, dict(s="/predmet/a/b/", a="pera")) and not wanted(_s, dict(s="/predmet/a/b/", a="mika"))
 assert wanted(_s, dict(s="/predmet/a/b/")) and wanted(dict(s=_s["s"]), dict(s="/predmet/a/b/", a="mika"))
 assert PUSH_HOST.match("https://fcm.googleapis.com/fcm/send/x") and not PUSH_HOST.match("https://evil.com/fcm.googleapis.com/")
+
+# The Android app's subscriptions ("fcm:<token>"), through FCM: the message, a gone token dropped, a failure counted.
+_m = message(_p[:1])
+assert fcm_body("tok", _m) == {"message": {"token": "tok", "notification": {"title": "Биофизика", "body": "Резултати"},
+                                           "data": {"url": SITE + "/item/p9/"}, "android": {"ttl": "86400s"}}}
+_unreg = {"error": {"message": "x", "details": [{"@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError", "errorCode": "UNREGISTERED"}]}}
+assert fcm_gone(404, _unreg) and fcm_gone(400, {"error": {"message": "The registration token is not a valid FCM registration token"}})
+assert not fcm_gone(500, {"error": {"message": "internal"}}) and not fcm_gone(400, {"error": {"message": "bad title"}}) and not fcm_gone(503, None)
+
+
+class _R:
+    def __init__(self, status, body=None):
+        self.status_code, self.ok, self._body = status, status < 300, body
+        self.headers = {"Content-Type": "application/json"} if body is not None else {}
+        self.text = str(body)
+
+    def json(self):
+        return self._body
+
+
+_drops, _got = [], []
+push.requests.post = lambda url, json, timeout: _drops.append(json)
+_answers = {"a" * 150: _R(200, {}), "b" * 150: _R(404, _unreg), "c" * 150: _R(500, {"error": {"message": "internal"}})}
+_fcm = lambda token, msg: (_got.append((token, msg)), _answers[token])[1]
+_subs = [{"endpoint": "fcm:" + t, "s": ["/predmet/a/b/"]} for t in _answers] + [{"endpoint": "fcm:" + "d" * 150, "s": ["/predmet/x/y/"]}]
+_by = {"/predmet/a/b/": [dict(s="/predmet/a/b/", n="Биофизика", t="Резултати", u="/item/p9/")]}
+assert deliver(_subs, _by, "vapid", _fcm) == (1, 1, 1, 0)  # the one following another subject gets nothing
+assert [t for t, _ in _got] == ["a" * 150, "b" * 150, "c" * 150] and _got[0][1] == _m
+assert _drops == [{"fcm": "b" * 150, "s": []}]
+assert deliver(_subs, _by, "vapid", None) == (0, 0, 0, 3)  # no fcm-secret.json: skipped, not failed

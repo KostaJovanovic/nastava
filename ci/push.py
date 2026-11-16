@@ -1,8 +1,9 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pywebpush", "requests"]
+# dependencies = ["pywebpush", "requests", "google-auth"]
 # ///
 """Web push: tell the browsers that follow a subject (site.js subscribes, the Worker keeps them in KV) about its new posts.
+The Android app (app/) gets the same notification through Firebase Cloud Messaging: its subscription is "fcm:<token>".
 
 Usage: push.py keys | last | send <post id> [<notice id> <page rowid> <department notice id>]
   keys   make push-secret.json (git-ignored): the VAPID key pair and the key the Worker asks for. Keep a copy: a new
@@ -10,7 +11,8 @@ Usage: push.py keys | last | send <post id> [<notice id> <page rowid> <departmen
   last   print the newest post id, cent notice id, cent page version and department notice id (katedre.py) in
          nastava.db (deploy.sh: before the scrape)
   send   once the newest is on the site, notify what came after those (pages/.build/push.json, from build.py)
-The scheduled run (sync.yml) writes push-secret.json from the repository secret PUSH_SECRET.
+The scheduled run (sync.yml) writes push-secret.json from the repository secret PUSH_SECRET, and fcm-secret.json (the
+Firebase service account's key, git-ignored) from FCM_SECRET; without it the app's subscriptions are skipped.
 """
 
 import base64
@@ -29,6 +31,7 @@ from pywebpush import WebPushException, webpush
 
 ROOT = Path(__file__).resolve().parent.parent
 SECRET = ROOT / "push-secret.json"
+FCM_SECRET = ROOT / "fcm-secret.json"
 SITE = "https://masinci.org"
 # As the Worker's PUSH_HOST: only the browsers' push services get a request.
 PUSH_HOST = re.compile(
@@ -60,6 +63,41 @@ def wanted(sub, post):
     teacher not among them wrote it; one with no known teacher (a cent notice or page, a student) always does."""
     picked = sub.get("t", {}).get(post["s"])
     return not picked or "a" not in post or post["a"] in picked
+
+
+def fcm_body(token, msg):
+    """The FCM v1 message for the app: the notification as a browser's shows it, the url as data (site.js opens it
+    on a tap)."""
+    return {
+        "message": {
+            "token": token,
+            "notification": {"title": msg["title"], "body": msg["body"]},
+            "data": {"url": msg["url"]},
+            "android": {"ttl": "86400s"},
+        }
+    }
+
+
+def fcm_gone(status, body):
+    """FCM's answer for a token no app has any more (uninstalled, or unused for 270 days): drop it, as a browser's
+    404/410."""
+    err = (body or {}).get("error", {})
+    codes = {d.get("errorCode") for d in err.get("details", []) if isinstance(d, dict)}
+    return status == 404 or "UNREGISTERED" in codes or (status == 400 and "registration token" in err.get("message", ""))
+
+
+def fcm_sender():
+    """send(token, msg) -> requests.Response through the FCM v1 API, or None without fcm-secret.json."""
+    if not FCM_SECRET.exists():
+        return None
+    from google.auth.transport.requests import Request
+    from google.oauth2 import service_account
+
+    info = json.loads(FCM_SECRET.read_text())
+    creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/firebase.messaging"])
+    creds.refresh(Request())  # one token for the run: it lasts an hour
+    url = f"https://fcm.googleapis.com/v1/projects/{info['project_id']}/messages:send"
+    return lambda token, msg: requests.post(url, json=fcm_body(token, msg), headers={"Authorization": f"Bearer {creds.token}"}, timeout=30)
 
 
 def keys():
@@ -160,10 +198,35 @@ def send(*before):
     by_subject = defaultdict(list)
     for p in sorted(new, key=lambda p: p["id"]):
         by_subject[p["s"]].append(p)
-    sent = gone = failed = 0
     subs = subscriptions(secret["key"])
+    sent, gone, failed, skipped = deliver(subs, by_subject, secret["vapid"], fcm_sender())
+    print(f"push: {len(new)} new posts; {sent} sent, {gone} gone, {failed} failed" + (f", {skipped} app (no fcm-secret.json)" if skipped else ""))
+    run_log(subscribers=len(subs), new=len(new), sent=sent, gone=gone, failed=failed, skipped=skipped)
+    if failed:
+        sys.exit(1)
+
+
+def deliver(subs, by_subject, vapid, fcm):
+    """One notification to each subscription with new posts it wants: a browser's by web push, the app's ("fcm:") by
+    fcm (fcm_sender; None skips them). A gone one is dropped at the Worker. -> sent, gone, failed, skipped."""
+    sent = gone = failed = skipped = 0
     for sub in subs:
         posts = [p for s in dict.fromkeys(sub.get("s", [])) for p in by_subject.get(s, []) if wanted(sub, p)]
+        if posts and sub["endpoint"].startswith("fcm:"):
+            if fcm is None:
+                skipped += 1
+                continue
+            token = sub["endpoint"][4:]
+            r = fcm(token, message(posts))
+            if r.ok:
+                sent += 1
+            elif fcm_gone(r.status_code, r.json() if "json" in r.headers.get("Content-Type", "") else None):
+                requests.post(f"{SITE}/push", json={"fcm": token, "s": []}, timeout=30)
+                gone += 1
+            else:
+                failed += 1
+                print("push failed: FCM", r.status_code, r.text[:300], file=sys.stderr)
+            continue
         if not posts or not PUSH_HOST.match(sub["endpoint"]):
             continue
         try:
@@ -171,7 +234,7 @@ def send(*before):
             webpush(
                 {"endpoint": sub["endpoint"], "keys": {"p256dh": sub["k"], "auth": sub["a"]}},
                 json.dumps(message(posts), ensure_ascii=False),
-                vapid_private_key=secret["vapid"],
+                vapid_private_key=vapid,
                 vapid_claims={"sub": SITE},
                 ttl=86400,
                 timeout=30,
@@ -185,10 +248,7 @@ def send(*before):
             else:
                 failed += 1
                 print("push failed:", e, file=sys.stderr)
-    print(f"push: {len(new)} new posts; {sent} sent, {gone} gone, {failed} failed")
-    run_log(subscribers=len(subs), new=len(new), sent=sent, gone=gone, failed=failed)
-    if failed:
-        sys.exit(1)
+    return sent, gone, failed, skipped
 
 
 if __name__ == "__main__":

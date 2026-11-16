@@ -36,10 +36,14 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "**/*.py"
       # push-secret.json (ci/push.py keys) as the repository secret PUSH_SECRET; without it there is no web push.
+      # fcm-secret.json (Firebase's service account key) as FCM_SECRET: the Android app's notifications.
       - name: Get the web push keys
         env:
           PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
-        run: if [[ -n $PUSH_SECRET ]]; then printf '%s' "$PUSH_SECRET" > push-secret.json; fi
+          FCM_SECRET: ${{ secrets.FCM_SECRET }}
+        run: |
+          if [[ -n $PUSH_SECRET ]]; then printf '%s' "$PUSH_SECRET" > push-secret.json; fi
+          if [[ -n $FCM_SECRET ]]; then printf '%s' "$FCM_SECRET" > fcm-secret.json; fi
       - name: Scrape, build, publish, notify
         # Unquoted: the words are the arguments (the input is one of the choices above).
         run: bash ci/deploy.sh $WHAT
