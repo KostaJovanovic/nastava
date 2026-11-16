@@ -1,8 +1,9 @@
 # Android app (Capacitor)
 
-Status (2026-11-16): building. `app/` set up (Capacitor 8.6.2, plugins, Android project, Firebase config); step 1's
-icons and notification icon done; step 6's `app.yml` written, untested. Step 0: the debug APK builds (with the JDK 21 already in
-`C:\Users\Kosta\.jdks\jdk-21.0.12.1+1`: `JAVA_HOME` set to it for `gradlew`); the phone check waits on the phone. Goal: an Android app with easier notifications for followed
+Status (2026-11-16): building. Step 0 passed (the bridge on the live site). Step 1 done: icons, notification icon,
+the logo splash (`LogoView`), no overscroll stretch, the header clear of the status bar (`style.css`, not deployed
+yet); the offline page waits on its wording. Step 6's `app.yml` written, untested. Next: step 2. Builds use the JDK 21
+in `C:\Users\Kosta\.jdks\jdk-21.0.12.1+1` (`JAVA_HOME` for `gradlew`). Goal: an Android app with easier notifications for followed
 subjects, with external links opening in the phone's default browser.
 
 ## Why a second push path
@@ -49,6 +50,9 @@ remote `server.url`?
    page), never committed.
 4. On the phone, in `chrome://inspect` on the PC: `Capacitor.isNativePlatform()` is `true` and
    `Capacitor.Plugins.AppLauncher` exists on a masinci.org page, also after following a link to another page.
+
+**Passed 2026-11-16**: on the live masinci.org, `native`, `AppLauncher`, `PushNotifications` and `FileOpener` all
+there (Nothing Phone 4a, Android 17). The bridge after a link is seen again in step 2's checks.
 
 If the bridge is not there: try `server.allowNavigation: ["masinci.org"]`; if still not, stop and rethink (back to
 this plan, not onward).
