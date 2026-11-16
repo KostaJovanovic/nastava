@@ -128,8 +128,9 @@ urls = {f"{SITE_URL}/": None}
 
 # The /static/ files the pages link get ?v=<hash of the file> (version_static): each deploy that changes one changes
 # its URL, so no cache (the browser's, Cloudflare's, GitHub's) pairs new pages with an old file. Not sw.js (its URL
-# is the push registration), the fonts or the images: those rarely change. icons.svg first: the JS links it.
-VERSIONED = ("icons.svg", "style.css", "head.js", "pismo.js", "search.js", "site.js", "moji.js")
+# is the push registration), the fonts or the images: those rarely change. icons.svg first: the JS links it;
+# pdfview.js before site.js, which imports it.
+VERSIONED = ("icons.svg", "style.css", "head.js", "pismo.js", "search.js", "pdfview.js", "site.js", "moji.js")
 
 ASSET = re.compile(r"/static/(%s)(?![\w?.-])" % "|".join(map(re.escape, VERSIONED)))
 

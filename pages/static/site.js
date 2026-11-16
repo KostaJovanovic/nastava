@@ -1301,17 +1301,29 @@
     d.addEventListener('touchcancel', end);
   })();
 
+  /* Our own PDFs open in the site's viewer (static/pdfview.js, docs/PLAN-pdf.md), in a browser and in the app alike;
+     one it can't show (or no viewer) opens in the phone's app, or the browser's own viewer in this tab (a new one,
+     opened after the failed load, would be a blocked pop-up). */
+  var pdf = function (a) {
+    var name = a.pathname.split('/').pop();
+    try { name = decodeURIComponent(name); } catch (err) {}
+    var old = function () { if (app) openFile(a); else location.href = a.href; };
+    import('/static/pdfview.js').then(function (m) {
+      m.open(a.href, name, { app: !!app, openWith: function () { openFile(a); }, fallback: old });
+    }, old);
+  };
+
   var leave = null;
   d.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href]');
     if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
     if (!/^https?:$/.test(a.protocol) || a.hasAttribute('data-leave-go')) return;
     var out = a.host !== location.host;
+    if (!out && /\.pdf$/i.test(a.pathname) && !a.hasAttribute('download')) { e.preventDefault(); pdf(a); return; }
     if (app && (FILE.test(a.pathname) || a.pathname.indexOf('/files/') === 0)) { e.preventDefault(); openFile(a); return; }
     if (app && out) { e.preventDefault(); inBrowser(a.href); return; }
-    if (!out && !/\.pdf$/i.test(a.pathname)) return;
+    if (!out) return;
     e.preventDefault();
-    if (!out) { window.open(a.href, '_blank', 'noopener'); return; }
     if (!leave) {
       leave = d.createElement('dialog');
       leave.className = 'leave';

@@ -1,6 +1,9 @@
 # PDF viewer
 
-Status: planned 2026-11-16, no code yet.
+Status: built 2026-11-16 (`static/pdfview.js`, PDF.js 6.5.438's legacy build in `static/pdf/`: the modern build
+needs `Math.sumPrecise`, which Edge 145 and older WebViews lack, and drew the fonts wrong). Checked in the local
+preview (desktop and phone size): drawing, find with highlights, contents, links, last page, Esc and Back, the
+fallback, double tap and pinch. Left: the phone, once deployed.
 
 A viewer of our own for the PDFs the site hosts, on every device: the browser (phone and desktop) and the app (which
 loads the site, so no new APK). Built on PDF.js (`pdfjs-dist`, 6.5.x), Mozilla's library, the one in Firefox.
@@ -26,7 +29,9 @@ loads the site, so no new APK). Built on PDF.js (`pdfjs-dist`, 6.5.x), Mozilla's
 - A loading bar for big files.
 - Exit: a close button, Esc, and Back (the viewer pushes a history entry, so Android's Back and the browser's close it).
 - "Open with": the app hands the file to the phone (`openFile`, as now); the web downloads it.
-- Fallback: a PDF that won't load (password, damaged, the library fails) goes the old way, without an error page.
+- Fallback: a PDF that won't load (password, damaged, the library fails) goes the old way, without an error page:
+  the app hands it to the phone, the web opens the browser's own viewer in the same tab (a new tab, opened after the
+  failed load, would be a blocked pop-up).
 
 Find and selection need text in the PDF: a scan has none.
 
@@ -39,6 +44,4 @@ Find and selection need text in the PDF: a scan has none.
 
 ## Open
 
-- The Serbian labels (close, find, contents, open with, page n of m, the loading and failure lines): shown before
-  committing.
 - Checks: a long text PDF, a scan, a PDF with links and an outline; phone browser, the app, desktop.
