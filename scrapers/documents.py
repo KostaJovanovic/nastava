@@ -418,8 +418,9 @@ def host(db):
             files[thumb_asset(path)] = thumb
         done.append((tag, int(bool(thumb)), text, file_id))
     for tag, files in by_tag.items():
-        release_assets(tag, tag, "The board's attachments of one school year (documents.py host). An asset's name is a hash of the file's path.")
-        upload_assets(tag, files)
+        have = release_assets(tag, tag, "The board's attachments of one school year (documents.py host). An asset's name is a hash of the file's path.")
+        # An asset a run uploaded before its state was saved (a cancelled or failed run) is not sent again.
+        upload_assets(tag, {name: data for name, data in files.items() if name not in have})
     db.executemany("update documents set release = ?, thumb = ?, text = ? where id = ?", done)
     db.commit()
     print(f"hosted {len(done)} of {len(rows)}", flush=True)
