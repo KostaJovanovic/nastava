@@ -39,7 +39,27 @@ Profesori emeritusi su u arhivi.
 - [novo] **Pretraga daje primere** čim klikneš na nju.
 - [novo] **Dugme Podeli** stoji ispod posta i threada.
 - **Strana koja ne postoji** nudi pretragu po rečima iz linka.
-- 585, 593, 599, 607, 609–610 **Održavanje:** ova strana.
+- 649–651 [novo] **Profesor dana** u side panelu: svaki dan drugi nastavnik, sa slikom i katedrom.
+- 615 [novo] **Pretraga pokazuje i ko predaje** predmete koje si našao. Skraćenice kao `TMO` ili `ME1` traže ceo
+  naziv predmeta.
+- 611 [novo] **Obaveštenja i vesti idu po godinama** i po stranama. Biraš koliko ih ima na jednoj strani.
+- [novo] **Obaveštenja smera** koja nisu ni za jedan predmet stoje na strani smera.
+- [novo] **Upis na Studijama** ima kratak pregled iznad svakog taba.
+- 634 [novo] **Link Nazad** ispod putanje vodi na stranu sa koje si došao.
+- **Na telefonu,** scroll strane zatvara pretragu i tastaturu.
+- 613–614 [ispravka] **Prekidač za obaveštenja** radi i kad brzo klikćeš. Broj prijavljenih browsera je sad tačan.
+- 622, 625, 627–628, 633, 635–637, 642 **Biografije nastavnika su prepisane i proverene.** Stigla je i jedna nova slika.
+- 624 **Puno ime nastavnika,** sa oba prezimena, stoji na kartici i na strani nastavnika.
+- 626, 629, 631 [ispravka] **Dva nastavnika upisana dvaput** sad imaju po jednu stranu. Stari link vodi na novu.
+- 623 **Brojevi telefona nastavnika** su skinuti sa sajta.
+- 638, 641, 645–646 **Rezultati u prilozima** su bez imena i indeksa studenata. Bodovi i ocene su ostali.
+- 656 [ispravka] **Siva silueta sa sajta fakulteta** se više ne prikazuje kao slika nastavnika.
+- 647 **Strana nastavnika bez predmeta** nema praznu kolonu.
+- 655 **Liste na početnoj** imaju link na celu listu.
+- 652–654 **Dugme `Izaberi predmete`** je crveno.
+- 657, 659 [novo] **Logo** se ponovo nacrta kad klikneš na njega.
+- 585, 593, 599, 607, 609–610, 612, 616–621, 630, 632, 639–640, 643–644, 648, 658, 660–662 **Održavanje:** ova
+  strana.
 
 ## 14. novembra 2026.
 Arhiva nastavnika ima biografije za skoro sve.
