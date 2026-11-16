@@ -970,9 +970,10 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 /* Pressed: the press of the picker's cards, on everything pressable. */
 .btn:active, .rs-card:active, .mp__tab:active, .order button:active, .chip:active { transform: scale(.97); }
 .btn .i { width: 15px; height: 15px; }
-/* So is the side panel's "Izaberi predmete" while nothing is followed (head.js is-set: "Izmeni predmete", plain). */
-.btn--pri, [data-moji-open]:not(.is-set) { background: var(--red); border-color: var(--red); color: #fff; }
-:is(.btn--pri, [data-moji-open]:not(.is-set)):hover { background: var(--red-2); color: #fff; }
+.btn--pri { background: var(--red); border-color: var(--red); color: #fff; }
+.btn--pri:hover { background: var(--red-2); color: #fff; }
+/* The side panel's "Izaberi predmete" while nothing is followed (head.js is-set: "Izmeni predmete", plain): red edge. */
+[data-moji-open]:not(.is-set) { border-color: var(--accent); }
 .acts { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ---- Breadcrumbs (the board's navbar) ----------------------------------- */
