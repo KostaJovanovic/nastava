@@ -137,6 +137,25 @@ test("no push_subs table yet: subscriptions and the listing still work, /visit h
 	assert.equal((await post(env, { endpoint: EP, s: [] })).status, 204);
 });
 
+test("the app's FCM token is kept as fcm:<token> with no keys, listed, counted and dropped as a browser's", async () => {
+	const env = { PUSH: kv(), PUSH_KEY: "k", DB: d1() };
+	const TOKEN = "dGVzdA:APA91b" + "x_-Y".repeat(35);
+	assert.equal((await post(env, { fcm: TOKEN, s: [S], t: { [S]: ["pera.peric"] } })).status, 204);
+	assert.deepEqual(JSON.parse(env.PUSH.m.get(`fcm:${TOKEN}`)), { s: [S], t: { [S]: ["pera.peric"] } });
+	const subs = await (await call(env, "/push/subs", { headers: { Authorization: "Bearer k" } })).json();
+	assert.deepEqual(subs.subs, [{ endpoint: `fcm:${TOKEN}`, s: [S], t: { [S]: ["pera.peric"] } }]);
+	assert.deepEqual(await (await call(env, "/visit?push", { method: "POST" })).json(), { n: 7, push: 1 });
+	assert.equal((await post(env, { fcm: TOKEN, s: [] })).status, 204);
+	assert.equal(env.PUSH.m.size, 0);
+	for (const body of [
+		{ fcm: "short", s: [S] }, // not a token
+		{ fcm: TOKEN.replace("x", "<"), s: [S] }, // not a token's characters
+		{ fcm: 5, s: [S] },
+		{ fcm: TOKEN, s: ["/item/p1/"] }, // not a subject page
+	]) assert.equal((await post(env, body)).status, 400, JSON.stringify(body));
+	assert.equal(env.PUSH.m.size, 0);
+});
+
 test("a subscription the Worker must refuse", async () => {
 	const env = { PUSH: kv(), PUSH_KEY: "k" };
 	for (const body of [
