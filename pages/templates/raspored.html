@@ -20,7 +20,11 @@
 
 {%- if calendar %}
 <a class="rs-cal" href="{{ calendar[1] }}">
+  {%- if thumbs[calendar[1]] %}
+  <img class="rs-cal__img" src="{{ thumbs[calendar[1]] }}" alt="" decoding="async">
+  {%- else %}
   <svg class="i rs-cal__i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>
+  {%- endif %}
   <span class="rs-cal__t"><small>Kalendar nastave i ispita</small><b>{{ calendar[0] }}</b></span>
   <span class="rs-cal__go">{{ pdf() }}Otvori PDF</span>
 </a>
@@ -45,7 +49,7 @@
     <h4 class="rs-lbl">Obavezni predmeti</h4>
     <ul class="rs-cards">
       {%- for badge, name, href in p.cards %}
-      <li><a class="rs-card" href="{{ href }}"><span class="rs-card__b{% if badge | length > 1 %} rs-card__b--code{% endif %}">{{ badge }}</span><span class="rs-card__n">{{ name }}</span>{{ pdf() }}</a></li>
+      <li><a class="rs-card" href="{{ href }}">{% if thumbs[href] %}<img class="rs-card__img" src="{{ thumbs[href] }}" alt="" loading="lazy" decoding="async">{% endif %}<span class="rs-card__b{% if badge | length > 1 %} rs-card__b--code{% endif %}">{{ badge }}</span><span class="rs-card__n">{{ name }}</span>{{ pdf() }}</a></li>
       {%- endfor %}
     </ul>
     {%- endif %}

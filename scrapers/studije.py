@@ -1,11 +1,13 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["requests", "beautifulsoup4"]
+# dependencies = ["requests", "beautifulsoup4", "pymupdf"]
 # ///
 """Archive the pages of www.mas.bg.ac.rs and every file they link: the schedule pages (study_pages) and the rest of
 the wiki that no other scraper keeps (wiki_pages, NOT_WIKI), found in the wiki's index.
 
-Usage: studije.py sync
+Usage: studije.py sync | thumbs
+  sync    scrape, then thumbs
+  thumbs  the thumbnails of the stored files that have none yet (no network)
 
 Each page and file is stored with its sha256; a changed page or file adds a version and the old one stays.
 The site shows the newest version (pages/build.py).
@@ -19,7 +21,7 @@ from datetime import datetime, timezone
 from html import unescape
 from urllib.parse import quote, unquote, urljoin, urlparse
 
-from common import DELAY, connect, is_html_page, session
+from common import DELAY, connect, is_html_page, session, thumbnail
 
 SITE = "https://www.mas.bg.ac.rs/"
 PAGES = {"kalendar-nastave": "Kalendar nastave", "raspored-predavanja": "Raspored predavanja", "raspored-ispita": "Raspored ispita"}
@@ -170,14 +172,30 @@ def sync(db):
     print(f"{len(PAGES)} schedule pages, {len(got)} wiki pages, {ok} files, {skipped} skipped", flush=True)
 
 
+def thumbs(db):
+    """Each stored file's thumbnail (common.thumbnail) into study_files.thumb, for /raspored/'s cards: once a file,
+    an empty one for a kind that has none. No network: ci/deploy.sh runs it every scrape, so a file stored by a run
+    that had no thumbnails yet gets one."""
+    if "thumb" not in {r[1] for r in db.execute("pragma table_info(study_files)")}:
+        db.execute("alter table study_files add column thumb blob")
+    rows = db.execute("select path, sha, data from study_files where thumb is null").fetchall()
+    for path, sha, data in rows:
+        db.execute("update study_files set thumb = ? where path = ? and sha = ?", (thumbnail(path, data) or b"", path, sha))
+    db.commit()
+    print(f"{len(rows)} thumbnails made", flush=True)
+
+
 def main():
 
     sys.stdout.reconfigure(encoding="utf-8")
     db = connect()
     db.executescript(SCHEMA)
-    if (sys.argv[1] if len(sys.argv) > 1 else "sync") != "sync":
+    command = sys.argv[1] if len(sys.argv) > 1 else "sync"
+    if command not in ("sync", "thumbs"):
         sys.exit(__doc__)
-    sync(db)
+    if command == "sync":
+        sync(db)
+    thumbs(db)
 
 
 if __name__ == "__main__":

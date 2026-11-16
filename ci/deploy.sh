@@ -110,6 +110,8 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 			step "$p" uv run "scrapers/$p.py" sync || failed+=("$p")
 		fi
 	done
+	# The schedule files' thumbnails (/raspored/'s cards), the ones still missing: no network, ~0 s when none.
+	step thumbs uv run scrapers/studije.py thumbs || failed+=(thumbs)
 	# /statistika/'s word cloud, made again when a week old (pages/build.py words): it goes up with the state, and the
 	# builds of the week skip it. Not in the fingerprint: a run that changed nothing else does not save it (the next does).
 	step words uv run -q pages/build.py words nastava.db || failed+=(words)

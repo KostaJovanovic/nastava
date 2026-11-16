@@ -169,11 +169,29 @@ def render_study_pages(site, db):
         write_bytes(site / "studije" / "files" / rel, data)
     get = lambda slug: now.get(slug, {}).get("html")
     calendar, lectures = first_link(get("kalendar-nastave")), parse_lectures(get("raspored-predavanja"))
+    has_thumb = "thumb" in {r[1] for r in db.execute("PRAGMA table_info(study_files)")}
+
+    def thumb_of(url):
+        """A file's thumbnail (studije.py thumbs), written beside the files under _t/ (the wiki's names never start
+        with _); None for a file with none, or one of another site."""
+        if not has_thumb or url not in stored:
+            return None
+        rel, path, sha = stored[url]
+        (data,) = db.execute("SELECT thumb FROM study_files WHERE path = ? AND sha = ?", (path, sha)).fetchone()
+        if not data:
+            return None
+        write_bytes(site / "studije" / "files" / "_t" / f"{rel}.jpg", data)
+        return f"/studije/files/_t/{quote(rel)}.jpg"
+
+    # The calendar's and the lecture cards' (raspored.html): the chips and the exam tables keep their icons.
+    hrefs = [calendar and calendar[1]] + [h for p in (lectures or {}).get("programs", []) for *_, h in p["cards"]]
+    thumbs = {h: t for h in hrefs if h and (t := thumb_of(h))}
     write(
         site / "raspored" / "index.html",
         env.get_template("raspored.html").render(
             calendar=calendar,
             lectures=lectures,
+            thumbs=thumbs,
             lectures_html=get("raspored-predavanja"),
             exams_html=get("raspored-ispita"),
             sources=[(now[slug]["page"]["href"], title) for slug, title in STUDY_PAGES.items() if slug in now],
