@@ -1698,6 +1698,7 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
 .arch.kat:hover { border-color: var(--slate); color: var(--fg); filter: none; }
 .arch.kat .i { color: var(--slate); }
 /* The katedre's cards (katedre.html): the icon in the photo's place. */
+.pc__img.kc__i { display: grid; place-items: center; }
 .kc__i .i { width: 34px; height: 34px; color: var(--slate); }
 .kc:hover .kc__i .i { color: var(--accent-t); }
 .arch__n { padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--head-fg) 22%, transparent);
