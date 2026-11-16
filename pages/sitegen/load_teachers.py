@@ -179,6 +179,8 @@ OF_THE_DAY = (("професор", "Profesor dana"), ("доцент", "Docent da
 
 # Of the faculty's past, besides the emeriti and those who left after 2024: the user's picks.
 OF_THE_DAY_PAST = {"ist-kosta-alkovic-1834-1909", "ist-ljubomir-kleric-1844-1910", "ist-todor-tosa-seleskovic-1856-1901"}
+# An assistant who came in 2026 the user wants in all the same: 729 Марко А. Вег.
+OF_THE_DAY_NEW = {"729"}
 
 
 def of_the_day(teachers):
@@ -189,7 +191,7 @@ def of_the_day(teachers):
     often only one the 2014 list lacked."""
     assert all("span" in t for t in teachers), "of_the_day before render_teachers"
     head = lambda t: next((h for k, h in OF_THE_DAY if k in (t["title"] or "")), None)
-    new = lambda t: "асистент" in (t["title"] or "") and (t.get("span") or {}).get("from") == 2026
+    new = lambda t: "асистент" in (t["title"] or "") and (t.get("span") or {}).get("from") == 2026 and t["id"] not in OF_THE_DAY_NEW
     here = lambda t: (not t["gone"] or t["emeritus"] or (t["last_seen"] or "") >= "2025" or t["id"] in OF_THE_DAY_PAST) and not new(t)
     return [
         [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize(), t["katedra"] and slug(t["katedra"])]
