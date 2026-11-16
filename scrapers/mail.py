@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4", "openpyxl", "xlrd", "pypdf", "python-docx"]
+# dependencies = ["beautifulsoup4", "openpyxl", "xlrd", "pypdf", "python-docx", "pymupdf"]
 # ///
 """Mails a teacher sent a subject's students, as posts of that subject (build.py's load_mail): each mail is a folder
 mail/<date>-<key>/ with post.json (sender, date, subject line, the text without the quoted mail it answers, the reply
@@ -29,7 +29,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from common import ROOT, lists_students
+from common import ROOT, redact_students
 
 MAIL = ROOT / "mail"
 REPO, TAG = "KostaJovanovic/nastava", "mail"
@@ -127,10 +127,12 @@ def add(folder, page):
         for a in m.iter_attachments():
             # The file's own name only: a name with a path or a drive cannot write outside the folder.
             name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", a.get_filename() or f"prilog-{len(files) + 1}").strip(" .") or "prilog"
-            data = a.get_payload(decode=True) or b""
-            # A mail goes to a class only: its results list or roster is not published.
-            if why := lists_students(name, data):
-                print(f"  {path.name}: not published ({why}): {name}")
+            # A mail goes to a class only: a results list or roster has its students' names and index numbers blacked
+            # out (common.redact_students), or is not published when it cannot be.
+            data, why = redact_students(name, a.get_payload(decode=True) or b"")
+            if why:
+                print(f"  {path.name}: {name}: {why}")
+            if data is None:
                 continue
             name = unique(name, files)
             (out / name).write_bytes(data)

@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx"]
+# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx", "pymupdf"]
 # ///
 """The posts of the faculty's Teams classes, as posts of their subjects (build.py's load_mail, as mail.py's mails):
 each thread a teacher started, with its replies; a student's reply is "Student #N" (numbered per thread), with no name,
@@ -27,7 +27,7 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
-from common import ROOT, lists_students
+from common import ROOT, redact_students
 from translit import FOLD
 
 MAIL = ROOT / "mail"
@@ -254,9 +254,10 @@ def add(export, zips):
                         if not z:
                             missing.append(f"{t['name']}: {path or f.get('fileName')}")
                             continue
-                        data = z.read(path)
-                        if why := lists_students(path, data):
-                            print(f"  not published ({why}): {path}")
+                        data, why = redact_students(path, z.read(path))
+                        if why:
+                            print(f"  {path}: {why}")
+                        if data is None:
                             continue
                         out.mkdir(parents=True, exist_ok=True)
                         name = Path(path).name
@@ -316,9 +317,10 @@ def material(t, page, archives, posted_files, student_files):
         if f"8:orgid:{uploader.get(p)}" not in TEACHERS:
             print(f"  not published (not a teacher's upload): {p}")
             continue
-        data = z.read(p)
-        if why := lists_students(p, data):
-            print(f"  not published ({why}): {p}")
+        data, why = redact_students(p, z.read(p))
+        if why:
+            print(f"  {p}: {why}")
+        if data is None:
             continue
         if (h := hashlib.sha1(data).digest()) in seen:
             continue

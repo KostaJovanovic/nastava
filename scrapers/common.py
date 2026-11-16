@@ -168,6 +168,86 @@ def lists_students(name, data):
     return f"{n} index numbers" if n >= 5 else None
 
 
+# A spreadsheet's columns that name a student, blacked out: the index (ШПАН, Бр. Инд., and its year: Год., уписан),
+# surname, name.
+WHO_HEAD = re.compile(
+    r"^\s*(шпан|špan|span|индекс|indeks|index|бр\.?\s*инд\.?|br\.?\s*ind\.?|презиме|prezime|име|ime|год\.?|god\.?|уписан|upisan)\s*$", re.I
+)
+
+
+def blocks(s):
+    """Each character a block, the spaces kept (as teams.py redact)."""
+    return re.sub(r"\S", "█", s)
+
+
+def redact_xlsx(data):
+    """A results sheet with its students' columns (WHO_HEAD, under the row naming them) and any index number elsewhere
+    blacked out; the points and grades stay. Returns (the file, how many cells)."""
+    import io
+
+    import openpyxl
+
+    wb, n = openpyxl.load_workbook(io.BytesIO(data)), 0
+    for ws in wb.worksheets:
+        cols, head = set(), None
+        for row in ws.iter_rows():
+            if head is None and any(isinstance(c.value, str) and ROSTER_HEAD.match(c.value) for c in row):
+                head = row[0].row
+                cols = {c.column for c in row if isinstance(c.value, str) and WHO_HEAD.match(c.value)}
+                continue
+            for c in row:
+                if c.value is None or isinstance(c.value, str) and c.value.startswith("="):
+                    continue
+                v = str(c.value)
+                new = blocks(v) if head and c.column in cols else INDEX_NO.sub(lambda m: blocks(m[0]) if int(m[1]) < 1900 else m[0], v)
+                if new != v:
+                    c.value, n = new, n + 1
+    out = io.BytesIO()
+    wb.save(out)
+    return out.getvalue(), n
+
+
+def redact_pdf(data):
+    """A results PDF with each index number and the words of its row that have letters (surname, name) removed, text
+    and all (a black box over text would leave it to copy); the grades and points stay. A row: the words whose middle
+    is within the index's height. Returns (the file, how many words)."""
+    import pymupdf
+
+    doc, n = pymupdf.open(stream=data, filetype="pdf"), 0
+    for page in doc:
+        words = page.get_text("words")
+        for w in words:
+            m = INDEX_NO.fullmatch(w[4])
+            if not m or int(m[1]) >= 1900:
+                continue
+            for v in words:
+                if w[1] - 1 <= (v[1] + v[3]) / 2 <= w[3] + 1 and (v is w or re.search(r"[^\W\d_]", v[4])):
+                    page.add_redact_annot(pymupdf.Rect(v[:4]), fill=(0, 0, 0))
+                    n += 1
+        page.apply_redactions(images=pymupdf.PDF_REDACT_IMAGE_NONE)
+    return doc.tobytes(garbage=3, deflate=True), n
+
+
+def redact_students(name, data):
+    """A file from a closed class (Teams, Moodle, a class's mail) as it may be published: unchanged when it lists no
+    students (lists_students), else with their names and index numbers blacked out (a PDF, an .xlsx), else None (a
+    kind not redacted here: .xls, .docx, .csv). Returns (data or None, what was done or None)."""
+    why = lists_students(name, data)
+    if not why:
+        return data, None
+    ext = os.path.splitext(name.lower())[1]
+    if ext in (".xlsx", ".xlsm"):
+        out, n = redact_xlsx(data)
+    elif ext == ".pdf":
+        out, n = redact_pdf(data)
+    else:
+        return None, f"{why}, a {ext} is not redacted: not published"
+    # Still a list after it: the rows were not found (a scan's or another layout), so it is not published.
+    if lists_students(name, out) and ext == ".pdf":
+        return None, f"{why}, the redaction missed some: not published"
+    return out, f"{why}: {n} redacted"
+
+
 def name_icons(soup, page_url):
     """A link whose content is only an icon gets text: the file's name, "video", or the image's alt. A link to the
     page itself (an icon in a heading) or to nowhere (href="", an icon with no file yet) goes."""

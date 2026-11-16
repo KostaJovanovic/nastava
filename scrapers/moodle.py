@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx"]
+# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx", "pymupdf"]
 # ///
 """A Moodle course, as posts of its subject (build.py's load_mail, as mail.py's mails and teams.py's posts): each
 note of the teacher's (a label, an activity's description, an assignment's text) a post with that activity's files;
@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
-from common import ROOT, lists_students
+from common import ROOT, redact_students
 
 MAIL = ROOT / "mail"
 TZ = ZoneInfo("Europe/Belgrade")
@@ -74,12 +74,16 @@ def title_of(name, html):
     return first if len(first) <= 80 else first[:80].rsplit(" ", 1)[0] + "…"
 
 
-def published(z, f):
-    """A course is for its enrolled students only: a results list or a roster in it stays there (told)."""
-    why = lists_students(f, z.read(f))
-    if why:
-        print(f"  not published ({why}): {f}")
-    return not why
+def contents(z, f, kept={}):
+    """A file of the course as it may be published: a course is for its enrolled students only, so a results list or a
+    roster has their names and index numbers blacked out (common.redact_students; told), or None when it cannot be.
+    kept: each file's, read once (a file is both checked and written)."""
+    if (z.filename, f) not in kept:
+        data, why = redact_students(f, z.read(f))
+        if why:
+            print(f"  {f}: {why}")
+        kept[z.filename, f] = data
+    return kept[z.filename, f]
 
 
 def add(zpath, page, author, week1=None):
@@ -109,7 +113,7 @@ def add(zpath, page, author, week1=None):
         day = day or first
         for ai, a in enumerate(s["activities"]):
             order += 1
-            files = [f for f in a.get("files", []) if f in z.namelist() and published(z, f)]
+            files = [f for f in a.get("files", []) if f in z.namelist() and contents(z, f) is not None]
             if a["type"] == "forum":
                 if a.get("discussions"):
                     print(f"  not published (a forum, students' posts too): {a['name']}")
@@ -148,7 +152,7 @@ def add(zpath, page, author, week1=None):
             names = []
             for f in files:
                 name = Path(f).name
-                (out / name).write_bytes(z.read(f))
+                (out / name).write_bytes(contents(z, f))
                 names.append(name)
             post = dict(
                 id=mid,
@@ -174,7 +178,7 @@ def add(zpath, page, author, week1=None):
         # on disk, so the path here must be that one.
         p = "/".join(x.rstrip(". ") or "_" for x in p.split("/")[:-1]) + "/" + p.rsplit("/", 1)[-1]
         (out / p).parent.mkdir(parents=True, exist_ok=True)
-        (out / p).write_bytes(z.read(f))
+        (out / p).write_bytes(contents(z, f))
         rest.append(p)
     if rest:
         (out / "material.json").write_text(

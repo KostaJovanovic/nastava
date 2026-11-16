@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx"]
+# dependencies = ["beautifulsoup4", "tzdata", "openpyxl", "xlrd", "pypdf", "python-docx", "pymupdf"]
 # ///
 """The asserts of scrapers/teams.py (were its __main__ block), no network: uv run test/teams_test.py"""
 
@@ -15,7 +15,8 @@ import tempfile  # noqa: E402
 import zipfile  # noqa: E402
 import openpyxl  # noqa: E402
 import teams  # noqa: E402
-from common import lists_students  # noqa: E402
+import pymupdf  # noqa: E402
+from common import lists_students, redact_students  # noqa: E402
 from teams import body, clean_title, name_key, names_pattern, own_zip, redact, title_of  # noqa: E402
 
 
@@ -74,7 +75,26 @@ def check_private():
     assert clean_title("Petar Petrović 385/2023 položio", names_pattern(["Petar Petrovic"])) == "███████ ████████ položio"
     assert clean_title("Čestitke Petru, Petar Petrović je prvi", names_pattern(["Petar Petrovic"])) == "Čestitke Petru, Student je prvi"
     assert clean_title("Rezultati 2025/2026", None) == "Rezultati 2025/2026"
-    # The library: only a teacher's upload, and not a results list of theirs; a zip without the uploaders list, none.
+    # A results sheet blacked out: the students' columns and an index elsewhere; the points stay.
+    data, why = redact_students("OPP.xlsx", xlsx([["Презиме", "Име", "Бр. Инд.", "Год.", "Тест 1"], ["Ilić", "Ana", 12, 2023, 24],
+                                                  [None, None, None, None, "napomena: 7/2024 kasni"]]))
+    rows = list(openpyxl.load_workbook(io.BytesIO(data)).active.iter_rows(values_only=True))
+    assert rows[1] == ("████", "███", "██", "████", 24) and rows[2][4] == "napomena: ██████ kasni", rows
+    # A results PDF: each row with an index loses its letters' words and the index, text and all; the grade, the heading
+    # and a school year stay.
+    doc = pymupdf.open()
+    page = doc.new_page()
+    for y, line in ((60, "Rezultati 2025/2026"), (90, "indeks prezime ime ocena"), (110, "259/2023 Petrovic Petar 8"), (130, "12/2024 Ilic Ana 9")):
+        page.insert_text((50, y), line)
+    for n in range(3):
+        page.insert_text((50, 150 + 20 * n), f"{100 + n}/2023 Jovanovic Jovan 7")
+    data, why = redact_students("r.pdf", doc.tobytes())
+    left = " ".join(w[4] for w in pymupdf.open(stream=data, filetype="pdf")[0].get_text("words"))
+    assert why == "5 index numbers: 15 redacted" and left == "Rezultati 2025/2026 indeks prezime ime ocena 8 9 7 7 7", (why, left)
+    # A kind that cannot be redacted here is not published; a file listing no one goes out as it is.
+    assert redact_students("r.txt", "\n".join(f"{i}/2023 Ime Prezime 7" for i in range(5)).encode())[0] is None
+    assert redact_students("plan.pdf", b"%PDF") == (b"%PDF", None)
+    # The library: only a teacher's upload, a results list of theirs blacked out; a zip without the uploaders list, none.
     teacher = next(k for k in teams.TEACHERS if k.startswith("8:orgid:")).removeprefix("8:orgid:")
     with tempfile.TemporaryDirectory() as tmp:
         teams.MAIL = Path(tmp)
@@ -91,7 +111,9 @@ def check_private():
             teams.material(dict(groupId="abcd1234-0000", name="Klasa"), "/predmet/x/y/", [zipfile.ZipFile(z)], set(), set())
             m = Path(tmp) / "teams-abcd1234" / "material.json"
             if with_list:
-                assert json.loads(m.read_text(encoding="utf-8"))["files"] == ["General/predavanje.pdf"], m.read_text()
+                assert json.loads(m.read_text(encoding="utf-8"))["files"] == ["General/predavanje.pdf", "General/rezultati.xlsx"], m.read_text()
+                sheet = openpyxl.load_workbook(Path(tmp) / "teams-abcd1234" / "General" / "rezultati.xlsx").active
+                assert [c.value for c in sheet[2]] == ["██████", "███"], [c.value for c in sheet[2]]
                 m.unlink()
             else:
                 assert not m.exists()
