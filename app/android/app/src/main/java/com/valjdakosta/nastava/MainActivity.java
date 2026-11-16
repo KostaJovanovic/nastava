@@ -2,9 +2,11 @@ package com.valjdakosta.nastava;
 
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -38,6 +40,7 @@ public class MainActivity extends BridgeActivity {
                 hideLogo();
             }
         });
+        fullRefreshRate();
         // No overscroll stretch: Android stretches the whole WebView, the site's sticky header and tab bar with it.
         getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
         // The offline page (errorPath) for no connection only: Capacitor also shows it for an HTTP error, where the
@@ -46,6 +49,21 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {}
         });
+    }
+
+    /** The screen's fastest mode (120 Hz on the Nothing Phone 4a, which otherwise gives the app 90): the site's
+     *  animations (the day and night switch) are smoother. Same resolution only; Android may still lower it (battery
+     *  saver, heat). */
+    private void fullRefreshRate() {
+        Display display = getWindowManager().getDefaultDisplay();
+        Display.Mode best = display.getMode();
+        for (Display.Mode m : display.getSupportedModes()) {
+            if (m.getPhysicalWidth() == best.getPhysicalWidth() && m.getPhysicalHeight() == best.getPhysicalHeight()
+                    && m.getRefreshRate() > best.getRefreshRate()) best = m;
+        }
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        params.preferredDisplayModeId = best.getModeId();
+        getWindow().setAttributes(params);
     }
 
     /** The blue screen with the logo drawing on, where the system splash's icon was (288 dp, centred). */
