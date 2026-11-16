@@ -188,7 +188,11 @@ In the side panel's Obaveštenja group (`sidebar.html`), under the "Prikaži moj
   locally for tests.
 - `keytool -genkeypair -v -keystore nastava.jks -storetype PKCS12 -alias nastava -keyalg RSA -keysize 2048
   -validity 10000 -dname "CN=Masinci"`; the keystore's base64 and the password as the one secret `APP_SIGNING`
-  above (GitHub's web page: Settings → Secrets and variables → Actions). **Backup outside the repo**: a lost key means no update
+  above (GitHub's web page: Settings → Secrets and variables → Actions). **Done 2026-11-16**: `APP_SIGNING` is set,
+  the keystore and its password are in the user's KeePass.
+- Firebase project `masinci-28d17` made (2026-11-16); its `google-services.json` waits in the user's Downloads,
+  to be copied into `app/android/app/` in step 0. The service account key is the repo secret `FCM_SECRET` and in
+  KeePass (2026-11-16). Firebase's Gradle lines are not needed: Capacitor's generated project applies the plugin. **Backup outside the repo**: a lost key means no update
   installs over the old app.
 - JDK 21 on this PC.
 
