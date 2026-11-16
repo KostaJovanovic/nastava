@@ -240,6 +240,47 @@ In the side panel's Obaveštenja group (`sidebar.html`), under the "Prikaži moj
   installs over the old app.
 - JDK 21 on this PC.
 
+### 9. Offline (planning, 2026-11-16; no code until agreed)
+
+What the app keeps (decided): every professor, katedra and subject page, kalendar and rasporedi (pages and their
+PDFs), the last 7 days of nastava (posts and topics) and vesti, and the files of the last 7 days' posts in the
+reader's followed subjects only. Measured on the last build (2026-11-16): pages about 10 MB gzipped (57 MB raw),
+schedule PDFs 7.2 MB, the site's CSS/JS/fonts 3.4 MB; the 7 days' files 18 MB across all subjects, so a few MB for
+one reader's subjects. Professor photos 13.3 MB (open question).
+
+Facts that shape it: every request goes through the Worker (100,000 a day on the free plan), so the app can't fetch
+some 2,500 pages one by one per reader per day; the build already writes pages as fragments that the Worker joins
+into `shell.html` (`index.js` `join`); `sw.js` has only push.
+
+Two kinds of page (found 2026-11-16): `/predmeti/<slug>/` is a subject's description (ESPB, exam, katedra; ~9 KB,
+changes rarely), `/predmet/<smer>/<slug>/` its thread list (every thread it ever had: Matematika 1's is 1.2 MB),
+which changes with each post, for ~18 subjects a week (25 in 30 days) of 949.
+
+The draft (decided 2026-11-16: the APK base, and the user's picks 1, 2, 4, 5, 6, 7 of the optimisations):
+- **In the APK**, as of its build: every subject description, professor, katedra and the lists, and every thread
+  page cut to its newest 50 threads (5). The app updates only when reinstalled (no store), so this is the base,
+  never the newest.
+- **Daily, one request**: the build writes `/offline/changed-<build>.json.gz`, the fragments of every page that
+  changed in the last 14 days (1), with the last 7 days of nastava and vesti and the shell, and
+  `/offline/version.json` (the build's id, the changed pack's name, a full pack's for an app older than 14 days).
+  Cached at Cloudflare's edge like any page.
+- **When the app opens** (7), at most once a day: site.js reads `version.json`; only if the site changed does the
+  service worker fetch the pack. Notifications don't depend on it (FCM reaches the phone either way); only the
+  offline copy waits for the next opening.
+- **Stored gzipped** (2), unpacked when a page is shown (`DecompressionStream`).
+- **Schedules**: only the reader's smer's PDFs, the smer known from the followed subjects (4).
+- **Files**: the last 7 days' posts' files in the followed subjects, each up to 5 MB (a bigger one opens online),
+  each downloaded once, where a tap already saves them (`openFile`'s `f/<hash>/<name>` in the app's cache) (6).
+- **Online is always live**: `sw.js` answers from the copy only when the network fails, joining shell and fragment
+  as the Worker does (`join` shared). Browsers never get a pack, so for them nothing changes.
+- Offline and not in the copy (an older post, the search, which is Pagefind's 99 MB): the offline page.
+
+Expected: the APK some 10–15 MB bigger, a daily download of a few hundred KB, 15–20 MB on the phone.
+
+Open (to settle one at a time): professor photos in the APK as they are (13.3 MB) or left out (option 3, smaller
+copies, not picked); refresh on any network or Wi-Fi only; a line on offline pages saying the copy's date, and its
+wording; what happens to the copy when a subject is unfollowed.
+
 ## Effort
 
 About a day with a phone plugged in. New code roughly 150 lines plus the workflow.
