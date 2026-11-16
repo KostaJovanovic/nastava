@@ -1431,8 +1431,23 @@
      shortcut: picked from today's list: a past day's changes when the list does (a teacher added, gone, a new
      photo); store each day's pick if the calendar must stay as it was. */
   var DANA_START = new Date(2026, 10, 16);
+  // Birthdays, every year: [month from 0, day, the page]. That day is theirs, an extra one: it is left out of the
+  // rounds' count, so no one else loses a day.
+  var DANA_BDAY = [[9, 23, '/nastavnik/milosav-ognjanovic/']];
   var pickDay = function (list, n) {
-    var days = Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - DANA_START) / 864e5);
+    var day = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    var days = Math.round((day - DANA_START) / 864e5);
+    for (var b = 0; b < DANA_BDAY.length; b++) {
+      var bd = DANA_BDAY[b];
+      if (day.getMonth() === bd[0] && day.getDate() === bd[1]) {
+        var who = list.filter(function (t) { return t[2] === bd[2]; })[0];
+        if (who) return who;
+      }
+      for (var y = DANA_START.getFullYear(); y <= day.getFullYear(); y++) {
+        var on = new Date(y, bd[0], bd[1]);
+        if (on >= DANA_START && on < day) days--;
+      }
+    }
     var len = list.length, round = Math.floor(days / len), order = list.map(function (_, i) { return i; });
     // mulberry32, seeded by the round: the same order in every browser. Another constant: another order.
     var s = round + 0x27d4eb2f;
