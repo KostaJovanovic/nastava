@@ -1234,7 +1234,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 :root:not(.moji-only) .fb--short:not(:has(.fb__more input:checked)) .fb__rows > li:nth-child(n+6) { display: none; }
 .fb__more { display: flex; justify-content: center; align-items: center; min-height: 42px; border-top: 1px solid var(--line); color: var(--link); font-size: 13.5px; cursor: pointer; }
 .fb__more:hover { background: var(--hover); }
-.fb__more:has(input:checked), .moji-only .fb__more { display: none; }
+.fb__more:has(input:checked), .moji-only label.fb__more { display: none; }
+a.fb__more { gap: 4px; text-decoration: none; }
 /* Najnoviji threadovi (rows.html topic_rows mine): the followed subjects' rows in place of its own while "Samo moji
    predmeti" is on. */
 .moji-only .fb__rows:has(~ [data-mine]), :root:not(.moji-only) :is([data-mine], .moji__none) { display: none; }

@@ -104,8 +104,13 @@
     </li>
 {%- endmacro -%}
 
+{#- A home page list's link to its whole list (/objave/, /vesti/), under it as the toggle's bar (.fb__more). -#}
+{%- macro all_link(href, text) -%}
+<a class="fb__more" href="{{ href }}">{{ text }}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg></a>
+{%- endmacro -%}
+
 {#- Topics, newest last post first. short: the first five, the rest after a tap on the toggle under them (a checkbox,
-    no script; style.css .fb--short, which has the five). -#}
+    no script; style.css .fb--short, which has the five), or with more, a link to the whole list instead. -#}
 {#- mine: the home page's newest. While "Samo moji predmeti" is on, its rows give way to the followed subjects'
     newest, which site.js (fillMine) puts in [data-mine] from each subject's novo.json (style.css .moji-only).
     more: the list's link on the heading (the home page's, to /objave/). -#}
@@ -123,7 +128,8 @@
   <ol class="fb__rows" data-mine></ol>
   <p class="moji__none" hidden>Izabrani predmeti još nemaju threadova na forumu. <a href="/mojipredmeti/">Izmeni izbor</a></p>
   {%- endif %}
-  {%- if short %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ topics | length - 5 }}</span></label>{% endif %}
+  {%- if more %}{{ all_link(more, 'Svi threadovi') }}
+  {%- elif short %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ topics | length - 5 }}</span></label>{% endif %}
   {%- if filter %}{{ empty('msgs', 'Nema threadova za ovaj filter.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
@@ -169,6 +175,7 @@
     {{ vest_row(v, paint=filter and loop.index == 20) }}
     {%- endfor %}
   </ol>
+  {%- if more %}{{ all_link(more, 'Sve vesti') }}{% endif %}
   {%- if filter %}{{ empty('news', 'Nema vesti za ovaj filter.', hidden=true) }}{% endif %}
 </section>
 {%- endmacro -%}
