@@ -20,3 +20,6 @@ push-secret.json
 # Phase 1 probes and Omar's dlwms (the base of this repo), local only.
 recon/
 ref/
+# Local work data, kept for later runs: work/biografije = the teacher summaries' sources (election report texts,
+# per-teacher packs), the agents' output and notes, and the scripts that build and merge them.
+work/
