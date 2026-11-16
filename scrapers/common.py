@@ -77,7 +77,8 @@ def gh(*args):
 
 
 def release_assets(tag, title, notes):
-    """The uploaded assets' names of the release tag in REPO; the release is made when missing."""
+    """The uploaded assets' names of the release tag in REPO; the release is made when missing. An asset an upload left
+    half done (state "starter", a cancelled run) is deleted: its name would block the upload that sends it again."""
     import subprocess
 
     try:
@@ -85,8 +86,17 @@ def release_assets(tag, title, notes):
     except subprocess.CalledProcessError:
         gh("release", "create", tag, "-R", REPO, "--latest=false", "--title", title, "--notes", notes)
         return set()
-    q = '.[] | select(.state == "uploaded") | .name'
-    return set(gh("api", "--paginate", f"repos/{REPO}/releases/{rid}/assets?per_page=100", "-q", q).split())
+    q = '.[] | "\\(.state) \\(.id) \\(.name)"'
+    have = set()
+    for line in gh("api", "--paginate", f"repos/{REPO}/releases/{rid}/assets?per_page=100", "-q", q).split("\n"):
+        if not line:
+            continue
+        state, asset_id, name = line.split(" ", 2)
+        if state == "uploaded":
+            have.add(name)
+        else:
+            gh("api", "-X", "DELETE", f"repos/{REPO}/releases/assets/{asset_id}")
+    return have
 
 
 def upload_assets(tag, files):

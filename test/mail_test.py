@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "scrapers"))
 import email  # noqa: E402
 import re  # noqa: E402
 from email import policy  # noqa: E402
+import common  # noqa: E402
 from common import THUMB_WIDTH, thumbnail  # noqa: E402
 from documents import release_base  # noqa: E402
 from mail import asset_name, text_of, unique  # noqa: E402
@@ -41,6 +42,14 @@ def check():
     jpg = pymupdf.Pixmap(thumbnail("a.PDF", doc.tobytes()))
     assert (jpg.width, jpg.height) == (THUMB_WIDTH, 360), (jpg.width, jpg.height)
     assert thumbnail("a.pdf", b"<html>x</html>") is None and thumbnail("a.docx", b"PK") is None and thumbnail("a.png", b"x") is None
+    # A half-uploaded asset (a cancelled run's) is deleted, not counted: the next upload sends it again.
+    calls, real_gh = [], common.gh
+    common.gh = lambda *a: calls.append(a) or ('{"id": 5}' if a[1].endswith("/tags/t") else "uploaded 1 a.pdf\nstarter 2 b.pdf\n" if "assets?" in a[-3] else "")
+    try:
+        assert common.release_assets("t", "t", "n") == {"a.pdf"}
+        assert ("api", "-X", "DELETE", f"repos/{common.REPO}/releases/assets/2") in calls, calls
+    finally:
+        common.gh = real_gh
     assert [release_base(p) for p in ("2026-10-01T00:00:00+00:00", "2027-09-30T22:00:00+00:00", "2027-10-02T00:00:00")] == [
         "files-2026-2027",
         "files-2026-2027",
