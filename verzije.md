@@ -17,6 +17,12 @@ above the first `## ` is this note and is not shown.
 - Short: an entry is one or two short sentences, and so is a day's lead. No semicolons, and no long lists strung
   together with commas: name the main thing and leave the rest out.
 
+## 16. novembra 2026.
+Rasporedi imaju preview.
+
+- 687–689 [novo] **Kalendar i rasporedi osnovnih studija** imaju preview prve strane.
+- 690 **Kalendar profesora dana** počinje od današnjeg dana.
+
 ## 15. novembra 2026.
 Profesori emeritusi su u arhivi.
 
@@ -64,7 +70,13 @@ Profesori emeritusi su u arhivi.
 - 671–674 [novo] **Kalendar profesora dana:** klik na naslov kartice pokazuje ko je bio profesor dana svakog dana.
 - 675–676 [ispravka] **Godine na fakultetu** su tačne za još 140 nastavnika, po njihovim biografijama.
 - 677 **Nastavnici bez slike** imaju siluetu umesto inicijala.
-- 585, 593, 599, 607, 609–610, 612, 616–621, 630, 632, 639–640, 643–644, 648, 658, 660–662 **Održavanje:** ova
+- 679 [novo] **Crvena tačka nestaje** kad otvoriš post. Dok su na početnoj samo Moji predmeti, tačka stoji samo uz
+  tvoje predmete.
+- 680 [novo] **Dugme Pročitano** skida sve crvene tačke odjednom.
+- 681, 683 [novo] **Prilozi postova od oktobra su sad na sajtu.** PDF-ovi i slike imaju preview uz post i na strani
+  fajla.
+- 682 [novo] **Fajlovi sa Teams-a i iz mejlova** isto imaju preview.
+- 585, 593, 599, 607, 609–610, 612, 616–621, 630, 632, 639–640, 643–644, 648, 658, 660–662, 678, 684–686 **Održavanje:** ova
   strana.
 
 ## 14. novembra 2026.
