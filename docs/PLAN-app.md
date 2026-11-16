@@ -1,17 +1,18 @@
 # Android app (Capacitor)
 
-Status (2026-11-16): building. Step 0 passed (the bridge on the live site). Step 1 done: icons, notification icon,
-the logo splash (`LogoView`), no overscroll stretch, the header clear of the status bar (`style.css`, not deployed
-yet); the offline page waits on its wording. Steps 4 and 5 done (Worker keeps `fcm:` tokens, `push.py` sends
-through FCM; tests pass), not deployed. Steps 2, 3 and 7 written in `site.js` and checked in the preview (a fake
-Capacitor), waiting on the phone checks and the wording; a first phone run found attachments "damaged" (the dev
-server redirected `/files/` from http to https, which Android's downloader doesn't follow: `serve.py` now fetches
-them, and `site.js` never opens an empty download). Phone checks passed 2026-11-16 (LAN build, over adb): a
-PDF, .docx and faculty PDF open in Moon Reader, an .xlsx offers Sheets, a .rar a chooser (Total Commander takes any
-file, so no type is left without an app here), an outside link goes to Firefox, a Drive link to Drive, mailto: to
-Gmail; no "Skini aplikaciju" in the app, it and its ⓘ show in Firefox; a test FCM message (push.py's sender) arrives
-with the icon and colour, and its tap hands the post's address to the site. The content-only stretch written and
-seen working (header and tab bar still), its feel to tune. Step 6's `app.yml` written, untested. Builds use the JDK 21
+Status (2026-11-16): all steps written, committed and checked on the phone (LAN builds, over adb); waiting on the
+deploy (Worker and site) and the first `app-v` tag, which test step 6's `app.yml` and the real chain. Step 0 passed
+(the bridge on the live site). Step 1: icons, notification icon, the logo splash (`LogoView`), the header clear of
+the status bar, the offline page (the site's look, a sky and a meadow). Steps 4 and 5: the Worker keeps `fcm:`
+tokens, `push.py` sends through FCM (tests pass). Steps 2, 3 and 7 in `site.js`. Phone checks passed: a PDF, .docx
+and faculty PDF open in Moon Reader, an .xlsx offers Sheets, a .rar a chooser (Total Commander takes any file, so
+no type is left without an app here), an outside link goes to Firefox, a Drive link to Drive, mailto: to Gmail; no
+"Skini aplikaciju" in the app, it and its ⓘ show in Firefox; a notification from the dev server (`/push/test`,
+through `push.py`) arrives with the icon and colour, and its tap opens its page in the app; refused notifications
+open the steps with "Otvori podešavanja" (the app's own settings page), and allowing them there un-greys the bell
+on return. The content-only stretch seen working (header and tab bar still), its feel to tune. Found on the way:
+the dev server redirected `/files/` from http to https, which Android's downloader doesn't follow (it fetches them
+now, and `site.js` never opens an empty download); Capacitor's offline page showed on a 404 (`MainActivity`). Builds use the JDK 21
 in `C:\Users\Kosta\.jdks\jdk-21.0.12.1+1` (`JAVA_HOME` for `gradlew`). Goal: an Android app with easier notifications for followed
 subjects, with external links opening in the phone's default browser.
 
@@ -195,7 +196,7 @@ shape, the queue, the debounced `resave` on `moji`, and `showPush`/`said`:
    the workflow, the password for both store and key (PKCS12 has one). No signing config in the repo.
 4. `versionCode` = `github.run_number`, `versionName` = the tag without `app-v` (passed to `build.gradle` as
    `-P` properties).
-5. The APK renamed `nastava.apk` and uploaded to the fixed release `app` with `--clobber` (step 7; permission
+5. The APK renamed `masinci.apk` and uploaded to the fixed release `app` with `--clobber` (step 7; permission
    `contents: write`). The first run creates that release.
 
 `google-services.json` (Firebase's client config, not a secret) is committed in `app/android/app/`. The generated
@@ -210,14 +211,16 @@ In the side panel's Obaveštenja group (`sidebar.html`), under the "Prikaži moj
 - Shown only in an Android browser (`site.js`'s `android`, and not in the app itself): `hidden` in the template,
   `site.js` shows it. iPhone and desktop never see it.
 - The button links to the APK at a fixed URL:
-  `https://github.com/KostaJovanovic/nastava/releases/download/app/nastava.apk`. So `app.yml` (step 6) uploads to one
-  fixed release `app` (`gh release upload app nastava.apk --clobber`), not a release per tag: `releases/latest`
+  `https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk`. So `app.yml` (step 6) uploads to one
+  fixed release `app` (`gh release upload app masinci.apk --clobber`), not a release per tag: `releases/latest`
   could be the `mail` release. The `app-v*` tag still starts the build and sets the version.
-- The ⓘ opens a dialog like the notifications one (`.leave`), text to settle when building, roughly:
-  "Browser na telefonu ponekad propusti obaveštenja: Android ga uspava kad ga ne koristiš, pa stignu kasno ili
-  nikako. Aplikacija ih prima preko telefona, kao Viber ili Gmail, i otvara sajt kao i sada." Then the install
-  steps: "Otvori preuzeti fajl → dozvoli instalaciju iz browsera kad telefon pita → Install." And a line that the
-  phone may warn about an app from outside Google Play.
+- The ⓘ opens a dialog like the notifications one (`.leave`), its text settled 2026-11-16: "Browser na telefonu
+  ponekad propusti obaveštenja: Android ga uspava kad ga ne koristiš, pa stignu kasno ili ne uopšte. Aplikacija nema
+  taj problem." Then the install steps (open masinci.apk, allow installs from the browser, Install), and a line that
+  the phone may warn about an app from outside Google Play. The file is `masinci.apk`: the site is Mašinci now (the
+  repo, the package ID and the signing key's alias keep "nastava", unseen by readers).
+- Notifications blocked for the app: "Uređaj ne dozvoljava notifikacije od ove aplikacije." with a button that opens
+  the app's notification settings (a small plugin in `MainActivity`; Capacitor has none), and the four steps kept.
 - `style.css`: the button and ⓘ in the group's existing button style (`.moji__open .btn`); check the phone's grid
   and the narrow (<360 px) layout, where the group already hides words.
 

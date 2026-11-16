@@ -137,6 +137,10 @@ class Handler(SimpleHTTPRequestHandler):
             listed.write_text(json.dumps(subs))
             run = subprocess.run(["uv", "run", "-q", str(HERE.parent / "ci" / "push.py"), "test", str(listed)],
                                  capture_output=True, text=True, encoding="utf-8", cwd=HERE.parent)
+            # One the push service no longer has (push.py says "gone"): dropped here, as the Worker would.
+            with PUSH_LOCK:
+                kept = json.loads(PUSH_SUBS.read_text()) if PUSH_SUBS.exists() else {}
+                PUSH_SUBS.write_text(json.dumps({e: s for e, s in kept.items() if f"{e[-12:]}: gone" not in run.stdout}, indent=1))
             return self.send_text(run.stdout + run.stderr)
         # The releases' files (the board's since October 2026, the mails'): the live Worker has them, this PC does not.
         # Fetched from there, not redirected: the app (a LAN test build, app/) downloads them, and Android doesn't
