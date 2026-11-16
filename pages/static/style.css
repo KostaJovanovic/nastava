@@ -1610,10 +1610,10 @@ div.cent-head::before { content: ""; flex: none; width: 11px; }
 }
 /* No subjects (a researcher, a departed teacher): no third column, else the details flow into it, under the icon. */
 @container main (min-width: 600px) {
-  .tp:not(:has(.tp__subj)) { grid-template-columns: 96px minmax(0, 1fr); }
-  .tp:not(:has(.tp__subj)) .tp__who > :is(h1, p) { padding-right: 40px; }
+  .tp:not(.tp--subj, :has(.tp__subj)) { grid-template-columns: 96px minmax(0, 1fr); }
+  .tp:not(.tp--subj, :has(.tp__subj)) .tp__who > :is(h1, p) { padding-right: 40px; }
 }
-@container main (min-width: 860px) { .tp:not(:has(.tp__subj)) { grid-template-columns: 170px minmax(0, 1fr); } }
+@container main (min-width: 860px) { .tp:not(.tp--subj, :has(.tp__subj)) { grid-template-columns: 170px minmax(0, 1fr); } }
 
 /* The sources of a teacher's history: each work named once, its entries under it, each its place (a link) and its words. */
 .srcs { margin: 0; padding: 0; list-style: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
