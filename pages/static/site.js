@@ -1373,6 +1373,24 @@
       if (on && a) a.insertAdjacentHTML('beforeend', '<span class="vh"> (novo)</span>');
       else if (a && a.querySelector('.vh')) a.querySelector('.vh').remove();
     });
+    // A box with dots: a button in its title bar that clears them all, on every page (the mark moves to now).
+    [].forEach.call(d.querySelectorAll('.fb'), function (fb) {
+      var h = fb.querySelector('.fb__h h2'), b = h && h.querySelector('.fb__clear'), any = !!fb.querySelector('.fr--new');
+      if (!h || !!b === any) return;
+      if (b) return b.remove();
+      b = h.appendChild(el('button', 'fb__clear', 'Pročitano'));
+      b.type = 'button';
+      b.title = 'Skloni sve oznake novog';
+      b.addEventListener('click', function () {
+        since = Date.now();
+        try {
+          var v = JSON.parse(localStorage.getItem('poseta')) || {};
+          v.mark = since;
+          localStorage.setItem('poseta', JSON.stringify(v));
+        } catch (e) {}
+        markNew();
+      });
+    });
   }
   markNew();
   d.addEventListener('pocetna', markNew);
