@@ -972,8 +972,9 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .btn .i { width: 15px; height: 15px; }
 .btn--pri { background: var(--red); border-color: var(--red); color: #fff; }
 .btn--pri:hover { background: var(--red-2); color: #fff; }
-/* The side panel's "Izaberi predmete" while nothing is followed (head.js is-set: "Izmeni predmete", plain): red edge. */
-[data-moji-open]:not(.is-set) { border-color: var(--accent); }
+/* The side panel's "Izaberi predmete" while nothing is followed (head.js is-set: "Izmeni predmete", plain): red edge; filled red on hover. */
+[data-moji-open]:not(.is-set) { border-color: var(--red); }
+[data-moji-open]:not(.is-set):hover { background: var(--red); color: #fff; }
 .acts { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ---- Breadcrumbs (the board's navbar) ----------------------------------- */
