@@ -150,9 +150,9 @@ shape, the queue, the debounced `resave` on `moji`, and `showPush`/`said`:
 
 1. `actions/setup-java` (Temurin 21), `actions/setup-node`; the runner's Android SDK.
 2. In `app/`: `npm ci`, `npx cap sync android`.
-3. The keystore from the secret `APP_KEYSTORE` (base64) to a file; `./gradlew assembleRelease` with
-   `-Pandroid.injected.signing.*` from the secrets `APP_KEYSTORE_PASS`, `APP_KEY_ALIAS`, `APP_KEY_PASS` (no signing
-   config in the repo).
+3. One secret `APP_SIGNING`, `{"keystore": <base64>, "password": …}` (as `PUSH_SECRET` is one JSON): `jq` writes
+   the keystore to a file; `./gradlew assembleRelease` with `-Pandroid.injected.signing.*`, the alias `nastava` in
+   the workflow, the password for both store and key (PKCS12 has one). No signing config in the repo.
 4. `versionCode` = `github.run_number`, `versionName` = the tag without `app-v` (passed to `build.gradle` as
    `-P` properties).
 5. The APK renamed `nastava.apk` and uploaded to the fixed release `app` with `--clobber` (step 7; permission
@@ -186,8 +186,9 @@ In the side panel's Obaveštenja group (`sidebar.html`), under the "Prikaži moj
 - Firebase project (free), an Android app in it with ID `com.valjdakosta.nastava` → `google-services.json`.
 - Firebase → Project settings → Service accounts → a new key → `FCM_SECRET` (repo secret) and `fcm-secret.json`
   locally for tests.
-- `keytool -genkeypair -v -keystore nastava.jks -alias nastava -keyalg RSA -keysize 2048 -validity 10000`; the
-  keystore base64 and passwords as the three secrets above. **Backup outside the repo**: a lost key means no update
+- `keytool -genkeypair -v -keystore nastava.jks -storetype PKCS12 -alias nastava -keyalg RSA -keysize 2048
+  -validity 10000 -dname "CN=Masinci"`; the keystore's base64 and the password as the one secret `APP_SIGNING`
+  above (GitHub's web page: Settings → Secrets and variables → Actions). **Backup outside the repo**: a lost key means no update
   installs over the old app.
 - JDK 21 on this PC.
 
