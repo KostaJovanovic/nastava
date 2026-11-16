@@ -839,6 +839,9 @@
      browser's subscription with the subjects' pages, and ci/push.py sends after each deploy. Only a subject with topics
      (/predmet/) gets posts. An iPhone has web push only for the site opened from the home screen. */
   var PUSH_PUBLIC = 'BPumbbNmB0El3blUr_wKj4PWrpCq0b6pSakijI6H3gtrlgxAqz4abQ63IIwe9EEq50gJNhGDay-Mdb28hsUCSqE';
+  // The Android app (app/, docs/PLAN-app.md): its native plugins, null in a browser. Its WebView has no web push: the
+  // notifications come through Firebase (FCM) instead, and files and other sites open outside it (below).
+  var app = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() ? Capacitor.Plugins : null;
   // The switches: the side panel's (sidebar.html) and /mojipredmeti/'s (mojipredmeti.html), kept alike. Every page
   // keeps the subscription's subjects up to date (a subject page's star changes them too).
   var pushBoxes = [].slice.call(d.querySelectorAll('[data-push]')), pushMsg = d.querySelector('[data-push-msg]');
@@ -871,10 +874,12 @@
       'Na iPhone-u obaveštenja stižu samo sajtu dodatom na početni ekran (iOS 16.4 ili noviji).',
       brow === 'Safari' || !brow ? 'Dodirni Share (kvadrat sa strelicom nagore), dole na ekranu.' : 'Dodirni Share (kvadrat sa strelicom nagore) u ' + brow + '-u.',
       'Izaberi „Add to Home Screen”, pa „Add”.',
-      'Otvori sajt sa početnog ekrana (ikonica „Nastava”).',
+      'Otvori sajt sa početnog ekrana (ikonica „Mašinci”).',
       'U panelu Obaveštenja uključi prekidač, pa dozvoli („Allow”).'];
     if (kind === 'blocked') {
-      if (ios) return ['Obaveštenja su isključena za ovaj sajt.', 'Otvori Settings na telefonu → Notifications → Nastava.',
+      if (app) return ['Obaveštenja su isključena za aplikaciju.', 'Otvori Settings na telefonu → Apps → Mašinci → Notifications.',
+        'Uključi „All Mašinci notifications”.', 'Vrati se ovde i uključi prekidač.'];
+      if (ios) return ['Obaveštenja su isključena za ovaj sajt.', 'Otvori Settings na telefonu → Notifications → Mašinci.',
         'Uključi „Allow Notifications”.', 'Vrati se ovde i uključi prekidač.'];
       if (android && brow === 'Firefox') return ['Firefox je blokirao obaveštenja ovom sajtu.',
         'Dodirni katanac levo od adrese.', 'Kod „Notifications” izaberi „Allowed”.', 'Osveži stranicu i uključi prekidač.'];
@@ -918,12 +923,16 @@
           + '<details class="leave__rss"><summary>Ili preko RSS-a</summary><div><p>U čitaču vesti (Feedly, Inoreader…) dodaj adresu, '
           + 'ili preuzmi sve predmete odjednom i uvezi ih.</p><ul></ul>'
           + '<a class="btn" data-opml download="moji-predmeti.opml">Preuzmi za čitač (OPML)</a></div></details>'
-          + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
+          + '<div class="leave__acts"><button type="button" class="btn" data-app-settings hidden>Otvori podešavanja</button>'
+          + '<button type="button" class="btn">U redu</button></div></div>';
         d.body.appendChild(noPush);
         noPush.addEventListener('click', function (e) {
+          // The app: its notification settings, straight (MainActivity's NotifySettings).
+          if (e.target.closest('[data-app-settings]')) app.NotifySettings.open();
           if (e.target === noPush || e.target.closest('button')) noPush.close();
         });
       }
+      noPush.querySelector('[data-app-settings]').hidden = !(app && app.NotifySettings && pushKind === 'blocked');
       var steps = pushSteps(pushKind), ol = noPush.querySelector('ol');
       noPush.querySelector('p').textContent = steps[0];
       ol.textContent = '';
@@ -950,7 +959,113 @@
   var withPosts = function () {
     return mine().filter(function (s) { return s.href.indexOf('/predmet/') === 0; });
   };
-  if (window.PushManager && window.Notification && navigator.serviceWorker) {
+  if (app) {
+    /* In the app: FCM. Its token (from register()) goes to the Worker as {fcm, s, t}, cached and queued as a
+       browser's subscription is below; "off" empties its subjects and unregisters. The token can change (FCM
+       renews them): each start registers again, and a new one is saved; ci/push.py drops the old when FCM says
+       it is gone. */
+    var P = app.PushNotifications;
+    var stored = function () { try { return localStorage.getItem('fcm'); } catch (e) { return null; } };
+    var gotToken = null;
+    P.addListener('registration', function (r) {
+      try { localStorage.setItem('fcm', r.value); } catch (e) {}
+      if (gotToken) gotToken.ok(r.value);
+    });
+    P.addListener('registrationError', function (r) { if (gotToken) gotToken.no(new Error(r.error)); });
+    // No answer in 20 s (a phone without Google's services): failed, so the switch's queue goes on.
+    var register = function () {
+      return new Promise(function (ok, no) {
+        gotToken = { ok: ok, no: no };
+        P.register().catch(no);
+        setTimeout(function () { no(new Error('fcm')); }, 20000);
+      });
+    };
+    // A tap on a notification: its post (ci/push.py message's url), in the app.
+    P.addListener('pushNotificationActionPerformed', function (a) {
+      var u = a.notification && a.notification.data && a.notification.data.url;
+      // The post's path on the app's own host: the same page live, and a LAN test build stays on the PC's server.
+      if (u && /^https:\/\/masinci\.org\//.test(u)) location.href = u.slice('https://masinci.org'.length);
+    });
+    var appSave = function (token, list) {
+      var o = { fcm: token, s: list.map(function (m) { return m.href; }) }, t = {}, was = null;
+      list.forEach(function (m) { if (m.t && m.t.length) t[m.href] = m.t; });
+      if (Object.keys(t).length) o.t = t;
+      var body = JSON.stringify(o);
+      try { was = localStorage.getItem('push'); } catch (e) {}
+      if (body === was) return Promise.resolve();
+      return fetch('/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body }).then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        try { localStorage.setItem('push', body); } catch (e) {}
+      });
+    };
+    var appBlocked = 'Uređaj ne dozvoljava notifikacije od ove aplikacije.';
+    var appQueue = P.checkPermissions().then(function (p) {
+      var on = p.receive === 'granted' && !!stored();
+      if (p.receive === 'denied') pushKind = 'blocked';
+      showPush(on, p.receive === 'denied' ? appBlocked : '');
+      if (on) return register().then(function (token) { return appSave(token, withPosts()); });
+    }).catch(function () {});
+    // Back from the phone's settings (the dialog's "Otvori podešavanja"): allowed there, the switch is no longer grey.
+    if (app.App) app.App.addListener('resume', function () {
+      if (pushKind !== 'blocked') return;
+      P.checkPermissions().then(function (p) {
+        if (p.receive !== 'granted') return;
+        pushKind = 'none';
+        showPush(!!stored(), '');
+        said('');
+      });
+    });
+    var appTimer, autoTried = false;
+    d.addEventListener('moji', function () {
+      // The first subject with posts chosen in the app: notifications on by themselves (the permission asked), unless
+      // the reader turned them off before ('push-off'); once a page, so a failed try doesn't ask at every star.
+      var off = null;
+      try { off = localStorage.getItem('push-off'); } catch (e) {}
+      if (!autoTried && !stored() && !off && withPosts().length && pushOns.length && !pushOns[0].checked) {
+        autoTried = true;
+        pushOns[0].checked = true;
+        pushOns[0].dispatchEvent(new Event('change'));
+      }
+      clearTimeout(appTimer);
+      appTimer = setTimeout(function () {
+        appQueue = appQueue.then(function () { if (stored()) return appSave(stored(), withPosts()); }).catch(function () {});
+      }, 3000);
+    });
+    pushOns.forEach(function (pushOn) { pushOn.addEventListener('change', function (e) {
+      var on = pushOn.checked, own = e.isTrusted;
+      // A reader's own "off" (not the automatic "on" above): the next subject doesn't turn them on again.
+      try { if (e.isTrusted) { if (on) localStorage.removeItem('push-off'); else localStorage.setItem('push-off', '1'); } } catch (err) {}
+      showPush(on, '');
+      said('');
+      appQueue = appQueue.then(function () {
+        if (!on) {
+          var token = stored();
+          return (token ? appSave(token, []) : Promise.resolve()).then(function () {
+            try { localStorage.removeItem('fcm'); } catch (e) {}
+            return P.unregister();
+          });
+        }
+        return P.requestPermissions().then(function (p) {
+          if (p.receive !== 'granted') throw new Error('dozvola');
+          return register();
+        }).then(function (token) { return appSave(token, withPosts()); }).then(function () {
+          said('Stižu kad arhiva preuzme nove threadove sa foruma. Sajt čuva samo adresu obaveštenja ovog telefona i spisak predmeta.');
+        });
+      }).catch(function (e) {
+        if (on && e.message === 'dozvola') pushKind = 'blocked';
+        // Registered but not kept by the Worker: undone, so the switch shows the truth next time.
+        if (on) {
+          try { localStorage.removeItem('fcm'); } catch (err) {}
+          P.unregister().catch(function () {});
+        }
+        showPush(!on && !!stored(), on && e.message === 'dozvola' ? appBlocked : '');
+        said(e.message === 'dozvola' ? appBlocked : 'Nije uspelo, pokušaj ponovo.');
+        // Refused at the reader's own tap: the steps and the settings button at once (the grey switch's click opens
+        // them); not after the automatic "on", which the reader didn't ask for.
+        if (own && on && e.message === 'dozvola') pushBoxes[pushOns.indexOf(pushOn)].click();
+      });
+    }); });
+  } else if (window.PushManager && window.Notification && navigator.serviceWorker) {
     var reg = navigator.serviceWorker.register('/static/sw.js');
     var current = function () { return reg.then(function (r) { return r.pushManager.getSubscription(); }); };
     // What the Worker has, kept here so an unchanged list is not written again (KV has a daily write limit).
@@ -1025,6 +1140,33 @@
     if (iphone) said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
   }
 
+  /* "Skini aplikaciju" (sidebar.html): in an Android browser, not in the app itself; the i explains, in a dialog like
+     the notifications' one (.leave). */
+  var appGet = d.querySelector('[data-app-get]'), appInfo = null;
+  if (appGet && android && !app && !inApp) {
+    appGet.hidden = false;
+    appGet.querySelector('[data-app-info]').addEventListener('click', function () {
+      if (!appInfo) {
+        appInfo = d.createElement('dialog');
+        appInfo.className = 'leave';
+        appInfo.setAttribute('aria-labelledby', 'app-h');
+        appInfo.innerHTML = '<div class="leave__in"><h2 id="app-h">Aplikacija za Android</h2>'
+          + '<p>Browser na telefonu ponekad propusti obaveštenja: Android ga uspava kad ga ne koristiš, pa stignu kasno ili ne uopšte. '
+          + 'Aplikacija nema taj problem.</p>'
+          + '<ol class="leave__steps"><li>Dodirni „Skini aplikaciju”.</li><li>Otvori preuzeti fajl (masinci.apk).</li>'
+          + '<li>Ako telefon pita, dozvoli instalaciju iz browsera, pa se vrati.</li><li>Dodirni „Install”.</li></ol>'
+          + '<p>Telefon može da upozori da aplikacija nije sa Google Play-a: ona je ovaj sajt, iz iste arhive.</p>'
+          + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
+        d.body.appendChild(appInfo);
+        appInfo.addEventListener('click', function (e) {
+          if (e.target === appInfo || e.target.closest('button')) appInfo.close();
+        });
+      }
+      appInfo.showModal();
+      appInfo.querySelector('button').focus();
+    });
+  }
+
   /* The followed subjects' feeds as one OPML file, which a feed reader imports. Made on the click, from the list now. */
   // Delegated: the notifications dialog (noPush) is made on its first click, after this.
   d.addEventListener('click', function (e) {
@@ -1090,12 +1232,83 @@
     }).observe(wave);
   }
 
+  /* The Android app (app/, docs/PLAN-app.md): a file opens in the phone's app for it (a PDF reader, Word…), another
+     site in the phone's browser, without the dialog below. A WebView neither downloads nor opens files itself. */
+  var FILE = /\.(pdf|docx?|xlsx?|pptx?|odt|ods|odp|rtf|txt|csv|zip|rar|7z|dwg|dxf|stp|step|jpe?g|png)$/i;
+  var inBrowser = function (url) { return app.AppLauncher.openUrl({ url: url }); };
+  // Downloaded into the app's cache (Android clears it when space runs low), then opened from there; a folder per
+  // address, so two files of one name stay apart and a second tap opens the first download. No app for the type, or
+  // no download: the browser, which can still save it.
+  var openFile = function (a) {
+    if (a.getAttribute('aria-busy') === 'true') return;
+    var url = a.href, h = 5381;
+    for (var i = 0; i < url.length; i++) h = (h * 33 + url.charCodeAt(i)) >>> 0;
+    var name = a.pathname.split('/').pop();
+    try { name = decodeURIComponent(name); } catch (err) {}
+    var path = 'f/' + h.toString(36) + '/' + (name.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_') || 'fajl');
+    var where = { directory: 'CACHE', path: path };
+    a.setAttribute('aria-busy', 'true');
+    // An empty file is a download that went wrong (a redirect from http to https, which Android doesn't follow): it
+    // goes, and the browser gets the address.
+    var full = function () { return app.Filesystem.stat(where).then(function (s) { if (!(s.size > 0)) throw 0; }); };
+    full().catch(function () {
+      return app.Filesystem.mkdir({ directory: 'CACHE', path: path.replace(/\/[^/]*$/, ''), recursive: true }).catch(function () {})
+        .then(function () { return app.Filesystem.getUri(where); })
+        .then(function (r) { return app.FileTransfer.downloadFile({ url: url, path: r.uri }); })
+        .then(full);
+    }).then(function () { return app.Filesystem.getUri(where); })
+      .then(function (r) { return app.FileOpener.openFile({ path: r.uri }); })
+      .catch(function () { app.Filesystem.deleteFile(where).catch(function () {}); return inBrowser(url); })
+      .then(function () { a.removeAttribute('aria-busy'); }, function () { a.removeAttribute('aria-busy'); });
+  };
+
+  /* The app's overscroll (docs/PLAN-app.md): Android's own stretch is off (MainActivity), as it pulled the header and
+     tab bar too; a pull past the top or bottom stretches the content alone and springs back on release. Each block
+     between the header and the tab bar scales around the same point (the pulled edge): a common wrapper can't take
+     the transform, as the fixed tab bar inside it would move with it. */
+  if (app && !matchMedia('(prefers-reduced-motion: reduce)').matches) (function () {
+    var y0 = null, edge = 0, parts = [];
+    var set = function (s, back) {
+      parts.forEach(function (el) {
+        el.style.transition = back ? 'transform .35s cubic-bezier(.2,.8,.2,1)' : 'none';
+        el.style.transform = s === 1 ? '' : 'scaleY(' + s + ')';
+      });
+    };
+    d.addEventListener('touchstart', function (e) {
+      y0 = e.touches.length === 1 && !e.target.closest('dialog, .hd, .snav') ? e.touches[0].clientY : null;
+      edge = 0;
+    }, { passive: true });
+    d.addEventListener('touchmove', function (e) {
+      if (y0 === null) return;
+      var y = e.touches[0].clientY, root = d.scrollingElement;
+      var top = root.scrollTop <= 0, bottom = root.scrollTop + innerHeight >= root.scrollHeight - 1;
+      var dir = y > y0 && top ? 1 : y < y0 && bottom ? -1 : 0;
+      if (!dir) { if (edge) set(1); edge = 0; y0 = y; return; }
+      if (dir !== edge) {
+        // The anchor, in each block's own box: the page's top or bottom.
+        edge = dir;
+        parts = [].slice.call(d.querySelectorAll('.main, .side > .filters:not([hidden]), .ft'));
+        var at = dir > 0 ? 0 : root.scrollHeight;
+        parts.forEach(function (el) {
+          el.style.transformOrigin = '50% ' + (at - el.getBoundingClientRect().top - root.scrollTop) + 'px';
+        });
+      }
+      // Damped: grows fast at first, never past 6 %.
+      set(1 + .06 * (1 - Math.exp(-Math.abs(y - y0) / 220)));
+    }, { passive: true });
+    var end = function () { if (edge) set(1, true); edge = 0; y0 = null; };
+    d.addEventListener('touchend', end);
+    d.addEventListener('touchcancel', end);
+  })();
+
   var leave = null;
   d.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href]');
     if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
     if (!/^https?:$/.test(a.protocol) || a.hasAttribute('data-leave-go')) return;
     var out = a.host !== location.host;
+    if (app && (FILE.test(a.pathname) || a.pathname.indexOf('/files/') === 0)) { e.preventDefault(); openFile(a); return; }
+    if (app && out) { e.preventDefault(); inBrowser(a.href); return; }
     if (!out && !/\.pdf$/i.test(a.pathname)) return;
     e.preventDefault();
     if (!out) { window.open(a.href, '_blank', 'noopener'); return; }
@@ -1519,6 +1732,13 @@
     if (t[5]) {
       a.querySelector('use').setAttribute('href', '/static/icons.svg#i-' + t[5]);
       a.querySelector('.dana__ki').removeAttribute('hidden');
+    }
+    // The Studentska lista badge, the same text as cards.html sp_badge.
+    if (t[6]) {
+      var sp = dana.querySelector('.dana__sp'), tip = 'Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: ' + t[6] + '. na listi';
+      sp.setAttribute('aria-label', tip);
+      sp.querySelector('.sp__tip').textContent = tip;
+      sp.hidden = false;
     }
     dana.hidden = false;
   }).catch(function () {});

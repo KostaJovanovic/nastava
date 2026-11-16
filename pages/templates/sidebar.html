@@ -33,6 +33,9 @@
         {#- The picker's page (mojipredmeti.html). With subjects followed, it reads "Izmeni predmete", in the accent
             colour (head.js); a phone shows only the pencil, joined to the switch (style.css). -#}
         <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Izaberi predmete</span><svg class="i moji__edit" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg></a></div>
+        {#- The Android app (app/, docs/PLAN-app.md): shown by site.js in an Android browser only, not in the app. The
+            APK's fixed address is the release "app" (.github/workflows/app.yml); the i says why and how. -#}
+        <div class="moji__app" data-app-get hidden><a class="btn" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk">Skini aplikaciju</a><button type="button" class="btn moji__info" data-app-info aria-label="Zašto aplikacija i kako se instalira">i</button></div>
       </div>
 
     </div>
@@ -44,6 +47,8 @@
     <div class="hcard dana">
       <a class="sec" href="/profdana/"></a>
       <a class="dana__b"><img class="pc__img" alt="" decoding="async"><span class="dana__t"><b></b><small></small></span><svg class="i dana__ki" aria-hidden="true" hidden><use></use></svg></a>
+      {#- The "Studenti pobeđuju" badge, as on a card (cards.html sp_badge): outside the link, its tip set by site.js. -#}
+      <span class="sp dana__sp" tabindex="0" role="img" hidden><img src="/static/studenti-pobedjuju-26.png" alt="" width="64" height="64"><span class="sp__tip" aria-hidden="true"></span></span>
     </div>
   </div>
   {#- The saved choices (head.js showSaved), before the first frame (base.html rel=expect). -#}

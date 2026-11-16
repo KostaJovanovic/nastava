@@ -266,12 +266,13 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 /* The subtitle: wide screens only (a phone has no room for it). */
 .brand__name span { display: none; color: var(--head-dim); font: 400 12px/1.4 var(--sans); white-space: nowrap; }
 /* A phone: the name only after a tap on the logo (site.js), over the rest of the bar (search, script, theme) as
-   on a wide screen, for a few seconds. Its left edge: the header's padding, the logo and the gap. */
+   on a wide screen, for a few seconds. Its left edge: the header's padding, the logo and the gap; its top under the
+   phone's status bar (the app, --sat). */
 @media (max-width: 759px) {
   .brand__mark { position: relative; z-index: 3; }
   .brand__mark svg { width: 34px; height: 34px; }
   .brand__name {
-    position: absolute; inset: 0 0 0 calc(max(10px, env(safe-area-inset-left)) + 42px); z-index: 2;
+    position: absolute; inset: var(--sat) 0 0 calc(max(10px, env(safe-area-inset-left)) + 42px); z-index: 2;
     align-content: center; padding-right: 10px; background: var(--head);
     opacity: 0; visibility: hidden; translate: -8px 0; transition: opacity .15s, translate .15s, visibility .15s;
   }
@@ -524,6 +525,9 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
   .snav > a:active { background: var(--hover); }
 }
 
+/* The Android app: a file link while its file downloads, before the phone's app opens it (site.js openFile). */
+a[aria-busy="true"] { opacity: .5; cursor: progress; }
+
 /* Leaving the archive (site.js): a small dialog before a link to another site. */
 .leave { width: min(440px, 100vw - 32px); max-width: none; padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--text); }
 .leave[open] { animation: mp-in .15s ease-out; }
@@ -707,6 +711,12 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
   .fgroup[data-izbor] .tgl__bell, .fgroup[data-izbor] .moji__edit { width: 20px; height: 20px; }
   /* The words stay the names for a screen reader. */
   .fgroup[data-izbor] .is-set > span, .fgroup[data-izbor]:has(.is-set) > .sec { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  /* "Skini aplikaciju" (Android browsers): the last row, the whole width, its i beside it. */
+  .fgroup[data-izbor] > .moji__app { grid-column: 1 / -1; display: flex; gap: 8px; padding: 0 16px; }
+  .moji__app[hidden] { display: none !important; }
+  .moji__app > a { flex: 1; min-height: 44px; font-size: 13.5px; }
+  .moji__info { flex: none; width: 44px; min-height: 44px; padding: 0; font: italic 700 17px/1 Georgia, serif; }
+@media (min-width: 900px) { .moji__app > a, .moji__info { min-height: 36px; } .moji__info { width: 36px; } }
 /* The followed subjects' count, in the switch. */
 .tgl__n { margin-left: 4px; color: var(--dim); font-weight: 400; font-size: 12px; }
 /* A very narrow phone: "Izaberi predmete" without the star, "Prikaži moje" without "predmete". */
@@ -878,6 +888,9 @@ body:has(.mp) .ft { display: none; }
 .dana__t b { color: var(--fg); font-size: 14px; }
 .dana__t small { color: var(--dim); font-size: 12.5px; }
 .dana__ki { flex: none; margin-left: auto; color: var(--slate); font-size: 24px; }
+/* The Studentska lista badge (.sp, sidebar.html): in the heading's row, right, above the katedra's icon as on a card. */
+.dana { position: relative; }
+.dana__sp { top: 10px; right: 15px; width: 26px; height: 26px; }
 .dana .sec:hover, .dana__b:hover :is(b, .dana__ki) { color: var(--accent-t); }
 .dana a:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; border-radius: 4px; }
 /* /profdana/ (profdana.html, site.js): a month's days as cards, in date order; today ringed, dev mode's days ahead dim. */
