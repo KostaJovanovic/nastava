@@ -184,9 +184,13 @@ OF_THE_DAY_PAST = {"ist-kosta-alkovic-1834-1909", "ist-ljubomir-kleric-1844-1910
 def of_the_day(teachers):
     """The side panel's teacher of the day to pick from (site.js, by the date): each teacher with a photo and a title
     of OF_THE_DAY who is listed, emeritus, left after 2024 (last on the faculty's list in 2025 or later) or in
-    OF_THE_DAY_PAST, as [head, name, href, photo, katedra, its icon in icons.svg]."""
+    OF_THE_DAY_PAST, as [head, name, href, photo, katedra, its icon in icons.svg]. Not an assistant who came in 2026
+    (span, render.faculty_span, so after render_teachers): the user's choice; a professor or docent "from 2026" is
+    often only one the 2014 list lacked."""
+    assert all("span" in t for t in teachers), "of_the_day before render_teachers"
     head = lambda t: next((h for k, h in OF_THE_DAY if k in (t["title"] or "")), None)
-    here = lambda t: not t["gone"] or t["emeritus"] or (t["last_seen"] or "") >= "2025" or t["id"] in OF_THE_DAY_PAST
+    new = lambda t: "асистент" in (t["title"] or "") and (t.get("span") or {}).get("from") == 2026
+    here = lambda t: (not t["gone"] or t["emeritus"] or (t["last_seen"] or "") >= "2025" or t["id"] in OF_THE_DAY_PAST) and not new(t)
     return [
         [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize(), t["katedra"] and slug(t["katedra"])]
         for t in teachers
