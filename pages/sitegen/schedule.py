@@ -183,8 +183,10 @@ def render_study_pages(site, db):
         write_bytes(site / "studije" / "files" / "_t" / f"{rel}.jpg", data)
         return f"/studije/files/_t/{quote(rel)}.jpg"
 
-    # The calendar's and the lecture cards' (raspored.html): the chips and the exam tables keep their icons.
-    hrefs = [calendar and calendar[1]] + [h for p in (lectures or {}).get("programs", []) for *_, h in p["cards"]]
+    # The calendar's and the lecture cards' (raspored.html): the chips and the exam tables keep their icons, and so do
+    # the master's programs (MAS - MI's ~20 modules, IND4.0), the user's call.
+    progs = [p for p in (lectures or {}).get("programs", []) if not p["short"].startswith("MAS")]
+    hrefs = [calendar and calendar[1]] + [h for p in progs for *_, h in p["cards"]]
     thumbs = {h: t for h in hrefs if h and (t := thumb_of(h))}
     write(
         site / "raspored" / "index.html",
