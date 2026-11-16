@@ -29,6 +29,7 @@ public class MainActivity extends BridgeActivity {
             splash.remove();
             showLogo();
         });
+        registerPlugin(NotifySettings.class);
         super.onCreate(savedInstanceState);
         getBridge().addWebViewListener(new WebViewListener() {
             @Override
