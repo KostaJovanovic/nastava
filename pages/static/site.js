@@ -1502,9 +1502,9 @@
     return list[order[days - round * len]];
   };
   var dana = d.querySelector('[data-dana]');
-  // Not on a phone under a post, a topic or a news item: the same as style.css .frame:has(article.post), for a browser
-  // without :has().
-  if (dana && window.matchMedia && matchMedia('(max-width: 899px)').matches && d.querySelector('.frame article.post')) dana = null;
+  // Not on a phone under a post, a topic or a news item, nor the board's lists of threads: the same as style.css
+  // .frame:has(article.post, [data-nodana]), for a browser without :has().
+  if (dana && window.matchMedia && matchMedia('(max-width: 899px)').matches && d.querySelector('.frame :is(article.post, [data-nodana])')) dana = null;
   if (dana && izbor) izbor.then(function (j) {
     var list = j.dana || [];
     if (!list.length) return;

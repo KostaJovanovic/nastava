@@ -9,7 +9,8 @@
 {% block crumbs %}{{ crumb(smer.href, smer.label) }}{% endblock %}
 
 {% block main %}
-<div class="mh mh--card">
+{#- data-nodana: no Profesor dana under it on a phone (style.css .filters--dana). -#}
+<div class="mh mh--card" data-nodana>
   <div class="mh__top">
     <span class="mh__ki"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ n.icon }}"></use></svg></span>
     <h1 id="title">{{ n.name }}</h1>

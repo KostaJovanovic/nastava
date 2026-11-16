@@ -10,7 +10,8 @@
 {% block crumbs %}{{ crumb(subj.smer.href, subj.smer.label) }}{% endblock %}
 
 {% block main %}
-<div class="mh mh--card">
+{#- data-nodana: no Profesor dana under it on a phone (style.css .filters--dana). -#}
+<div class="mh mh--card" data-nodana>
   {#- The star needs site.js (the followed subjects are kept in the browser); without it, it stays hidden. -#}
   <div class="mh__top">
     {#- Its katedra's icon (build.py row_katedra), linking its page; else the book, as its row has. -#}

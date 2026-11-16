@@ -476,8 +476,9 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
   .side { display: contents; }
   .filters { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
   .filters--dana { order: 2; }
-  /* Not under a post, a topic or a news item (article.post): there it is only in the way. */
-  .frame:has(article.post) .filters--dana { display: none; }
+  /* Not under a post, a topic or a news item (article.post), nor under the board's lists of threads (a subject's, a
+     smer's notices: data-nodana): there it is only in the way. */
+  .frame:has(article.post, [data-nodana]) .filters--dana { display: none; }
   .filters:not(:has(.fgroup:not([hidden]), .hcard)) { display: none; }
   /* "Moji predmeti" only on the home and search page (#res): elsewhere it pushed the page down; a subject page has
      its star. */
