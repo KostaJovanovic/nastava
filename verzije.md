@@ -22,6 +22,9 @@ Rasporedi imaju preview.
 
 - 687–689 [novo] **Kalendar i rasporedi osnovnih studija** imaju preview prve strane.
 - 690 **Kalendar profesora dana** počinje od današnjeg dana.
+- 692 **Logo** se crta do kraja i kad ga ponovo dodirneš. Ime sajta na telefonu stoji 3 sekunde od prvog dodira.
+- 693 **Profesor dana** se na telefonu ne prikazuje uz postove i liste threadova.
+- 691 **Održavanje:** ova strana.
 
 ## 15. novembra 2026.
 Profesori emeritusi su u arhivi.
