@@ -1,6 +1,8 @@
 # Android app (Capacitor)
 
-Status: planned in full (2026-11-16), nothing built. Goal: an Android app with easier notifications for followed
+Status (2026-11-16): building. `app/` set up (Capacitor 8.6.2, plugins, Android project, Firebase config); step 1's
+icons and notification icon done; step 6's `app.yml` written, untested. Step 0: the debug APK builds (with the JDK 21 already in
+`C:\Users\Kosta\.jdks\jdk-21.0.12.1+1`: `JAVA_HOME` set to it for `gradlew`); the phone check waits on the phone. Goal: an Android app with easier notifications for followed
 subjects, with external links opening in the phone's default browser.
 
 ## Why a second push path
@@ -28,8 +30,9 @@ The one unknown the rest stands on: does Capacitor 8 give its bridge (`window.Ca
 remote `server.url`?
 
 1. `app/` with `npm init`, `@capacitor/core`, `@capacitor/cli`, `@capacitor/android`, `@capacitor/app-launcher`,
-   `@capacitor/push-notifications`, `@capacitor/file-transfer`, `@capawesome/capacitor-file-opener` (pinned
-   versions, `package-lock.json` committed).
+   `@capacitor/push-notifications`, `@capacitor/file-transfer` with `@capacitor/filesystem` (the cache path),
+   `@capawesome-team/capacitor-file-opener` (pinned versions, `package-lock.json` committed; all checked for
+   Capacitor 8 on 2026-11-16).
 2. `app/capacitor.config.json`:
    ```json
    {"appId": "com.valjdakosta.nastava", "appName": "Mašinci", "webDir": "www",
@@ -69,7 +72,7 @@ opens in a new tab. In the app, `site.js` adds one branch at the top of that han
   the file is first downloaded natively into the app's cache, then opened from there with an "open with" intent:
   - `@capacitor/file-transfer` `downloadFile` (native, so no CORS on the faculty's hosts) into `Directory.Cache` (no
     storage permission, Android clears it when space runs low);
-  - `@capawesome/capacitor-file-opener` `openFile({path})`: the intent with the file's MIME type, through a
+  - `@capawesome-team/capacitor-file-opener` `openFile({path})`: the intent with the file's MIME type, through a
     FileProvider (`content://` URI) the plugin brings. Android picks the default app, or asks once which.
   - While it downloads: the link gets `aria-busy` and the side message "Preuzimam…"; a big file takes a moment.
   - No app for that type, or the download fails: falls back to the browser (`AppLauncher.openUrl`), which can still

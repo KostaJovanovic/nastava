@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "55721202013",
+    "project_id": "masinci-28d17",
+    "storage_bucket": "masinci-28d17.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:55721202013:android:ea0079579d5d616ceed8b4",
+        "android_client_info": {
+          "package_name": "com.valjdakosta.nastava"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKiYiEIGP9zf7-COJ7y2_RUYBgqPvo1Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,7 @@
+{
+  "appId": "com.valjdakosta.nastava",
+  "appName": "Mašinci",
+  "webDir": "www",
+  "server": { "url": "https://masinci.org", "errorPath": "offline.html" },
+  "android": { "appendUserAgent": "NastavaApp" }
+}
