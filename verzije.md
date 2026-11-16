@@ -58,6 +58,12 @@ Profesori emeritusi su u arhivi.
 - 655 **Liste na početnoj** imaju link na celu listu.
 - 652–654 **Dugme `Izaberi predmete`** je crveno.
 - 657, 659 [novo] **Logo** se ponovo nacrta kad klikneš na njega.
+- 663–669 **Profesor dana** bira i profesore emerituse, one koji su otišli posle 2024. i tri profesora iz prvih
+  godina fakulteta.
+- 670 [novo] **Na rođendan profesora Ognjanovića,** 23. oktobra, on je profesor dana.
+- 671–674 [novo] **Kalendar profesora dana:** klik na naslov kartice pokazuje ko je bio profesor dana svakog dana.
+- 675–676 [ispravka] **Godine na fakultetu** su tačne za još 140 nastavnika, po njihovim biografijama.
+- 677 **Nastavnici bez slike** imaju siluetu umesto inicijala.
 - 585, 593, 599, 607, 609–610, 612, 616–621, 630, 632, 639–640, 643–644, 648, 658, 660–662 **Održavanje:** ova
   strana.
 

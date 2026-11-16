@@ -171,12 +171,13 @@
         var all = grid.appendChild(card([], 'Svi nastavnici', 'sva obaveštenja predmeta'));
         all.dataset.t = '';
         ps.forEach(function (x) {
-          var p = data.people[x[0]], w = p[0].split(' ');
+          var p = data.people[x[0]];
           var n = x[1], one = n % 10 === 1 && n % 100 !== 11, few = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14);
           // The title without the katedra (people's "title · katedra"): the subject says where they teach.
           var b = grid.appendChild(card([], p[0], [(p[3] || '').split(' · ')[0], n + (one ? ' thread' : few ? ' threada' : ' threadova')].filter(Boolean).join(' · ')));
-          var img = p[2] ? el('img', 'mp__ph') : el('span', 'mp__ph', w[0][0] + w[w.length - 1][0]);
-          if (p[2]) { img.src = p[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
+          var img = p[2] ? el('img', 'mp__ph') : el('span', 'mp__ph');
+          if (p[2]) { img.src = p[2]; img.alt = ''; img.loading = 'lazy'; }
+          else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="/static/icons.svg#i-nophoto"/></svg>'; }
           b.classList.add('mp__card--t');
           b.insertBefore(img, b.querySelector('.mp__name'));
           b.dataset.t = slugOf(p);

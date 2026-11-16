@@ -337,7 +337,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
    taller than the other rows; one who left has the grey corner of the cards (.pc--gone, which needs the position). */
 .cmd__list .cmd__p { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px; align-items: center; padding: 5px 10px; }
 .cmd__img { grid-row: span 2; width: 36px; height: 42px; object-fit: cover; object-position: 50% 25%; border-radius: 4px; background: var(--icon-bg); }
-span.cmd__img { display: grid; place-items: center; color: var(--slate); font: 800 13px var(--sans); }
+span.cmd__img { color: var(--slate); }
 svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none; color: var(--slate); }
 .cmd__p + .cmd__p { margin-top: 2px; }
 .cmd__p.pc--undated::before { mask: linear-gradient(225deg, #000 0, transparent 90px); }
@@ -807,7 +807,7 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
 .mp__card--t { align-items: center; }
 .mp__card--t .mp__name { flex: 1; }
 .mp__card--t .mp__check { order: 1; }
-.mp__ph { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 50% 20%; background: var(--icon-bg); color: var(--slate); font: 800 15px var(--sans); }
+.mp__ph { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: 50% 20%; background: var(--icon-bg); color: var(--slate); overflow: hidden; }
 .mp__card[aria-pressed="true"] .mp__ph { box-shadow: 0 0 0 2px var(--accent); }
 /* The foot stays at the bottom of the screen (on a phone, at the end of the page). */
 .mp__foot {
@@ -1517,7 +1517,7 @@ div.cent-head::before { content: ""; flex: none; width: 11px; }
   display: block; width: 100%; aspect-ratio: 6 / 7; object-fit: cover; object-position: 50% 25%;
   grid-area: 1 / 1 / span 2; border-radius: 4px; background: var(--icon-bg); /* placed: the badge (.tp__sp) shares its cell */
 }
-.tp__img--none { display: grid; place-items: center; color: var(--slate); font: 800 28px var(--sans); }
+.tp__img--none { color: var(--slate); }
 .tp__who { display: contents; color: var(--dim); font-size: 14px; }
 .tp__who h1 { align-self: end; color: var(--fg); font: 800 20px/1.15 var(--sans); overflow-wrap: anywhere; }
 .tp__who > p { align-self: start; color: var(--dim); }
@@ -1720,7 +1720,9 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
 /* A photo fades in once loaded (head.js sets [data-fade] and the photo's [data-in]). */
 img:is(.pc__img, .tp__img) { transition: opacity .2s ease-out; }
 [data-fade] img:is(.pc__img, .tp__img):not([data-in]) { opacity: 0; }
-.pc__img--none { display: grid; place-items: center; color: var(--slate); font: 800 20px var(--sans); }
+.pc__img--none { color: var(--slate); }
+/* No photo (icons.svg #i-nophoto): the bust fills the frame, faint, standing on its bottom edge. */
+.nophoto { display: block; width: 100%; height: 100%; opacity: .55; }
 .pc__t { min-width: 0; padding-top: 2px; padding-right: 24px; }
 /* The katedra's icon, top right: above the card's link (z-index), so its title shows on hover. */
 .tp__ki { position: absolute; top: 14px; right: 14px; z-index: 1; display: flex; color: var(--slate); font-size: 30px; }

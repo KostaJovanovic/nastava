@@ -71,8 +71,9 @@
     var person = function (t, hint) {
       var gone = t.length > 4;
       return [gone ? 'Više nisu na fakultetu' : '', t[0], hint || t[3], t[1], function (a) {
-        var w = t[0].split(' '), img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img', w[0][0] + w[w.length - 1][0]);
-        if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; } else img.setAttribute('aria-hidden', 'true');
+        var img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img');
+        if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; }
+        else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="/static/icons.svg#i-nophoto"/></svg>'; }
         a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
         // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
         if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
