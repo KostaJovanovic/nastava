@@ -148,5 +148,5 @@ window.rsPick = function (key, keep) {
 	rs.querySelectorAll("[data-rs-tab]").forEach((t) => t.setAttribute("aria-current", t.hash === "#" + key));
 	if (!keep) return;
 	try { localStorage.setItem(rs.dataset.rs || "raspored", key); } catch (e) {}
-	history.replaceState(null, "", "#" + key);
+	history.replaceState(history.state, "", "#" + key);
 };

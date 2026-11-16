@@ -84,7 +84,7 @@ function writeUrl(s, pages) {
 	if (pages.p > 1) p.set("page", pages.p);
 	if (pages.v > 1) p.set("vpage", pages.v);
 	// String(p), not p.size: Safari before 17 has no size.
-	history.replaceState(null, "", String(p) ? `?${p}` : location.pathname);
+	history.replaceState(history.state, "", String(p) ? `?${p}` : location.pathname);
 }
 
 function filtersOf(s) {

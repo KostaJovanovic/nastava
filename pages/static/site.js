@@ -586,7 +586,7 @@
         if (f.querySelector('[data-rows]')) f.hidden = filtering && !f.querySelector('[data-rows] > li:not([hidden])') && !(none && !none.hidden && f.contains(none));
       });
       // String(p), not p.size: Safari before 17 has no size.
-      history.replaceState(null, '', String(p) ? '?' + p : location.pathname);
+      history.replaceState(history.state, '', String(p) ? '?' + p : location.pathname);
     };
     var p = new URLSearchParams(location.search);
     ctl.forEach(function (c) {
@@ -660,13 +660,13 @@
       var words = fold(findBox.value.trim()).split(/\s+/).filter(Boolean), v = sel.value;
       var m = moji && window.mojiNow && window.mojiNow.only ? window.mojiNow : null;
       var filtering = words.length || v || m;
-      if (push) history.pushState(null, '', href(page));
+      if (push) history.pushState(history.state, '', href(page));
       // Not filtering: the counts give the pages, and which years hold this one.
       if (!filtering) {
         total = y ? counts[y] : all;
         page = Math.max(1, Math.min(page, Math.ceil(total / n)));
         start = (page - 1) * n;
-        history.replaceState(null, '', href(page));
+        history.replaceState(history.state, '', href(page));
         drawNav(Math.ceil(total / n));
         shown.textContent = total ? num(start + 1) + '–' + num(Math.min(start + n, total)) + ' od ' + num(total) : '0';
         if (asBuilt && page === 1 && n === 50) return;
@@ -695,7 +695,7 @@
         start = (page - 1) * n;
         drawNav(Math.ceil(total / n));
         shown.textContent = total ? num(start + 1) + '–' + num(Math.min(start + n, total)) + ' od ' + num(total) : '0';
-        history.replaceState(null, '', href(page));
+        history.replaceState(history.state, '', href(page));
         rows = rows.slice(start, start + n);
       } else {
         // The years before the first one wanted, skipped by their counts.
@@ -1363,20 +1363,32 @@
   };
   // A page prerendered on hover (base.html's speculation rules) sees the tab's sessionStorage only once shown.
   if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
-  /* "Nazad" under the crumbs (base.html): the page visited before this one in the tab. 'hist' (sessionStorage) holds
-     the last two pages, [{u, t}]: a reload keeps them; the page's own entry takes its address as it is left (the home
-     page's search changes it), and its title (the tab's first part, Latin: pismo.js converts the link). It opens at
-     the place it was left (the crumbs' scroll above); a page reached by the browser's own back goes back the same way. */
+  /* "Nazad" under the crumbs (base.html): the page this one was opened from, {u, t}. Kept in this page's history entry
+     (history.state.back), so a reload, the browser's back and forward and its page cache all keep each page's own; a
+     list of the pages last seen would point back at the page the browser's back came from (a circle: teacher, list,
+     another teacher). A new page takes 'cur' (sessionStorage): the page the tab showed last, its address as it was
+     left (the home page's search changes it) and its title (the tab's first part, Latin: pismo.js converts the link);
+     only when that page is the referrer, so a page opened in a new tab or from a typed address has none. It opens at
+     the place it was left (the crumbs' scroll above); a page reached by the browser's own back goes back the same way.
+     The other replaceState and pushState calls keep history.state, and with it this. */
   var pageTitle = function () {
     var sq = new URLSearchParams(location.search).get('q');
     return location.pathname === '/' ? (location.search ? 'Pretraga' + (sq ? ' „' + sq + '“' : '') : 'Početna') : d.title.split(' · ')[0];
   };
+  var keepCur = function () {
+    try { sessionStorage.setItem('cur', JSON.stringify({ u: location.pathname + location.search, t: pageTitle() })); } catch (e) {}
+  };
   var showBack = function () {
-    var a = d.querySelector('[data-back]'), hist = [];
-    try { hist = JSON.parse(sessionStorage.getItem('hist')) || []; } catch (e) {}
-    if (!hist.length || hist[hist.length - 1].u !== here) hist = hist.concat({ u: here, t: pageTitle() }).slice(-2);
-    try { sessionStorage.setItem('hist', JSON.stringify(hist)); } catch (e) {}
-    var prev = hist.length > 1 && hist[0];
+    var a = d.querySelector('[data-back]'), st = history.state || {}, prev = st.back, left = null, ref = null;
+    if (!prev) {
+      try { left = JSON.parse(sessionStorage.getItem('cur')); ref = d.referrer && new URL(d.referrer); } catch (e) {}
+      var from = left && left.u.split('?')[0];
+      if (ref && ref.origin === location.origin && from === ref.pathname && from !== location.pathname) {
+        prev = left;
+        history.replaceState(Object.assign({}, st, { back: prev }), '');
+      }
+    }
+    keepCur();
     if (!a || !prev) return;
     a.href = prev.u;
     a.querySelector('b').textContent = prev.t;
@@ -1387,15 +1399,7 @@
       history.back();
     });
   };
-  addEventListener('pagehide', function () {
-    try {
-      var hist = JSON.parse(sessionStorage.getItem('hist')) || [];
-      if (hist.length && hist[hist.length - 1].u === here) {
-        hist[hist.length - 1] = { u: location.pathname + location.search, t: pageTitle() };
-        sessionStorage.setItem('hist', JSON.stringify(hist));
-      }
-    } catch (e) {}
-  });
+  addEventListener('pagehide', keepCur);
   if (d.prerendering) d.addEventListener('prerenderingchange', showBack, { once: true }); else showBack();
   // Nor does it go to its #fragment once shown (a topic opened at its newest post, rows.html topic_row): there it goes.
   if (d.prerendering) d.addEventListener('prerenderingchange', function () {
