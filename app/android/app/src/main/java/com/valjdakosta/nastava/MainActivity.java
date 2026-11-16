@@ -5,10 +5,13 @@ import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
 import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
@@ -36,6 +39,12 @@ public class MainActivity extends BridgeActivity {
         });
         // No overscroll stretch: Android stretches the whole WebView, the site's sticky header and tab bar with it.
         getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
+        // The offline page (errorPath) for no connection only: Capacitor also shows it for an HTTP error, where the
+        // site's own 404 page says more.
+        getBridge().setWebViewClient(new BridgeWebViewClient(getBridge()) {
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {}
+        });
     }
 
     /** The blue screen with the logo drawing on, where the system splash's icon was (288 dp, centred). */

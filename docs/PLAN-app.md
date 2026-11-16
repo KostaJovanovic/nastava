@@ -78,6 +78,9 @@ this plan, not onward).
 - The page under the status bar (found on the phone): the site's `viewport-fit=cover` makes Capacitor 8 draw it
   edge to edge, so `style.css`'s header adds `env(safe-area-inset-top)` (0 in a browser). Android's overscroll stretch
   pulled the sticky header and tab bar: off in `MainActivity` (`OVER_SCROLL_NEVER`).
+- The offline page (found on the phone): Capacitor 8 loads `errorPath` on any HTTP error too
+  (`BridgeWebViewClient.onReceivedHttpError`), so a dead link said "Nema interneta". `MainActivity` replaces the
+  client with one that ignores HTTP errors: a 404 shows the site's own page, no connection still the offline page.
 - Content-only stretch (decided 2026-11-16; after the step 0 gate, it is `site.js`): in the app only, a pull past the
   top or bottom stretches the content between the header and the tab bar (`scaleY`, damped by the pull, anchored at
   the pulled edge) and springs back on release; the header and tab bar stay still. ~30 lines, tuned on the phone
