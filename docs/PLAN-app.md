@@ -257,9 +257,10 @@ changes rarely), `/predmet/<smer>/<slug>/` its thread list (every thread it ever
 which changes with each post, for ~18 subjects a week (25 in 30 days) of 949.
 
 The draft (decided 2026-11-16: the APK base, and the user's picks 1, 2, 4, 5, 6, 7 of the optimisations):
-- **In the APK**, as of its build: every subject description, professor, katedra and the lists, and every thread
-  page cut to its newest 50 threads (5). The app updates only when reinstalled (no store), so this is the base,
-  never the newest.
+- **The base, downloaded once** (changed 2026-11-16, see below): every subject description, professor, katedra
+  and the lists, and every thread page cut to its newest 50 threads (5), as one `/offline/base-<build>.json.gz`
+  (~10 MB), fetched on the app's first opening and again only when the copy is older than 14 days. Nothing new in
+  the APK.
 - **Daily, one request**: the build writes `/offline/changed-<build>.json.gz`, the fragments of every page that
   changed in the last 14 days (1), with the last 7 days of nastava and vesti and the shell, and
   `/offline/version.json` (the build's id, the changed pack's name, a full pack's for an app older than 14 days).
@@ -268,22 +269,37 @@ The draft (decided 2026-11-16: the APK base, and the user's picks 1, 2, 4, 5, 6,
   service worker fetch the pack. Notifications don't depend on it (FCM reaches the phone either way); only the
   offline copy waits for the next opening.
 - **Stored gzipped** (2), unpacked when a page is shown (`DecompressionStream`).
-- **Schedules**: only the reader's smer's PDFs, the smer known from the followed subjects (4).
+- **Schedules**: only the reader's smer's PDFs, the smer known from the followed subjects (4). The rasporedi page
+  is checked for updates at each refresh; a schedule already downloaded is kept, and only a new or changed one is
+  fetched.
 - **Files**: the last 7 days' posts' files in the followed subjects, each up to 5 MB (a bigger one opens online),
-  each downloaded once, where a tap already saves them (`openFile`'s `f/<hash>/<name>` in the app's cache) (6).
+  each downloaded once, into the service worker's cache, so an offline tap gets it there: a PDF in the site's own
+  viewer (PLAN-pdf.md); other types need the bridge, which offline pages lack (below), so they open online only (6).
 - **Online is always live**: `sw.js` answers from the copy only when the network fails, joining shell and fragment
   as the Worker does (`join` shared). Browsers never get a pack, so for them nothing changes.
 - Offline and not in the copy (an older post, the search, which is Pagefind's 99 MB): the offline page.
 
-Expected: the APK some 10–15 MB bigger, a daily download of a few hundred KB, 15–20 MB on the phone.
+Expected: the APK unchanged, ~10 MB once at the first opening, a daily download of a few hundred KB, 15–20 MB on
+the phone.
+
+How it is served (decided 2026-11-16, replacing "in the APK"): a service worker can't read the APK's own files, and
+the native alternative needs a Capacitor internal, so the user chose the service worker with the base downloaded.
+`sw.js` is registered in the app too. Online, its fetch goes through Capacitor (`resolveServiceWorkerRequests`,
+on by default), which still adds the app's bridge to each page; **first check on the phone, before the rest: online
+pages keep the bridge (files to apps, links to the browser, the bell) while the service worker is in control.**
+Offline, a page from the copy has no bridge: the site works as in a browser (no file opens in a phone app, an
+outside link fails as offline). Not in the copy: the service worker returns an error, and Capacitor shows
+`offline.html` as now.
 
 Photos (decided 2026-11-16): the site serves every teacher photo at most 300 px wide (JPEG 85, 4:2:2; the
 originals stay in `nastava.db`), 13.3 MB → 9.9 MB, and the build writes a 150 px copy of each at
 `/foto/mala/<name>.jpg` (3.8 MB for all; `load_teachers.fit_photo`). The APK ships the 300 px photo for teachers on
 the faculty's current list, the 150 px copy for the rest (former, emeriti, the past).
 
-Open (to settle one at a time): refresh on any network or Wi-Fi only; a line on offline pages saying the copy's date, and its
-wording; what happens to the copy when a subject is unfollowed.
+Settled 2026-11-16: the refresh runs on any network (mobile data too). A page shown from the copy gets a slim line
+under the header, offline only: "Bez interneta · sačuvano 16. 11. u 19:17" (the copy's time). An unfollowed
+subject's saved files stay until they age out of the 7 days, like any other; refollowing costs nothing. Only the
+prefetched files age out; a file the reader tapped stays in the app's cache as now.
 
 ## Effort
 
