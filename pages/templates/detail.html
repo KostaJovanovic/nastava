@@ -23,16 +23,10 @@
   <div class="post__body">
     <h1 class="post__title" id="title">{{ it.title }}</h1>
     <p class="post__meta">dokument · {{ doc.filename }}{% if doc.size %} · {{ doc.size }} KB{% endif %}{% if it.author %} · iz posta od {{ who(it) }}{% endif %}</p>
-    {#- A file the site keeps, as the Worker serves it inline (src/index.js INLINE); a browser that shows no PDF in a
-        page (a phone's) gets the link. -#}
-    {%- if doc.preview %}
-    {%- if doc.image %}
-    <img class="doc-view doc-view--img" src="{{ doc.preview }}" alt="{{ doc.filename }}">
-    {%- else %}
-    <object class="doc-view" data="{{ doc.preview }}" type="application/pdf" aria-label="{{ doc.filename }}">
-      <p><a href="{{ doc.preview }}">Otvori {{ doc.filename }} u browseru</a></p>
-    </object>
-    {%- endif %}
+    {#- A file the site keeps: its thumbnail (~8 KB, not the whole file), linking the file, which the Worker serves
+        inline (src/index.js INLINE). -#}
+    {%- if doc.thumb %}
+    <a class="doc-view" href="{{ download_url }}" target="_blank" rel="noopener"><img src="{{ doc.thumb }}" alt="Prva strana: {{ doc.filename }}" width="240" loading="lazy" decoding="async"><span>Otvori u browseru</span></a>
     {%- endif %}
     {%- set _lines = (it.body or '') | trim -%}
     {% if _lines %}

@@ -135,13 +135,12 @@ def load_items(db, place):
                 body=(d["text"] or "")[:PAGE_TEXT],
                 html=None,
                 source_url=f"{BASE}viewtopic.php?p={d['post']}#p{d['post']}" if d["post"] else None,
-                # preview: the file itself, inline (detail.html), when the release has it and it got a thumbnail.
+                # thumb: the release's thumbnail, detail.html's preview card linking the file.
                 doc=dict(
                     filename=d["filename"],
                     size=round((d["size"] or 0) / 1024),
                     uploaded_at=d["uploaded_at"],
-                    preview=hosted[d["id"]][0] if d["id"] in hosted and hosted[d["id"]][1] else None,
-                    image=d["mime"] in ("image/jpeg", "image/png", "image/gif"),
+                    thumb=hosted.get(d["id"], (None, None))[1],
                 ),
                 download_url=hosted[d["id"]][0] if d["id"] in hosted else f"{BASE}download/file.php?id={d['id']}",
             )

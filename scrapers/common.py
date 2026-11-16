@@ -34,7 +34,7 @@ VIDEO = re.compile(r"(drive\.google\.com|docs\.google\.com|youtube\.com|youtu\.b
 REPO = "KostaJovanovic/nastava"
 # The kinds the Worker serves inline (pages/src/index.js INLINE) and that get a thumbnail.
 PREVIEW = {"pdf", "jpg", "jpeg", "png", "gif"}
-THUMB_WIDTH = 240  # px: twice the width style.css .att__img shows
+THUMB_WIDTH = 240  # px: detail.html's card at 1x; four times a post's .att__img (style.css)
 
 
 def asset_name(path):
