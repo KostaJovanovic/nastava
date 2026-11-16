@@ -817,7 +817,12 @@
     // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
     return mineLoad = Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
       return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
-        .catch(function () { return { rows: [] }; });
+        .catch(function () { return { rows: [] }; })
+        // Teachers picked for it (/mojipredmeti/ step 2, s.t): only the threads one of them posted in (r[2]).
+        // shortcut: filters the subject's 10 newest only (output.py MINE), so a picked teacher's older thread is not reached.
+        .then(function (j) {
+          return { rows: !s.t ? j.rows : j.rows.filter(function (r) { return (r[2] || []).some(function (x) { return s.t.indexOf(x) > -1; }); }) };
+        });
     })).then(function (all) {
       // [last post time, row HTML]: the newest across the subjects first. The rows are this site's own build.
       var rows = [].concat.apply([], all.map(function (j) { return j.rows; }));
@@ -1621,6 +1626,17 @@
     });
   }
   markNew();
+  // A row hovered counts as read: its dot goes, for good (as if its last post's page was opened).
+  d.addEventListener('mouseover', function (e) {
+    var row = e.target.closest && e.target.closest('.fr--new'), last = row && (row.querySelector('.lt') || row.querySelector('.fr__a'));
+    if (!last) return;
+    try {
+      read = JSON.parse(localStorage.getItem('procitano')) || {};
+      read[last.pathname] = Date.now();
+      localStorage.setItem('procitano', JSON.stringify(read));
+    } catch (e) {}
+    markNew();
+  });
   d.addEventListener('pocetna', markNew);
   d.addEventListener('moji', markNew);
   // Back from a post (the page from the cache): its row has been read since.

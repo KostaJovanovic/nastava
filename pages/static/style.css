@@ -1229,10 +1229,13 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* A row with a post since the last visit (site.js markNew): a dot before its title. */
 .fr--new .fr__a { font-weight: 700; }
 .fr--new .fr__a::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 2px; }
-/* Its title bar's button that clears the dots (site.js markNew): small, the bar's type, a dot before it. */
-.fb__clear { margin-left: 12px; padding: 2px 6px; border: 1px solid var(--head-dim); border-radius: 4px; background: none; color: var(--head-dim); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+/* Its title bar's button that clears the dots (site.js markNew): a chip as the rows' (.ext, .tag), white on the bar,
+   a dot before it; filled in the accent on hover. */
+.fb__clear { margin-left: 10px; padding: 0 7px; border: 1px solid color-mix(in srgb, var(--head-fg) 35%, transparent); border-radius: 4px; background: color-mix(in srgb, var(--head-fg) 8%, transparent); color: var(--head-fg); font: 600 11.5px/18px var(--sans); letter-spacing: normal; text-transform: none; vertical-align: 1px; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; }
 .fb__clear::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
-.fb__clear:hover { color: var(--head-fg); border-color: var(--head-fg); }
+.fb__clear:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.fb__clear:hover::before { background: currentColor; }
+.fb__clear:active { transform: scale(.97); }
 /* A smer's name: the program in full, on a phone its abbreviation (rows.html). */
 .fr__abbr { display: none; }
 @media (max-width: 759px) { .fr__long { display: none; } .fr__abbr { display: inline; } }

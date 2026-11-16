@@ -80,11 +80,22 @@ def render_places(site, topics, smerovi, subjects):
             env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet),
             index=bool(rows),
         )
-        # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows.
+        # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows. Each with
+        # the slugs of the teachers who posted in it: the teachers picked for the subject (/mojipredmeti/) narrow them.
         (site / s["href"].strip("/")).mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
         (site / s["href"].strip("/") / "novo.json").write_text(
             json.dumps(
-                {"name": s["name"], "rows": [[t["last"]["posted"], versioned(str(topic_row(t, place=True)))] for t in rows[:MINE]]},
+                {
+                    "name": s["name"],
+                    "rows": [
+                        [
+                            t["last"]["posted"],
+                            versioned(str(topic_row(t, place=True))),
+                            sorted({r["teacher"]["href"].split("/")[2] for r in t["posts"] if r.get("teacher")}),
+                        ]
+                        for t in rows[:MINE]
+                    ],
+                },
                 ensure_ascii=False,
             ),
             encoding="utf-8",
