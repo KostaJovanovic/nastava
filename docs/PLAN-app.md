@@ -273,8 +273,9 @@ The draft (decided 2026-11-16: the APK base, and the user's picks 1, 2, 4, 5, 6,
   is checked for updates at each refresh; a schedule already downloaded is kept, and only a new or changed one is
   fetched.
 - **Files**: the last 7 days' posts' files in the followed subjects, each up to 5 MB (a bigger one opens online),
-  each downloaded once, into the service worker's cache, so an offline tap gets it there: a PDF in the site's own
-  viewer (PLAN-pdf.md); other types need the bridge, which offline pages lack (below), so they open online only (6).
+  each downloaded once, into the service worker's cache. Our PDFs always open in the site's viewer (PLAN-pdf.md),
+  online or offline, from wherever they are stored; other types (.docx, .xlsx…) go to a phone app, which needs the
+  bridge, so offline they don't open (6).
 - **Online is always live**: `sw.js` answers from the copy only when the network fails, joining shell and fragment
   as the Worker does (`join` shared). Browsers never get a pack, so for them nothing changes.
 - Offline and not in the copy (an older post, the search, which is Pagefind's 99 MB): the offline page.
@@ -287,8 +288,8 @@ the native alternative needs a Capacitor internal, so the user chose the service
 `sw.js` is registered in the app too. Online, its fetch goes through Capacitor (`resolveServiceWorkerRequests`,
 on by default), which still adds the app's bridge to each page; **first check on the phone, before the rest: online
 pages keep the bridge (files to apps, links to the browser, the bell) while the service worker is in control.**
-Offline, a page from the copy has no bridge: the site works as in a browser (no file opens in a phone app, an
-outside link fails as offline). Not in the copy: the service worker returns an error, and Capacitor shows
+Offline, a page from the copy has no bridge: our PDFs still open in the viewer (it is the site's own), but its
+"Otvori u aplikaciji" and the other file types (a phone app) wait for the network. Not in the copy: the service worker returns an error, and Capacitor shows
 `offline.html` as now.
 
 Photos (decided 2026-11-16): the site serves every teacher photo at most 300 px wide (JPEG 85, 4:2:2; the
