@@ -278,13 +278,12 @@
     if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');
   });
 
-  /* The logo on a phone, where the header has no room for the word: the first tap shows "nastava" over the rest of
-     the bar for a few seconds, a tap while it shows goes home (style.css .brand.is-open). */
+  /* The logo (a button, base.html). On a phone, where the header has no room for the name, a tap shows it over the
+     rest of the bar for a few seconds (style.css .brand.is-open). */
   var brand = d.querySelector('.brand'), brandT;
   if (brand && window.matchMedia) {
-    brand.addEventListener('click', function (e) {
-      if (!matchMedia('(max-width: 759px)').matches || brand.classList.contains('is-open')) return;
-      e.preventDefault();
+    brand.addEventListener('click', function () {
+      if (!matchMedia('(max-width: 759px)').matches) return;
       brand.classList.add('is-open');
       clearTimeout(brandT);
       brandT = setTimeout(function () { brand.classList.remove('is-open'); }, 3000);
