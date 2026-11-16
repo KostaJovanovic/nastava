@@ -179,8 +179,8 @@ OF_THE_DAY = (("професор", "Profesor dana"), ("доцент", "Docent da
 
 # Of the faculty's past, besides the emeriti and those who left after 2024: the user's picks.
 OF_THE_DAY_PAST = {"ist-kosta-alkovic-1834-1909", "ist-ljubomir-kleric-1844-1910", "ist-todor-tosa-seleskovic-1856-1901"}
-# An assistant who came in 2026 the user wants in all the same: 729 Марко А. Вег.
-OF_THE_DAY_NEW = {"729"}
+# Assistants who came in 2026 the user wants in all the same: 729 Марко А. Вег, 1048 Ангелина Р. Драгићевић.
+OF_THE_DAY_NEW = {"729", "1048"}
 
 
 def of_the_day(teachers):
