@@ -92,6 +92,11 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(body)
 
     def do_GET(self):
+        # The releases' files (the board's since October 2026, the mails'): the live Worker has them, this PC does not.
+        if self.path.startswith("/files/"):
+            self.send_response(302)
+            self.send_header("Location", "https://masinci.org" + self.path)
+            return self.end_headers()
         if build:
             url = urlsplit(self.path)
             path = unquote(url.path)
