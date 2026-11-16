@@ -839,7 +839,8 @@ body:has(.mp) .ft { display: none; }
 .dana__t { display: grid; gap: 2px; min-width: 0; }
 .dana__t b { color: var(--fg); font-size: 14px; }
 .dana__t small { color: var(--dim); font-size: 12.5px; }
-.hcard:hover :is(.sec, b) { color: var(--accent-t); }
+.dana__ki { flex: none; margin-left: auto; color: var(--slate); font-size: 24px; }
+.hcard:hover :is(.sec, b, .dana__ki) { color: var(--accent-t); }
 .hcard:focus-visible { outline: 2px solid var(--accent-t); outline-offset: -2px; border-radius: var(--r); }
 
 /* ---- Statistika ---------------------------------------------------------- */

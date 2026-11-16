@@ -171,10 +171,10 @@ OF_THE_DAY = (("професор", "Profesor dana"), ("доцент", "Docent da
 
 def of_the_day(teachers):
     """The side panel's teacher of the day to pick from (site.js, by the date): each listed teacher with a photo and a
-    title of OF_THE_DAY, as [head, name, href, photo, katedra]."""
+    title of OF_THE_DAY, as [head, name, href, photo, katedra, its icon in icons.svg]."""
     head = lambda t: next((h for k, h in OF_THE_DAY if k in (t["title"] or "")), None)
     return [
-        [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize()]
+        [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize(), t["katedra"] and slug(t["katedra"])]
         for t in teachers
         if t["thumb"] and not t["gone"] and head(t)
     ]

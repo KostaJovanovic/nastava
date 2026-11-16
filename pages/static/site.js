@@ -1422,6 +1422,11 @@
     a.querySelector('img').src = t[3];
     a.querySelector('b').textContent = t[1];
     a.querySelector('small').textContent = t[4] || '';
+    // The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki).
+    if (t[5]) {
+      a.querySelector('use').setAttribute('href', '/static/icons.svg#i-' + t[5]);
+      a.querySelector('.dana__ki').removeAttribute('hidden');
+    }
     dana.hidden = false;
   }).catch(function () {});
 
