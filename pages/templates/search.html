@@ -112,9 +112,7 @@
   <div class="lists">
   {{ topic_rows('Najnoviji threadovi', recent, place=true, short=true, mine=true, more='/objave/') }}
   {%- if vesti %}{{ vest_rows('Vesti fakulteta', vesti, more='/vesti/') }}{% endif %}
-  </div>
-  <p class="stats">Ukupno postova <b>{{ stats.posts | n }}</b> · threadova <b>{{ stats.topics | n }}</b> · nastavnika <b>{{ stats.teachers | n }}</b></p>
-</div>
+  </div></div>
 {#- search.js fills #res from Pagefind with this markup. -#}
 <template id="res-tpl">
   <section class="fb fb--posts">

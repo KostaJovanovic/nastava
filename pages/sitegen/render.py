@@ -492,7 +492,7 @@ def render_objave(site, topics):
     )
 
 
-def render_home(topics, smerovi, side, n_teachers, vesti):
+def render_home(topics, smerovi, items, vesti):
     live = [m for m in smerovi.values() if m.get("live")]
     live.sort(key=lambda m: HOME_ORDER.index(m["key"]) if m["key"] in HOME_ORDER else len(HOME_ORDER))
     return env.get_template("search.html").render(
@@ -500,8 +500,7 @@ def render_home(topics, smerovi, side, n_teachers, vesti):
         smerovi=live,
         recent=topics[:RECENT],
         vesti=vesti[:VESTI_HOME],
-        stats=dict(posts=side["total"], topics=len(topics), teachers=n_teachers),
-        years_json=json.dumps([y for y, _ in side["year_hist"]]),
+        years_json=json.dumps(sorted({it["year"] for it in items if it["year"]})),
     )
 
 

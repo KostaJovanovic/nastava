@@ -1,6 +1,5 @@
-{#- The side panel of every page (base.html): the page links, the followed subjects and the statistics, short enough
-    to fit the screen. side: the archive's counts
-    (build.py side_panel). -#}
+{#- The side panel of every page (base.html): the page links, the followed subjects and the teacher of the day, short
+    enough to fit the screen. -#}
 <aside class="side" aria-label="Meni i filteri">
   {#- Wide screens: a list. Phone: a tab bar at the bottom of the screen, with the shorter label. -#}
   {#- The current page's link has aria-current: the home page (a whole page) here, the rest when joined to the shell
@@ -14,8 +13,8 @@
         katedre a button on /nastavnici/. /predmeti/ and /katedre/ are its two tabs (rows.html kp_tabs). -#}
     <a href="/predmeti/" class="snav__wide"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Katedre i predmeti</a>
     <a href="/vesti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-news"></use></svg>Vesti</a>  </nav>
-  {#- Phone: the panel's parts are blocks of the page (style.css .side): the followed subjects above it, the year
-      at its bottom. -#}
+  {#- Phone: the panel's parts are blocks of the page (style.css .side): the followed subjects above it, the
+      teacher of the day at its bottom. -#}
   <div class="filters">
     <div class="filters__body">
 
@@ -38,17 +37,12 @@
 
     </div>
   </div>
-  {#- Posts per year as a card that opens the archive's statistics (stats.html). -#}
-  <div class="filters filters--years">
-    <a class="hcard" href="/statistika/">
-      <span class="sec">Statistika{% if side.year_hist %} <span>{{ side.year_hist[0][0] }}–{{ side.year_hist[-1][0] }}</span>{% endif %}</span>
-      {%- if side.year_hist %}
-      {%- set _mx = (side.year_hist | map(attribute=1) | max) or 1 %}
-      <span class="hist" aria-hidden="true">
-        {%- for y, c in side.year_hist %}<i style="height:{{ [4, (c / _mx * 100) | round | int] | max }}%"></i>{% endfor %}
-      </span>
-      {%- endif %}
-      <span class="hcard__n"><span><b>{{ side.total | n }}</b> {{ side.total | pl('post') }}</span><span><b>{{ side.downloads | n }}</b> {{ side.downloads | pl('preuzimanje') }}</span></span>
+  {#- "Profesor dana" (Docent, Asistent): site.js picks one a day from /izbor.json dana (load_teachers.of_the_day) and
+      fills it in; without the script it stays hidden. -#}
+  <div class="filters filters--dana" data-dana hidden>
+    <a class="hcard dana">
+      <span class="sec"></span>
+      <span class="dana__b"><img class="pc__img" alt="" decoding="async"><span class="dana__t"><b></b><small></small></span></span>
     </a>
   </div>
   {#- The saved choices (head.js showSaved), before the first frame (base.html rel=expect). -#}

@@ -1407,6 +1407,24 @@
     if (t) t.scrollIntoView();
   }, { once: true });
 
+  /* "Profesor dana" (sidebar.html): one of /izbor.json dana (load_teachers.of_the_day), the same all day: the
+     browser's date, hashed so the days don't go down the list in order. */
+  var dana = d.querySelector('[data-dana]');
+  if (dana && izbor) izbor.then(function (j) {
+    var list = j.dana || [];
+    if (!list.length) return;
+    var n = new Date(), h = n.getFullYear() * 10000 + (n.getMonth() + 1) * 100 + n.getDate();
+    h = Math.imul(h ^ h >>> 16, 0x45d9f3b); h = Math.imul(h ^ h >>> 16, 0x45d9f3b); h ^= h >>> 16;
+    var t = list[(h >>> 0) % list.length];
+    var a = dana.querySelector('a');
+    a.href = t[2];
+    a.querySelector('.sec').textContent = t[0];
+    a.querySelector('img').src = t[3];
+    a.querySelector('b').textContent = t[1];
+    a.querySelector('small').textContent = t[4] || '';
+    dana.hidden = false;
+  }).catch(function () {});
+
   /* Visitor counter: every page tells the Worker (/visit, each IP once in three days); only /statistika/ shows the
      total, and asks (?push) for the browsers with notifications on too. A prerendered page counts once shown. */
   var visit = function () {

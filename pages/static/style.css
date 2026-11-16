@@ -438,18 +438,16 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
   .snav { flex: none; }
   .filters { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
     scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--slate) 55%, transparent) transparent; }
-  .filters--years { flex: none; margin-bottom: 8px; }
+  .filters--dana { flex: none; margin-bottom: 8px; }
 }
-/* Not on the home page (and its search, #res): the statistics have their own page. */
-body:has(#res) .filters--years { display: none; }
 /* Phone: the panel is not one box. Its parts are blocks of the page: the page links a tab bar (below), the followed
-   subjects above the page, the statistics card under it. A part with nothing on view (no script yet) is left out. */
+   subjects above the page, the teacher of the day under it. A part with nothing on view (no script yet) is left out. */
 @media (max-width: 899px) {
   .side { display: contents; }
   .filters { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
-  .filters--years { order: 2; }
+  .filters--dana { order: 2; }
   /* Not under a post, a topic or a news item (article.post): there it is only in the way. */
-  .frame:has(article.post) .filters--years { display: none; }
+  .frame:has(article.post) .filters--dana { display: none; }
   .filters:not(:has(.fgroup:not([hidden]), .hcard)) { display: none; }
   /* "Moji predmeti" only on the home and search page (#res): elsewhere it pushed the page down; a subject page has
      its star. */
@@ -799,8 +797,8 @@ body:has(.mp) .ft { display: none; }
   .mp__foot [data-mp-reset] { display: none; }
   .mp__foot--idle { display: none; }
   body:has(.mp__foot:not([hidden], .mp__foot--idle)) { padding-bottom: calc(64px + 49px + env(safe-area-inset-bottom)); }
-  /* The page's own: no statistics card under it, no subtitle (the steps say it). */
-  body:has(.mp) .filters--years, .mp .mh__sub { display: none; }
+  /* The page's own: no teacher of the day under it, no subtitle (the steps say it). */
+  body:has(.mp) .filters--dana, .mp .mh__sub { display: none; }
 }
 @media (max-width: 600px) {
   .mp__cards { grid-template-columns: 1fr; gap: 6px; }
@@ -832,17 +830,16 @@ body:has(.mp) .ft { display: none; }
   .leave::backdrop { transition: none; }
 }
 
-/* ---- Side panel's statistics card ----------------------------------------- */
-/* The side panel's statistics card: posts per year, the link to /statistika/. */
+/* ---- Side panel's teacher of the day ---------------------------------------- */
+/* "Profesor dana" (sidebar.html, site.js): the photo as /nastavnici/'s card (.pc__img), the name and katedra beside it. */
 .hcard { display: grid; gap: 8px; padding: 12px 0; color: var(--text); text-decoration: none; }
 .hcard .sec { margin: 0; }
-.hist { display: flex; align-items: flex-end; gap: 2px; height: 48px; margin: 0 16px; }
-.hist i { flex: 1; background: var(--slate); opacity: .45; border-radius: 1px 1px 0 0; transition: opacity .12s; }
-.hcard__n { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; padding: 0 16px; color: var(--dim); font-size: 12.5px; }
-.hcard__n > span { white-space: nowrap; }
-.hcard__n b { color: var(--fg); font-variant-numeric: tabular-nums; }
-.hcard:hover .hist i { opacity: .8; background: var(--accent); }
-.hcard:hover .sec { color: var(--accent-t); }
+.dana__b { display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+.dana .pc__img { width: 56px; flex: none; }
+.dana__t { display: grid; gap: 2px; min-width: 0; }
+.dana__t b { color: var(--fg); font-size: 14px; }
+.dana__t small { color: var(--dim); font-size: 12.5px; }
+.hcard:hover :is(.sec, b) { color: var(--accent-t); }
 .hcard:focus-visible { outline: 2px solid var(--accent-t); outline-offset: -2px; border-radius: var(--r); }
 
 /* ---- Statistika ---------------------------------------------------------- */
@@ -1225,8 +1222,6 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* The lists' own search box: typed in, not picked (the bar's selects show a pointer). */
 .people__bar > input.field { cursor: text; }
 
-.stats { padding: 4px 2px; color: var(--dim); font-size: 13px; }
-.stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
 
 /* The home page's tables, or the results. */
 #res { display: grid; gap: var(--gap); }
@@ -1265,8 +1260,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 /* The source tags (cent, ie, teams…) without their colours until the reveal: the line's text, outline too. */
 :is(.fade, .faded) .lists .src { transition: color .5s ease-out; }
 .fade .lists .src { color: inherit; }
-/* So is Najnoviji threadovi's title bar in the light theme (the dark one's is dark already): the light grey of the side
-   panel's Statistika bars (.hist i); its text stays white. */
+/* So is Najnoviji threadovi's title bar in the light theme (the dark one's is dark already): a light grey; its text stays
+   white. */
 :is(.fade, .faded) .lists > :first-child .fb__h { transition: background-color .5s ease-out; }
 :root:not([data-tema="dark"]).fade .lists > :first-child .fb__h { background-color: color-mix(in srgb, var(--slate) 45%, var(--card)); }
 @media (prefers-reduced-motion: reduce) { .lists { transition: none !important; } }

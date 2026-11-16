@@ -10,7 +10,7 @@ from nastavnici import photo_urls
 from translit import fold
 from .clean import clean_html
 from .known import BIB_KINDS, FORUM_ACCOUNT, OTHER_TEACHERS, RANKS, SAME_AS, SHORT_SURNAME, STUDENTSKA_LISTA
-from .output import HERE
+from .output import HERE, env
 from .text import LINK, azbuka, set_hrefs, slug, strip_tags
 
 
@@ -163,6 +163,21 @@ def load_teachers(db, subjects):
             print(f"{name}: no page for {', '.join(left)}", file=sys.stderr)
     # By surname, then given name, in the order of the Serbian alphabet (as the faculty's list).
     return sorted(teachers, key=lambda t: (azbuka(t["name"].split()[-1]), azbuka(t["name"])))
+
+
+# The side panel's card (sidebar.html): a title's word -> the card's head, without the kind (redovni, vanredni…).
+OF_THE_DAY = (("професор", "Profesor dana"), ("доцент", "Docent dana"), ("асистент", "Asistent dana"))
+
+
+def of_the_day(teachers):
+    """The side panel's teacher of the day to pick from (site.js, by the date): each listed teacher with a photo and a
+    title of OF_THE_DAY, as [head, name, href, photo, katedra]."""
+    head = lambda t: next((h for k, h in OF_THE_DAY if k in (t["title"] or "")), None)
+    return [
+        [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize()]
+        for t in teachers
+        if t["thumb"] and not t["gone"] and head(t)
+    ]
 
 
 def department_intro(html):

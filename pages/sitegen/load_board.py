@@ -6,7 +6,7 @@ from translit import fold
 from .clean import attachments, clean_html, downloads, has_kinds, preuzeto
 from .known import RENAMED
 from .output import PAGE_TEXT
-from .text import BASE, KIND, parse_date, set_hrefs, short_smer, slug, smer_abbr, smer_label
+from .text import BASE, parse_date, set_hrefs, short_smer, slug, smer_abbr, smer_label
 
 
 def subject_name(forum_name):
@@ -203,17 +203,6 @@ def load_topics(db, items):
             r["thread"], r["prev"], r["next"] = t, rows[i - 1] if i else None, rows[i + 1] if i + 1 < len(rows) else None
         topics.append(t)
     return sorted(topics, key=lambda t: t["last"]["posted"], reverse=True)
-
-
-def side_panel(items):
-    """The counts of the side panel (sidebar.html), the same on every page."""
-    years = Counter(r["year"] for r in items if r["year"])
-    return dict(
-        total=len(items),
-        kinds=Counter(KIND[r["kind"]] for r in items),
-        year_hist=sorted(years.items()),
-        downloads=sum(n for n, _ in attachment_files(items).values()),
-    )
 
 
 def attachment_files(items):

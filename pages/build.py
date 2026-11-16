@@ -26,10 +26,10 @@ sys.path.insert(0, str(HERE.parent / "scrapers"))
 from translit import fold  # noqa: E402
 from sitegen.feeds import write_feeds  # noqa: E402
 from sitegen.links import mark_elsewhere  # noqa: E402
-from sitegen.load_board import load_items, load_places, load_topics, side_panel  # noqa: E402
+from sitegen.load_board import load_items, load_places, load_topics  # noqa: E402
 from sitegen.load_book import load_book  # noqa: E402
 from sitegen.load_sources import load_cent, load_katedre, load_mail, load_vesti  # noqa: E402
-from sitegen.load_teachers import load_teachers, write_photos  # noqa: E402
+from sitegen.load_teachers import load_teachers, of_the_day, write_photos  # noqa: E402
 from sitegen.load_sajtovi import load_sajtovi  # noqa: E402
 from sitegen.output import (
     LazyTemplate,
@@ -128,7 +128,6 @@ def main(db_path, out, dev_mode=False):
         it["who"] = it["teacher"]["shown"] if it["teacher"] else it["author"]
     topics = load_topics(db, items)
     mark_elsewhere(items)
-    env.globals["side"] = side = side_panel(items)
     # The footer's "Provereno" (base.html): when nastava.py last read the board, not when this ran. UTC; site.js shows
     # local time. None (no line in the footer): a database from before the meta table.
     # Not "checked": raspored.html has its own (the schedule pages' last read), which would change the footer there.
@@ -183,6 +182,8 @@ def main(db_path, out, dev_mode=False):
                 istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")],
                 # Linkovi's cards for it too: [name, second line, href, data-domain].
                 linkovi=[[n, shown, h, d] for _, group in links for n, h, _, d, shown in group],
+                # The side panel's "Profesor dana" (sidebar.html; site.js picks one by the date).
+                dana=of_the_day(teachers),
             ),
             ensure_ascii=False,
             separators=(",", ":"),
@@ -211,7 +212,7 @@ def main(db_path, out, dev_mode=False):
     vesti = load_vesti(db)
     render_vesti(site, vesti)
     render_objave(site, topics)
-    write_page(site / "index.html", render_home(topics, smerovi, side, sum(not t["gone"] and not t.get("aside") for t in teachers), vesti))
+    write_page(site / "index.html", render_home(topics, smerovi, items, vesti))
     write_page(site / "404.html", env.get_template("error.html").render())
     if dev:
         return
