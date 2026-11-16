@@ -206,8 +206,10 @@ kbd {
 /* ---- Header -------------------------------------------------------------- */
 /* The header stays at the top while the page scrolls. --hd: its height (the side panel and the anchors go under it). */
 /* A phone: one row, logo · search · script and theme. */
-:root { --hd: 61px; }
-@media (min-width: 760px) { :root { --hd: 65px; } }
+/* --sat: the phone's status bar the Android app (app/) draws the page under. Capacitor sets --safe-area-inset-top
+   (its WebView doesn't always fill env()); a browser has neither, so 0. */
+:root { --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); --hd: calc(61px + var(--sat)); }
+@media (min-width: 760px) { :root { --hd: calc(65px + var(--sat)); } }
 html { scroll-padding-top: calc(var(--hd) + 12px); }
 .hd {
   position: sticky; top: 0; z-index: 10;
@@ -218,7 +220,7 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
   gap: 8px;
   /* max(): an iPhone in landscape (viewport-fit=cover) has the notch at a side; the bar's colour reaches it, its
      content clears it. The same on the frame, the footer and the tab bar. */
-  padding: 8px calc(max(10px, env(safe-area-inset-right)) + var(--sbw, 0px)) 8px max(10px, env(safe-area-inset-left));
+  padding: calc(8px + var(--sat)) calc(max(10px, env(safe-area-inset-right)) + var(--sbw, 0px)) 8px max(10px, env(safe-area-inset-left));
   background: var(--head);
   color: var(--head-fg);
   border-bottom: 3px solid var(--head-line);
