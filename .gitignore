@@ -17,6 +17,9 @@ test/dom.html
 .wrangler/
 # The web push keys (ci/push.py keys): keep a copy elsewhere, never commit.
 push-secret.json
+# The raw Teams and Moodle exports (tools/): every student's messages and names, before teams.py / moodle.py clean them.
+teams-export*.json
+moodle-*.zip
 # Phase 1 probes and Omar's dlwms (the base of this repo), local only.
 recon/
 ref/
