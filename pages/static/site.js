@@ -1467,19 +1467,18 @@
     dana.hidden = false;
   }).catch(function () {});
 
-  /* /profdana/ (profdana.html): every day's pick from DANA_START to today (+ data-ahead days, dev mode), newest
-     first, a section per month. */
+  /* /profdana/ (profdana.html): every day's pick from DANA_START to today (+ data-ahead days, dev mode), in
+     date order, a section per month. */
   var pd = d.querySelector('[data-profdana]');
   if (pd && izbor) izbor.then(function (j) {
     var list = j.dana || [];
     if (!list.length) return;
     var MES = ['januar', 'februar', 'mart', 'april', 'maj', 'jun', 'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
     var DAN = ['ned', 'pon', 'uto', 'sre', 'čet', 'pet', 'sub'];
-    var first = DANA_START;
     var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    var day = new Date(today), ol = null, month = -1;
-    day.setDate(day.getDate() + (+pd.dataset.ahead || 0));
-    for (; day >= first; day.setDate(day.getDate() - 1)) {
+    var last = new Date(today), day = new Date(DANA_START), ol = null, month = -1;
+    last.setDate(last.getDate() + (+pd.dataset.ahead || 0));
+    for (; day <= last; day.setDate(day.getDate() + 1)) {
       if (day.getMonth() !== month) {
         month = day.getMonth();
         var sec = el('section', 'st');

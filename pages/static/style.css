@@ -871,7 +871,7 @@ body:has(.mp) .ft { display: none; }
 .dana__t small { color: var(--dim); font-size: 12.5px; }
 .dana__ki { flex: none; margin-left: auto; color: var(--slate); font-size: 24px; }
 .hcard:hover :is(.sec, b, .dana__ki) { color: var(--accent-t); }
-/* /profdana/ (profdana.html, site.js): a month's days as cards, newest first; today ringed, dev mode's days ahead dim. */
+/* /profdana/ (profdana.html, site.js): a month's days as cards, in date order; today ringed, dev mode's days ahead dim. */
 .pd__days { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .pd__d a { display: grid; justify-items: center; gap: 4px; height: 100%; padding: 10px 8px; border: 1px solid var(--line); border-radius: var(--r);
   background: var(--card); color: var(--text); text-align: center; text-decoration: none; }
