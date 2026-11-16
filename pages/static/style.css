@@ -438,7 +438,7 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
   .snav { flex: none; }
   .filters { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
     scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--slate) 55%, transparent) transparent; }
-  .filters--dana { flex: none; margin-bottom: 8px; }
+  .filters--dana { flex: none; margin-bottom: 8px; border-top: 1px solid var(--line-2); }
 }
 /* Phone: the panel is not one box. Its parts are blocks of the page: the page links a tab bar (below), the followed
    subjects above the page, the teacher of the day under it. A part with nothing on view (no script yet) is left out. */
