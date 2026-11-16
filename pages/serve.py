@@ -28,7 +28,9 @@ import webbrowser
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import unquote, urlsplit
+from urllib.request import Request, urlopen
 
 from qr import qr_terminal
 
@@ -93,10 +95,21 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         # The releases' files (the board's since October 2026, the mails'): the live Worker has them, this PC does not.
+        # Fetched from there, not redirected: the app (a LAN test build, app/) downloads them, and Android doesn't
+        # follow a redirect from http to https.
         if self.path.startswith("/files/"):
-            self.send_response(302)
-            self.send_header("Location", "https://masinci.org" + self.path)
-            return self.end_headers()
+            try:
+                # Cloudflare turns away Python's own client name.
+                ask = Request("https://masinci.org" + self.path, headers={"User-Agent": "Mozilla/5.0"})
+                with urlopen(ask, timeout=30) as r:
+                    body = r.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", r.headers.get("Content-Type", "application/octet-stream"))
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    return self.wfile.write(body)
+            except HTTPError as e:
+                return self.send_error(e.code)
         if build:
             url = urlsplit(self.path)
             path = unquote(url.path)

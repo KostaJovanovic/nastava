@@ -4,7 +4,9 @@ Status (2026-11-16): building. Step 0 passed (the bridge on the live site). Step
 the logo splash (`LogoView`), no overscroll stretch, the header clear of the status bar (`style.css`, not deployed
 yet); the offline page waits on its wording. Steps 4 and 5 done (Worker keeps `fcm:` tokens, `push.py` sends
 through FCM; tests pass), not deployed. Steps 2, 3 and 7 written in `site.js` and checked in the preview (a fake
-Capacitor), waiting on the phone checks and the wording. Step 6's `app.yml` written, untested. Builds use the JDK 21
+Capacitor), waiting on the phone checks and the wording; a first phone run found attachments "damaged" (the dev
+server redirected `/files/` from http to https, which Android's downloader doesn't follow: `serve.py` now fetches
+them, and `site.js` never opens an empty download). The content-only stretch written, to tune on the phone. Step 6's `app.yml` written, untested. Builds use the JDK 21
 in `C:\Users\Kosta\.jdks\jdk-21.0.12.1+1` (`JAVA_HOME` for `gradlew`). Goal: an Android app with easier notifications for followed
 subjects, with external links opening in the phone's default browser.
 
