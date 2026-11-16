@@ -207,6 +207,7 @@ _p = picker(
     [
         dict(
             shown="Г",
+            page_name="Г Г. Г",
             href="/g/",
             gone=1,
             courses=[dict(subj=_a)],
@@ -219,6 +220,7 @@ _p = picker(
         ),
         dict(
             shown="Н",
+            page_name="Н Н. Н",
             href="/n/",
             gone=0,
             courses=[dict(subj=_b), dict(subj=None)],
@@ -226,7 +228,7 @@ _p = picker(
             title="доцент",
             katedra="Катедра за математику",
         ),
-        dict(shown="Ж", href="/z/", gone=1, courses=[], thumb=None, title=None, katedra=None, span={"to": 1990}, last_seen="0000", age=0),
+        dict(shown="Ж", page_name="Ж Ж. Ж", href="/z/", gone=1, courses=[], thumb=None, title=None, katedra=None, span={"to": 1990}, last_seen="0000", age=0),
     ],
     [dict(subj=_b, teacher=dict(href="/n/"))] * 2
     + [dict(subj=_a, teacher=dict(href="/g/")), dict(subj=_b, teacher=None), dict(subj=None, teacher=dict(href="/n/"))],
@@ -245,10 +247,11 @@ assert _p["tree"] == [
     ),
     dict(n="Катедре", s=[], c=[_g("", [3])]),
 ], _p["tree"]
+# The subject filter's teachers by their shown name; the cards (people) by the full one (load_teachers page_name).
 assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [
-    ["Н", "/n/", "/foto/n.jpg", "доцент · математика"],
-    ["Г", "/g/", None, "доцент · ~1950–1980", 40],
-    ["Ж", "/z/", None, "do 1990", None],
+    ["Н Н. Н", "/n/", "/foto/n.jpg", "доцент · математика"],
+    ["Г Г. Г", "/g/", None, "доцент · ~1950–1980", 40],
+    ["Ж Ж. Ж", "/z/", None, "do 1990", None],
 ], _p["people"]
 assert _p["katedre"] == [["Катедра за математику", "Математика", "katedra-za-matematiku", 1, katedra_href("Катедра за математику")]], _p[
     "katedre"
