@@ -194,8 +194,9 @@ shape, the queue, the debounced `resave` on `moji`, and `showPush`/`said`:
 3. One secret `APP_SIGNING`, `{"keystore": <base64>, "password": …}` (as `PUSH_SECRET` is one JSON): `jq` writes
    the keystore to a file; `./gradlew assembleRelease` with `-Pandroid.injected.signing.*`, the alias `nastava` in
    the workflow, the password for both store and key (PKCS12 has one). No signing config in the repo.
-4. `versionCode` = `github.run_number`, `versionName` = the tag without `app-v` (passed to `build.gradle` as
-   `-P` properties).
+4. The site's version (/verzije/, decided 2026-11-16): `versionName` = `0.<commit count>` of the tagged commit,
+   `versionCode` = the count (always growing), from a full-history checkout; passed to `build.gradle` as `-P`
+   properties. The tag's name only starts the build (`app-v0.<count>` by habit).
 5. The APK renamed `masinci.apk` and uploaded to the fixed release `app` with `--clobber` (step 7; permission
    `contents: write`). The first run creates that release.
 

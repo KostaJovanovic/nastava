@@ -1,8 +1,9 @@
 name: app
 
-# The Android app (docs/PLAN-app.md): a pushed tag app-v<version> builds app/, signs it with the key in the secret
+# The Android app (docs/PLAN-app.md): a pushed tag app-v… builds app/, signs it with the key in the secret
 # APP_SIGNING ({"keystore": <base64 of nastava.jks>, "password": …}) and puts it in the release "app" as masinci.apk,
-# the fixed address the site's "Skini aplikaciju" links to.
+# the fixed address the site's "Skini aplikaciju" links to. Its version is the site's (/verzije/): 0.<commit count>
+# of the tagged commit, the count also Android's versionCode; the tag's name only starts it (app-v0.<count> by habit).
 on:
   push:
     tags: ["app-v*"]
@@ -17,6 +18,10 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0  # the whole history: the version is its commit count
+      - name: Version
+        run: echo "N=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           distribution: temurin
@@ -37,7 +42,7 @@ jobs:
           pass=$(jq -r .password <<<"$APP_SIGNING")
           echo "::add-mask::$pass"
           ./gradlew assembleRelease --no-daemon \
-            -PversionCode=${{ github.run_number }} -PversionName="${GITHUB_REF_NAME#app-v}" \
+            -PversionCode="$N" -PversionName="0.$N" \
             -Pandroid.injected.signing.store.file="$RUNNER_TEMP/nastava.jks" \
             -Pandroid.injected.signing.store.password="$pass" \
             -Pandroid.injected.signing.key.alias=nastava \
@@ -51,4 +56,4 @@ jobs:
           gh release view app >/dev/null 2>&1 || gh release create app --title "$title" \
             --notes "Aplikacija Mašinci za Android: masinci.apk. Uvek najnovija verzija."
           gh release upload app masinci.apk --clobber
-          gh release edit app --title "$title" --notes "Aplikacija Mašinci za Android: masinci.apk, verzija ${GITHUB_REF_NAME#app-v}."
+          gh release edit app --title "$title" --notes "Aplikacija Mašinci za Android: masinci.apk, verzija 0.$N."
