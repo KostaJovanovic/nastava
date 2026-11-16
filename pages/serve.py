@@ -16,6 +16,7 @@ shell.html, as the Worker (pages/src/index.js join) does on the live site.
 """
 
 import ctypes
+import json
 import os
 import posixpath
 import re
@@ -36,6 +37,8 @@ from qr import qr_terminal
 
 HERE = Path(__file__).resolve().parent
 SITE = HERE / ".build" / "site"
+# The notification subscriptions made on this server (do_POST), kept across restarts.
+PUSH_SUBS, PUSH_LOCK = HERE / ".build" / "push-subs.json", threading.Lock()
 DEV = None  # dev mode's build.py out dir, .build/dev-<port> (set in __main__): its site/ has the small files, no pages
 DB = HERE.parent / "nastava.db"
 FRAGMENT = '<html lang="sr"><title>'
@@ -84,6 +87,14 @@ class Handler(SimpleHTTPRequestHandler):
         )
         return super().translate_path(path)
 
+    def send_text(self, text):
+        body = text.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def send_page(self, code, page):
         body = page.encode()
         self.send_response(code)
@@ -93,7 +104,40 @@ class Handler(SimpleHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(body)
 
+    def do_POST(self):
+        """/push, as the Worker's (pages/src/index.js push): the app's and the browsers' subscriptions, kept in
+        PUSH_SUBS so /push/test can notify them; an empty subject list drops one. Not checked as the Worker does."""
+        if self.path != "/push":
+            return self.send_error(404)
+        try:
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+            endpoint = f"fcm:{body['fcm']}" if "fcm" in body else body["endpoint"]
+        except (ValueError, KeyError, TypeError):
+            return self.send_error(400)
+        with PUSH_LOCK:
+            subs = json.loads(PUSH_SUBS.read_text()) if PUSH_SUBS.exists() else {}
+            if body.get("s"):
+                keys = body.get("keys") or {}
+                subs[endpoint] = {"endpoint": endpoint, "s": body["s"], "t": body.get("t") or {}, "k": keys.get("p256dh"), "a": keys.get("auth")}
+            else:
+                subs.pop(endpoint, None)
+            PUSH_SUBS.write_text(json.dumps(subs, indent=1))
+        self.send_response(204)
+        self.end_headers()
+
     def do_GET(self):
+        # A test notification to each subscription above, through ci/push.py (its keys: push-secret.json and
+        # fcm-secret.json in the repo); the page says what happened to each.
+        if self.path == "/push/test":
+            with PUSH_LOCK:
+                subs = list(json.loads(PUSH_SUBS.read_text()).values()) if PUSH_SUBS.exists() else []
+            if not subs:
+                return self.send_text("No subscriptions yet: turn the bell on in the app or a browser on this server.")
+            listed = PUSH_SUBS.with_name("push-test.json")
+            listed.write_text(json.dumps(subs))
+            run = subprocess.run(["uv", "run", "-q", str(HERE.parent / "ci" / "push.py"), "test", str(listed)],
+                                 capture_output=True, text=True, encoding="utf-8", cwd=HERE.parent)
+            return self.send_text(run.stdout + run.stderr)
         # The releases' files (the board's since October 2026, the mails'): the live Worker has them, this PC does not.
         # Fetched from there, not redirected: the app (a LAN test build, app/) downloads them, and Android doesn't
         # follow a redirect from http to https.

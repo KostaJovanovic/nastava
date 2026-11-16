@@ -5,12 +5,13 @@
 """Web push: tell the browsers that follow a subject (site.js subscribes, the Worker keeps them in KV) about its new posts.
 The Android app (app/) gets the same notification through Firebase Cloud Messaging: its subscription is "fcm:<token>".
 
-Usage: push.py keys | last | send <post id> [<notice id> <page rowid> <department notice id>]
+Usage: push.py keys | last | send <post id> [<notice id> <page rowid> <department notice id>] | test <subs.json>
   keys   make push-secret.json (git-ignored): the VAPID key pair and the key the Worker asks for. Keep a copy: a new
          pair drops every subscription. Prints where the public half and the Worker key go.
   last   print the newest post id, cent notice id, cent page version and department notice id (katedre.py) in
          nastava.db (deploy.sh: before the scrape)
   send   once the newest is on the site, notify what came after those (pages/.build/push.json, from build.py)
+  test   a test notification to each subscription in subs.json (the dev server's, pages/serve.py /push/test)
 The scheduled run (sync.yml) writes push-secret.json from the repository secret PUSH_SECRET, and fcm-secret.json (the
 Firebase service account's key, git-ignored) from FCM_SECRET; without it the app's subscriptions are skipped.
 """
@@ -206,6 +207,20 @@ def send(*before):
         sys.exit(1)
 
 
+def test(subs):
+    """The dev server's /push/test (pages/serve.py): one notification to each subscription it keeps, as for a post in
+    its first followed subject; a tap opens that subject's page."""
+    secret, fcm = json.loads(SECRET.read_text()), fcm_sender()
+    for sub in subs:
+        if not sub.get("s"):
+            continue
+        s = sub["s"][0]
+        post = dict(id=0, s=s, n="Probno obaveštenje", t=f"Sa servera na ovom računaru: {s}", u=s)
+        sent, gone, failed, skipped = deliver([sub], {s: [post]}, secret["vapid"], fcm)
+        kind = "app" if sub["endpoint"].startswith("fcm:") else "browser"
+        print(f"{kind} {sub['endpoint'][-12:]}: " + ("sent" if sent else "gone" if gone else "failed" if failed else "skipped (no fcm-secret.json)"))
+
+
 def deliver(subs, by_subject, vapid, fcm):
     """One notification to each subscription with new posts it wants: a browser's by web push, the app's ("fcm:") by
     fcm (fcm_sender; None skips them). A gone one is dropped at the Worker. -> sent, gone, failed, skipped."""
@@ -259,5 +274,7 @@ if __name__ == "__main__":
             last()
         case ["send", *ns] if ns:
             send(*map(int, ns))
+        case ["test", subs]:
+            test(json.loads(Path(subs).read_text(encoding="utf-8")))
         case _:
             sys.exit(__doc__)
