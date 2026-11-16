@@ -56,6 +56,18 @@ this plan, not onward).
 - Notification icon: Android shows the small icon as a white silhouette. `static/badge.png` (white logo on clear) is
   that already: copied as `android/app/src/main/res/drawable/ic_notify.png`, named in `AndroidManifest.xml` as
   `com.google.firebase.messaging.default_notification_icon`, with `default_notification_color` `#0076b1`.
+- Splash (decided 2026-11-16): on the blue (`#0076b1`) system splash, the header logo draws on as on the site (ring →
+  line → diagonal → M, 1.65 s, same easing), as an animated vector drawable (`res/drawable/splash_logo.xml`, made by
+  `app/splash.py` from the logo's paths). The crossings' gaps are there from the start (a vector's clip can't animate
+  as the site's masks do). `MainActivity` keeps the splash up until the page has loaded and the animation has ended
+  (at most 8 s). Android 11 and older: the logo still.
+- The page under the status bar (found on the phone): the site's `viewport-fit=cover` makes Capacitor 8 draw it
+  edge to edge, so `style.css`'s header adds `env(safe-area-inset-top)` (0 in a browser). Android's overscroll stretch
+  pulled the sticky header and tab bar: off in `MainActivity` (`OVER_SCROLL_NEVER`).
+- Content-only stretch (decided 2026-11-16; after the step 0 gate, it is `site.js`): in the app only, a pull past the
+  top or bottom stretches the content between the header and the tab bar (`scaleY`, damped by the pull, anchored at
+  the pulled edge) and springs back on release; the header and tab bar stay still. ~30 lines, tuned on the phone
+  against Android's own stretch; `prefers-reduced-motion` gets none.
 - Back button: Capacitor's default goes back in the WebView's history and closes the app at the first page. Check
   with an open dialog (the leave dialog, the notifications dialog): if back leaves the page instead of closing the
   dialog, `site.js` listens to `App.addListener('backButton')` and closes the open `dialog` first (`@capacitor/app`).
