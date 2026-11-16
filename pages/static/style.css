@@ -229,6 +229,36 @@ html { scroll-padding-top: calc(var(--hd) + 12px); }
 .brand__mark svg { display: block; width: 38px; height: 38px; fill: none; stroke: light-dark(#ffffff, var(--slate));
   stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .brand__mark .brand__m { stroke: var(--wave); }
+/* The logo drawn on (site.js, a tap on it): .rev takes it away, the drawing backwards, then .play draws it again.
+   --len: each line's length (rounded up); the masks' copies (.brand__cut-*) draw with their lines, so a gap opens in
+   a line under another only once that one has got there. Ring, then horizontal, diagonal, M: 1.65 s; .rev's delays
+   are the same timeline mirrored (1.65 s - delay - duration). */
+.brand__mark svg .brand__ring { --len: 99px; }
+.brand__mark svg .brand__h { --len: 38.5px; }
+.brand__mark svg :is(.brand__d, .brand__cut-d) { --len: 40px; }
+.brand__mark svg :is(.brand__m, .brand__cut-m) { --len: 111px; }
+.brand__mark svg:is(.play, .rev) :is(.brand__ring, .brand__h, .brand__d, .brand__cut-d, .brand__m, .brand__cut-m) {
+  /* The gap twice the dash, so the next dash can't show at the path's end. */
+  stroke-dasharray: var(--len) calc(var(--len) * 2);
+  animation: brand-draw var(--dur) var(--delay) cubic-bezier(.65, 0, .35, 1) both;
+}
+/* Its own keyframes, not animation-direction: the class going from .rev to .play then starts a new animation. The
+   curve is symmetric, so this is the drawing exactly backwards. */
+.brand__mark svg.rev :is(.brand__ring, .brand__h, .brand__d, .brand__cut-d, .brand__m, .brand__cut-m) { animation-name: brand-erase; }
+.brand__mark svg .brand__ring { --dur: .7s; --delay: 0s; }
+.brand__mark svg .brand__h { --dur: .5s; --delay: .25s; }
+.brand__mark svg :is(.brand__d, .brand__cut-d) { --dur: .45s; --delay: .45s; }
+.brand__mark svg :is(.brand__m, .brand__cut-m) { --dur: .9s; --delay: .75s; }
+.brand__mark svg.rev .brand__ring { --delay: .95s; }
+.brand__mark svg.rev .brand__h { --delay: .9s; }
+.brand__mark svg.rev :is(.brand__d, .brand__cut-d) { --delay: .75s; }
+.brand__mark svg.rev :is(.brand__m, .brand__cut-m) { --delay: 0s; }
+/* +2px: the round cap leaves no dot at the start before the line moves. */
+@keyframes brand-draw { from { stroke-dashoffset: calc(var(--len) + 2px); } to { stroke-dashoffset: 0; } }
+@keyframes brand-erase { from { stroke-dashoffset: 0; } to { stroke-dashoffset: calc(var(--len) + 2px); } }
+@media (prefers-reduced-motion: reduce) {
+  .brand__mark svg * { animation: none !important; stroke-dasharray: none !important; }
+}
 .brand__name { display: grid; min-width: 0; line-height: 1.15; }
 .brand__name b { font: 800 20px/1.1 var(--sans); letter-spacing: .01em; }
 /* The subtitle: wide screens only (a phone has no room for it). */

@@ -281,6 +281,25 @@
   /* The logo (a button, base.html). On a phone, where the header has no room for the name, a tap shows it over the
      rest of the bar for a few seconds (style.css .brand.is-open). */
   var brand = d.querySelector('.brand'), brandT;
+  /* And on every screen, the logo drawn away and on again (style.css .brand__mark svg.rev, .play): backwards 1.65 s,
+     0.1 s of nothing, forwards 1.65 s; each step when the last line of the one before ends (the ring going, the M
+     coming). A tap during it starts it over. */
+  var mark = brand && brand.querySelector('.brand__mark svg'), markT;
+  if (mark) {
+    brand.addEventListener('click', function () {
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      clearTimeout(markT);
+      mark.classList.remove('play', 'rev');
+      void mark.getBoundingClientRect(); // a new animation, not the one already running
+      mark.classList.add('rev');
+    });
+    mark.addEventListener('animationend', function (e) {
+      var c = e.target.classList;
+      if (e.animationName === 'brand-erase' && c.contains('brand__ring')) {
+        markT = setTimeout(function () { mark.classList.replace('rev', 'play'); }, 100);
+      } else if (e.animationName === 'brand-draw' && c.contains('brand__m')) mark.classList.remove('play');
+    });
+  }
   if (brand && window.matchMedia) {
     brand.addEventListener('click', function () {
       if (!matchMedia('(max-width: 759px)').matches) return;
