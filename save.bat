@@ -11,6 +11,8 @@ rem   save.bat commit                   add + commit, no push
 rem   save.bat deploy [sync]            add + commit + push, then bash ci/deploy.sh [sync]: build and publish
 rem   save.bat update [all]             add + commit ("update") + push, then scrape the forum (all: every source), save
 rem                                     the database, build and publish (ci/deploy.sh forum^|sync); no prompts, no pause
+rem   save.bat update-app               update, and a new Android app: pushes the tag app-v0.<commit count>, which
+rem                                     .github/workflows/app.yml builds into the release "app" (masinci.apk)
 rem   save.bat push                     push the current branch to its upstream
 rem   save.bat pull                     git pull (current branch, from its upstream)
 rem   save.bat quick "message"          add + commit + push, no menu, no prompts
@@ -32,6 +34,7 @@ set "COMMIT_ONLY=0"
 set "QUICK=0"
 set "DEPLOY=0"
 set "DEPLOY_ARGS="
+set "APP=0"
 set "SAVE_ERROR=0"
 call :resolvebranch
 
@@ -53,6 +56,14 @@ if /i "%ACTION%"=="update" (
   set "MSG="
   goto checkrepo
 )
+if /i "%ACTION%"=="update-app" (
+  set "QUICK=1"
+  set "DEPLOY=1"
+  set "DEPLOY_ARGS=forum"
+  set "APP=1"
+  set "MSG="
+  goto checkrepo
+)
 if /i "%ACTION%"=="push"         goto pushonly
 if /i "%ACTION%"=="pull"         goto pull
 if not "%ACTION%"=="" goto usage
@@ -68,10 +79,11 @@ echo   4  pull         git pull
 echo   5  push         push the current branch to its upstream
 echo   6  deploy-sync  the same as 3, scraping first (ci/deploy.sh sync)
 echo   7  update       add + commit + push, scrape the forum, build and publish
-echo   8  quit
+echo   8  update-app   the same as 7, and a new Android app (APK) built from this commit
+echo   9  quit
 echo.
 set "CHOICE="
-set /p CHOICE=select [1-8]:
+set /p CHOICE=select [1-9]:
 if "%CHOICE%"=="1" (set "COMMIT_ONLY=1" & goto checkrepo)
 if "%CHOICE%"=="2" goto checkrepo
 if "%CHOICE%"=="3" (set "DEPLOY=1" & goto checkrepo)
@@ -79,14 +91,15 @@ if "%CHOICE%"=="4" goto pull
 if "%CHOICE%"=="5" goto pushonly
 if "%CHOICE%"=="6" (set "DEPLOY=1" & set "DEPLOY_ARGS=sync" & goto checkrepo)
 if "%CHOICE%"=="7" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & goto checkrepo)
-if "%CHOICE%"=="8" exit /b 0
+if "%CHOICE%"=="8" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & set "APP=1" & goto checkrepo)
+if "%CHOICE%"=="9" exit /b 0
 echo [err]  invalid choice
 goto menu
 
 
 :usage
 echo [err]  unknown action "%ACTION%"
-echo        use: save.bat [save^|commit^|deploy [sync]^|update [all]^|push^|pull^|quick "message"^|quick-commit "message"]
+echo        use: save.bat [save^|commit^|deploy [sync]^|update [all]^|update-app^|push^|pull^|quick "message"^|quick-commit "message"]
 exit /b 1
 
 
@@ -245,8 +258,30 @@ goto notpushed
 
 :pushed
 echo [git]  pushed
+if "%APP%"=="1" call :apptag
 if "%DEPLOY%"=="1" goto deploy
 goto end
+
+rem The app: a tag on the pushed commit starts GitHub's APK build (app.yml), which runs beside the deploy below. The
+rem tag names the version, 0.<commit count>, as the app gets it; one already there (nothing new since) is not moved.
+:apptag
+set "COUNT="
+for /f "delims=" %%n in ('git rev-list --count HEAD') do set "COUNT=%%n"
+set "TAG=app-v0.!COUNT!"
+git ls-remote --exit-code --tags %REMOTE% "refs/tags/!TAG!" >nul 2>nul
+if not errorlevel 1 (
+  echo [warn] !TAG! is already on %REMOTE% - no new app built
+  exit /b 0
+)
+git tag -f "!TAG!" >nul
+git push %REMOTE% "refs/tags/!TAG!"
+if errorlevel 1 (
+  echo [err]  could not push !TAG! - no new app built
+  set "SAVE_ERROR=1"
+  exit /b 0
+)
+echo [app]  !TAG! pushed: GitHub builds masinci.apk ^(Actions, "app"^)
+exit /b 0
 
 :notpushed
 if "%DEPLOY%"=="1" echo [warn] nothing was pushed, so nothing was deployed
