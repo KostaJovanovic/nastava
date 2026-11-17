@@ -201,7 +201,15 @@ def is_html_page(data):
 INDEX_NO = re.compile(r"\b(\d{1,4})\s*/\s*(20\d\d)\b")
 # A spreadsheet's column of who a student is: index (ШПАН, Бр. Инд.) or surname. Only in a spreadsheet: a handout's
 # "индекс" is a subscript.
-ROSTER_HEAD = re.compile(r"^\s*(шпан|špan|span|индекс|indeks|index|бр\.?\s*инд|br\.?\s*ind|презиме|prezime)\b", re.I)
+# Anywhere in a short cell (roster_head): "Ime i prezime", "Broj indeksa" name a student as "Презиме" does.
+_ROSTER = r"шпан|špan|span|индекс\w*|indeks\w*|index|бр\.?\s*инд\w*\.?|br\.?\s*ind\w*\.?|презиме|prezime"
+ROSTER_HEAD = re.compile(rf"(?<!\w)({_ROSTER})(?!\w)", re.I)
+
+
+def roster_head(c):
+    """A spreadsheet cell that heads a column of students: short (a heading, not a sentence), with a ROSTER_HEAD word."""
+    return isinstance(c, str) and len(c.strip()) <= 40 and ROSTER_HEAD.search(c)
+
 SHEETS = (".xlsx", ".xlsm", ".xls", ".ods", ".csv")
 
 
@@ -245,7 +253,7 @@ def lists_students(name, data):
     a spreadsheet with a column of index numbers or surnames, or any file with five index numbers or more (exam
     results). shortcut: a scan (a PDF with no text) or an .ods is not read; a list in one passes."""
     text = file_text(name, data)
-    if name.lower().endswith(SHEETS) and (head := next((c for c in text if ROSTER_HEAD.match(c)), None)):
+    if name.lower().endswith(SHEETS) and (head := next((c for c in text if roster_head(c)), None)):
         return f"a list of students (column {head.strip()!r})"
     n = sum(int(m[1]) < 1900 for t in text for m in INDEX_NO.finditer(t))
     return f"{n} index numbers" if n >= 5 else None
@@ -253,9 +261,8 @@ def lists_students(name, data):
 
 # A spreadsheet's columns that name a student, blacked out: the index (ШПАН, Бр. Инд., and its year: Год., уписан),
 # surname, name.
-WHO_HEAD = re.compile(
-    r"^\s*(шпан|špan|span|индекс|indeks|index|бр\.?\s*инд\.?|br\.?\s*ind\.?|презиме|prezime|име|ime|год\.?|god\.?|уписан|upisan)\s*$", re.I
-)
+# Anywhere in the heading cell, as ROSTER_HEAD: "Ime i prezime", "Godina upisa" too.
+WHO_HEAD = re.compile(rf"(?<!\w)({_ROSTER}|име|ime|студент\w*|student\w*|год\w*\.?|god\w*\.?|уписан\w*|upisan\w*)(?!\w)", re.I)
 
 
 def blocks(s):
@@ -274,9 +281,9 @@ def redact_xlsx(data):
     for ws in wb.worksheets:
         cols, head = set(), None
         for row in ws.iter_rows():
-            if head is None and any(isinstance(c.value, str) and ROSTER_HEAD.match(c.value) for c in row):
+            if head is None and any(roster_head(c.value) for c in row):
                 head = row[0].row
-                cols = {c.column for c in row if isinstance(c.value, str) and WHO_HEAD.match(c.value)}
+                cols = {c.column for c in row if isinstance(c.value, str) and len(c.value.strip()) <= 40 and WHO_HEAD.search(c.value)}
                 continue
             for c in row:
                 if c.value is None or isinstance(c.value, str) and c.value.startswith("="):
@@ -320,6 +327,10 @@ def redact_students(name, data):
         return data, None
     ext = os.path.splitext(name.lower())[1]
     if ext in (".xlsx", ".xlsm"):
+        # Its students' columns are found by their heading (roster_head); found only by index numbers, the names
+        # beside them would stay: not published.
+        if not why.startswith("a list of students"):
+            return None, f"{why}, no column heading names the students: not published"
         out, n = redact_xlsx(data)
     elif ext == ".pdf":
         out, n = redact_pdf(data)

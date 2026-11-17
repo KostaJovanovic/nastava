@@ -80,6 +80,13 @@ def check_private():
                                                   [None, None, None, None, "napomena: 7/2024 kasni"]]))
     rows = list(openpyxl.load_workbook(io.BytesIO(data)).active.iter_rows(values_only=True))
     assert rows[1] == ("████", "███", "██", "████", 24) and rows[2][4] == "napomena: ██████ kasni", rows
+    # Headings that name a student mid-cell ("Ime i prezime", "Broj indeksa"): their columns go too.
+    data, why = redact_students("R.xlsx", xlsx([["Ime i prezime", "Broj indeksa", "Bodovi"], ["Ana Ilić", "12/2024", 24]]))
+    rows = list(openpyxl.load_workbook(io.BytesIO(data)).active.iter_rows(values_only=True))
+    assert rows[1] == ("███ ████", "███████", 24), rows
+    # Only index numbers and no heading to find the names by: the names could stay, so not published.
+    sheet = xlsx([["", "", ""]] + [[f"Ime{i} Prezime{i}", f"{i}/2023", 7] for i in range(5)])
+    assert redact_students("S.xlsx", sheet)[0] is None
     # A results PDF: each row with an index loses its letters' words and the index, text and all; the grade, the heading
     # and a school year stay.
     doc = pymupdf.open()
