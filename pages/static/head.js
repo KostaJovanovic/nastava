@@ -112,14 +112,14 @@ window.showSaved = function () {
 		if (open.classList.contains("is-set") !== n > 0) {
 			open.classList.toggle("is-set", n > 0);
 			open.querySelector("span").textContent = n ? "Izmeni predmete" : "Izaberi predmete";
-			open.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (n ? "-on" : ""));
+			open.querySelector("use").setAttribute("href", "#i-star" + (n ? "-on" : ""));
 		}
 		const chip = iz.querySelector("[data-moji-c]");
 		if (chip.textContent !== String(n || "")) chip.textContent = n || "";
 	}
 	const tb = d.getElementById("tema"), dark = d.documentElement.dataset.tema === "dark";
 	if (tb) {
-		tb.querySelector("use").setAttribute("href", dark ? "/static/icons.svg#i-moon" : "/static/icons.svg#i-sun");
+		tb.querySelector("use").setAttribute("href", dark ? "#i-moon" : "#i-sun");
 		tb.setAttribute("aria-label", "Tema: " + (dark ? "tamna" : "svetla"));
 	}
 	if (window.pismoButton) window.pismoButton();
@@ -132,8 +132,68 @@ window.showStar = function () {
 	const on = window.mojiNow.has(star.dataset.star);
 	star.hidden = false;
 	star.setAttribute("aria-pressed", on);
-	star.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (on ? "-on" : ""));
+	star.querySelector("use").setAttribute("href", "#i-star" + (on ? "-on" : ""));
 	star.querySelector("span").textContent = on ? "Pratiš" : "Prati";
+};
+
+// "Nazad" under the crumbs (base.html; site.js tells the whole of it): the page this one was opened from, shown before
+// the first frame, so the rows under it do not move down after it. Gives that page, {u, t}, or null. Not in a
+// prerender: it sees the tab's sessionStorage only once shown (site.js calls it again then).
+// The page the tab showed last ('cur', site.js keepCur), when it is the referrer: else this page has no "Nazad".
+const openedFrom = () => {
+	let left = null, ref = null;
+	try { left = JSON.parse(sessionStorage.getItem("cur")); ref = document.referrer && new URL(document.referrer); } catch (e) {}
+	const from = left && left.u.split("?")[0];
+	return ref && ref.origin === location.origin && from === ref.pathname && from !== location.pathname ? left : null;
+};
+window.showBackLink = function () {
+	if (document.prerendering) return null;
+	const a = document.querySelector("[data-back]"), st = history.state || {};
+	let prev = st.back;
+	if (!prev && (prev = openedFrom())) history.replaceState(Object.assign({}, st, { back: prev }), "");
+	if (a && prev) {
+		a.href = prev.u;
+		a.querySelector("b").textContent = prev.t;
+		a.hidden = false;
+	}
+	return prev || null;
+};
+
+// "Profesor dana" (sidebar.html): t is one of /izbor.json dana (site.js picks it, load_teachers.of_the_day).
+window.fillDana = function (dana, t) {
+	const a = dana.querySelector(".dana__b");
+	a.href = t[2];
+	dana.querySelector(".sec").textContent = t[0];
+	a.querySelector("img").src = t[3];
+	a.querySelector("b").textContent = t[1];
+	a.querySelector("small").textContent = t[4] || "";
+	// The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki). Hidden again for a pick without one: a saved
+	// pick (showDana) can be another teacher than site.js's after a deploy.
+	a.querySelector(".dana__ki").toggleAttribute("hidden", !t[5]);
+	if (t[5]) a.querySelector("use").setAttribute("href", "#i-" + t[5]);
+	// The Studentska lista badge, the same text as cards.html sp_badge.
+	const sp = dana.querySelector(".dana__sp");
+	sp.hidden = !t[6];
+	if (t[6]) {
+		const tip = "Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: " + t[6] + ". na listi";
+		sp.setAttribute("aria-label", tip);
+		sp.querySelector(".sp__tip").textContent = tip;
+	}
+	dana.hidden = false;
+};
+
+// Today's pick as site.js saved it, before the first frame (base.html rel=expect): site.js runs after the whole page,
+// and on a long one the card would come in seconds after the rest.
+window.showDana = function () {
+	const dana = document.querySelector("[data-dana]");
+	let saved = null;
+	try { saved = JSON.parse(localStorage.getItem("dana")); } catch (e) {}
+	if (!dana || !saved || saved.day !== new Date().toDateString()) return;
+	// Seen on an earlier page, so in the cache: no fade in (data-fade above), which would blink it on each page.
+	const img = dana.querySelector("img");
+	img.decoding = "sync";
+	img.dataset.in = "";
+	window.fillDana(dana, saved.t);
 };
 
 // The lecture schedule (/raspored/): one program at a time, picked by its tab. key: the program (else the #, else the

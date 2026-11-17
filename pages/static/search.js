@@ -164,7 +164,7 @@ const posta = (n) => (n % 10 === 1 && n % 100 !== 11 ? "post" : n % 10 >= 2 && n
 function renderRow(data, more = 0) {
 	const li = rowTpl.content.firstElementChild.cloneNode(true);
 	const kind = { dokument: "file", vest: "news" }[data.meta.vrsta];
-	if (kind) li.querySelector("use").setAttribute("href", `/static/icons.svg#i-${kind}`);
+	if (kind) li.querySelector("use").setAttribute("href", `#i-${kind}`);
 	const d = li.querySelector(".fr__d");
 	d.dateTime = data.meta.datum ?? "";
 	d.textContent = dmy(data.meta.datum);
@@ -276,7 +276,7 @@ function icon(name) {
 	svg.setAttribute("class", "i");
 	svg.setAttribute("aria-hidden", "true");
 	const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-	use.setAttribute("href", `/static/icons.svg#i-${name}`);
+	use.setAttribute("href", `#i-${name}`);
 	svg.append(use);
 	return svg;
 }

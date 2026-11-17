@@ -4,9 +4,9 @@
 {#- A page of a department's own site (load_sajtovi), folded: its title; open, its content and the original. -#}
 {%- macro site_fold(p) %}
 <details class="tp__bio sf__page">
-  <summary><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg>{{ p.title }}</summary>
+  <summary><svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>{{ p.title }}</summary>
   <div class="prose prose--html">{{ p.html | safe }}</div>
-  <p class="tp__src"><a href="{{ p.url }}" rel="noopener" target="_blank">Original na {{ p.url.split('/')[2] }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a> · sačuvano {{ p.seen }}</p>
+  <p class="tp__src"><a href="{{ p.url }}" rel="noopener" target="_blank">Original na {{ p.url.split('/')[2] }} <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a> · sačuvano {{ p.seen }}</p>
 </details>
 {%- endmacro %}
 
@@ -23,13 +23,13 @@
   {#- The grey corner: a departed teacher, on the archive page and in the list's search. -#}
   <li{% if id %} id="{{ id }}"{% endif %}{% if dup %} data-dup{% endif %} class="pc{% if t.gone %} pc--gone{% if t.last_seen[:4] == '0000' %} pc--undated{% endif %}" style="--p: {{ t.age }}%{% endif %}" data-id="{{ t.id }}" data-find="{{ t.find }}" data-k="{{ t.katedra | slug }}" data-z="{{ t.title | slug }}" data-n="{{ t.name }}" data-c="{{ t.posts | length }}" data-r="{{ t.rank }}">
     {%- if t.thumb %}<img class="pc__img" src="{{ t.thumb }}" alt="" loading="lazy" decoding="async">
-    {%- else %}<span class="pc__img pc__img--none" aria-hidden="true"><svg class="nophoto"><use href="/static/icons.svg#i-nophoto"/></svg></span>{% endif %}
+    {%- else %}<span class="pc__img pc__img--none" aria-hidden="true"><svg class="nophoto"><use href="#i-nophoto"/></svg></span>{% endif %}
     <div class="pc__t">
       <a class="pc__a" href="{{ t.href }}">{{ t.page_name }}</a>
       <p>{{ t.title }}</p>
       {%- if t.katedra %}<p class="pc__k">{{ t.katedra | katedra | capitalize }}</p>
       {#- title: the name on hover; the text above already says it, so the icon is hidden from screen readers. -#}
-      <span class="pc__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
+      <span class="pc__ki" title="{{ t.katedra }}"><svg class="i" aria-hidden="true"><use href="#i-{{ t.katedra | slug }}"></use></svg></span>{% endif %}
       {%- if t.lista %}{{ sp_badge(t, 'pc__sp') }}{% endif %}
       {#- One line: the office, their years at the faculty ('~' and dimmer where no source says it, an estimate), and
           .pc__p, the post count, shown only while the list is ordered by it (style.css). -#}

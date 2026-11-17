@@ -46,7 +46,7 @@
   <h2 class="st__h">Ikone <span>{{ icons | length }}</span></h2>
   <div class="sl sl--icons">
     {%- for i in icons %}
-    <a href="data:image/svg+xml,{{ i.svg | urlencode }}" download="{{ i.id }}.svg" title="{{ i.id }}"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#{{ i.id }}"></use></svg><span>{{ i.id | replace("i-", "", 1) }}</span></a>
+    <a href="data:image/svg+xml,{{ i.svg | urlencode }}" download="{{ i.id }}.svg" title="{{ i.id }}"><svg class="i" aria-hidden="true"><use href="#{{ i.id }}"></use></svg><span>{{ i.id | replace("i-", "", 1) }}</span></a>
     {%- endfor %}
   </div>
 </section>

@@ -177,7 +177,7 @@
           var b = grid.appendChild(card([], p[0], [(p[3] || '').split(' · ')[0], n + (one ? ' thread' : few ? ' threada' : ' threadova')].filter(Boolean).join(' · ')));
           var img = p[2] ? el('img', 'mp__ph') : el('span', 'mp__ph');
           if (p[2]) { img.src = p[2]; img.alt = ''; img.loading = 'lazy'; }
-          else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="/static/icons.svg#i-nophoto"/></svg>'; }
+          else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="#i-nophoto"/></svg>'; }
           b.classList.add('mp__card--t');
           b.insertBefore(img, b.querySelector('.mp__name'));
           b.dataset.t = slugOf(p);

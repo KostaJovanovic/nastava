@@ -9,7 +9,7 @@
 {% block description %}Kalendar nastave i ispita, raspored predavanja po godinama i modulima i raspored ispita Mašinskog fakulteta u Beogradu, sa svim ranijim verzijama.{% endblock %}
 
 {% from "link_card.html" import card with context %}
-{%- macro pdf() %}<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-file"></use></svg>{% endmacro %}
+{%- macro pdf() %}<svg class="i" aria-hidden="true"><use href="#i-file"></use></svg>{% endmacro %}
 
 {% block main %}
 <div class="mh">
@@ -23,7 +23,7 @@
   {%- if thumbs[calendar[1]] %}
   <img class="rs-cal__img" src="{{ thumbs[calendar[1]] }}" alt="" decoding="async">
   {%- else %}
-  <svg class="i rs-cal__i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>
+  <svg class="i rs-cal__i" aria-hidden="true"><use href="#i-calendar"></use></svg>
   {%- endif %}
   <span class="rs-cal__t"><small>Kalendar nastave i ispita</small><b>{{ calendar[0] }}</b></span>
   <span class="rs-cal__go">{{ pdf() }}Otvori PDF</span>

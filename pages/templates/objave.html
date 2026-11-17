@@ -5,6 +5,8 @@
     the last post) at /objave/<year>/, paged in the browser as vesti.html. -#}
 {% block title %}Threadovi{% if year %} {{ year }}{% endif %}{% endblock %}
 {% block description %}Threadovi sa foruma nastave Mašinskog fakulteta u Beogradu{% if year %} iz {{ year }}. godine{% endif %}, i oni koji su uklonjeni sa foruma.{% endblock %}
+{#- The first frame waits for a screen of the list only (rows.html topic_rows: its 20th row). -#}
+{% block paint %}paint{% endblock %}
 {% block crumbs %}{% if year %}{{ crumb('/objave/', 'Threadovi') }}{% endif %}{% endblock %}
 
 {% block main %}

@@ -197,7 +197,7 @@ kbd {
   color: var(--dim); font: 400 .6875rem/1rem var(--mono); text-align: center;
 }
 
-/* Icons: one file for all pages (icons.svg), used with <svg class="i"><use href="/static/icons.svg#i-..."></svg>. */
+/* Icons: one file for all pages (icons.svg, inline in each page: base.html), used with <svg class="i"><use href="#i-..."></svg>. */
 /* The first vertical-align: for Safari before 17.2, which has no cap unit (Plex Sans's cap height is ~0.7em). */
 .i { width: 1em; height: 1em; flex: none; vertical-align: -0.17em; vertical-align: calc(0.5cap - 0.5em - 0.02em); }
 /* The folded copy of the text that Pagefind indexes (build.py mark_for_pagefind). */
@@ -1245,8 +1245,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   border-top: 1px solid var(--line-2);
 }
 .fr:first-child { border-top: 0; }
-.fr:nth-child(even) { background: var(--alt); }
-.fr:hover { background: var(--hover); }
+.fr:nth-child(even) { background: var(--alt); }.fr:hover { background: var(--hover); }
 /* A row's icon (a katedra's, a smer's folder, a topic's, a news post's, a file's), centred on both phone lines (title,
    the line under it): ~12px above and below, as on the left. */
 .fr__i {
@@ -2081,6 +2080,8 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 /* Between pages: the old page stays on screen until the new one can paint, then swaps (no animation, below), so
    there is no blank frame. Chrome, Edge, Safari 18.2+; others load as before. */
 @view-transition { navigation: auto; }
+/* The group's default 0.25s animation would keep the overlay up, and the overlay takes every tap. */
+::view-transition-group(root) { animation: none; }
 
 /* The theme switch (site.js): no cross-fade, the circle's clip is the whole effect; going light, the old (dark) page
    is the one on top, rolling out. */

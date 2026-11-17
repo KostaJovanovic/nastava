@@ -32,7 +32,8 @@ PAGEFIND = "pagefind@1.6.0"
 # shortcut: a document page shows and indexes at most this much text; raise it if GitHub Pages' 1 GB allows.
 PAGE_TEXT = 300_000
 
-env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape())
+# static/: base.html includes icons.svg into each page.
+env = Environment(loader=FileSystemLoader([HERE / "templates", HERE / "static"]), autoescape=select_autoescape())
 
 env.filters["pl"] = plural
 
@@ -128,9 +129,9 @@ urls = {f"{SITE_URL}/": None}
 
 # The /static/ files the pages link get ?v=<hash of the file> (version_static): each deploy that changes one changes
 # its URL, so no cache (the browser's, Cloudflare's, GitHub's) pairs new pages with an old file. Not sw.js (its URL
-# is the push registration), the fonts or the images: those rarely change. icons.svg first: the JS links it;
-# pdfview.js before site.js, which imports it.
-VERSIONED = ("icons.svg", "style.css", "head.js", "pismo.js", "search.js", "pdfview.js", "site.js", "moji.js")
+# is the push registration), the fonts or the images: those rarely change. Not icons.svg: each page has it inline
+# (base.html). pdfview.js before site.js, which imports it.
+VERSIONED = ("style.css", "head.js", "pismo.js", "search.js", "pdfview.js", "site.js", "moji.js")
 
 ASSET = re.compile(r"/static/(%s)(?![\w?.-])" % "|".join(map(re.escape, VERSIONED)))
 

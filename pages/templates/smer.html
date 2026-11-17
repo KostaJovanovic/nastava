@@ -3,12 +3,14 @@
 
 {% block title %}{{ smer.label }}{% endblock %}
 {% block og %}-predmeti{% endblock %}
+{#- The first frame waits for a screen of the list only (rows.html forum_rows: its 20th row). -#}
+{% block paint %}paint{% endblock %}
 {% block description %}{{ smer.label }}, Mašinski fakultet u Beogradu: {{ smer.subjects | n }} {{ smer.subjects | pl('predmet') }} i {{ smer.topics | n }} {{ smer.topics | pl('thread') }} sa foruma nastave.{% endblock %}
 
 {% block main %}
 <div class="mh mh--card">
   <div class="mh__row">
-    <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ smer.key if smer.key in smer_icons else 'folder' }}"></use></svg></span>
+    <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="#i-{{ smer.key if smer.key in smer_icons else 'folder' }}"></use></svg></span>
     <div>
       <h1 id="title">{{ smer.label }}</h1>
       <p class="mh__stats"><span><b>{{ smer.subjects | n }}</b> {{ smer.subjects | pl('predmet') }}</span><span><b>{{ smer.topics | n }}</b> {{ smer.topics | pl('thread') }}</span><span><b>{{ smer.count | n }}</b> {{ smer.count | pl('post') }}</span></p>

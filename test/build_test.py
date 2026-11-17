@@ -650,3 +650,25 @@ _small = _Image.open(io.BytesIO(fit_photo(_png, 150, always=True)))
 assert (_small.format, _small.size, _small.mode) == ("JPEG", (150, 188), "RGB")
 assert _Image.open(io.BytesIO(fit_photo(_narrow, 150, always=True))).size == (130, 155)
 assert small_path("/foto/ab12.png") == "/foto/mala/ab12.jpg"
+
+# The first frame's target (base.html rel=expect, block paint): the 20th row of a filtered list; none in a folded
+# list, which shares its page with an unfolded one (smer.html).
+_rows = env.get_template("rows.html").module
+_places = [{"href": f"/p{i}/", "label": f"P{i}", "topics": 1, "count": 1, "last": None} for i in range(25)]
+for _fold in (False, True):
+    _html = str(_rows.forum_rows("T", _places, "book", filter=True, fold=_fold))
+    assert _html.count('id="paint"') == (not _fold)
+    assert _fold or _html.index('href="/p18/"') < _html.index('id="paint"') < _html.index('href="/p19/"')
+_topics = [{"href": f"/t{i}/", "title": f"T{i}", "posts": [1], "first": {}, "last": {}} for i in range(25)]
+assert str(_rows.topic_rows("T", _topics, filter=True)).count('id="paint"') == 1
+assert 'id="paint"' not in str(_rows.topic_rows("T", _topics))
+
+# The icons are inline in each page (base.html): a link to the sprite file would show nothing, and a name with no
+# symbol shows a blank.
+_sprite = (ROOT / "pages/static/icons.svg").read_text(encoding="utf-8")
+assert '{% include "icons.svg" %}' in (ROOT / "pages/templates/base.html").read_text(encoding="utf-8")
+for _f in [*(ROOT / "pages/templates").glob("*.html"), *(ROOT / "pages/static").glob("*.js")]:
+    _text = _f.read_text(encoding="utf-8")
+    assert "/static/icons.svg" not in _text, _f.name
+    for _id in re.findall(r"#(i-[\w-]+)[\"']", _text):
+        assert f'id="{_id}"' in _sprite, f"{_f.name}: no symbol {_id}"

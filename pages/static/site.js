@@ -63,7 +63,7 @@
         var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
         svg.setAttribute('class', 'i cmd__img');
         svg.setAttribute('aria-hidden', 'true');
-        use.setAttribute('href', '/static/icons.svg#i-' + id);
+        use.setAttribute('href', '#i-' + id);
         a.className = 'cmd__p';
         a.insertBefore(svg, a.firstChild).appendChild(use);
       };
@@ -75,7 +75,7 @@
       return [gone ? 'Više nisu na fakultetu' : '', t[0], hint || t[3], t[1], function (a) {
         var img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img');
         if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; }
-        else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="/static/icons.svg#i-nophoto"/></svg>'; }
+        else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="#i-nophoto"/></svg>'; }
         a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
         // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
         if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
@@ -1251,7 +1251,7 @@
         + '<button type="button" class="btn btn--pri" data-pwa>Kako?</button>'
       : '<span>Aplikacija za Android: obaveštenja stižu na vreme.</span>'
         + '<a class="btn btn--pri" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk">Skini</a>')
-      + '<button type="button" class="apkbar__x" aria-label="Zatvori"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg></button>';
+      + '<button type="button" class="apkbar__x" aria-label="Zatvori"><svg class="i" aria-hidden="true"><use href="#i-x"></use></svg></button>';
     bar.addEventListener('click', function (e) {
       if (!e.target.closest('a, button')) return;
       try { localStorage.setItem('apkbar', '1'); } catch (e2) {}
@@ -1708,18 +1708,20 @@
      shortcut: a smer row goes by its last post only, so a followed subject's new post under a newer one of another
      subject gets no dot; carry each subject's last time if that matters. */
   var since = 0, read = {};
-  try {
-    var visits = JSON.parse(localStorage.getItem('poseta')) || {}, nowMs = Date.now();
-    if (visits.seen && nowMs - visits.seen > 30 * 60e3) visits.mark = visits.seen;
-    since = visits.mark || 0;
-    visits.seen = nowMs;
-    localStorage.setItem('poseta', JSON.stringify(visits));
-    read = JSON.parse(localStorage.getItem('procitano')) || {};
-    // Opened before the mark: no post it could hide is new any more.
-    for (var k in read) if (read[k] < since) delete read[k];
-    read[location.pathname] = nowMs;
-    localStorage.setItem('procitano', JSON.stringify(read));
-  } catch (e) {}
+  var countVisit = function () {
+    try {
+      var visits = JSON.parse(localStorage.getItem('poseta')) || {}, nowMs = Date.now();
+      if (visits.seen && nowMs - visits.seen > 30 * 60e3) visits.mark = visits.seen;
+      since = visits.mark || 0;
+      visits.seen = nowMs;
+      localStorage.setItem('poseta', JSON.stringify(visits));
+      read = JSON.parse(localStorage.getItem('procitano')) || {};
+      // Opened before the mark: no post it could hide is new any more.
+      for (var k in read) if (read[k] < since) delete read[k];
+      read[location.pathname] = nowMs;
+      localStorage.setItem('procitano', JSON.stringify(read));
+    } catch (e) {}
+  };
   function markNew() {
     if (!since) return;
     try { read = JSON.parse(localStorage.getItem('procitano')) || {}; } catch (e) {}
@@ -1752,7 +1754,10 @@
       });
     });
   }
-  markNew();
+  // A prerendered page (base.html's speculation rules) counts only once shown: the reader may never open it, and its
+  // topic would count as read.
+  if (d.prerendering) d.addEventListener('prerenderingchange', function () { countVisit(); markNew(); }, { once: true });
+  else { countVisit(); markNew(); }
   // A row hovered counts as read: its dot goes, for good (as if its last post's page was opened).
   d.addEventListener('mouseover', function (e) {
     var row = e.target.closest && e.target.closest('.fr--new'), last = row && (row.querySelector('.lt') || row.querySelector('.fr__a'));
@@ -1785,7 +1790,7 @@
       if (to === here) scrollTo(0, +sessionStorage.getItem('y' + here));
     } catch (e) {}
   };
-  // A page prerendered on press (base.html's speculation rules) sees the tab's sessionStorage only once shown.
+  // A prerendered page (base.html's speculation rules) sees the tab's sessionStorage only once shown.
   if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
   /* "Nazad" under the crumbs (base.html): the page this one was opened from, {u, t}. Kept in this page's history entry
      (history.state.back), so a reload, the browser's back and forward and its page cache all keep each page's own; a
@@ -1802,21 +1807,12 @@
   var keepCur = function () {
     try { sessionStorage.setItem('cur', JSON.stringify({ u: location.pathname + location.search, t: pageTitle() })); } catch (e) {}
   };
+  // The link itself: head.js showBackLink, before the first frame (base.html); again here, where it gives the same page
+  // (history.state.back, or 'cur' not yet changed: keepCur is next).
   var showBack = function () {
-    var a = d.querySelector('[data-back]'), st = history.state || {}, prev = st.back, left = null, ref = null;
-    if (!prev) {
-      try { left = JSON.parse(sessionStorage.getItem('cur')); ref = d.referrer && new URL(d.referrer); } catch (e) {}
-      var from = left && left.u.split('?')[0];
-      if (ref && ref.origin === location.origin && from === ref.pathname && from !== location.pathname) {
-        prev = left;
-        history.replaceState(Object.assign({}, st, { back: prev }), '');
-      }
-    }
+    var a = d.querySelector('[data-back]'), prev = window.showBackLink();
     keepCur();
     if (!a || !prev) return;
-    a.href = prev.u;
-    a.querySelector('b').textContent = prev.t;
-    a.hidden = false;
     a.addEventListener('click', function (e) {
       if (e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || d.referrer !== location.origin + prev.u) return;
       e.preventDefault();
@@ -1872,30 +1868,15 @@
   var dana = d.querySelector('[data-dana]');
   // Not on a phone under a post, a topic or a news item, nor the board's lists of threads: the same as style.css
   // .frame:has(article.post, [data-nodana]), for a browser without :has().
-  if (dana && window.matchMedia && matchMedia('(max-width: 899px)').matches && d.querySelector('.frame :is(article.post, [data-nodana])')) dana = null;
+  // hidden: head.js showDana may have shown it already.
+  if (dana && window.matchMedia && matchMedia('(max-width: 899px)').matches && d.querySelector('.frame :is(article.post, [data-nodana])')) { dana.hidden = true; dana = null; }
   if (dana && izbor) izbor.then(function (j) {
     var list = j.dana || [];
     if (!list.length) return;
     var t = pickDay(list, new Date());
-    var a = dana.querySelector('.dana__b');
-    a.href = t[2];
-    dana.querySelector('.sec').textContent = t[0];
-    a.querySelector('img').src = t[3];
-    a.querySelector('b').textContent = t[1];
-    a.querySelector('small').textContent = t[4] || '';
-    // The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki).
-    if (t[5]) {
-      a.querySelector('use').setAttribute('href', '/static/icons.svg#i-' + t[5]);
-      a.querySelector('.dana__ki').removeAttribute('hidden');
-    }
-    // The Studentska lista badge, the same text as cards.html sp_badge.
-    if (t[6]) {
-      var sp = dana.querySelector('.dana__sp'), tip = 'Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: ' + t[6] + '. na listi';
-      sp.setAttribute('aria-label', tip);
-      sp.querySelector('.sp__tip').textContent = tip;
-      sp.hidden = false;
-    }
-    dana.hidden = false;
+    window.fillDana(dana, t);
+    // For the next page's first frame (head.js showDana).
+    try { localStorage.setItem('dana', JSON.stringify({ day: new Date().toDateString(), t: t })); } catch (e) {}
   }).catch(function () {});
 
   /* /profdana/ (profdana.html): every day's pick from DANA_START to today (+ data-ahead days, dev mode), newest
