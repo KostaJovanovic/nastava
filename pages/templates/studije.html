@@ -12,7 +12,7 @@
 {% block main %}
 <div class="mh">
   <h1 id="title">{{ page.title }}</h1>
-  <p class="mh__sub">stranica sa mas.bg.ac.rs, {% if _old %}verzija od {{ page.first_seen | dmy }} do {{ page.last_seen | dmy }}{% else %}provereno {{ page.last_seen | dmy }}{% endif %} · <a href="{{ source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a></p>
+  <p class="mh__sub">stranica sa mas.bg.ac.rs, {% if _old %}verzija od {{ page.first_seen | dmy }} do {{ page.last_seen | dmy }}{% else %}provereno {{ page.last_seen | dmy }}{% endif %} · <a href="{{ source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a></p>
 </div>
 {%- if current.gone and not _old %}
 <p class="note">Ove stranice više nema na sajtu fakulteta.</p>
@@ -35,7 +35,7 @@
     {%- if t.summary %}
     {#- Written by hand (sitegen/upis_summary.py), left out once the faculty's page changes. -#}
     <div class="wt-rok wt-sum">
-      <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg>Ukratko <span>· za sve detalje vidi ispod</span></p>
+      <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="#i-pencil"></use></svg>Ukratko <span>· za sve detalje vidi ispod</span></p>
       <dl class="wt-sum__l">
         {%- for label, text in t.summary %}
         <dt>{{ label }}</dt><dd>{{ text | safe }}</dd>
@@ -45,7 +45,7 @@
     {%- endif %}
     {%- for label, rok in t.rok %}
     <div class="wt-rok">
-      <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>Važni datumi{% if label %} <span>· {{ label }}</span>{% endif %}</p>
+      <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="#i-calendar"></use></svg>Važni datumi{% if label %} <span>· {{ label }}</span>{% endif %}</p>
       <div class="prose prose--html prose--wiki">{{ rok | safe }}</div>
     </div>
     {%- endfor %}

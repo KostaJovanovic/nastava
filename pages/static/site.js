@@ -63,7 +63,7 @@
         var svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg'), use = d.createElementNS('http://www.w3.org/2000/svg', 'use');
         svg.setAttribute('class', 'i cmd__img');
         svg.setAttribute('aria-hidden', 'true');
-        use.setAttribute('href', '/static/icons.svg#i-' + id);
+        use.setAttribute('href', '#i-' + id);
         a.className = 'cmd__p';
         a.insertBefore(svg, a.firstChild).appendChild(use);
       };
@@ -75,7 +75,7 @@
       return [gone ? 'Više nisu na fakultetu' : '', t[0], hint || t[3], t[1], function (a) {
         var img = t[2] ? el('img', 'cmd__img') : el('span', 'cmd__img');
         if (t[2]) { img.src = t[2]; img.alt = ''; img.loading = 'lazy'; }
-        else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="/static/icons.svg#i-nophoto"/></svg>'; }
+        else { img.setAttribute('aria-hidden', 'true'); img.innerHTML = '<svg class="nophoto"><use href="#i-nophoto"/></svg>'; }
         a.className = 'cmd__p' + (gone ? ' pc--gone' + (t[4] === null ? ' pc--undated' : '') : '');
         // In px, not % as on the cards: a row is wide and short, a % of it is most of the row.
         if (gone && t[4] !== null) a.style.setProperty('--p', t[4] + 'px');
@@ -1251,7 +1251,7 @@
         + '<button type="button" class="btn btn--pri" data-pwa>Kako?</button>'
       : '<span>Aplikacija za Android: obaveštenja stižu na vreme.</span>'
         + '<a class="btn btn--pri" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk">Skini</a>')
-      + '<button type="button" class="apkbar__x" aria-label="Zatvori"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg></button>';
+      + '<button type="button" class="apkbar__x" aria-label="Zatvori"><svg class="i" aria-hidden="true"><use href="#i-x"></use></svg></button>';
     bar.addEventListener('click', function (e) {
       if (!e.target.closest('a, button')) return;
       try { localStorage.setItem('apkbar', '1'); } catch (e2) {}
@@ -1885,7 +1885,7 @@
     a.querySelector('small').textContent = t[4] || '';
     // The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki).
     if (t[5]) {
-      a.querySelector('use').setAttribute('href', '/static/icons.svg#i-' + t[5]);
+      a.querySelector('use').setAttribute('href', '#i-' + t[5]);
       a.querySelector('.dana__ki').removeAttribute('hidden');
     }
     // The Studentska lista badge, the same text as cards.html sp_badge.

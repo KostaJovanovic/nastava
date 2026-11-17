@@ -42,7 +42,7 @@
 <script src="/static/head.js"></script>
 {#- In <head>: it converts the text as it comes, so the first frame is in the chosen script already. -#}
 <script src="/static/pismo.js"></script>
-<script type="speculationrules">{"prerender": [{"where": {"href_matches": ["/item/*", "/tema/*", "/predmet/*", "/smer/*", "/nastavnik/*", "/predmeti/*", "/raspored/", "/statistika/", "/vesti/*", "/vest/*"]}, "eagerness": "conservative"}]}</script>
+<script type="speculationrules">{"prerender": [{"where": {"href_matches": ["/item/*", "/tema/*", "/predmet/*", "/smer/*", "/nastavnik/*", "/predmeti/*", "/raspored/", "/statistika/", "/vesti/*", "/vest/*"]}, "eagerness": "moderate"}]}</script>
 <link rel="icon" href="/static/favicon.svg">
 {#- An iPhone's home screen takes no SVG (pages/icons.py). -#}
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -51,6 +51,8 @@
 <link rel="alternate" type="application/atom+xml" href="/feed.xml" title="Novi postovi na forumu nastave">
 </head>
 <body>
+{#- The icons in the page itself: an external sprite loads as its own document, often after the first frame. -#}
+<div hidden>{% include "icons.svg" %}</div>
 <a class="skip" href="#sadrzaj">Preskoči na sadržaj</a>
 <header class="hd">
   {#- Not a link (home is Početna in the side panel): a button, for an easter egg to come (site.js). -#}
@@ -73,7 +75,7 @@
   {#- Script (pismo.js) and theme (site.js) buttons; each click moves to the next choice. data-notx: pismo.js leaves their labels alone. -#}
   <div class="hd__ctl" data-notx>
     <button type="button" class="tg" id="pismo" data-pismo="lat" aria-label="Pismo: Latinica" title="Pismo: latinica ili ćirilica">Lat<span>inica</span></button>
-    <button type="button" class="tg" id="tema" aria-label="Tema" title="Tema: svetla ili tamna"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-sun"></use></svg></button>
+    <button type="button" class="tg" id="tema" aria-label="Tema" title="Tema: svetla ili tamna"><svg class="i" aria-hidden="true"><use href="#i-sun"></use></svg></button>
   </div>
 </header>
 <div class="frame">
@@ -83,12 +85,12 @@
       (style.css). The home and error pages have none. -#}
   {%- block navbar %}
   <nav class="crumbs" aria-label="Navigacija">
-    <a href="/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Početna</a>
+    <a href="/"><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg>Početna</a>
     {%- block crumbs %}{% endblock %}
-    <svg class="i crumbs__sep" aria-hidden="true"><use href="/static/icons.svg#i-chevron-right"></use></svg><span class="crumbs__here" aria-current="page">{{ self.title() }}</span>
+    <svg class="i crumbs__sep" aria-hidden="true"><use href="#i-chevron-right"></use></svg><span class="crumbs__here" aria-current="page">{{ self.title() }}</span>
   </nav>
   {#- The page visited before this one in the tab, where there is one (site.js). -#}
-  <a class="back" href="/" data-back hidden><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-left"></use></svg><span>Nazad: <b></b></span></a>
+  <a class="back" href="/" data-back hidden><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg><span>Nazad: <b></b></span></a>
   {%- endblock %}
 {% block main %}{% endblock %}
 </main>

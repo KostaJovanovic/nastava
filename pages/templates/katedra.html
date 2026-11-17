@@ -9,12 +9,12 @@
 {% block description %}{{ k }}, Mašinski fakultet u Beogradu: {{ teachers | length | n }} {{ teachers | length | pl('nastavnik') }}, {{ n_subjects | n }} {{ n_subjects | pl('predmet') }} i najnoviji threadovi sa foruma nastave.{% endblock %}
 {% block crumbs %}{{ crumb('/katedre/', 'Katedre') }}{% endblock %}
 
-{%- macro ext(href, text) %}<a href="{{ href }}" rel="noopener" target="_blank">{{ text }} <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endmacro %}
+{%- macro ext(href, text) %}<a href="{{ href }}" rel="noopener" target="_blank">{{ text }} <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a>{% endmacro %}
 
 {% block main %}
 <div class="mh mh--card">
   <div class="mh__row">
-    <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ k | slug }}"></use></svg></span>
+    <span class="mh__icon" aria-hidden="true"><svg class="i"><use href="#i-{{ k | slug }}"></use></svg></span>
     <div>
       <h1 id="title">{{ k }}</h1>
       <p class="mh__stats"><span><b>{{ teachers | length | n }}</b> {{ teachers | length | pl('nastavnik') }}</span><span><b>{{ n_subjects | n }}</b> {{ n_subjects | pl('predmet') }}</span>

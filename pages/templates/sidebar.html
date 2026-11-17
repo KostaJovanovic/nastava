@@ -5,14 +5,14 @@
   {#- The current page's link has aria-current: the home page (a whole page) here, the rest when joined to the shell
       (build.py write, pages/src/index.js join). -#}
   <nav class="snav" aria-label="Stranice">
-    <a href="/"{% if home %} aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-home"></use></svg>Početna</a>
-    <a href="/raspored/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg><span class="snav__long">Kalendar i rasporedi</span><span class="snav__short">Raspored</span></a>
-    <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-users"></use></svg>Nastavnici</a>
-    <a href="/link/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-link"></use></svg>Linkovi</a>
+    <a href="/"{% if home %} aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="#i-home"></use></svg>Početna</a>
+    <a href="/raspored/"><svg class="i" aria-hidden="true"><use href="#i-calendar"></use></svg><span class="snav__long">Kalendar i rasporedi</span><span class="snav__short">Raspored</span></a>
+    <a href="/nastavnici/"><svg class="i" aria-hidden="true"><use href="#i-users"></use></svg>Nastavnici</a>
+    <a href="/link/"><svg class="i" aria-hidden="true"><use href="#i-link"></use></svg>Linkovi</a>
     {#- Phone: not in the tab bar (Linkovi in its place); the subjects are on the home page and in the search, the
         katedre a button on /nastavnici/. /predmeti/ and /katedre/ are its two tabs (rows.html kp_tabs). -#}
-    <a href="/predmeti/" class="snav__wide"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>Katedre i predmeti</a>
-    <a href="/vesti/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-news"></use></svg>Vesti</a>  </nav>
+    <a href="/predmeti/" class="snav__wide"><svg class="i" aria-hidden="true"><use href="#i-book"></use></svg>Katedre i predmeti</a>
+    <a href="/vesti/"><svg class="i" aria-hidden="true"><use href="#i-news"></use></svg>Vesti</a>  </nav>
   {#- Phone: the panel's parts are blocks of the page (style.css .side): the followed subjects above it, the
       teacher of the day at its bottom. -#}
   <div class="filters">
@@ -28,15 +28,15 @@
           <label class="tgl"><span>Prikaži moje<span class="tgl__more"> predmete</span><span class="tgl__n" data-moji-c></span></span><input type="checkbox" role="switch" checked data-moji-only><i class="tgl__s" aria-hidden="true"></i></label>
           {#- The notifications switch, as on /mojipredmeti/ (site.js): a phone's is a bell. Greyed where the browser
               can't send them or has them blocked. -#}
-          <label class="tgl tgl--push" data-push hidden><span>Obaveštenja</span><input type="checkbox" role="switch" data-push-on><i class="tgl__s" aria-hidden="true"></i><svg class="i tgl__bell" aria-hidden="true"><use href="/static/icons.svg#i-bell"></use></svg><svg class="i tgl__bell tgl__bell--on" aria-hidden="true"><use href="/static/icons.svg#i-bell-on"></use></svg></label>
+          <label class="tgl tgl--push" data-push hidden><span>Obaveštenja</span><input type="checkbox" role="switch" data-push-on><i class="tgl__s" aria-hidden="true"></i><svg class="i tgl__bell" aria-hidden="true"><use href="#i-bell"></use></svg><svg class="i tgl__bell tgl__bell--on" aria-hidden="true"><use href="#i-bell-on"></use></svg></label>
         </div>
         {#- The picker's page (mojipredmeti.html). With subjects followed, it reads "Izmeni predmete", in the accent
             colour (head.js); a phone shows only the pencil, joined to the switch (style.css). -#}
-        <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Izaberi predmete</span><svg class="i moji__edit" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg></a></div>
+        <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="#i-star"></use></svg><span>Izaberi predmete</span><svg class="i moji__edit" aria-hidden="true"><use href="#i-pencil"></use></svg></a></div>
         {#- The Android app (app/, docs/PLAN-app.md): shown by site.js in an Android browser only, not in the app. The
             APK's fixed address is the release "app" (.github/workflows/app.yml); the i says why and how. Folded under
             "Prikaži više" (style.css), which goes once opened: an offer, not the card's point. -#}
-        <details class="moji__app" data-app-get hidden><summary>Prikaži više</summary><div class="moji__row"><a class="btn" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-github"></use></svg>Skini aplikaciju</a><button type="button" class="btn moji__info" data-app-info aria-label="Zašto aplikacija i kako se instalira">i</button></div></details>
+        <details class="moji__app" data-app-get hidden><summary>Prikaži više</summary><div class="moji__row"><a class="btn" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg>Skini aplikaciju</a><button type="button" class="btn moji__info" data-app-info aria-label="Zašto aplikacija i kako se instalira">i</button></div></details>
       </div>
 
     </div>

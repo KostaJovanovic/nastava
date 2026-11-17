@@ -112,14 +112,14 @@ window.showSaved = function () {
 		if (open.classList.contains("is-set") !== n > 0) {
 			open.classList.toggle("is-set", n > 0);
 			open.querySelector("span").textContent = n ? "Izmeni predmete" : "Izaberi predmete";
-			open.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (n ? "-on" : ""));
+			open.querySelector("use").setAttribute("href", "#i-star" + (n ? "-on" : ""));
 		}
 		const chip = iz.querySelector("[data-moji-c]");
 		if (chip.textContent !== String(n || "")) chip.textContent = n || "";
 	}
 	const tb = d.getElementById("tema"), dark = d.documentElement.dataset.tema === "dark";
 	if (tb) {
-		tb.querySelector("use").setAttribute("href", dark ? "/static/icons.svg#i-moon" : "/static/icons.svg#i-sun");
+		tb.querySelector("use").setAttribute("href", dark ? "#i-moon" : "#i-sun");
 		tb.setAttribute("aria-label", "Tema: " + (dark ? "tamna" : "svetla"));
 	}
 	if (window.pismoButton) window.pismoButton();
@@ -132,7 +132,7 @@ window.showStar = function () {
 	const on = window.mojiNow.has(star.dataset.star);
 	star.hidden = false;
 	star.setAttribute("aria-pressed", on);
-	star.querySelector("use").setAttribute("href", "/static/icons.svg#i-star" + (on ? "-on" : ""));
+	star.querySelector("use").setAttribute("href", "#i-star" + (on ? "-on" : ""));
 	star.querySelector("span").textContent = on ? "Pratiš" : "Prati";
 };
 

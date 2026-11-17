@@ -12,7 +12,7 @@
 {#- data-nodana: no Profesor dana under it on a phone (style.css .filters--dana). -#}
 <div class="mh mh--card" data-nodana>
   <div class="mh__top">
-    <span class="mh__ki"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-{{ n.icon }}"></use></svg></span>
+    <span class="mh__ki"><svg class="i" aria-hidden="true"><use href="#i-{{ n.icon }}"></use></svg></span>
     <h1 id="title">{{ n.name }}</h1>
   </div>
   <p class="mh__sub">{{ n.topics | n }} {{ n.topics | pl('thread') }} · {{ n.count | n }} {{ n.count | pl('post') }}</p>

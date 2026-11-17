@@ -30,7 +30,7 @@
 <ol class="people" data-rows>
   {%- for r in rows %}
   <li class="pc kc" data-find="{{ r.find }}" data-t="{{ r.t }}" data-s="{{ r.s }}" data-c="{{ r.topics }}">
-    <span class="pc__img pc__img--none kc__i" aria-hidden="true"><svg class="i"><use href="/static/icons.svg#i-{{ r.k | slug }}"></use></svg></span>
+    <span class="pc__img pc__img--none kc__i" aria-hidden="true"><svg class="i"><use href="#i-{{ r.k | slug }}"></use></svg></span>
     <div class="pc__t">
       <a class="pc__a" href="{{ r.k | katedra_href }}">{{ r.k | katedra | capitalize }}</a>
       <p>{{ r.k }}</p>

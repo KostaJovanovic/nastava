@@ -14,7 +14,7 @@
 <div class="mh">
   <h1 id="title">{{ v.title }}</h1>
   <p class="mh__sub"><span class="src">{{ mark }}</span> stranica sa {{ host }}, {% if _old %}verzija od {{ v.first_seen | dmy }} do {{ v.last_seen | dmy }}{% else %}provereno {{ v.last_seen | dmy }}{% endif %}
-    {%- if page.gone %} · <span class="gone">uklonjeno sa sajta katedre</span>{% else %} · <a href="{{ page.link }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-external"></use></svg></a>{% endif %}</p>
+    {%- if page.gone %} · <span class="gone">uklonjeno sa sajta katedre</span>{% else %} · <a href="{{ page.link }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a>{% endif %}</p>
 </div>
 {%- if _old %}
 <p class="note">Ovo je ranija verzija stranice. <a href="{{ page.versions[0].href }}">Najnovija verzija</a></p>

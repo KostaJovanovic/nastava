@@ -17,7 +17,7 @@ const load = () => lib || (lib = (async () => {
 
 const svg = (path) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
 const ICON = {
-  x: '<svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"/></svg>',
+  x: '<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>',
   find: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>'),
   toc: svg('<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>'),
   up: svg('<path d="m6 15 6-6 6 6"/>'),

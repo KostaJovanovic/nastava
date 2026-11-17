@@ -19,8 +19,8 @@
     <h1 id="title">{{ name }}</h1>
     {%- if not archive and not researchers %}
     <div class="mh__btns">
-      <a class="btn arch kat" href="/katedre/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-katedre"></use></svg><span>Katedre</span></a>
-      <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span><b class="arch__n">{{ left | length | n }}</b></a>
+      <a class="btn arch kat" href="/katedre/"><svg class="i" aria-hidden="true"><use href="#i-katedre"></use></svg><span>Katedre</span></a>
+      <a class="btn arch" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="#i-folder"></use></svg><span>Arhiva<span class="arch__more"> nastavnika</span></span><b class="arch__n">{{ left | length | n }}</b></a>
     </div>
     {%- endif %}
   </div>
@@ -118,6 +118,6 @@
   <h2 class="sg__h">Više nisu na fakultetu <span>· <b data-left-n>{{ left | length }}</b></span></h2>
   <ol class="people" data-rows>{% for t in left %}{{ card(t) }}{% endfor %}</ol>
 </section>
-<a class="btn arch-all" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-folder"></use></svg><span>Arhiva nastavnika: <b>{{ left | length | n }}</b> koji više nisu na fakultetu</span><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"></use></svg></a>
+<a class="btn arch-all" href="/nastavnici/arhiva/"><svg class="i" aria-hidden="true"><use href="#i-folder"></use></svg><span>Arhiva nastavnika: <b>{{ left | length | n }}</b> koji više nisu na fakultetu</span><svg class="i" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
 {%- endif %}
 {% endblock %}
