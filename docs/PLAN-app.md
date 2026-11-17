@@ -316,6 +316,27 @@ under the header, offline only: "Bez interneta · sačuvano 16. 11. u 19:17" (th
 subject's saved files stay until they age out of the 7 days, like any other; refollowing costs nothing. Only the
 prefetched files age out; a file the reader tapped stays in the app's cache as now.
 
+### 10. Updates of the APK (planning, 2026-11-17; no code until agreed)
+
+The site's changes reach the app without an update; a new APK is for the native part only (120 Hz, plugins). As
+mbrd does (`mobile/android/.../MbrdUpdate.java`), smaller:
+
+- **The check, native, at most once a day, when the app opens** (MainActivity.onCreate, on a background thread; the
+  day's time in SharedPreferences). One request to `api.github.com/repos/KostaJovanovic/nastava/releases/tags/app`
+  (not the Worker: no quota of ours; GitHub allows 60 an hour per address). Offline or no answer: the next opening
+  tries again.
+- **The version:** the release "app" has one fixed `masinci.apk`, so app.yml gives the asset the label `0.<N>`
+  (`gh release upload app masinci.apk#0.$N`); newer than the installed versionName → an update.
+- **On the page:** the sidebar's "Skini aplikaciju" row (`data-app-get`, the same button and GitHub icon) shows in
+  the app too, saying "Skini noviju verziju", without the i and without the leave dialog. site.js asks the app
+  (a small plugin method in MainActivity, `Update.available()`) after load, so a page change needs no new APK.
+- **A tap:** the app downloads the APK itself (the button shows the percent), checks it against GitHub's SHA-256
+  for the asset, that it is our package and has a higher versionCode, then hands it to Android's PackageInstaller.
+  Android asks once to allow Mašinci to install apps (its own screen; the app opens it), then shows its install
+  screen; the app closes and reopens updated. Needs `REQUEST_INSTALL_PACKAGES` in the manifest.
+- **Not in mbrd's way:** no quiet download in the background, no settings switch, no "check now".
+- The first release with this still comes the old way (the site's button); every later one through the app.
+
 ## Effort
 
 About a day with a phone plugged in. New code roughly 150 lines plus the workflow.
