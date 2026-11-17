@@ -248,8 +248,9 @@ assert _p["tree"] == [
     ),
     dict(n="Катедре", s=[], c=[_g("", [3])]),
 ], _p["tree"]
-# The subject filter's teachers by their shown name; the cards (people) by the full one (load_teachers page_name).
-assert _p["teachers"] == [["Н", [1]]] and _p["people"] == [
+# The teachers and the cards (people) by the full name (load_teachers page_name): site.js finds a teacher's card by it
+# ("Predaju"); the picker's search by name still finds the shown one in it.
+assert _p["teachers"] == [["Н Н. Н", [1]]] and _p["people"] == [
     ["Н Н. Н", "/n/", "/foto/n.jpg", "доцент · математика"],
     ["Г Г. Г", "/g/", None, "доцент · ~1950–1980", 40],
     ["Ж Ж. Ж", "/z/", None, "do 1990", None],

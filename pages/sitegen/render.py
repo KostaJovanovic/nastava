@@ -291,7 +291,8 @@ def render_katedre(site, db, teachers, subjects, topics, sajt=None):
         intro, own = department_intro(d["html"]) if d else ("", None)
         subs = sorted(
             (s for s in subjects.values() if s.get("katedra") == k),
-            key=lambda s: (HOME_ORDER.index(s["smer"]["key"]) if s["smer"].get("key") in HOME_ORDER else 99, -s["topics"], fold(s["name"])),
+            # The smer's key too: two smerovi outside HOME_ORDER interleaved by topics would split groupby's headings.
+            key=lambda s: (HOME_ORDER.index(s["smer"]["key"]) if s["smer"].get("key") in HOME_ORDER else 99, s["smer"].get("key") or "", -s["topics"], fold(s["name"])),
         )
         groups = [(m["label"], list(g)) for m, g in groupby(subs, key=lambda s: s["smer"])]
         rows.append(dict(k=k, find=fold(k), t=sum(t["katedra"] == k for t in listed), s=len(subs), topics=sum(s["topics"] for s in subs)))
@@ -421,7 +422,8 @@ def picker(subjects, book, teachers, items=()):
         tree=nodes(tree),
         posters=posters,
         teachers=[
-            [t["shown"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
+            # page_name, as people has it: site.js finds the teacher's card there by this name ("Predaju").
+            [t["page_name"], sorted({at[("f", c["subj"]["id"])] for c in t["courses"] if c["subj"]})]
             for t in teachers
             if not t["gone"] and any(c["subj"] for c in t["courses"])
         ],
