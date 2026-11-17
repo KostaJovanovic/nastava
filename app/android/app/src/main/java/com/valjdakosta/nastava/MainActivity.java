@@ -1,5 +1,6 @@
 package com.valjdakosta.nastava;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.Display;
@@ -7,6 +8,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -48,6 +50,16 @@ public class MainActivity extends BridgeActivity {
         getBridge().setWebViewClient(new BridgeWebViewClient(getBridge()) {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {}
+
+            // As Capacitor's (no listener here wants the error), but the offline page is told which page failed
+            // (?u=): its "Pokušaj ponovo" loads that one, not the page before it.
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                String page = getBridge().getErrorUrl();
+                if (page != null && request.isForMainFrame()) {
+                    view.loadUrl(page + "?u=" + Uri.encode(request.getUrl().toString()));
+                }
+            }
         });
     }
 
