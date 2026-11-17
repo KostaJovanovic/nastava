@@ -156,7 +156,11 @@ def save(db, file_id, result):
         return "missing"
     name, data, modified = result
     if name is None or (is_html_page(data) and not name.lower().endswith((".htm", ".html"))):
-        db.execute("update documents set error = ? where id = ?", ("html page, not a file" if name else "no file name", file_id))
+        # Tried again on later runs (a login page in a hiccup), but not forever: the fifth time it is final, as a 404.
+        why = "html page, not a file" if name else "no file name"
+        before = (db.execute("select error from documents where id = ?", (file_id,)).fetchone() or [None])[0] or ""
+        n = int(m[1]) + 1 if (m := re.fullmatch(re.escape(why) + r" \((\d+)\)", before)) else 1
+        db.execute("update documents set error = ? where id = ?", ("404" if n >= 5 else f"{why} ({n})", file_id))
         return "error"
     kind = sniff(data)
     if kind in IMAGE_END:

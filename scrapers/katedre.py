@@ -412,9 +412,12 @@ def fetch(s, url):
     try:
         r = s.get(url, timeout=60, stream=True)
     except requests.RequestException:
-        return None, url
+        return None, None  # no answer: the page may still be there (crawl)
     finally:
         time.sleep(DELAY)
+    if r.status_code == 429 or r.status_code >= 500:
+        r.close()
+        return None, None
     if r.status_code != 200 or not re.search(r"html|json", r.headers.get("Content-Type", "")):
         r.close()
         return None, r.url
@@ -426,11 +429,14 @@ def crawl(db, s, site, starts, keep, seen, whole=False):
     """whole (site): every page is followed, all but the announcement ones (sync's) stored, no notices read."""
     host, keep = urlsplit(starts[0]).hostname, re.compile(keep)
     mine = (lambda u: not announcement(site, u)) if whole else keep.search
-    queue, queued, got, new = deque(map(norm, starts)), set(map(norm, starts)), set(), 0
+    queue, queued, got, new, missed = deque(map(norm, starts)), set(map(norm, starts)), set(), 0, 0
+    stored = {u for (u,) in db.execute("select distinct url from katedre_pages where site = ? and not gone", (site,))}
     while queue and len(got) < MAX:
         url = queue.popleft()
         html, final = fetch(s, url)
-        if html is None or urlsplit(final).hostname != host:
+        # Only a stored page counts: a dead link that always gives a 500 must not keep the site's pages from ever going.
+        missed += final is None and url in stored
+        if html is None or urlsplit(final or url).hostname != host:
             continue
         url = norm(final)
         if url in got:  # a redirect to a page already stored
@@ -456,9 +462,10 @@ def crawl(db, s, site, starts, keep, seen, whole=False):
             ):
                 queued.add(u)
                 queue.append(u)
-    # A page not reached is gone, unless the crawl stopped early (MAX) or the site did not answer; only among this
-    # crawl's own pages (sync's announcement pages or site's others), so neither marks the other's gone.
-    if got and not queue:
+    # A page not reached is gone, unless the crawl stopped early (MAX) or the site did not answer, all of it or a page
+    # (a timeout, a 5xx: the pages behind it were not reached either); only among this crawl's own pages (sync's
+    # announcement pages or site's others), so neither marks the other's gone.
+    if got and not queue and not missed:
         urls = [u for (u,) in db.execute("select distinct url from katedre_pages where site = ?", (site,))]
         db.executemany("update katedre_pages set gone = 1 where url = ?", [(u,) for u in urls if mine(u) and u not in got])
         db.commit()
