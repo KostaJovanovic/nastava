@@ -12,7 +12,8 @@ from playwright.sync_api import sync_playwright
 STATIC = Path(__file__).resolve().parent / "static"
 SIZES = {"apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.png": 512}
 # The Android app's (docs/PLAN-app.md): @capacitor/assets makes its icons from these (cd app && npx capacitor-assets
-# generate --android), and the notification's small icon is the badge.
+# generate --android), and the notification's small icon is the badge. After generating, put back the <monochrome>
+# layer in mipmap-anydpi-v26/ic_launcher*.xml (Android 13+'s themed icons: the foreground again), which it drops.
 APP = STATIC.parent.parent / "app"
 NOTIFY = APP / "android/app/src/main/res/drawable/ic_notify.png"
 

@@ -27,14 +27,15 @@ Rasporedi imaju preview.
 - 691 **Održavanje:** ova strana.
 
 ### Aplikacija za Android
-- 700, 714, 719 [novo] **Sajt ima aplikaciju za Android.** U browseru na Android telefonu dugme `Skini aplikaciju`
-  je u side panelu.
+- 700, 714, 719 [novo] **Sajt ima aplikaciju za Android.** U browseru na Android telefonu dugme
+  `Skini aplikaciju` je u side panelu i u traci na dnu.
 - 705–706 [novo] **Obaveštenja stižu i u aplikaciju**, kao u browseru.
 - 702–703, 710 **Aplikacija se otvara uz logo koji se crta**, a header ne ide ispod status bar-a.
 - 715, 718, 754 [novo] **Bez interneta** aplikacija kaže da sajt nije dostupan. `Pokušaj ponovo` učita baš stranu
   koja nije uspela.
 - 730 [brže] **Animacije u aplikaciji** su glatkije na telefonima od 120 Hz.
-- 760 [novo] **Aplikacija sama proverava da li ima nova verzija.**
+- 760, 765 [novo] **Aplikacija sama proverava da li ima nova verzija** i skida je dugmetom `Skini noviju verziju`.
+  U Android browseru `Skini aplikaciju` je i u traci na dnu.
 
 ### Sajt
 - 728, 757 [novo] **PDF-ovi se otvaraju na samom sajtu**, u browseru i u aplikaciji. Back ga zatvara.
@@ -43,6 +44,10 @@ Rasporedi imaju preview.
 - 732–734 [brže] **Sajt se brže učitava** jer browser duže čuva njegove fajlove.
 - 722 [brže] **Slike nastavnika** su manje, pa se brže učitavaju.
 - 720 **Traka predmeta** ide preko cele širine strane.
+- 766 **Na telefonu nema linka za nazad** iznad naslova strane. Nazad vodi Back telefona.
+- 767 [ispravka] **Dugačko ime nastavnika** na telefonu više ne ide preko ikonice katedre.
+- 768 [novo] **Na iPhone-u** traka na dnu objašnjava kako da dodaš sajt na početni ekran, da bi obaveštenja stizala.
+  PDF se otvara uz kratku animaciju, a red koji dodirneš odmah promeni boju.
 - 697 **Ikonice na karticama katedri** su na sredini.
 - 738–740 [ispravka] **Sitne greške:** naslovi listi se menjaju sa pismom, a `Predaju` na strani predmeta opet nalazi
   nastavnike.
@@ -50,7 +55,7 @@ Rasporedi imaju preview.
 - 743–744, 751–752 [ispravka] **Obaveštenja sa sajtova katedri** se više ne propuštaju.
 - 748–749, 753 [ispravka] **Dva odgovora iz iste sekunde** imaju svaki svoj link. Naslovi vesti nemaju višak razmaka.
 - 694–696, 698–699, 701, 704, 707–709, 711–713, 716–717, 721, 723–727, 731, 736–737, 745–747, 750, 755–756, 758–759,
-  761–762 **Održavanje:** plan aplikacije, testovi i scraperi, ova strana.
+  761–764 **Održavanje:** plan aplikacije, testovi i scraperi, ova strana.
 
 ## 15. novembra 2026.
 Profesori emeritusi su u arhivi.

@@ -66,6 +66,10 @@ export function open(url, name, how) {
   const box = $('.pv__box'), bar = $('.pv__load > i');
   d.body.append(el);
   d.documentElement.classList.add('pv-on');
+  // It rises in from a little below and leaves the same way down, faster (teardown); at once with reduced motion.
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SLIDE = [{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }];
+  if (!still) el.animate(SLIDE, { duration: 220, easing: 'cubic-bezier(.2, .8, .2, 1)' });
   // Back (Android's, the browser's) closes the viewer: it has a history entry of its own.
   history.pushState({ pv: 1 }, '');
   const v = cur = { el, task: null, closed: false };
@@ -79,7 +83,10 @@ export function open(url, name, how) {
     cur = null;
     removeEventListener('popstate', onPop);
     if (v.task) v.task.destroy();
-    el.remove();
+    // Out from where it is now (closed mid-rise too): one keyframe, so it starts from the rise's current frame.
+    el.style.pointerEvents = 'none';
+    if (still) el.remove();
+    else el.animate([SLIDE[0]], { duration: 160, easing: 'ease-in', fill: 'forwards' }).finished.then(() => el.remove(), () => el.remove());
     d.documentElement.classList.remove('pv-on');
     if (back && back.focus) back.focus({ preventScroll: true });
     if (v.after) v.after();
@@ -213,7 +220,7 @@ export function open(url, name, how) {
     const task = v.task = pdfjs.getDocument({ url, wasmUrl: BASE + 'wasm/', standardFontDataUrl: BASE + 'standard_fonts/',
       isEvalSupported: false });
     task.onPassword = () => fail();
-    task.onProgress = ({ loaded, total }) => { if (total) bar.style.width = Math.min(100, loaded / total * 100) + '%'; };
+    task.onProgress = ({ loaded, total }) => { if (total) bar.style.transform = 'scaleX(' + Math.max(.05, Math.min(1, loaded / total)) + ')'; };
     const doc = await task.promise;
     if (v.closed) return;
     $('.pv__load').hidden = true;

@@ -900,6 +900,10 @@
   var ua = navigator.userAgent;
   var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var android = /Android/.test(ua);
+  // An iPhone or iPad in any browser (each is Safari's engine; an iPad says Macintosh, with touch), not opened from
+  // the home screen: there the site is installed already.
+  var ios = (/iPhone|iPad|iPod/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
+    && !navigator.standalone && !matchMedia('(display-mode: standalone)').matches;
   var inApp = /FBAN|FBAV|Instagram|Messenger|Line\/|TikTok|Snapchat/.test(ua);
   var brow = /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Edg(A|iOS)?\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera'
     : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : '';
@@ -1170,7 +1174,7 @@
       });
     };
   } else {
-    var iphone = navigator.standalone === false;
+    var iphone = ios;
     pushKind = iphone ? 'install' : 'none';
     showPush(false, iphone ? 'Na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.' : 'Ovaj browser ne može da prima obaveštenja.');
     if (iphone) said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
@@ -1179,7 +1183,7 @@
   /* "Skini aplikaciju" (sidebar.html): in an Android browser, not in the app itself. The button is an outside link
      (the leave dialog below), with why above it; the i says how to install, in a dialog like that one. */
   var appGet = d.querySelector('[data-app-get]');
-  var appDialog = function (id, body) {
+  var appDialog = function (id, body, title) {
     var dlg = null;
     return function (e) {
       e.preventDefault();
@@ -1187,7 +1191,7 @@
         dlg = d.createElement('dialog');
         dlg.className = 'leave';
         dlg.setAttribute('aria-labelledby', id);
-        dlg.innerHTML = '<div class="leave__in"><h2 id="' + id + '">Aplikacija za Android</h2>' + body + '</div>';
+        dlg.innerHTML = '<div class="leave__in"><h2 id="' + id + '">' + (title || 'Aplikacija za Android') + '</h2>' + body + '</div>';
         d.body.appendChild(dlg);
         dlg.addEventListener('click', function (e2) {
           if (e2.target === dlg || e2.target.closest('button, a')) setTimeout(function () { dlg.close(); });
@@ -1234,21 +1238,30 @@
     });
   });
   /* In place of the browser's own "install the site" offer (head.js cancels it): a bar offering the APK, until
-     closed or followed, then never again ("apkbar"). Not on the picker, whose foot bar takes the same place. */
+     closed or followed, then never again ("apkbar"). Not on the picker, whose foot bar takes the same place. On an
+     iPhone (ios) no APK: the site on the home screen (the PWA, where its notifications work), its "Kako?" the
+     steps; no "Skini aplikaciju" there either (android above). */
   var seenBar = function () { try { return localStorage.getItem('apkbar'); } catch (e) { return '1'; } };
-  if (android && !app && !inApp && !seenBar() && !d.querySelector('.mp, .apkbar')) {
+  if ((android || ios) && !app && !inApp && !seenBar() && !d.querySelector('.mp, .apkbar')) {
     var bar = d.createElement('div');
     bar.className = 'apkbar';
     bar.setAttribute('role', 'region');
-    bar.setAttribute('aria-label', 'Aplikacija za Android');
-    bar.innerHTML = '<span>Aplikacija za Android: obaveštenja stižu na vreme.</span>'
-      + '<a class="btn btn--pri" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk">Skini</a>'
+    bar.setAttribute('aria-label', ios ? 'Sajt na početnom ekranu' : 'Aplikacija za Android');
+    bar.innerHTML = (ios ? '<span>Dodaj sajt na početni ekran: obaveštenja stižu na vreme.</span>'
+        + '<button type="button" class="btn btn--pri" data-pwa>Kako?</button>'
+      : '<span>Aplikacija za Android: obaveštenja stižu na vreme.</span>'
+        + '<a class="btn btn--pri" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk">Skini</a>')
       + '<button type="button" class="apkbar__x" aria-label="Zatvori"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg></button>';
     bar.addEventListener('click', function (e) {
       if (!e.target.closest('a, button')) return;
       try { localStorage.setItem('apkbar', '1'); } catch (e2) {}
       setTimeout(function () { bar.remove(); }); // after the link's download has started
     });
+    if (ios) bar.querySelector('[data-pwa]').addEventListener('click', appDialog('pwa-h',
+      '<ol class="leave__steps"><li>Dodirni Deli (kvadrat sa strelicom nagore).</li>'
+      + '<li>Izaberi „Dodaj na početni ekran”, pa „Dodaj”.</li>'
+      + '<li>Otvori sajt sa početnog ekrana i uključi obaveštenja.</li></ol>'
+      + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div>', 'Sajt na početnom ekranu'));
     d.body.appendChild(bar);
   }
 
@@ -1352,39 +1365,68 @@
      between the header and the tab bar scales around the same point (the pulled edge): a common wrapper can't take
      the transform, as the fixed tab bar inside it would move with it. */
   if (app && !matchMedia('(prefers-reduced-motion: reduce)').matches) (function () {
-    var y0 = null, edge = 0, parts = [];
+    var y0 = null, edge = 0, last = 0, parts = [], root = d.scrollingElement;
     var set = function (s, back) {
       parts.forEach(function (el) {
         el.style.transition = back ? 'transform .35s cubic-bezier(.2,.8,.2,1)' : 'none';
         el.style.transform = s === 1 ? '' : 'scaleY(' + s + ')';
       });
     };
+    // The blocks to stretch, each anchored, in its own box, at the page's top (dir 1) or bottom (-1).
+    var anchor = function (dir) {
+      parts = [].slice.call(d.querySelectorAll('.main, .side > .filters:not([hidden]), .ft'));
+      var at = dir > 0 ? 0 : root.scrollHeight;
+      parts.forEach(function (el) {
+        el.getAnimations().forEach(function (a) { a.cancel(); });
+        el.style.transformOrigin = '50% ' + (at - el.getBoundingClientRect().top - root.scrollTop) + 'px';
+      });
+    };
+    // Damped: grows fast at first, never past 6 %; pull: the finger's way past the edge for a stretch s (its inverse).
+    var stretch = function (dy) { return 1 + .06 * (1 - Math.exp(-dy / 220)); };
+    var pull = function (s) { return -220 * Math.log(1 - Math.min(.99, (s - 1) / .06)); };
     d.addEventListener('touchstart', function (e) {
       y0 = e.touches.length === 1 && !e.target.closest('dialog, .hd, .snav') ? e.touches[0].clientY : null;
       edge = 0;
+      // Caught while springing back: held where it is on the screen, the finger's way taken on from there.
+      var s = parts.length && new DOMMatrix(getComputedStyle(parts[0]).transform).d;
+      if (y0 === null || !s || s <= 1.001 || !last) return;
+      edge = last;
+      y0 -= edge * pull(s);
+      parts.forEach(function (el) { el.getAnimations().forEach(function (a) { a.cancel(); }); });
+      set(s);
     }, { passive: true });
     d.addEventListener('touchmove', function (e) {
       if (y0 === null) return;
-      var y = e.touches[0].clientY, root = d.scrollingElement;
+      var y = e.touches[0].clientY;
       var top = root.scrollTop <= 0, bottom = root.scrollTop + innerHeight >= root.scrollHeight - 1;
       var dir = y > y0 && top ? 1 : y < y0 && bottom ? -1 : 0;
       if (!dir) { if (edge) set(1); edge = 0; y0 = y; return; }
-      if (dir !== edge) {
-        // The anchor, in each block's own box: the page's top or bottom.
-        edge = dir;
-        parts = [].slice.call(d.querySelectorAll('.main, .side > .filters:not([hidden]), .ft'));
-        var at = dir > 0 ? 0 : root.scrollHeight;
-        parts.forEach(function (el) {
-          el.style.transformOrigin = '50% ' + (at - el.getBoundingClientRect().top - root.scrollTop) + 'px';
-        });
-      }
-      // Damped: grows fast at first, never past 6 %.
-      set(1 + .06 * (1 - Math.exp(-Math.abs(y - y0) / 220)));
+      if (dir !== edge) anchor(last = edge = dir);
+      set(stretch(Math.abs(y - y0)));
     }, { passive: true });
     var end = function () { if (edge) set(1, true); edge = 0; y0 = null; };
     d.addEventListener('touchend', end);
     d.addEventListener('touchcancel', end);
+    // A fling that runs into the top or the bottom: a short stretch at its speed and back, as a pull would.
+    var sy = root.scrollTop, st = 0, v = 0;
+    addEventListener('scroll', function () {
+      var now = performance.now(), y = root.scrollTop;
+      if (now - st < 100) v = (y - sy) / (now - st); else v = 0;
+      sy = y; st = now;
+      var dir = y <= 0 && v < 0 ? 1 : y + innerHeight >= root.scrollHeight - 1 && v > 0 ? -1 : 0;
+      if (!dir || y0 !== null || Math.abs(v) < .5) return;
+      anchor(last = dir);
+      // shortcut: v px/ms as a pull of 60 ms' travel; tune by feel on a phone.
+      var s = stretch(Math.abs(v) * 60);
+      parts.forEach(function (el) {
+        el.animate([{ transform: 'none' }, { transform: 'scaleY(' + s + ')', offset: .3, easing: 'cubic-bezier(.2,.8,.2,1)' }, { transform: 'none' }],
+          { duration: 450, easing: 'cubic-bezier(.3, 0, .4, 1)' });
+      });
+      v = 0;
+    }, { passive: true });
   })();
+  // iOS Safari sets :active (style.css: the buttons' press, the rows' tint) only where a touchstart listener exists.
+  d.addEventListener('touchstart', function () {}, { passive: true });
 
   /* Our own PDFs open in the site's viewer (static/pdfview.js, docs/PLAN-pdf.md), in a browser and in the app alike;
      one it can't show (or no viewer) opens in the phone's app, or the browser's own viewer in this tab (a new one,

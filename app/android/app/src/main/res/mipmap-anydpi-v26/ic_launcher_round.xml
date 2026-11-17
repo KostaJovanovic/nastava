@@ -6,4 +6,8 @@
     <foreground>
         <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />
     </foreground>
+    <!-- Android 13+'s themed icons: the logo's shape (the front's alpha) in the wallpaper's colours. -->
+    <monochrome>
+        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />
+    </monochrome>
 </adaptive-icon>
