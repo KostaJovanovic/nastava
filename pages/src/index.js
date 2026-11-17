@@ -20,12 +20,28 @@ function cacheControl(url) {
 	// An item or a news post rarely changes, but its side panel (counts, links) and an edited post do: a day, at the
 	// edge too.
 	if (path.startsWith("/item/") || path.startsWith("/vest/")) return "public, max-age=86400";
-	// A /static/ file the pages link with ?v=<its hash> (build.py VERSIONED: the icons, CSS, JS): a changed file is a
-	// new URL. shortcut: a request in the minute GitHub Pages still serves the old file keeps it a year under the new
-	// hash; if a deploy ever shows that, check the body's hash here before caching.
-	if (path.startsWith("/static/") && url.searchParams.has("v")) return `public, max-age=${YEAR}, immutable`;
+	// A file linked with ?v=<its hash> (build.py VERSIONED, izbor.json, novo.json, rows-<year>.json): a changed file is a
+	// new URL. Only once the body is checked against the hash (verified): before that, GitHub Pages may still serve the
+	// old file under the new URL.
+	if (HASHED.test(url.searchParams.get("v") || "")) return "public, max-age=300";
+	// Teachers' photos, fonts and icons: named by their source (photo_path), not their bytes, so a changed one keeps its
+	// name; they rarely change. A week saves a browser's recheck at every visit.
+	if (WEEK.test(path)) return "public, max-age=604800";
 	// The home page, /static/ and the Pagefind entry files change with each deploy.
 	return "public, max-age=300";
+}
+
+// output.py v_of: the first 10 hex digits of the file's SHA-256.
+const HASHED = /^[0-9a-f]{10}$/;
+const WEEK = /^\/(foto\/|static\/fonts\/|static\/(favicon\.svg|apple-touch-icon\.png|manifest\.webmanifest|icon-\d+\.png|badge\.png)$)/;
+
+// A body that is the file its ?v= names: kept a year (the browser and the edge never ask again).
+async function verified(url, response) {
+	const v = url.searchParams.get("v");
+	if (!HASHED.test(v || "")) return null;
+	const body = await response.arrayBuffer();
+	const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", body))].map((b) => b.toString(16).padStart(2, "0")).join("");
+	return { body, ok: hex.startsWith(v) };
 }
 
 // shell.html once per deploy, not once per page. GitHub Pages stamps a deploy's files with Last-Modified seconds apart
@@ -48,6 +64,17 @@ async function shellFor(url, fragment, ctx) {
 		ctx.waitUntil(caches.default.put(key, new Response(shell.clone().body, { headers })));
 	}
 	return shell.text();
+}
+
+// A post or a news page is kept a day (cacheControl), under its deploy: the kept shell's stamp is in its cache key, so
+// once a deploy's shell is kept (the first fragment of that deploy fetched, minutes after it), the old copies are
+// passed over and the new CSS and JS reach every post, not a day later. Only Cloudflare's copy: a browser's stays.
+async function cacheKey(url) {
+	if (!url.pathname.startsWith("/item/") && !url.pathname.startsWith("/vest/")) return new Request(url.toString());
+	const kept = await caches.default.match(new Request(`${url.origin}/__shell/`));
+	const key = new URL(url);
+	key.searchParams.set("__deploy", kept?.headers.get("X-Deploy") ?? "");
+	return new Request(key.toString());
 }
 
 async function page(url, ctx) {
@@ -230,22 +257,28 @@ export default {
 			url.hostname = "masinci.org";
 			return Response.redirect(url.toString(), 301);
 		}
-		const key = new Request(url.toString());
+		const key = await cacheKey(url);
 		const cached = await caches.default.match(key);
 		if (cached) {
-			// The zone's Browser Cache TTL replaces Cache-Control on a cached response, so set it again.
+			// The zone's Browser Cache TTL replaces Cache-Control on a cached response, so set it again (X-Cache-Control:
+			// the one it was stored with, a verified file's year).
 			const response = new Response(cached.body, cached);
-			response.headers.set("Cache-Control", cacheControl(url));
+			response.headers.set("Cache-Control", cached.headers.get("X-Cache-Control") || cacheControl(url));
+			response.headers.delete("X-Cache-Control");
 			return response;
 		}
 		const origin = url.pathname.startsWith("/files/") ? await releaseFile(url.pathname) : await page(url, ctx);
 		if (!origin) return new Response("Not found", { status: 404 });
 		// Cache only a 200: a 404 for a new Pagefind file must not stay in the cache.
 		if (origin.status !== 200) return origin;
-		const response = new Response(origin.body, origin);
+		const check = await verified(url, origin);
+		const cc = check?.ok ? `public, max-age=${YEAR}, immutable` : cacheControl(url);
+		const response = new Response(check ? check.body : origin.body, origin);
 		response.headers.delete("Expires");
-		response.headers.set("Cache-Control", cacheControl(url));
-		ctx.waitUntil(caches.default.put(key, response.clone()));
+		response.headers.set("Cache-Control", cc);
+		const kept = response.clone();
+		kept.headers.set("X-Cache-Control", cc);
+		ctx.waitUntil(caches.default.put(key, kept));
 		return response;
 	},
 };

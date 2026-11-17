@@ -77,6 +77,61 @@ test("shell.html is fetched once per deploy; a shell from another deploy is used
 	}
 });
 
+test("a ?v= file is kept a year only when its body has that hash; a cache hit keeps what it was stored with", async () => {
+	const real = { fetch: globalThis.fetch, caches: globalThis.caches };
+	const store = new Map();
+	globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res) } };
+	// sha256("abc") starts ba7816bf8f.
+	globalThis.fetch = async () => new Response("abc", { headers: { "Content-Type": "application/json" } });
+	const ctx = { waitUntil: (p) => p };
+	const get = (path) => worker.fetch(new Request(`https://masinci.org${path}`), {}, ctx);
+	try {
+		const year = "public, max-age=31536000, immutable";
+		const ok = await get("/izbor.json?v=ba7816bf8f");
+		assert.equal(ok.headers.get("Cache-Control"), year);
+		assert.equal(await ok.text(), "abc");
+		// GitHub Pages still serving the old file under the new hash: a short cache only.
+		assert.equal((await get("/izbor.json?v=0123456789")).headers.get("Cache-Control"), "public, max-age=300");
+		assert.equal((await get("/izbor.json?v=0123456789")).headers.get("Cache-Control"), "public, max-age=300");
+		const hit = await get("/izbor.json?v=ba7816bf8f");
+		assert.equal(hit.headers.get("Cache-Control"), year);
+		assert.equal(hit.headers.get("X-Cache-Control"), null);
+		assert.equal((await get("/foto/ab.jpg")).headers.get("Cache-Control"), "public, max-age=604800");
+		assert.equal((await get("/static/fonts/Inter.woff2")).headers.get("Cache-Control"), "public, max-age=604800");
+		assert.equal((await get("/static/sw.js")).headers.get("Cache-Control"), "public, max-age=300");
+	} finally {
+		Object.assign(globalThis, real);
+	}
+});
+
+test("a post page is cached per deploy: a newly kept shell passes over the old copies", async () => {
+	const real = { fetch: globalThis.fetch, caches: globalThis.caches };
+	const store = new Map(), got = [];
+	globalThis.caches = { default: { match: async (r) => store.get(r.url)?.clone(), put: async (r, res) => void store.set(r.url, res) } };
+	const D1 = "Sun, 15 Nov 2026 19:09:18 GMT", D2 = "Sun, 15 Nov 2026 19:31:02 GMT";
+	let deploy = D1;
+	globalThis.fetch = async (u) => {
+		got.push(u.slice(u.indexOf("/nastava") + 8));
+		const body = u.endsWith("/shell.html") ? "<html><title></title><!--main--></html>" : `<html lang="sr"><title>T</title><!--/head-->${deploy.slice(17, 25)}</html>`;
+		return new Response(body, { headers: { "Content-Type": "text/html", "Last-Modified": deploy } });
+	};
+	const ctx = { waitUntil: (p) => p };
+	const get = async (path) => (await worker.fetch(new Request(`https://masinci.org${path}`), {}, ctx)).text();
+	try {
+		assert.equal(await get("/item/p1/"), "<html><title>T</title>19:09:18</html>");
+		await get("/item/p1/"); // its first copy was put under the key before the shell was kept: once more, then kept
+		assert.equal(await get("/item/p1/"), "<html><title>T</title>19:09:18</html>");
+		assert.deepEqual(got.splice(0), ["/item/p1/", "/shell.html", "/item/p1/"]);
+		deploy = D2; // a new deploy: the post's copy is the old one until a fragment of D2 keeps D2's shell
+		assert.equal(await get("/item/p1/"), "<html><title>T</title>19:09:18</html>");
+		await get("/predmeti/"); // any page of the new deploy, fetched
+		assert.equal(await get("/item/p1/"), "<html><title>T</title>19:31:02</html>");
+		assert.deepEqual(got.splice(0), ["/predmeti/", "/shell.html", "/item/p1/"]);
+	} finally {
+		Object.assign(globalThis, real);
+	}
+});
+
 test("a subscription is kept, read back with the key, and dropped with no subjects", async () => {
 	const env = { PUSH: kv(), PUSH_KEY: "k" };
 	assert.equal((await post(env, { endpoint: EP, keys, s: [S], t: { [S]: ["pera.peric"] } })).status, 204);
