@@ -158,6 +158,8 @@ class Handler(SimpleHTTPRequestHandler):
                     return self.wfile.write(body)
             except HTTPError as e:
                 return self.send_error(e.code)
+            except OSError:  # no connection, a timeout: the live site did not answer
+                return self.send_error(502)
         if build:
             url = urlsplit(self.path)
             path = unquote(url.path)

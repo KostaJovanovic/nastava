@@ -304,7 +304,8 @@ def found(db, before, at):
             db.execute("select site, count(*) from katedre_pages where rowid > ? group by site", (before["katedre_pages"],))
         )
     waits = []
-    for (p,) in db.execute("select posted from posts where rowid > ?", (before.get("posts", 0),)):
+    # A post without its time (the board's date unreadable) has no wait to count.
+    for (p,) in db.execute("select posted from posts where rowid > ? and posted is not null", (before.get("posts", 0),)):
         m = (at - UTC(p)).total_seconds() / 60
         if 0 <= m <= 7 * 1440:
             waits.append(round(m))
