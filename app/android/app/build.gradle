@@ -18,6 +18,11 @@ android {
         }
     }
     buildTypes {
+        // The dev app (Mašinci dev): installs beside the released one, so a test build leaves its notifications and
+        // subjects alone. Firebase knows both IDs (google-services.json).
+        debug {
+            applicationIdSuffix ".dev"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
