@@ -84,6 +84,10 @@ def check_private():
     data, why = redact_students("R.xlsx", xlsx([["Ime i prezime", "Broj indeksa", "Bodovi"], ["Ana Ilić", "12/2024", 24]]))
     rows = list(openpyxl.load_workbook(io.BytesIO(data)).active.iter_rows(values_only=True))
     assert rows[1] == ("███ ████", "███████", 24), rows
+    # A name left above the table, in a student's column: blacked out too.
+    data, why = redact_students("M.xlsx", xlsx([[None, "ШУЋУР", None], ["р.бр.", "ШПАН", "Bodovi"], [1, "Ilić", 24]]))
+    rows = list(openpyxl.load_workbook(io.BytesIO(data)).active.iter_rows(values_only=True))
+    assert rows[0][1] == "█████" and rows[2] == (1, "████", 24), rows
     # Only index numbers and no heading to find the names by: the names could stay, so not published.
     sheet = xlsx([["", "", ""]] + [[f"Ime{i} Prezime{i}", f"{i}/2023", 7] for i in range(5)])
     assert redact_students("S.xlsx", sheet)[0] is None

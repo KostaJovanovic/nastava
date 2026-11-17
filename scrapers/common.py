@@ -271,25 +271,28 @@ def blocks(s):
 
 
 def redact_xlsx(data):
-    """A results sheet with its students' columns (WHO_HEAD, under the row naming them) and any index number elsewhere
-    blacked out; the points and grades stay. Returns (the file, how many cells)."""
+    """A results sheet with its students' columns (WHO_HEAD, in the row naming them) and any index number elsewhere
+    blacked out; the points and grades stay. A column is blacked out in every row but its heading's, above it too
+    (names left above the table). Returns (the file, how many cells)."""
     import io
 
     import openpyxl
 
     wb, n = openpyxl.load_workbook(io.BytesIO(data)), 0
     for ws in wb.worksheets:
-        cols, head = set(), None
+        head = next((row for row in ws.iter_rows() if any(roster_head(c.value) for c in row)), None)
+        cols = {c.column for c in head or () if isinstance(c.value, str) and len(c.value.strip()) <= 40 and WHO_HEAD.search(c.value)}
         for row in ws.iter_rows():
-            if head is None and any(roster_head(c.value) for c in row):
-                head = row[0].row
-                cols = {c.column for c in row if isinstance(c.value, str) and len(c.value.strip()) <= 40 and WHO_HEAD.search(c.value)}
+            if head and row[0].row == head[0].row:
                 continue
+            above = head and row[0].row < head[0].row
             for c in row:
                 if c.value is None or isinstance(c.value, str) and c.value.startswith("="):
                     continue
                 v = str(c.value)
-                new = blocks(v) if head and c.column in cols else INDEX_NO.sub(lambda m: blocks(m[0]) if int(m[1]) < 1900 else m[0], v)
+                # Above the heading, a name has no digits; the sheet's title there has its school year.
+                who = c.column in cols and not (above and re.search(r"\d", v))
+                new = blocks(v) if who else INDEX_NO.sub(lambda m: blocks(m[0]) if int(m[1]) < 1900 else m[0], v)
                 if new != v:
                     c.value, n = new, n + 1
     out = io.BytesIO()
