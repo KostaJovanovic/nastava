@@ -136,6 +136,29 @@ window.showStar = function () {
 	star.querySelector("span").textContent = on ? "Pratiš" : "Prati";
 };
 
+// "Nazad" under the crumbs (base.html; site.js tells the whole of it): the page this one was opened from, shown before
+// the first frame, so the rows under it do not move down after it. Gives that page, {u, t}, or null. Not in a
+// prerender: it sees the tab's sessionStorage only once shown (site.js calls it again then).
+// The page the tab showed last ('cur', site.js keepCur), when it is the referrer: else this page has no "Nazad".
+const openedFrom = () => {
+	let left = null, ref = null;
+	try { left = JSON.parse(sessionStorage.getItem("cur")); ref = document.referrer && new URL(document.referrer); } catch (e) {}
+	const from = left && left.u.split("?")[0];
+	return ref && ref.origin === location.origin && from === ref.pathname && from !== location.pathname ? left : null;
+};
+window.showBackLink = function () {
+	if (document.prerendering) return null;
+	const a = document.querySelector("[data-back]"), st = history.state || {};
+	let prev = st.back;
+	if (!prev && (prev = openedFrom())) history.replaceState(Object.assign({}, st, { back: prev }), "");
+	if (a && prev) {
+		a.href = prev.u;
+		a.querySelector("b").textContent = prev.t;
+		a.hidden = false;
+	}
+	return prev || null;
+};
+
 // "Profesor dana" (sidebar.html): t is one of /izbor.json dana (site.js picks it, load_teachers.of_the_day).
 window.fillDana = function (dana, t) {
 	const a = dana.querySelector(".dana__b");

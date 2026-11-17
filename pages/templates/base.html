@@ -44,9 +44,11 @@
 <script src="/static/pismo.js"></script>
 {#- The tab bar's pages (sidebar.html) fetched at once: a tap on one has no network wait. The Worker gives a page 5
     minutes (src/index.js cacheControl), so the next pages take it from the browser's cache. Any other page of the
-    site is prerendered on a hover, or on a phone when its link is on the screen; not the files, the photos and the
-    Worker's own paths. -#}
-<script type="speculationrules">{"prefetch": [{"urls": ["/", "/raspored/", "/nastavnici/", "/link/", "/vesti/"], "eagerness": "immediate"}], "prerender": [{"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": ["/files/*", "/static/*", "/pagefind/*", "/foto/*", "/push*", "/visit*", "/*.xml", "/*.json"]}}]}, "eagerness": "moderate"}]}</script>
+    site: its HTML fetched on a hover, or on a phone when its link is on the screen; prerendered only on a press, as a
+    prerender also loads the page's photos, each one a Worker request. Not the files, the photos and the Worker's own
+    paths. -#}
+{%- set site_pages %}{"and": [{"href_matches": "/*"}, {"not": {"href_matches": ["/files/*", "/static/*", "/pagefind/*", "/foto/*", "/push*", "/visit*", "/*.xml", "/*.json"]}}]}{% endset %}
+<script type="speculationrules">{"prefetch": [{"urls": ["/", "/raspored/", "/nastavnici/", "/link/", "/vesti/"], "eagerness": "immediate"}, {"where": {{ site_pages }}, "eagerness": "moderate"}], "prerender": [{"where": {{ site_pages }}, "eagerness": "conservative"}]}</script>
 <link rel="icon" href="/static/favicon.svg">
 {#- An iPhone's home screen takes no SVG (pages/icons.py). -#}
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -95,6 +97,7 @@
   </nav>
   {#- The page visited before this one in the tab, where there is one (site.js). -#}
   <a class="back" href="/" data-back hidden><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg><span>Nazad: <b></b></span></a>
+  <script>showBackLink()</script>
   {%- endblock %}
 {% block main %}{% endblock %}
 </main>

@@ -1807,21 +1807,12 @@
   var keepCur = function () {
     try { sessionStorage.setItem('cur', JSON.stringify({ u: location.pathname + location.search, t: pageTitle() })); } catch (e) {}
   };
+  // The link itself: head.js showBackLink, before the first frame (base.html); again here, where it gives the same page
+  // (history.state.back, or 'cur' not yet changed: keepCur is next).
   var showBack = function () {
-    var a = d.querySelector('[data-back]'), st = history.state || {}, prev = st.back, left = null, ref = null;
-    if (!prev) {
-      try { left = JSON.parse(sessionStorage.getItem('cur')); ref = d.referrer && new URL(d.referrer); } catch (e) {}
-      var from = left && left.u.split('?')[0];
-      if (ref && ref.origin === location.origin && from === ref.pathname && from !== location.pathname) {
-        prev = left;
-        history.replaceState(Object.assign({}, st, { back: prev }), '');
-      }
-    }
+    var a = d.querySelector('[data-back]'), prev = window.showBackLink();
     keepCur();
     if (!a || !prev) return;
-    a.href = prev.u;
-    a.querySelector('b').textContent = prev.t;
-    a.hidden = false;
     a.addEventListener('click', function (e) {
       if (e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || d.referrer !== location.origin + prev.u) return;
       e.preventDefault();
