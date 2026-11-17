@@ -825,10 +825,11 @@
       return Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
         return fetch(s.href + 'novo.json' + (nv[s.href] ? '?v=' + nv[s.href] : '')).then(function (r) { return r.ok ? r.json() : { rows: [] }; })
           .catch(function () { return { rows: [] }; })
-          // Teachers picked for it (/mojipredmeti/ step 2, s.t): only the threads one of them posted in (r[2]).
+          // Teachers picked for it (/mojipredmeti/ step 2, s.t): only the threads one of them posted in (r[2]), and those
+          // no teacher posted in (a department's notice), as ci/push.py notifies them.
           // shortcut: filters the subject's 10 newest only (output.py MINE), so a picked teacher's older thread is not reached.
           .then(function (j) {
-            return { rows: !s.t ? j.rows : j.rows.filter(function (r) { return (r[2] || []).some(function (x) { return s.t.indexOf(x) > -1; }); }) };
+            return { rows: !s.t ? j.rows : j.rows.filter(function (r) { var ts = r[2] || []; return !ts.length || ts.some(function (x) { return s.t.indexOf(x) > -1; }); }) };
           });
       }));
     }).then(function (all) {
