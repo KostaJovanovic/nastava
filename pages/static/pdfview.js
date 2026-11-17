@@ -40,12 +40,13 @@ export function open(url, name, how) {
     '<div class="pv__bar">' +
       `<button type="button" class="pv__b" data-close aria-label="Zatvori" title="Zatvori">${ICON.x}</button>` +
       '<span class="pv__name"></span>' +
+      '<div class="pv__ctl">' +
       '<label class="pv__page" hidden><input inputmode="numeric" enterkeyhint="go" aria-label="Idi na stranu" title="Idi na stranu"><span></span></label>' +
       `<button type="button" class="pv__b" data-toc aria-label="Sadržaj" title="Sadržaj" hidden>${ICON.toc}</button>` +
       `<button type="button" class="pv__b" data-find aria-label="Pretraži" title="Pretraži" aria-expanded="false">${ICON.find}</button>` +
       (app ? '<button type="button" class="btn pv__open" data-open>Otvori u aplikaciji</button>'
            : '<a class="btn pv__open" data-open>Preuzmi</a>') +
-    '</div>' +
+    '</div></div>' +
     '<form class="pv__find" hidden role="search">' +
       '<input type="search" placeholder="Pretraži dokument" aria-label="Pretraži dokument" enterkeyhint="search">' +
       '<span class="pv__count" aria-live="polite"></span>' +

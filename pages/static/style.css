@@ -568,6 +568,7 @@ a[aria-busy="true"] { opacity: .5; cursor: progress; }
 .pv__b:focus-visible, .pv__page input:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .pv__name { flex: 1; min-width: 0; padding: 0 6px; overflow: hidden; font: 700 15px var(--sans); white-space: nowrap; text-overflow: ellipsis; }
 .pv__page { display: flex; align-items: center; gap: 4px; font: 400 14px var(--sans); white-space: nowrap; }
+.pv__ctl { flex: none; display: flex; align-items: center; gap: 4px; }
 .pv__page input { width: 3.2em; height: 32px; padding: 0 4px; border: 0; border-radius: 6px; background: rgb(255 255 255 / .18); color: #fff; font: inherit; text-align: center; }
 .pv .pv__open { flex: none; margin-left: 4px; min-height: 34px; border-color: transparent; background: #fff; color: var(--red-2); font-weight: 700; }
 .pv .pv__open:hover { border-color: transparent; color: var(--red); }
@@ -589,7 +590,13 @@ a[aria-busy="true"] { opacity: .5; cursor: progress; }
 /* Find: every match faint, the current one strong (the site's mark colours). */
 .pv .textLayer .highlight { --highlight-bg-color: rgb(255 196 0 / .45); --highlight-selected-bg-color: rgb(188 42 77 / .55); }
 .pv .pdfViewer .page { margin: 8px auto; border: 0; box-shadow: 0 1px 4px rgb(0 0 0 / .25); }
-@media (max-width: 560px) { .pv__page span { display: none; } .pv__open { padding: 0 10px; font-size: 13px; } }
+/* A phone: the file's whole name on top (two lines at most), the controls in a row under it. */
+@media (max-width: 700px) {
+  .pv__bar { flex-wrap: wrap; row-gap: 2px; }
+  .pv__name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; overflow-wrap: anywhere; }
+  .pv__ctl { flex-basis: 100%; }
+  .pv .pv__open { margin-left: auto; }
+}
 
 /* ---- Kalendar i rasporedi ---------------------------------------------------- */
 /* The calendar: a banner in the header's colour, unlike the cards under it. */
