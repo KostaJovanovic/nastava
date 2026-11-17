@@ -263,7 +263,9 @@ export default {
 			// The zone's Browser Cache TTL replaces Cache-Control on a cached response, so set it again (X-Cache-Control:
 			// the one it was stored with, a verified file's year).
 			const response = new Response(cached.body, cached);
-			response.headers.set("Cache-Control", cached.headers.get("X-Cache-Control") || cacheControl(url));
+			// None: kept before the check existed, when every /static/ ?v= file was kept a year as it is.
+			const old = url.pathname.startsWith("/static/") && HASHED.test(url.searchParams.get("v") || "");
+			response.headers.set("Cache-Control", cached.headers.get("X-Cache-Control") || (old ? `public, max-age=${YEAR}, immutable` : cacheControl(url)));
 			response.headers.delete("X-Cache-Control");
 			return response;
 		}

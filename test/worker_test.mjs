@@ -96,6 +96,9 @@ test("a ?v= file is kept a year only when its body has that hash; a cache hit ke
 		const hit = await get("/izbor.json?v=ba7816bf8f");
 		assert.equal(hit.headers.get("Cache-Control"), year);
 		assert.equal(hit.headers.get("X-Cache-Control"), null);
+		// Kept by the Worker before the check (no X-Cache-Control): a /static/ file keeps its year.
+		store.set("https://masinci.org/static/a.js?v=abcdef0123", new Response("x"));
+		assert.equal((await get("/static/a.js?v=abcdef0123")).headers.get("Cache-Control"), year);
 		assert.equal((await get("/foto/ab.jpg")).headers.get("Cache-Control"), "public, max-age=604800");
 		assert.equal((await get("/static/fonts/Inter.woff2")).headers.get("Cache-Control"), "public, max-age=604800");
 		assert.equal((await get("/static/sw.js")).headers.get("Cache-Control"), "public, max-age=300");
