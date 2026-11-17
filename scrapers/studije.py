@@ -157,15 +157,17 @@ def sync(db):
         db.execute("update wiki_pages set gone = 0 where path = ?", (path,))
         got.append(path)
     db.execute(f"update wiki_pages set gone = 1 where path not in ({','.join('?' * len(got))})", got)
+    # The pages are kept before the files: one file's error must not lose the run's pages.
+    db.commit()
     ok = skipped = 0
     for path in sorted(files):
         time.sleep(DELAY)
         r = session().get(SITE + "_media/" + path, timeout=300)
-        if r.status_code == 404 or is_html_page(r.content):
+        # Not found, forbidden, a server error or a web page in its place: skipped, tried again next run.
+        if not r.ok or is_html_page(r.content):
             print(f"skip {path}: {r.status_code}, html page" if r.ok else f"skip {path}: {r.status_code}", flush=True)
             skipped += 1
             continue
-        r.raise_for_status()
         store(db, "study_files", "path", path, hashlib.sha256(r.content).hexdigest(), now, data=r.content)
         ok += 1
     db.commit()

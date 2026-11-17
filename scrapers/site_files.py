@@ -67,7 +67,8 @@ def target(url):
     parts = urlsplit(url)
     path = [p for p in unquote(parts.path).split("/") if p not in ("", ".", "..")]
     # Windows: no reserved characters in a name; a query (a few download scripts) as part of the name.
-    clean = lambda s: "".join("_" if c in '<>:"\\|?*' or ord(c) < 32 else c for c in s).strip(" .") or "_"
+    # "/" too: a query's "../" (…/dl.pdf?f=../../x) must not lead out of OUT.
+    clean = lambda s: "".join("_" if c in '<>:"\\|?*/' or ord(c) < 32 else c for c in s).strip(" .") or "_"
     name = clean(path[-1] + (f"_{parts.query}" if parts.query else ""))
     return OUT / parts.hostname / Path(*map(clean, path[:-1])) / name
 
