@@ -322,8 +322,16 @@ def load_mail(subjects, folder=MAIL):
                 gone=0,
                 source_url=None,
                 via=via,
+                mail_id=m["id"],
             )
         )
+    # Two messages of one second (a Teams reply right after its question) would share a number, the anchor: the later
+    # one (by its id's milliseconds) takes the next free second. The first keeps its number, so no link changes.
+    taken = defaultdict(set)
+    for it in sorted(items, key=lambda it: (it["num"], it.pop("mail_id"))):
+        while it["num"] in taken[it["topic"]]:
+            it["num"] += 1
+        taken[it["topic"]].add(it["num"])
     # teams.py's and moodle.py's material: a Teams class's library beyond its posts' files, a Moodle course's files, in
     # one box on the subject's page; each file with its class's school year and folder. shortcut: a subject with ie's
     # "Literatura" too gets only this box.
