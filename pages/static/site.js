@@ -1872,30 +1872,15 @@
   var dana = d.querySelector('[data-dana]');
   // Not on a phone under a post, a topic or a news item, nor the board's lists of threads: the same as style.css
   // .frame:has(article.post, [data-nodana]), for a browser without :has().
-  if (dana && window.matchMedia && matchMedia('(max-width: 899px)').matches && d.querySelector('.frame :is(article.post, [data-nodana])')) dana = null;
+  // hidden: head.js showDana may have shown it already.
+  if (dana && window.matchMedia && matchMedia('(max-width: 899px)').matches && d.querySelector('.frame :is(article.post, [data-nodana])')) { dana.hidden = true; dana = null; }
   if (dana && izbor) izbor.then(function (j) {
     var list = j.dana || [];
     if (!list.length) return;
     var t = pickDay(list, new Date());
-    var a = dana.querySelector('.dana__b');
-    a.href = t[2];
-    dana.querySelector('.sec').textContent = t[0];
-    a.querySelector('img').src = t[3];
-    a.querySelector('b').textContent = t[1];
-    a.querySelector('small').textContent = t[4] || '';
-    // The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki).
-    if (t[5]) {
-      a.querySelector('use').setAttribute('href', '#i-' + t[5]);
-      a.querySelector('.dana__ki').removeAttribute('hidden');
-    }
-    // The Studentska lista badge, the same text as cards.html sp_badge.
-    if (t[6]) {
-      var sp = dana.querySelector('.dana__sp'), tip = 'Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: ' + t[6] + '. na listi';
-      sp.setAttribute('aria-label', tip);
-      sp.querySelector('.sp__tip').textContent = tip;
-      sp.hidden = false;
-    }
-    dana.hidden = false;
+    window.fillDana(dana, t);
+    // For the next page's first frame (head.js showDana).
+    try { localStorage.setItem('dana', JSON.stringify({ day: new Date().toDateString(), t: t })); } catch (e) {}
   }).catch(function () {});
 
   /* /profdana/ (profdana.html): every day's pick from DANA_START to today (+ data-ahead days, dev mode), newest

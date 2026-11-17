@@ -136,6 +136,38 @@ window.showStar = function () {
 	star.querySelector("span").textContent = on ? "Pratiš" : "Prati";
 };
 
+// "Profesor dana" (sidebar.html): t is one of /izbor.json dana (site.js picks it, load_teachers.of_the_day).
+window.fillDana = function (dana, t) {
+	const a = dana.querySelector(".dana__b");
+	a.href = t[2];
+	dana.querySelector(".sec").textContent = t[0];
+	a.querySelector("img").src = t[3];
+	a.querySelector("b").textContent = t[1];
+	a.querySelector("small").textContent = t[4] || "";
+	// The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki).
+	if (t[5]) {
+		a.querySelector("use").setAttribute("href", "#i-" + t[5]);
+		a.querySelector(".dana__ki").removeAttribute("hidden");
+	}
+	// The Studentska lista badge, the same text as cards.html sp_badge.
+	if (t[6]) {
+		const sp = dana.querySelector(".dana__sp"), tip = "Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: " + t[6] + ". na listi";
+		sp.setAttribute("aria-label", tip);
+		sp.querySelector(".sp__tip").textContent = tip;
+		sp.hidden = false;
+	}
+	dana.hidden = false;
+};
+
+// Today's pick as site.js saved it, before the first frame (base.html rel=expect): site.js runs after the whole page,
+// and on a long one the card would come in seconds after the rest.
+window.showDana = function () {
+	const dana = document.querySelector("[data-dana]");
+	let saved = null;
+	try { saved = JSON.parse(localStorage.getItem("dana")); } catch (e) {}
+	if (dana && saved && saved.day === new Date().toDateString()) window.fillDana(dana, saved.t);
+};
+
 // The lecture schedule (/raspored/): one program at a time, picked by its tab. key: the program (else the #, else the
 // one picked last time, else the first); keep: remember it, for the next visit and in the URL. Without scripts the
 // tabs are links to the programs one under the other.
