@@ -108,6 +108,7 @@ def fingerprint(db):
         "select count(*), max(id), sum(gone), total(length(html)), total(length(title)) from posts",
         "select count(*), sum(gone), total(length(title)) from topics",
         "select count(*), sum(fetched), count(release) from documents",
+        # count: a news post edited is a new version (id, modified).
         "select count(*), sum(gone) from vesti",
         "select count(*) from study_pages",
         "select count(*) from study_files",
@@ -120,6 +121,10 @@ def fingerprint(db):
         "select count(*), sum(gone), total(length(html)) from cent_notices",
         "select count(*), sum(gone) from cent_pages",
         "select count(*), sum(gone) from katedre_pages",
+        # The departments' notices (pushed as cent's are): unsaved, the next run would find and notify them again.
+        "select count(*), sum(gone), total(length(html)) from katedre_notices",
+        "select count(*) from cent_notice_old",
+        "select count(*) from photos",
         "select count(*), total(length(html)) from departments",
     ]
     out = []
