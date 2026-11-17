@@ -412,7 +412,8 @@ def picker(subjects, book, teachers, items=()):
     posts = Counter((it["subj"]["id"], it["teacher"]["href"]) for it in items if it["subj"] and it["teacher"])
     posters = [[] for _ in entries]
     for (s, t), n in sorted(posts.items(), key=lambda x: -x[1]):
-        if ("f", s) in at:
+        # A researcher (aside) is not among the people to pick: their posts are not listed under the subject.
+        if ("f", s) in at and t in who:
             posters[at[("f", s)]].append([who[t], n])
     # acr: each subject's acronyms (acronyms), for the searches.
     return dict(

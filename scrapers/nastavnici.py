@@ -170,8 +170,9 @@ def parse_emeritus(html):
         if not mail:
             continue
         email = mail.get_text(strip=True)
-        line = next(l for l in box.get_text("\n").split("\n") if "," in l)
-        full, title = split_title(line)
+        # The name line ("др Име Презиме, професор емеритус"); a box without the title: its first line, untitled.
+        lines = [l for l in box.get_text("\n").split("\n") if l.strip()]
+        full, title = split_title(next((l for l in lines if "," in l), lines[0]))
         rows.append(
             dict(
                 id=f"emeritus-{email.split('@')[0]}",

@@ -1348,6 +1348,8 @@
       m.open(a.href, name, { app: !!app, openWith: function () { openFile(a); }, fallback: old });
     }, old);
   };
+  // A reload with the viewer open keeps its history entry (pdfview.js), not the viewer: Back would only stay here.
+  if (history.state && history.state.pv) history.back();
 
   var leave = null;
   d.addEventListener('click', function (e) {
