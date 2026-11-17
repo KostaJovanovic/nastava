@@ -7,8 +7,12 @@ import re
 from collections import Counter, defaultdict
 from urllib.parse import unquote, urlsplit
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from translit import fold
+
+# A tag not decomposed has no _decomposed, so bs4's .decomposed fell to Tag.__getattr__, which searches the whole
+# subtree for a tag of that name, on each of thousands of calls here. decompose() still sets it on the instance.
+Tag._decomposed = False
 
 from .clean import clean_html
 from .known import ANNOUNCEMENTS, SITE_GROUPS, SITE_KATEDRA, SUBJECT_PAGE
@@ -34,15 +38,17 @@ def norm(url):
 
 
 def block_key(el):
-    return " ".join(str(el).split())
+    # formatter=None: no entity escaping, which a key only compared for equality doesn't need (a third of the time).
+    return " ".join(el.decode(formatter=None).split())
 
 
-def repeated(soups):
-    """The blocks (block_key) on most of a site's pages: its menu and footer, not any one page's content."""
+def repeated(keyed):
+    """The blocks (block_key) on most of a site's pages: its menu and footer, not any one page's content. keyed: per
+    page, its blocks' [(el, key)]."""
     counts = Counter()
-    for s in soups:
-        counts.update({block_key(el) for el in s.find_all(BLOCKS)})
-    n = len(soups)
+    for blocks in keyed:
+        counts.update({key for _, key in blocks})
+    n = len(keyed)
     return {h for h, c in counts.items() if n >= 4 and c >= max(3, n * 0.4)} if n else set()
 
 
@@ -116,12 +122,15 @@ def load_sajtovi(db, teachers):
     for site, pages in sites.items():
         soups = [BeautifulSoup(r["html"], "html.parser") for r in pages]
         names = menu_names(soups, [r["url"] for r in pages])
-        common = repeated(soups)
+        # Each block's key once, before any is removed: in document order a block comes before what it holds, so one
+        # still there has lost nothing, and its key then is the key now.
+        keyed = [[(el, block_key(el)) for el in s.find_all(BLOCKS)] for s in soups]
+        common = repeated(keyed)
         titles = Counter(r["title"] for r in pages)
         seen_text = set()
-        for r, soup in zip(pages, soups):
-            for el in soup.find_all(BLOCKS):
-                if not el.decomposed and block_key(el) in common:
+        for r, soup, blocks in zip(pages, soups, keyed):
+            for el, key in blocks:
+                if not el.decomposed and key in common:
                     el.decompose()
             # What that leaves: empty cells and boxes, and a layout table down to the one cell of the content.
             for el in reversed(soup.find_all(BLOCKS)):

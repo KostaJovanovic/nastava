@@ -268,9 +268,10 @@ if __name__ == "__main__":
         while True:
             now = stamp()
             if now != seen:
-                time.sleep(2)
-                if stamp() != now:
-                    continue
+                if child:  # a change, not the first start: let it settle first
+                    time.sleep(2)
+                    if stamp() != now:
+                        continue
                 if child:
                     print("  " + ", ".join(f.name for f, a, b in zip(WATCH, seen, now) if a != b) + " changed: restarting", flush=True)
                     child.terminate()
