@@ -42,7 +42,11 @@
 <script src="/static/head.js"></script>
 {#- In <head>: it converts the text as it comes, so the first frame is in the chosen script already. -#}
 <script src="/static/pismo.js"></script>
-<script type="speculationrules">{"prerender": [{"where": {"href_matches": ["/item/*", "/tema/*", "/predmet/*", "/smer/*", "/nastavnik/*", "/predmeti/*", "/raspored/", "/statistika/", "/vesti/*", "/vest/*"]}, "eagerness": "moderate"}]}</script>
+{#- The tab bar's pages (sidebar.html) fetched at once: a tap on one has no network wait. The Worker gives a page 5
+    minutes (src/index.js cacheControl), so the next pages take it from the browser's cache. Any other page of the
+    site is prerendered on a hover, or on a phone when its link is on the screen; not the files, the photos and the
+    Worker's own paths. -#}
+<script type="speculationrules">{"prefetch": [{"urls": ["/", "/raspored/", "/nastavnici/", "/link/", "/vesti/"], "eagerness": "immediate"}], "prerender": [{"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": ["/files/*", "/static/*", "/pagefind/*", "/foto/*", "/push*", "/visit*", "/*.xml", "/*.json"]}}]}, "eagerness": "moderate"}]}</script>
 <link rel="icon" href="/static/favicon.svg">
 {#- An iPhone's home screen takes no SVG (pages/icons.py). -#}
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
