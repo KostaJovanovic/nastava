@@ -9,8 +9,8 @@ a day (Cloudflare and the phone), so for up to a day after a deploy a post seen 
 tap there got the leave dialog); a fix in the Worker is the user's call. The dev app (`com.valjdakosta.nastava.dev`,
 "Mašinci dev", the debug build) installs beside the release one. 120 Hz checked on it: the release app runs at 90,
 the dev app at 120 (`MainActivity.fullRefreshRate`; the release gets it with the next tag). The offline gate passed
-(step 9). Waiting: a real post in a followed subject (the next sync), the PDF viewer on the phone (main not pushed
-yet). Before (2026-11-16): all steps written, committed and checked on the phone (LAN builds,
+(step 9). The PDF viewer passed on the phone (PLAN-pdf.md). Waiting: a real post in a followed subject (a sync that finds
+one). Before (2026-11-16): all steps written, committed and checked on the phone (LAN builds,
 over adb). Step 0 passed
 (the bridge on the live site). Step 1: icons, notification icon, the logo splash (`LogoView`), the header clear of
 the status bar, the offline page (the site's look, a sky and a meadow). Steps 4 and 5: the Worker keeps `fcm:`
