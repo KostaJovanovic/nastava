@@ -61,9 +61,16 @@ def message(posts):
 
 def wanted(sub, post):
     """A post of a followed subject notifies unless the browser picked teachers for that subject (t, site.js) and a
-    teacher not among them wrote it; one with no known teacher (a cent notice or page, a student) always does."""
+    teacher not among them wrote it. One with no known teacher (a student, a cent notice or page) does in a thread a
+    picked teacher posted in, or one no teacher did (ta: its thread's teachers, feeds.py), as the home page's feed
+    shows them (site.js fillMine)."""
     picked = sub.get("t", {}).get(post["s"])
-    return not picked or "a" not in post or post["a"] in picked
+    if not picked:
+        return True
+    if "a" in post:
+        return post["a"] in picked
+    ta = post.get("ta", [])
+    return not ta or any(t in picked for t in ta)
 
 
 def fcm_body(token, msg):

@@ -51,8 +51,13 @@ def write_feeds(site, items, subjects, pushed=()):
         )
     # The subjects' newest posts, next to the site (not on it), for ci/push.py: it notifies those newer than a post id.
     # k: "p" a board post, "c" a cent notice, "s" a cent page version; ci/push.py keeps one "before" per kind.
-    # a: the teacher who wrote it (their page's slug), for a browser that wants only some teachers' posts of a subject.
+    # a: the teacher who wrote it (their page's slug), for a browser that wants only some teachers' posts of a subject;
+    # ta, a post no teacher wrote (a student's, a cent notice): the teachers who posted in its thread (ci/push.py wanted).
     # shortcut: the newest 1000 posts and notices only; a scrape that brings more new posts notifies only these.
+    in_topic = defaultdict(set)
+    for it in posts:
+        if it.get("teacher") and it.get("topic"):
+            in_topic[it["topic"]].add(it["teacher"]["href"].split("/")[2])
     (site.parent / "push.json").write_text(
         json.dumps(
             [
@@ -63,7 +68,11 @@ def write_feeds(site, items, subjects, pushed=()):
                     n=it["subj"]["name"],
                     t=it["title"] or "",
                     u=post_href(it),
-                    **({"a": it["teacher"]["href"].split("/")[2]} if it.get("teacher") else {}),
+                    **(
+                        {"a": it["teacher"]["href"].split("/")[2]}
+                        if it.get("teacher")
+                        else {"ta": sorted(in_topic.get(it.get("topic"), ()))}
+                    ),
                 )
                 for it in posts
                 if it["subj"]

@@ -646,7 +646,10 @@
     // data-vs, the total count.
     var vs = JSON.parse(pgBar.dataset.vs || '{}');
     var load = function (y) {
-      return loads[y] = loads[y] || fetch(base + 'rows-' + y + '.json?v=' + (vs[y] || all)).then(function (r) { return r.json(); }).then(function (rows) { data[y] = rows; });
+      return loads[y] = loads[y] || fetch(base + 'rows-' + y + '.json?v=' + (vs[y] || all)).then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      }).then(function (rows) { data[y] = rows; }, function (e) { delete loads[y]; throw e; }); // failed: the next run asks again
     };
     var num = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
     var size = function () { return +per.value || 50; };
@@ -706,7 +709,9 @@
       var missing = want.filter(function (yy) { return !data[yy]; }), mine = ++ask;
       if (missing.length) {
         shown.textContent = 'učitavam…';
-        Promise.all(missing.map(load)).then(function () { if (mine === ask) run(false); });
+        Promise.all(missing.map(load)).then(function () { if (mine === ask) run(false); }, function () {
+          if (mine === ask) shown.textContent = 'nije učitano, pokušaj ponovo';
+        });
         return;
       }
       var rows;
@@ -792,6 +797,20 @@
     try { localStorage.setItem('moji', JSON.stringify(list)); } catch (e) {}
     d.dispatchEvent(new Event('moji'));
   };
+  // A picked teacher (a subject's t) whose page is no longer in izbor.json people (renamed, known.py): dropped, so the
+  // subject falls back to all its teachers, not to none of their threads and notifications.
+  if (izbor) izbor.then(function (j) {
+    var known = {}, changed = false;
+    j.people.forEach(function (p) { known[p[1].split('/')[2]] = 1; });
+    var list = mine().map(function (m) {
+      if (!m.t) return m;
+      var t = m.t.filter(function (x) { return known[x]; });
+      if (t.length === m.t.length) return m;
+      changed = true;
+      return t.length ? { href: m.href, name: m.name, t: t } : { href: m.href, name: m.name };
+    });
+    if (changed) keepMine(list);
+  }).catch(function () {});
   var star = d.querySelector('[data-star]');
   if (star) {
     star.addEventListener('click', function () {
@@ -1196,7 +1215,7 @@
       + ' · arhiva nastave</title></head><body>' + rows.join('') + '</body></opml>\n'], { type: 'text/x-opml' }));
   });
 
-  /* Links: a PDF opens in a new tab; a link off this site (the board, the faculty's site) first says so in a dialog,
+  /* Links: our own PDF opens in the site's viewer (pdf, below); a link off this site (the board, the faculty's site) first says so in a dialog,
      and opens in a new tab. A click with a modifier key (a new tab or window asked for) goes on as the browser does. */
   // "Provereno": the build's time (UTC) in the reader's own.
   var built = d.querySelector('.ft time'), bt = built && new Date(built.dateTime);

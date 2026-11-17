@@ -26,7 +26,7 @@
     {#- A file the site keeps: its thumbnail (~8 KB, not the whole file), linking the file, which the Worker serves
         inline (src/index.js INLINE). -#}
     {%- if doc.thumb %}
-    <a class="doc-view" href="{{ download_url }}" target="_blank" rel="noopener"><img src="{{ doc.thumb }}" alt="Prva strana: {{ doc.filename }}" width="240" loading="lazy" decoding="async"><span>Otvori u browseru</span></a>
+    <a class="doc-view" href="{{ download_url }}"><img src="{{ doc.thumb }}" alt="Prva strana: {{ doc.filename }}" width="240" loading="lazy" decoding="async"><span>Otvori u browseru</span></a>
     {%- endif %}
     {%- set _lines = (it.body or '') | trim -%}
     {% if _lines %}

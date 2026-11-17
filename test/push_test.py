@@ -31,6 +31,9 @@ assert wait_url([dict(k="c", id=4, u="/item/c4/")]) == SITE + "/item/c4/" and wa
 _s = dict(s=["/predmet/a/b/"], t={"/predmet/a/b/": ["pera"]})
 assert wanted(_s, dict(s="/predmet/a/b/", a="pera")) and not wanted(_s, dict(s="/predmet/a/b/", a="mika"))
 assert wanted(_s, dict(s="/predmet/a/b/")) and wanted(dict(s=_s["s"]), dict(s="/predmet/a/b/", a="mika"))
+# A student's post: in a picked teacher's thread, or one no teacher posted in, yes; in another teacher's, no.
+assert wanted(_s, dict(s="/predmet/a/b/", ta=["mika", "pera"])) and wanted(_s, dict(s="/predmet/a/b/", ta=[]))
+assert not wanted(_s, dict(s="/predmet/a/b/", ta=["mika"]))
 assert PUSH_HOST.match("https://fcm.googleapis.com/fcm/send/x") and not PUSH_HOST.match("https://evil.com/fcm.googleapis.com/")
 
 # The Android app's subscriptions ("fcm:<token>"), through FCM: the message, a gone token dropped, a failure counted.
