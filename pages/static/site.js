@@ -19,7 +19,9 @@
   de.style.setProperty('--sbw-m', (sbProbe.offsetWidth - sbProbe.clientWidth) + 'px');
   sbProbe.remove();
   // The side panel's picker and the header search's lists (build.py picker).
-  var izbor = window.fetch ? fetch('/izbor.json').then(function (r) { return r.json(); }) : null;
+  // Its address with ?v= (base.html meta izbor): the browser keeps it until a deploy changes it.
+  var izborAt = d.querySelector('meta[name="izbor"]');
+  var izbor = window.fetch ? fetch(izborAt ? izborAt.content : '/izbor.json').then(function (r) { return r.json(); }) : null;
   var el = function (tag, cls, text) {
     var e = d.createElement(tag);
     if (cls) e.className = cls;
@@ -640,9 +642,11 @@
     var ol = d.querySelector('[data-rows]'), navs = [].slice.call(d.querySelectorAll('[data-pg]'));
     var shown = pgBar.querySelector('[data-shown]'), none = d.querySelector('[data-none]'), h1 = d.querySelector('[data-pg-h]');
     var moji = pgBar.hasAttribute('data-moji'), data = {}, loads = {}, page = 1, asBuilt = true, ask = 0;
-    // ?v=: a deploy with new rows changes the counts, so no cache keeps an old year's file.
+    // ?v=: the year's file's hash (data-vs, render_paged), so a browser keeps it until it changes; a page from before
+    // data-vs, the total count.
+    var vs = JSON.parse(pgBar.dataset.vs || '{}');
     var load = function (y) {
-      return loads[y] = loads[y] || fetch(base + 'rows-' + y + '.json?v=' + all).then(function (r) { return r.json(); }).then(function (rows) { data[y] = rows; });
+      return loads[y] = loads[y] || fetch(base + 'rows-' + y + '.json?v=' + (vs[y] || all)).then(function (r) { return r.json(); }).then(function (rows) { data[y] = rows; });
     };
     var num = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
     var size = function () { return +per.value || 50; };
@@ -815,15 +819,19 @@
     mineFor = key;
     mineIn = false;
     // A subject with no topics on the board (followed from the plans) links its page in the subject book: no rows.
-    return mineLoad = Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
-      return fetch(s.href + 'novo.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; })
-        .catch(function () { return { rows: [] }; })
-        // Teachers picked for it (/mojipredmeti/ step 2, s.t): only the threads one of them posted in (r[2]).
-        // shortcut: filters the subject's 10 newest only (output.py MINE), so a picked teacher's older thread is not reached.
-        .then(function (j) {
-          return { rows: !s.t ? j.rows : j.rows.filter(function (r) { return (r[2] || []).some(function (x) { return s.t.indexOf(x) > -1; }); }) };
-        });
-    })).then(function (all) {
+    // Each file with ?v= (izbor.json novo): the browser keeps it until it changes.
+    return mineLoad = (izbor || Promise.resolve({})).catch(function () { return {}; }).then(function (j) {
+      var nv = j.novo || {};
+      return Promise.all(list.filter(function (s) { return s.href.indexOf('/predmet/') === 0; }).map(function (s) {
+        return fetch(s.href + 'novo.json' + (nv[s.href] ? '?v=' + nv[s.href] : '')).then(function (r) { return r.ok ? r.json() : { rows: [] }; })
+          .catch(function () { return { rows: [] }; })
+          // Teachers picked for it (/mojipredmeti/ step 2, s.t): only the threads one of them posted in (r[2]).
+          // shortcut: filters the subject's 10 newest only (output.py MINE), so a picked teacher's older thread is not reached.
+          .then(function (j) {
+            return { rows: !s.t ? j.rows : j.rows.filter(function (r) { return (r[2] || []).some(function (x) { return s.t.indexOf(x) > -1; }); }) };
+          });
+      }));
+    }).then(function (all) {
       // [last post time, row HTML]: the newest across the subjects first. The rows are this site's own build.
       var rows = [].concat.apply([], all.map(function (j) { return j.rows; }));
       rows.sort(function (a, b) { return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0; });
@@ -1658,7 +1666,7 @@
       if (to === here) scrollTo(0, +sessionStorage.getItem('y' + here));
     } catch (e) {}
   };
-  // A page prerendered on hover (base.html's speculation rules) sees the tab's sessionStorage only once shown.
+  // A page prerendered on press (base.html's speculation rules) sees the tab's sessionStorage only once shown.
   if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
   /* "Nazad" under the crumbs (base.html): the page this one was opened from, {u, t}. Kept in this page's history entry
      (history.state.back), so a reload, the browser's back and forward and its page cache all keep each page's own; a
@@ -1802,12 +1810,18 @@
     }
   }).catch(function () {});
 
-  /* Visitor counter: every page tells the Worker (/visit, each IP once in three days); only /statistika/ shows the
-     total, and asks (?push) for the browsers with notifications on too. A prerendered page counts once shown. */
+  /* Visitor counter: the Worker counts each IP once per three-day period (/visit), so a browser tells it once per
+     period ('posetaP': the last one told, the Worker's julianday / 3); only /statistika/ asks at every view, as it shows
+     the total, and asks (?push) for the browsers with notifications on too. A prerendered page counts once shown. */
   var visit = function () {
     if (!window.fetch) return;
-    var stats = d.getElementById('posete');
-    fetch(stats ? '/visit?push' : '/visit', { method: 'POST' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+    var stats = d.getElementById('posete'), period = String(Math.floor((Date.now() / 864e5 + 2440587.5) / 3)), told = null;
+    try { told = localStorage.getItem('posetaP'); } catch (e) {}
+    if (!stats && told === period) return;
+    fetch(stats ? '/visit?push' : '/visit', { method: 'POST' }).then(function (r) {
+      if (r.ok) try { localStorage.setItem('posetaP', period); } catch (e) {}
+      return r.ok ? r.json() : null;
+    }).then(function (v) {
       if (!stats || !v) return;
       [['posete', v.n], ['pretplate', v.push]].forEach(function (p) {
         var li = d.getElementById(p[0]);

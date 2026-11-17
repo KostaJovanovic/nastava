@@ -137,7 +137,6 @@ def main(db_path, out, dev_mode=False):
         env.globals["forum_checked"] = None
     output.site_dir = site
     output.shell = shell = split_page(str(env.get_template("base.html").render()))[0]
-    (site / "shell.html").write_text(versioned(shell), encoding="utf-8")
     nav = shell[shell.index('<nav class="snav"') :]
     snav[:] = re.findall(r'<a href="([^"]+)"', nav[: nav.index("</nav>")])
     # join() marks the shell's first <a href="..."> with the link's href: that one must be in .snav.
@@ -173,23 +172,26 @@ def main(db_path, out, dev_mode=False):
     render_book(site, book)
     raspored = render_study_pages(site, db)
     links = link_groups(archived_wiki(db))
-    (site / "izbor.json").write_text(
-        json.dumps(
-            dict(
-                picker(subjects, book, teachers, items),
-                raspored=raspored,
-                # The researchers and demonstrators for the header search: [name, page, title].
-                istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")],
-                # Linkovi's cards for it too: [name, second line, href, data-domain].
-                linkovi=[[n, shown, h, d] for _, group in links for n, h, _, d, shown in group],
-                # The side panel's "Profesor dana" (sidebar.html; site.js picks one by the date).
-                dana=of_the_day(teachers),
-            ),
-            ensure_ascii=False,
-            separators=(",", ":"),
+    izbor = json.dumps(
+        dict(
+            picker(subjects, book, teachers, items),
+            raspored=raspored,
+            # The researchers and demonstrators for the header search: [name, page, title].
+            istrazivaci=[[t["shown"], t["href"], t["title"]] for t in teachers if t.get("aside")],
+            # Linkovi's cards for it too: [name, second line, href, data-domain].
+            linkovi=[[n, shown, h, d] for _, group in links for n, h, _, d, shown in group],
+            # The side panel's "Profesor dana" (sidebar.html; site.js picks one by the date).
+            dana=of_the_day(teachers),
+            # Each subject's novo.json as ?v= (render_places), so a browser keeps it until it changes (site.js fillMine).
+            novo={s["href"]: s["novo_v"] for s in subjects.values() if "novo_v" in s},
         ),
-        encoding="utf-8",
-    )
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode()
+    (site / "izbor.json").write_bytes(izbor)
+    # Only now shell.html: it links izbor.json with its hash (versioned), and every page loads it.
+    output.asset_v["izbor.json"] = output.v_of(izbor)
+    (site / "shell.html").write_text(versioned(shell), encoding="utf-8")
     write(
         site / "statistika" / "index.html",
         env.get_template("stats.html").render(st=archive_stats(items, topics, teachers, saved_cloud(db, date.today()))),

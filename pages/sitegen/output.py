@@ -134,11 +134,20 @@ VERSIONED = ("icons.svg", "style.css", "head.js", "pismo.js", "search.js", "pdfv
 
 ASSET = re.compile(r"/static/(%s)(?![\w?.-])" % "|".join(map(re.escape, VERSIONED)))
 
-asset_v = {}  # file name -> its hash, set by version_static()
+# /izbor.json as shell.html links it (base.html meta izbor): ?v= too, once build.py has written it.
+IZBOR = re.compile(r"/izbor\.json(?![\w?.-])")
+
+asset_v = {}  # file name -> its hash, set by version_static() (izbor.json: build.py)
+
+
+def v_of(data):
+    """A file's ?v=: the first 10 hex digits of its SHA-256 (the Worker checks the body against it, src/index.js)."""
+    return hashlib.sha256(data).hexdigest()[:10]
 
 
 def versioned(text):
-    return ASSET.sub(lambda m: f"{m[0]}?v={asset_v[m[1]]}" if m[1] in asset_v else m[0], text)
+    text = ASSET.sub(lambda m: f"{m[0]}?v={asset_v[m[1]]}" if m[1] in asset_v else m[0], text)
+    return IZBOR.sub(lambda m: f"{m[0]}?v={asset_v['izbor.json']}", text) if "izbor.json" in asset_v else text
 
 
 def version_static(static):
@@ -146,7 +155,7 @@ def version_static(static):
     for name in VERSIONED:
         f = static / name
         f.write_text(versioned(f.read_text(encoding="utf-8")), encoding="utf-8")
-        asset_v[name] = hashlib.sha256(f.read_bytes()).hexdigest()[:10]
+        asset_v[name] = v_of(f.read_bytes())
 
 
 # Dev mode (pages/serve.py; main(dev=True)): no page is rendered while main() runs. Each one keeps its template's

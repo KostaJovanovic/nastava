@@ -7,18 +7,27 @@ const heading = document.querySelector(".mh");
 const rowTpl = document.getElementById("row-tpl");
 const resTpl = document.getElementById("res-tpl");
 const years = JSON.parse(document.querySelector("script[data-years]").dataset.years);
-// No index (a build Pagefind did not run on, or no network): the board index shows, with a note, not "Tražim…".
-let loadError;
-const pagefind = await import("/pagefind/pagefind.js").catch((e) => ((loadError = e), null));
-if (!pagefind) {
-	document.documentElement.classList.remove("searching");
-	// A failed import does not say why; asking for the file again does: no network, no index, the server, or the file.
-	const r = await fetch("/pagefind/pagefind.js", { method: "HEAD", cache: "no-store" }).catch(() => null);
-	const why = !r ? "nema mreže" : r.status === 404 ? "nema indeksa" : !r.ok ? `greška servera (${r.status})` : "indeks neispravan";
-	heading.append(build("p", { className: "note", textContent: `Pretraga nije dostupna: ${why}.` }, []));
-	throw loadError;
+// Pagefind loads at the first search (or the box's focus), not with the page: most home page views search nothing,
+// and each of its files is a call to the Worker. No index (a build Pagefind did not run on, or no network): the board
+// index shows, with a note, not "Tražim…".
+let pagefindLoad = null;
+function loadPagefind() {
+	return (pagefindLoad ??= (async () => {
+		let loadError;
+		const pf = await import("/pagefind/pagefind.js").catch((e) => ((loadError = e), null));
+		if (!pf) {
+			document.documentElement.classList.remove("searching");
+			// A failed import does not say why; asking for the file again does: no network, no index, the server, or the file.
+			const r = await fetch("/pagefind/pagefind.js", { method: "HEAD", cache: "no-store" }).catch(() => null);
+			const why = !r ? "nema mreže" : r.status === 404 ? "nema indeksa" : !r.ok ? `greška servera (${r.status})` : "indeks neispravan";
+			heading.append(build("p", { className: "note", textContent: `Pretraga nije dostupna: ${why}.` }, []));
+			throw loadError;
+		}
+		await pf.options({ excerptLength: 30 });
+		return pf;
+	})());
 }
-await pagefind.options({ excerptLength: 30 });
+form.elements.q.addEventListener("focus", () => loadPagefind().catch(() => {}), { once: true });
 // The newest items from the build, shown again when the search and the filters are cleared.
 const home = { heading: heading.innerHTML, res: res.innerHTML };
 
@@ -387,6 +396,7 @@ async function run(pages = {}) {
 		];
 	// A subject's acronym in the query: its name searched too (TMO: Tehnologija mašinske obrade).
 	const queries = [query, ...(s.q && window.masinciExpand ? await window.masinciExpand(s.q) : [])];
+	const pagefind = await loadPagefind();
 	const found = await Promise.all(kinds.map((k) => Promise.all(queries.map((q) => pagefind.search(q, { filters: k.filters, sort })))));
 	if (id !== runs) return;
 	state = s;

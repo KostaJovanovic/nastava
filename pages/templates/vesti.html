@@ -17,7 +17,7 @@
 </div>
 {% call vest_rows('Vesti', rows, filter=true) %}
 {#- Its own search filters the list (site.js pager); Enter searches the text of all the news. -#}
-<form class="fbar" data-pager data-base="{{ base }}" data-counts="{{ counts | tojson | forceescape }}" data-enter="/?kind=vest&" onsubmit="return false">
+<form class="fbar" data-pager data-base="{{ base }}" data-counts="{{ counts | tojson | forceescape }}" data-vs="{{ vs | tojson | forceescape }}" data-enter="/?kind=vest&" onsubmit="return false">
   <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili kategorija; Enter: u tekstu" aria-label="Pretraži vesti" autocomplete="off" enterkeyhint="search">
   {{ year_select('v-g', years, year) }}
   <label class="vh" for="v-k">Kategorija</label>

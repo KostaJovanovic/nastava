@@ -14,7 +14,7 @@
 </div>
 {% call topic_rows('Threadovi', rows, place=true, filter=true) %}
 {#- Its own search filters the list (site.js pager); Enter searches the text of all the posts. -#}
-<form class="fbar" data-pager data-moji data-base="{{ base }}" data-counts="{{ counts | tojson | forceescape }}" data-enter="/?" onsubmit="return false">
+<form class="fbar" data-pager data-moji data-base="{{ base }}" data-counts="{{ counts | tojson | forceescape }}" data-vs="{{ vs | tojson | forceescape }}" data-enter="/?" onsubmit="return false">
   <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži threadove" autocomplete="off" enterkeyhint="search">
   {{ year_select('f-g', years, year) }}
   <label class="vh" for="f-a">Autor</label>

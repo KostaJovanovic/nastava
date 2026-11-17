@@ -17,7 +17,7 @@ from .known import HOME_ORDER, MOVED, OWN_SITES, QUIET, VZ_ITEM, VZ_TAGS
 from .load_board import row_katedra
 from .load_book import plan_groups
 from .load_teachers import bibliography, department_intro
-from .output import FEED_ALL, HERE, MINE, RECENT, VESTI_HOME, env, katedra_href, katedra_pages, mark_for_pagefind, versioned, write, write_page
+from .output import FEED_ALL, HERE, MINE, RECENT, VESTI_HOME, env, katedra_href, katedra_pages, mark_for_pagefind, v_of, versioned, write, write_page
 from .text import PROGRAMS, SITE_URL, azbuka, katedra, slot_label, slug
 
 
@@ -83,23 +83,22 @@ def render_places(site, topics, smerovi, subjects):
         # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows. Each with
         # the slugs of the teachers who posted in it: the teachers picked for the subject (/mojipredmeti/) narrow them.
         (site / s["href"].strip("/")).mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
-        (site / s["href"].strip("/") / "novo.json").write_text(
-            json.dumps(
-                {
-                    "name": s["name"],
-                    "rows": [
-                        [
-                            t["last"]["posted"],
-                            versioned(str(topic_row(t, place=True))),
-                            sorted({r["teacher"]["href"].split("/")[2] for r in t["posts"] if r.get("teacher")}),
-                        ]
-                        for t in rows[:MINE]
-                    ],
-                },
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
-        )
+        novo = json.dumps(
+            {
+                "name": s["name"],
+                "rows": [
+                    [
+                        t["last"]["posted"],
+                        versioned(str(topic_row(t, place=True))),
+                        sorted({r["teacher"]["href"].split("/")[2] for r in t["posts"] if r.get("teacher")}),
+                    ]
+                    for t in rows[:MINE]
+                ],
+            },
+            ensure_ascii=False,
+        ).encode()
+        (site / s["href"].strip("/") / "novo.json").write_bytes(novo)
+        s["novo_v"] = v_of(novo)  # izbor.json novo (build.py)
     for m in smerovi.values():
         subs = sorted((s for s in subjects.values() if s["smer"] is m), key=lambda s: fold(s["name"]))
         for s in subs:
@@ -444,18 +443,18 @@ def render_paged(site, base, template, by_year, row, keys, **data):
     years = sorted(by_year, reverse=True)
     folder = site / base.strip("/")
     folder.mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
+    vs = {}  # each year's file as ?v= (data-vs): a browser keeps it until it changes (site.js pager)
     for y in years:
-        (folder / f"rows-{y}.json").write_text(
-            json.dumps([[*keys(i), versioned(str(row(i)))] for i in by_year[y]], ensure_ascii=False, separators=(",", ":")),
-            encoding="utf-8",
-        )
+        text = json.dumps([[*keys(i), versioned(str(row(i)))] for i in by_year[y]], ensure_ascii=False, separators=(",", ":")).encode()
+        (folder / f"rows-{y}.json").write_bytes(text)
+        vs[y] = v_of(text)
     counts = {y: len(by_year[y]) for y in years}
     first = [i for y in years for i in by_year[y][:PER_PAGE]][:PER_PAGE]
     for y in [None, *years]:
         write(
             folder / (str(y) if y else "") / "index.html",
             env.get_template(template).render(
-                rows=by_year[y][:PER_PAGE] if y else first, year=y, years=years, counts=counts, base=base, total=sum(counts.values()), **data
+                rows=by_year[y][:PER_PAGE] if y else first, year=y, years=years, counts=counts, vs=vs, base=base, total=sum(counts.values()), **data
             ),
         )
 
