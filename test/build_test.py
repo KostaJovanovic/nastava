@@ -47,6 +47,7 @@ from sitegen.output import katedra_pages  # noqa: E402
 from sitegen.output import snav_href  # noqa: E402
 from sitegen.output import split_page  # noqa: E402
 from sitegen.output import versioned  # noqa: E402
+from sitegen.output import write_assets_config  # noqa: E402
 from sitegen.render import load_verzije  # noqa: E402
 from sitegen.render import picker  # noqa: E402
 from sitegen.schedule import first_link  # noqa: E402
@@ -672,3 +673,10 @@ for _f in [*(ROOT / "pages/templates").glob("*.html"), *(ROOT / "pages/static").
     assert "/static/icons.svg" not in _text, _f.name
     for _id in re.findall(r"#(i-[\w-]+)[\"']", _text):
         assert f'id="{_id}"' in _sprite, f"{_f.name}: no symbol {_id}"
+
+# The Worker's static assets (wrangler.toml): the photos only. _headers is not let back in: wrangler reads it anyway,
+# and an asset of it would be served.
+with tempfile.TemporaryDirectory() as _d:
+    write_assets_config(Path(_d))
+    assert (Path(_d) / ".assetsignore").read_text(encoding="utf-8").split() == ["*", "!foto/", "!foto/**"]
+    assert (Path(_d) / "_headers").read_text(encoding="utf-8").startswith("/foto/*\n")

@@ -22,16 +22,38 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     env:
       GH_TOKEN: ${{ github.token }}
+      # Only whether the Cloudflare token is set: the token itself goes to the Worker's deploy step alone.
+      HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
+      # The Worker's config and code, for its deploy below.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Get the site
         run: |
           name=$(gh release view site -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | sort | tail -n 1)
           [[ -n $name ]] || { echo "no site asset: run ci/deploy.sh" >&2; exit 1; }
-          mkdir site
-          gh release download site -R "$GITHUB_REPOSITORY" -p "$name" -O - | tar -xz -C site
-          echo "site $name, $(find site -type f | wc -l) files"
+          mkdir -p pages/.build/site
+          gh release download site -R "$GITHUB_REPOSITORY" -p "$name" -O - | tar -xz -C pages/.build/site
+          echo "site $name, $(find pages/.build/site -type f | wc -l) files"
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
-          path: site
+          path: pages/.build/site
       - id: deploy
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      # The teachers' photos as the Worker's static assets (pages/wrangler.toml), after the pages: until this step, a
+      # new photo comes from GitHub Pages through the Worker, as before. This deploys the Worker's code on main too,
+      # after its tests (README). Skipped until the repository has the secrets CLOUDFLARE_API_TOKEN (README) and
+      # CLOUDFLARE_ACCOUNT_ID. A site from before the photos' assets (no .assetsignore: the whole site, over 20,000
+      # files) is skipped too.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        if: env.HAS_CF == 'true'
+        with:
+          node-version: 22
+      - name: Deploy the Worker with the photos
+        if: env.HAS_CF == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          [[ -f pages/.build/site/.assetsignore ]] || { echo "::warning::the site has no .assetsignore: build it again (pages/build.py); the Worker is not deployed"; exit 0; }
+          node --test test/worker_test.mjs
+          cd pages && npx --yes wrangler@4.163.0 deploy
