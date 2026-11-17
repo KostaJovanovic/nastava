@@ -30,21 +30,23 @@ create table if not exists vesti_categories (id integer primary key, name text, 
 
 
 def listing(what, fields):
-    """Every row of a REST collection, 100 at a time; checks the count against X-WP-Total."""
+    """Every row of a REST collection, 100 at a time; checks the count against X-WP-Total. A post published during
+    the listing shifts the pages by one: listed again, up to three times."""
 
-    rows, page = [], 1
-    while True:
-        r = session().get(f"{API}{what}&per_page=100&page={page}&_fields={fields}", timeout=120)
-        r.raise_for_status()
-        rows += r.json()
-        if page >= int(r.headers["X-WP-TotalPages"]):
-            break
-        page += 1
+    for attempt in range(3):
+        rows, page = [], 1
+        while True:
+            r = session().get(f"{API}{what}&per_page=100&page={page}&_fields={fields}", timeout=120)
+            r.raise_for_status()
+            rows += r.json()
+            if page >= int(r.headers["X-WP-TotalPages"]):
+                break
+            page += 1
+            time.sleep(DELAY)
+        if len(rows) == int(r.headers["X-WP-Total"]) and len({x["id"] for x in rows}) == len(rows):
+            return rows
         time.sleep(DELAY)
-    # A post published during the run shifts the pages by one: run again.
-    if len(rows) != int(r.headers["X-WP-Total"]) or len({x["id"] for x in rows}) != len(rows):
-        raise RuntimeError(f"{what}: {len(rows)} rows, the site has {r.headers['X-WP-Total']}")
-    return rows
+    raise RuntimeError(f"{what}: {len(rows)} rows, the site has {r.headers['X-WP-Total']}")
 
 
 def sync(db):
