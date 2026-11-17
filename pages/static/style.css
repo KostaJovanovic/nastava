@@ -1245,11 +1245,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
   border-top: 1px solid var(--line-2);
 }
 .fr:first-child { border-top: 0; }
-.fr:nth-child(even) { background: var(--alt); }
-/* A long list (a subject's 1,000 threads): no layout or paint for the rows off the screen until they come near, so a
-   phone is free sooner after the first frame. The size of a row not seen yet: 64px; then its own (auto). */
-.fb__rows > .fr { content-visibility: auto; contain-intrinsic-size: auto 64px; }
-.fr:hover { background: var(--hover); }
+.fr:nth-child(even) { background: var(--alt); }.fr:hover { background: var(--hover); }
 /* A row's icon (a katedra's, a smer's folder, a topic's, a news post's, a file's), centred on both phone lines (title,
    the line under it): ~12px above and below, as on the left. */
 .fr__i {

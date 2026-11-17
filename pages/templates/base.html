@@ -42,13 +42,14 @@
 <script src="/static/head.js"></script>
 {#- In <head>: it converts the text as it comes, so the first frame is in the chosen script already. -#}
 <script src="/static/pismo.js"></script>
-{#- The tab bar's pages (sidebar.html) fetched at once: a tap on one has no network wait. The Worker gives a page 5
+{#- The tab bar's pages (sidebar.html) fetched at once, ~40 KB with Brotli: a tap on one has no network wait. Not
+    /nastavnici/ (93 KB on its own): it is fetched on a hover, as any other page. The Worker gives a page 5
     minutes (src/index.js cacheControl), so the next pages take it from the browser's cache. Any other page of the
     site: its HTML fetched on a hover, or on a phone when its link is on the screen; prerendered only on a press, as a
     prerender also loads the page's photos, each one a Worker request. Not the files, the photos and the Worker's own
     paths. -#}
 {%- set site_pages %}{"and": [{"href_matches": "/*"}, {"not": {"href_matches": ["/files/*", "/static/*", "/pagefind/*", "/foto/*", "/push*", "/visit*", "/*.xml", "/*.json"]}}]}{% endset %}
-<script type="speculationrules">{"prefetch": [{"urls": ["/", "/raspored/", "/nastavnici/", "/link/", "/vesti/"], "eagerness": "immediate"}, {"where": {{ site_pages }}, "eagerness": "moderate"}], "prerender": [{"where": {{ site_pages }}, "eagerness": "conservative"}]}</script>
+<script type="speculationrules">{"prefetch": [{"urls": ["/", "/raspored/", "/link/", "/vesti/"], "eagerness": "immediate"}, {"where": {{ site_pages }}, "eagerness": "moderate"}], "prerender": [{"where": {{ site_pages }}, "eagerness": "conservative"}]}</script>
 <link rel="icon" href="/static/favicon.svg">
 {#- An iPhone's home screen takes no SVG (pages/icons.py). -#}
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
