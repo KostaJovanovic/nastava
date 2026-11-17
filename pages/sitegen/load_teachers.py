@@ -1,8 +1,10 @@
 """The teachers: the faculty's list, their history, photos, biographies, bibliographies, departments."""
 
 import hashlib
+import inspect
 import io
 import json
+import os
 import re
 import sys
 from collections import Counter, defaultdict
@@ -54,6 +56,26 @@ def fit_photo(data, width=PHOTO_WIDTH, always=False):
     return out.getvalue()
 
 
+# fit_photo's copies, kept between runs (a dev server's start re-encoded every photo, ~3 s): named by the hash of the
+# photo, the width and fit_photo's own code, so a changed photo or a changed fit_photo makes new ones.
+FIT_CACHE = HERE / ".build" / "foto-cache"
+FIT_CODE = inspect.getsource(fit_photo).encode()
+
+
+def fit_cached(data, width=PHOTO_WIDTH, always=False):
+    f = FIT_CACHE / (hashlib.sha1(data + FIT_CODE + f"{width} {always}".encode()).hexdigest() + ".jpg")
+    if f.is_file():
+        return f.read_bytes()
+    out = fit_photo(data, width, always)
+    if out is not data:  # as stored: nothing to keep
+        FIT_CACHE.mkdir(parents=True, exist_ok=True)
+        # Written whole, then renamed: two servers' (or a build's) starts at once never read half a file.
+        tmp = f.with_name(f"{f.stem}.{os.getpid()}.tmp")
+        tmp.write_bytes(out)
+        os.replace(tmp, f)
+    return out
+
+
 def small_path(path):
     """A photo's small copy (fit_photo SMALL_WIDTH), for the app's offline copy: /foto/mala/<name>.jpg."""
     return "/foto/mala/" + path.rsplit("/", 1)[1].rsplit(".", 1)[0] + ".jpg"
@@ -67,8 +89,8 @@ def write_photos(db, site):
     for url, kind, data in db.execute("SELECT url, type, data FROM photos"):
         if url not in skip:
             path = photo_path(url, kind)
-            (site / path.lstrip("/")).write_bytes(fit_photo(data))
-            (site / small_path(path).lstrip("/")).write_bytes(fit_photo(data, SMALL_WIDTH, always=True))
+            (site / path.lstrip("/")).write_bytes(fit_cached(data))
+            (site / small_path(path).lstrip("/")).write_bytes(fit_cached(data, SMALL_WIDTH, always=True))
 
 
 HISTORY = HERE.resolve().parent / "data" / "nastavnici-istorija.jsonl"
@@ -211,23 +233,17 @@ OF_THE_DAY = (("професор", "Profesor dana"), ("доцент", "Docent da
 
 # Of the faculty's past, besides the emeriti and those who left after 2024: the user's picks.
 OF_THE_DAY_PAST = {"ist-kosta-alkovic-1834-1909", "ist-ljubomir-kleric-1844-1910", "ist-todor-tosa-seleskovic-1856-1901"}
-# Assistants who came in 2026 the user wants in all the same: 729 Марко А. Вег, 1048 Ангелина Р. Драгићевић,
-# 983 Инес Б. Ивковић.
-OF_THE_DAY_NEW = {"729", "1048", "983"}
 
 
 def of_the_day(teachers):
     """The side panel's teacher of the day to pick from (site.js, by the date): each teacher with a photo and a title
-    of OF_THE_DAY who is listed, emeritus, left after 2024 (last on the faculty's list in 2025 or later) or in
-    OF_THE_DAY_PAST, as [head, name, href, photo, katedra, its icon in icons.svg]. Not an assistant who came in 2026
-    (span, render.faculty_span, so after render_teachers): the user's choice; a professor or docent "from 2026" is
-    often only one the 2014 list lacked."""
-    assert all("span" in t for t in teachers), "of_the_day before render_teachers"
+    of OF_THE_DAY who is listed (whenever they came, 2026 too), emeritus, left after 2024 (last on the faculty's list
+    in 2025 or later) or in OF_THE_DAY_PAST, as [head, name, href, photo, katedra, its icon in icons.svg, place on
+    the Studentska lista or None]."""
     head = lambda t: next((h for k, h in OF_THE_DAY if k in (t["title"] or "")), None)
-    new = lambda t: "асистент" in (t["title"] or "") and (t.get("span") or {}).get("from") == 2026 and t["id"] not in OF_THE_DAY_NEW
-    here = lambda t: (not t["gone"] or t["emeritus"] or (t["last_seen"] or "") >= "2025" or t["id"] in OF_THE_DAY_PAST) and not new(t)
+    here = lambda t: not t["gone"] or t["emeritus"] or (t["last_seen"] or "") >= "2025" or t["id"] in OF_THE_DAY_PAST
     return [
-        [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize(), t["katedra"] and slug(t["katedra"])]
+        [head(t), t["shown"], t["href"], t["thumb"], t["katedra"] and env.filters["katedra"](t["katedra"]).capitalize(), t["katedra"] and slug(t["katedra"]), t["lista"]]
         for t in teachers
         if t["thumb"] and here(t) and head(t)
     ]
