@@ -19,6 +19,9 @@
 {%- if _old %}
 <p class="note">Ovo je ranija verzija stranice. <a href="{{ page.versions[0].href }}">Najnovija verzija</a></p>
 {%- endif %}
+{%- if v.changes %}
+<p class="note">Izmenjeno {{ v.first_seen | dmy }}: {{ v.changes | join(", ") }}</p>
+{%- endif %}
 <article class="panel">
   <div class="prose prose--html">{{ v.html | safe }}</div>
 </article>

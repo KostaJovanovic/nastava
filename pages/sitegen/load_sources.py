@@ -10,7 +10,7 @@ from urllib.parse import quote
 from bs4 import BeautifulSoup
 from translit import fold
 from mail import asset_name, thumb_asset, TAG as MAIL_TAG
-from .clean import CENT_CLASSES, cent_tidy, clean_html, file_rows, linkify
+from .clean import CENT_CLASSES, cent_changes, cent_tidy, clean_html, file_rows, linkify
 from .known import FORUMS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
 from .load_board import book_subject
 from .output import HERE, PAGE_TEXT, VESTI
@@ -146,24 +146,28 @@ def load_cent(db, smerovi, subjects):
             )
         shown, emptied = [], False
         main = f"{s['href']}cent/{p['slug']}/"
-        for i, v in enumerate(versions[p["id"]]):
+        cleaned = []
+        for v in versions[p["id"]]:
             html = clean_html(cent_tidy(v["html"]), p["link"], classes=CENT_CLASSES) or ""
             # The page's first heading is its name ("Резултати испита"): the title, not repeated under it.
             m = re.search(r"<h2[^>]*>(.*?)</h2>", html, re.S)
-            title = strip_tags(m[1]) if m else v["title"]
-            html = html[: m.start()] + html[m.end() :] if m else html
+            cleaned.append((strip_tags(m[1]) if m else v["title"], html[: m.start()] + html[m.end() :] if m else html))
+        for i, (v, (title, html)) in enumerate(zip(versions[p["id"]], cleaned)):
             if not strip_tags(html) and "<a " not in html:
                 emptied = emptied or not shown
                 continue
             if copies[v["sha"]] >= 5:
                 continue
+            # Against the version before it (an emptied one too: its content all comes back as new).
+            changes = []
+            if i + 1 < len(cleaned):
+                html, changes = cent_changes(cleaned[i + 1][1], html)
             # The newest version with content is the page's: a page cent emptied keeps its last content.
             href = main if not shown else f"{main}{v['first_seen'][:10]}-{v['sha'][:6]}/"
-            shown.append(dict(title=title, href=href, html=html, first_seen=v["first_seen"], last_seen=v["last_seen"]))
-            new = i == len(versions[p["id"]]) - 1
-            pushed.append(
-                dict(k="s", id=v["rid"], s=s["href"], n=s["name"], t=f"{title}: {'nova stranica' if new else 'izmenjeno'}", u=main)
-            )
+            shown.append(dict(title=title, href=href, html=html, first_seen=v["first_seen"], last_seen=v["last_seen"], changes=changes))
+            more = f" i još {len(changes) - 2}" if len(changes) > 2 else ""
+            what = "nova stranica" if i + 1 == len(cleaned) else (", ".join(changes[:2]) + more) or "izmenjeno"
+            pushed.append(dict(k="s", id=v["rid"], s=s["href"], n=s["name"], t=f"{title}: {what}", u=main))
         if shown:
             s.setdefault("cent", []).append(dict(title=shown[0]["title"], link=p["link"], gone=p["gone"] or emptied, versions=shown))
     return items, pushed

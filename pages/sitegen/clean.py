@@ -137,6 +137,48 @@ def cent_tidy(html):
     return str(soup)
 
 
+# The text blocks cent_changes compares: a block whose text the older version did not have is new.
+CHANGE_BLOCKS = "p, li, td, th, h3, h4, h5, h6, .cent-head"
+
+
+def cent_changes(old, new):
+    """What a cent page's version changed against the one before it (both after clean_html): (new with each new link
+    and text block marked .cent-new and its fold opened, the changes in words). A link to a file the older version did
+    not have, under a name it did, is a new file (TMO's "Smena 5" list, v3 to v4: same button, new PDF)."""
+    a, b = BeautifulSoup(old, "html.parser"), BeautifulSoup(new, "html.parser")
+
+    def txt(el):
+        return el.get_text(" ", strip=True)
+
+    def label(x):
+        # A file chip's name without its type badge (cent_tidy: "PDF raspored.pdf").
+        badge = x.select_one(".att__t")
+        return txt(x).removeprefix(txt(badge) if badge else "").strip() or unquote(urlsplit(x["href"]).path).rsplit("/", 1)[-1]
+
+    def mark(el):
+        el["class"] = [*el.get("class", []), "cent-new"]
+        if d := el.find_parent("details"):
+            d["open"] = ""
+
+    changes = []
+    old_hrefs = {x["href"] for x in a.select("a[href]")}
+    new_hrefs = {x["href"] for x in b.select("a[href]")}
+    old_names = {label(x) for x in a.select("a[href]")}
+    for x in b.select("a[href]"):
+        if x["href"] not in old_hrefs:
+            mark(x)
+            changes.append(f"{'novi fajl' if label(x) in old_names else 'novo'} – {label(x)}")
+    new_names = {label(x) for x in b.select("a[href]")}
+    changes += [f"uklonjeno – {label(x)}" for x in a.select("a[href]") if x["href"] not in new_hrefs and label(x) not in new_names]
+    old_text = {txt(el) for el in a.select(CHANGE_BLOCKS)}
+    blocks = [el for el in b.select(CHANGE_BLOCKS) if txt(el) and txt(el) not in old_text and not el.select(CHANGE_BLOCKS)]
+    for el in blocks:
+        mark(el)
+    if blocks:
+        changes.append("novi tekst")
+    return (str(b) if changes else new), list(dict.fromkeys(changes))
+
+
 # A board attachment after clean_html: <dl><dt><span></span> <a href>name</a></dt>[<dd>comment</dd>]<dd>(size)
 # preuzeto N puta</dd></dl>.
 ATTACHMENT = re.compile(

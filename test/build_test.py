@@ -20,6 +20,7 @@ from pathlib import Path  # noqa: E402
 from sitegen.clean import CENT_CLASSES  # noqa: E402
 from sitegen.clean import attachments  # noqa: E402
 from sitegen.clean import book_page  # noqa: E402
+from sitegen.clean import cent_changes  # noqa: E402
 from sitegen.clean import cent_tidy  # noqa: E402
 from sitegen.clean import clean_html  # noqa: E402
 from sitegen.clean import downloads  # noqa: E402
@@ -508,6 +509,16 @@ assert _ct == (
 # A toggle without a title: its content in place, no empty fold.
 _ct = cent_tidy('<div class="et_pb_toggle"><h4 class="et_pb_toggle_title"></h4><div class="et_pb_toggle_content"><p>x</p></div></div>')
 assert "<details" not in _ct and "<p>x</p>" in _ct, _ct
+# A cent page's change against its older version: TMO's "Smena 5" button to a new PDF, a new text in a fold, a removed
+# link; nothing changed, the page as it was.
+_old = '<a class="cent-btn" href="/s5_v3.pdf">Smena 5</a><a href="/x.pdf">Raspored</a><details><p>a</p></details>'
+_new = '<a class="cent-btn" href="/s5_v4.pdf">Smena 5</a><details><p>a</p><p>b</p></details>'
+_html, _ch = cent_changes(_old, _new)
+assert _ch == ["novi fajl – Smena 5", "uklonjeno – Raspored", "novi tekst"], _ch
+_chip = '<a class="cent-file" href="/r.pdf"><span class="att__t att__t--pdf">PDF</span>r.pdf</a>'
+assert cent_changes("", _chip)[1] == ["novo – r.pdf"]
+assert '<a class="cent-btn cent-new" href="/s5_v4.pdf">' in _html and "<details open" in _html and '<p class="cent-new">b</p>' in _html, _html
+assert "<p>a</p>" in _html and cent_changes(_new, _new) == (_new, [])
 _s, _f = split_page(f"<html><title>T</title><meta>{HEAD_END}<x>{MAIN}a</main><p></main></html>")
 assert (_s, _f) == (
     f"<html><title></title><x>{MAIN}<!--main--></main></html>",
