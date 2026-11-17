@@ -76,6 +76,7 @@ def load_items(db, place):
     # A smer's own thread about a završni predmet or rad (teachers post them outside the subject) goes to the smer's
     # "Završni predmet" subject; by the thread's first title, so its replies ("Re: …") go with it.
     final = {s["smer"]["id"]: s for _, s in place.values() if s and fold(s["name"]) == "zavrsni predmet"}
+    topic_titles = dict(db.execute("SELECT id, title FROM topics"))
     first_title = {}
     for p in sorted(posts.values(), key=lambda p: p["id"]):
         first_title.setdefault(p["topic"], p["title"] or "")
@@ -95,7 +96,8 @@ def load_items(db, place):
             dict(
                 id=f"p{p['id']}",
                 kind="post",
-                title=p["title"],
+                # A reply posted without a title (the board allows it): as the board shows it, "Re: <topic>".
+                title=p["title"] or f"Re: {topic_titles.get(p['topic']) or first_title.get(p['topic'], '')}",
                 smer=smer,
                 subj=subj,
                 subject=subj and subj["name"],

@@ -27,7 +27,8 @@ def load_vesti(db):
     for r in db.execute("SELECT * FROM vesti v WHERE modified = (SELECT max(modified) FROM vesti WHERE id = v.id) ORDER BY date DESC"):
         iso, year = parse_date(r["date"])
         names = [cats[c] for c in json.loads(r["categories"]) if c in cats]
-        title = unescape(r["title"])
+        # The news site's titles have non-breaking spaces in runs (at the end, between words): one plain space.
+        title = " ".join(unescape(r["title"]).split())
         # upis: in the news site's category Упис (its id 8), the enrollment news (the wiki's upis/vesti lists them).
         out.append(
             dict(
