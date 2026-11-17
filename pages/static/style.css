@@ -1137,13 +1137,8 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .back:hover { color: var(--accent-t); }
 .back:hover span { text-decoration: underline; }
 .back .i { flex: none; width: 15px; height: 15px; }
-/* Phone: only "‹ parent", a way back that fits the width. */
-@media (max-width: 899px) {
-  .crumbs > :not(a:last-of-type) { display: none; }
-  .crumbs a:last-of-type { max-width: none; }
-  .crumbs a:last-of-type .i { display: none; }
-  .crumbs a:last-of-type::before { content: "‹ "; font-size: 18px; }
-}
+/* Phone: neither; the phone's own Back and the tab bar take the reader back. */
+@media (max-width: 899px) { .crumbs, .back { display: none !important; } }
 
 /* ---- Page heading -------------------------------------------------------- */
 .mh { display: grid; gap: 2px; padding: 0 2px; }
