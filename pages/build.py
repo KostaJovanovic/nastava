@@ -43,6 +43,7 @@ from sitegen.output import (
     version_static,
     versioned,
     write,
+    write_assets_config,
     write_page,
     write_sitemap,
 )  # noqa: E402
@@ -221,6 +222,7 @@ def main(db_path, out, dev_mode=False):
     if dev:
         return
     write_sitemap(site)
+    write_assets_config(site)
     print(
         f"{len(items)} items, {len(topics)} topics, {len(subjects)} subjects, "
         f"{len(smerovi)} smerovi, {len(teachers)} teachers, {len(book)} book subjects, {len(vesti)} vesti",

@@ -3,8 +3,14 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = false
 
-# The Worker has no static assets: GitHub Pages serves the site; the board's older files link to the faculty's site,
-# and those since October 2026 and the mails' and Teams files come from GitHub releases (/files/).
+# GitHub Pages serves the site; the board's older files link to the faculty's site, and those since October 2026 and
+# the mails' and Teams files come from GitHub releases (/files/).
+# Static assets: the teachers' photos (/foto/) of the last build, which build.py's .assetsignore keeps alone (the
+# whole site is over the free plan's 20,000 files). Cloudflare serves them without running the Worker, so they do not
+# count toward its 100,000 requests a day. A photo not among them (a build newer than this deploy) goes to the Worker,
+# which gets it from GitHub Pages as before. So build first: wrangler deploy needs .build/site.
+assets = { directory = ".build/site" }
+
 # The site is masinci.org; the other two only redirect there (src/index.js).
 routes = [
   { pattern = "masinci.org", custom_domain = true },

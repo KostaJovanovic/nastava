@@ -283,6 +283,14 @@ def write_sitemap(site):
     (site / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n", encoding="utf-8")
 
 
+def write_assets_config(site):
+    """The Worker's static assets (wrangler.toml [assets]): the teachers' photos only. Cloudflare serves them without
+    the Worker, so they do not count toward its 100,000 requests a day; a page that lists teachers asks for dozens. The
+    rest is over the free plan's 20,000 files: it stays on GitHub Pages. _headers: the week the Worker gives them."""
+    (site / ".assetsignore").write_text("*\n!foto/\n!foto/**\n!_headers\n", encoding="utf-8")
+    (site / "_headers").write_text("/foto/*\n  Cache-Control: public, max-age=604800\n", encoding="utf-8")
+
+
 def write_bytes(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
