@@ -35,7 +35,8 @@
   <p class="mh__sub">Nastavnici:{% for t in subj.teachers %} <a href="{{ t.href }}">{{ t.shown }}</a>{% if not loop.last %},{% endif %}{% endfor %}</p>
   {%- endif %}
 </div>
-{#- The subject's pages on cent (build.py load_cent), in its order; each date: its last change. -#}
+{#- The subject's pages on cent (build.py load_cent), in its order; each date: its last change, under its title what
+    changed (clean.py cent_changes), with a dot when new since the last visit (site.js markNew, data-t). -#}
 {%- macro site_pages(mark, pages) %}
 <section class="fb fb--posts">
   <div class="fb__h"><h2>Sa sajta katedre <span class="src">{{ mark }}</span></h2><span>Izmenjeno</span></div>
@@ -43,8 +44,9 @@
     {%- for p in pages %}
     <li class="fr">
       <span class="fr__i" aria-hidden="true"><svg class="i"><use href="#i-file"></use></svg></span>
-      <div class="fr__t"><a class="fr__a" href="{{ p.versions[0].href }}">{{ p.title }}</a>{% if p.gone %}<span class="gone">uklonjeno sa sajta katedre</span>{% endif %}</div>
-      <div class="fr__more"><time class="fr__d" datetime="{{ p.versions[0].first_seen }}">{{ p.versions[0].first_seen | dmy }}</time></div>
+      <div class="fr__t"><a class="fr__a" href="{{ p.versions[0].href }}">{{ p.title }}</a>{% if p.gone %}<span class="gone">uklonjeno sa sajta katedre</span>{% endif %}
+        {%- if p.versions[0].changes %}<p class="fr__sub">{{ p.versions[0].changes | join(', ') }}</p>{% endif %}</div>
+      <div class="fr__more"><time class="fr__d" datetime="{{ p.versions[0].first_seen }}" data-t="{{ p.versions[0].first_seen }}">{{ p.versions[0].first_seen | dmy }}</time></div>
     </li>
     {%- endfor %}
   </ol>

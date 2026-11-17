@@ -23,9 +23,14 @@ assert [nove(n) for n in (1, 2, 5, 11, 12, 21, 22, 25, 111)] == [
     "25 novih objava",
     "111 novih objava",
 ]
-_p = [dict(n="Биофизика", t="Резултати", u="/item/p9/"), dict(n="Биофизика", t="Испит", u="/tema/3/#p2")]
+_b = "/predmet/a/b/"
+_p = [dict(s=_b, n="Биофизика", t="Резултати", u="/item/p9/"), dict(s=_b, n="Биофизика", t="Испит", u="/tema/3/#p2")]
 assert message(_p[:1]) == dict(title="Биофизика", body="Резултати", url=SITE + "/item/p9/")
-assert message(_p) == dict(title="2 nove objave", body="Биофизика", url=SITE + "/")
+# Of one subject: its page; of several: the home page.
+assert message(_p) == dict(title="Биофизика", body="2 nove objave: Резултати, Испит", url=SITE + _b)
+assert message(_p * 2 + [dict(_p[0], t="A"), dict(_p[0], t="B")])["body"] == "6 novih objava: Резултати, Испит, A i još 1"
+_x = dict(s="/predmet/a/c/", n="Хемија", t="X", u="/item/p8/")
+assert message([*_p, _x]) == dict(title="3 nove objave", body="Биофизика, Хемија", url=SITE + "/")
 assert wait_url([dict(k="s", id=3, u="/predmet/a/b/cent/x/"), dict(id=9, u="/tema/3/#p9")]) == SITE + "/item/p9/"
 assert wait_url([dict(k="c", id=4, u="/item/c4/")]) == SITE + "/item/c4/" and wait_url([dict(k="s", id=3, u="/x/")]) is None
 _s = dict(s=["/predmet/a/b/"], t={"/predmet/a/b/": ["pera"]})

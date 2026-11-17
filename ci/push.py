@@ -50,11 +50,16 @@ def nove(n):
 
 
 def message(posts):
-    """One notification for a browser: one post opens itself; more open the home page, which lists the followed
+    """One notification for a browser: one post opens itself; more of one subject its page (new rows dotted, cent
+    pages with what changed), their titles in the text; of several subjects, the home page, which lists the followed
     subjects' newest topics."""
     if len(posts) == 1:
         p = posts[0]
         return dict(title=p["n"], body=p["t"], url=SITE + p["u"])
+    if len({p["s"] for p in posts}) == 1:
+        titles = list(dict.fromkeys(p["t"] for p in posts))
+        more = f" i još {len(titles) - 3}" if len(titles) > 3 else ""
+        return dict(title=posts[0]["n"], body=f"{nove(len(posts))}: " + ", ".join(titles[:3]) + more, url=SITE + posts[0]["s"])
     names = list(dict.fromkeys(p["n"] for p in posts))
     return dict(title=nove(len(posts)), body=", ".join(names), url=SITE + "/")
 

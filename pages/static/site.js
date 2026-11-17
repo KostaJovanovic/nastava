@@ -1726,7 +1726,8 @@
     if (!since) return;
     try { read = JSON.parse(localStorage.getItem('procitano')) || {}; } catch (e) {}
     var m = window.mojiNow;
-    [].forEach.call(d.querySelectorAll('.fr__last time[data-t]'), function (t) {
+    // .fr__d: a subject's cent page by its last change (predmet.html site_pages).
+    [].forEach.call(d.querySelectorAll('.fr__last time[data-t], time.fr__d[data-t]'), function (t) {
       var row = t.closest('.fr'), at = Date.parse(t.getAttribute('data-t')), last = row.querySelector('.lt') || row.querySelector('.fr__a');
       var on = at > since && !(last && read[last.pathname] > at) && !(m && m.only && t.closest('#res') && !m.has(t.dataset.p));
       if (row.classList.contains('fr--new') === on) return;
