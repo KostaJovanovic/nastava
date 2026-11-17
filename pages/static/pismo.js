@@ -109,7 +109,9 @@
 	};
 
 	// The <title> is in Latin already (base.html); the original, as the page's text, is in pismo-title.
-	const title = document.querySelector('meta[name="pismo-title"]')?.content ?? document.title;
+	let title = document.querySelector('meta[name="pismo-title"]')?.content ?? document.title;
+	// A title a script sets (site.js: a paged list's year): kept as the original, so a switch converts it, not the first.
+	window.pismoTitle = (t) => { title = t; document.title = convert(t); };
 	const lang = () => { document.documentElement.lang = mode === "cyr" ? "sr-Cyrl" : "sr-Latn"; };
 	function set(m, kept) {
 		mode = m;

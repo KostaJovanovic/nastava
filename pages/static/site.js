@@ -756,7 +756,9 @@
     // The heading and the tab's title name the year (pismo.js converts them as they change).
     var named = function () {
       h1.textContent = h1.dataset.pgH + (ysel.value ? ' ' + ysel.value : '');
-      d.title = h1.textContent + title;
+      // From the original (data-pg-h), not the shown text: pismo.js converts it now and at a switch.
+      var t = h1.dataset.pgH + (ysel.value ? ' ' + ysel.value : '') + title;
+      if (window.pismoTitle) window.pismoTitle(t); else d.title = t;
     };
     findBox.addEventListener('input', again);
     sel.addEventListener('change', again);
@@ -885,7 +887,8 @@
   var showPush = function (on, why) {
     pushBoxes.forEach(function (b, i) {
       pushOns[i].checked = on;
-      if (why) { pushOns[i].setAttribute('aria-disabled', 'true'); b.title = why; }
+      // pismoAttr: shown in the chosen script (a title set later is not converted by itself).
+      if (why) { pushOns[i].setAttribute('aria-disabled', 'true'); if (window.pismoAttr) window.pismoAttr(b, 'title', why); else b.title = why; }
       else { pushOns[i].removeAttribute('aria-disabled'); b.removeAttribute('title'); }
       b.hidden = false;
     });
