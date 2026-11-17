@@ -144,17 +144,17 @@ window.fillDana = function (dana, t) {
 	a.querySelector("img").src = t[3];
 	a.querySelector("b").textContent = t[1];
 	a.querySelector("small").textContent = t[4] || "";
-	// The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki).
-	if (t[5]) {
-		a.querySelector("use").setAttribute("href", "#i-" + t[5]);
-		a.querySelector(".dana__ki").removeAttribute("hidden");
-	}
+	// The katedra's icon, as on /nastavnici/'s cards (cards.html .pc__ki). Hidden again for a pick without one: a saved
+	// pick (showDana) can be another teacher than site.js's after a deploy.
+	a.querySelector(".dana__ki").toggleAttribute("hidden", !t[5]);
+	if (t[5]) a.querySelector("use").setAttribute("href", "#i-" + t[5]);
 	// The Studentska lista badge, the same text as cards.html sp_badge.
+	const sp = dana.querySelector(".dana__sp");
+	sp.hidden = !t[6];
 	if (t[6]) {
-		const sp = dana.querySelector(".dana__sp"), tip = "Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: " + t[6] + ". na listi";
+		const tip = "Studentska lista „Studenti pobeđuju“, parlamentarni izbori 2026: " + t[6] + ". na listi";
 		sp.setAttribute("aria-label", tip);
 		sp.querySelector(".sp__tip").textContent = tip;
-		sp.hidden = false;
 	}
 	dana.hidden = false;
 };
@@ -165,7 +165,12 @@ window.showDana = function () {
 	const dana = document.querySelector("[data-dana]");
 	let saved = null;
 	try { saved = JSON.parse(localStorage.getItem("dana")); } catch (e) {}
-	if (dana && saved && saved.day === new Date().toDateString()) window.fillDana(dana, saved.t);
+	if (!dana || !saved || saved.day !== new Date().toDateString()) return;
+	// Seen on an earlier page, so in the cache: no fade in (data-fade above), which would blink it on each page.
+	const img = dana.querySelector("img");
+	img.decoding = "sync";
+	img.dataset.in = "";
+	window.fillDana(dana, saved.t);
 };
 
 // The lecture schedule (/raspored/): one program at a time, picked by its tab. key: the program (else the #, else the

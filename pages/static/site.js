@@ -1708,18 +1708,20 @@
      shortcut: a smer row goes by its last post only, so a followed subject's new post under a newer one of another
      subject gets no dot; carry each subject's last time if that matters. */
   var since = 0, read = {};
-  try {
-    var visits = JSON.parse(localStorage.getItem('poseta')) || {}, nowMs = Date.now();
-    if (visits.seen && nowMs - visits.seen > 30 * 60e3) visits.mark = visits.seen;
-    since = visits.mark || 0;
-    visits.seen = nowMs;
-    localStorage.setItem('poseta', JSON.stringify(visits));
-    read = JSON.parse(localStorage.getItem('procitano')) || {};
-    // Opened before the mark: no post it could hide is new any more.
-    for (var k in read) if (read[k] < since) delete read[k];
-    read[location.pathname] = nowMs;
-    localStorage.setItem('procitano', JSON.stringify(read));
-  } catch (e) {}
+  var countVisit = function () {
+    try {
+      var visits = JSON.parse(localStorage.getItem('poseta')) || {}, nowMs = Date.now();
+      if (visits.seen && nowMs - visits.seen > 30 * 60e3) visits.mark = visits.seen;
+      since = visits.mark || 0;
+      visits.seen = nowMs;
+      localStorage.setItem('poseta', JSON.stringify(visits));
+      read = JSON.parse(localStorage.getItem('procitano')) || {};
+      // Opened before the mark: no post it could hide is new any more.
+      for (var k in read) if (read[k] < since) delete read[k];
+      read[location.pathname] = nowMs;
+      localStorage.setItem('procitano', JSON.stringify(read));
+    } catch (e) {}
+  };
   function markNew() {
     if (!since) return;
     try { read = JSON.parse(localStorage.getItem('procitano')) || {}; } catch (e) {}
@@ -1752,7 +1754,10 @@
       });
     });
   }
-  markNew();
+  // A prerendered page (base.html's speculation rules) counts only once shown: the reader may never open it, and its
+  // topic would count as read.
+  if (d.prerendering) d.addEventListener('prerenderingchange', function () { countVisit(); markNew(); }, { once: true });
+  else { countVisit(); markNew(); }
   // A row hovered counts as read: its dot goes, for good (as if its last post's page was opened).
   d.addEventListener('mouseover', function (e) {
     var row = e.target.closest && e.target.closest('.fr--new'), last = row && (row.querySelector('.lt') || row.querySelector('.fr__a'));
@@ -1785,7 +1790,7 @@
       if (to === here) scrollTo(0, +sessionStorage.getItem('y' + here));
     } catch (e) {}
   };
-  // A page prerendered on press (base.html's speculation rules) sees the tab's sessionStorage only once shown.
+  // A prerendered page (base.html's speculation rules) sees the tab's sessionStorage only once shown.
   if (d.prerendering) d.addEventListener('prerenderingchange', back, { once: true }); else back();
   /* "Nazad" under the crumbs (base.html): the page this one was opened from, {u, t}. Kept in this page's history entry
      (history.state.back), so a reload, the browser's back and forward and its page cache all keep each page's own; a
