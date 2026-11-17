@@ -55,5 +55,6 @@ jobs:
           title="Mašinci - Mašinski fakultet, na jednom mestu"
           gh release view app >/dev/null 2>&1 || gh release create app --title "$title" \
             --notes "Aplikacija Mašinci za Android: masinci.apk. Uvek najnovija verzija."
-          gh release upload app masinci.apk --clobber
+          # The label is the version, for the app's own update check (AppUpdate.java).
+          gh release upload app "masinci.apk#0.$N" --clobber
           gh release edit app --title "$title" --notes "Aplikacija Mašinci za Android: masinci.apk, verzija 0.$N."

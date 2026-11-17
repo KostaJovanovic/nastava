@@ -10,12 +10,17 @@ android {
         // From the app-v tag's run (.github/workflows/app.yml); a local build is 1 / "dev".
         versionCode((project.findProperty('versionCode') ?: '1') as Integer)
         versionName(project.findProperty('versionName') ?: 'dev')
+        // Where AppUpdate looks for a newer APK: the release "app"; a test build may point elsewhere (-PupdateFeed).
+        buildConfigField "String", "UPDATE_FEED", "\"${project.findProperty('updateFeed') ?: 'https://api.github.com/repos/KostaJovanovic/nastava/releases/tags/app'}\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     buildTypes {
         // The dev app (Mašinci dev): installs beside the released one, so a test build leaves its notifications and

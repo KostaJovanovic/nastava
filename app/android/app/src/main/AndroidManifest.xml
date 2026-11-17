@@ -28,6 +28,9 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Android's answer on an update's install (AppUpdate). -->
+        <receiver android:name=".AppUpdate$Status" android:exported="false" />
+
         <!-- The notifications' small icon: the logo alone, white on clear (pages/icons.py), tinted the site's blue. -->
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_notify" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/notify" />
@@ -38,4 +41,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 13+: asked by PushNotifications.requestPermissions (site.js). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- AppUpdate: the app installs its own newer APK (Android asks the user). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>

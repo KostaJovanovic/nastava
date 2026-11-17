@@ -316,7 +316,12 @@ under the header, offline only: "Bez interneta · sačuvano 16. 11. u 19:17" (th
 subject's saved files stay until they age out of the 7 days, like any other; refollowing costs nothing. Only the
 prefetched files age out; a file the reader tapped stays in the app's cache as now.
 
-### 10. Updates of the APK (planning, 2026-11-17; no code until agreed)
+### 10. Updates of the APK (built 2026-11-17)
+
+Built: `AppUpdate.java` (the plugin), site.js, app.yml's label. Checked on the phone with the dev app against the dev
+server (a test feed and a 0.2 APK): 0.1 showed "Skini noviju verziju", the tap counted the download to 98 %,
+Android asked once to allow Mašinci dev to install apps, then it installed 0.2 and reopened without the button.
+Left: the first release with it (a new app tag); its next release is the first that arrives through the app.
 
 The site's changes reach the app without an update; a new APK is for the native part only (120 Hz, plugins). As
 mbrd does (`mobile/android/.../MbrdUpdate.java`), smaller:
