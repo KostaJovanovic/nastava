@@ -6,9 +6,11 @@ permission, and the Worker holds the phone's `fcm:` token with them; a calendar 
 gets the chooser, a .zip Files/Total Commander, studenti.mas and the guestbook go to Firefox, Veliki drajv to
 OneDrive, a teacher's mail to Gmail, no "Skini aplikaciju" in the app. Known limit: post and news pages are cached
 a day (Cloudflare and the phone), so for up to a day after a deploy a post seen before keeps the old site.js (a PDF
-tap there got the leave dialog); a fix in the Worker is the user's call. Waiting: a real post in a followed subject
-(the next sync), the PDF viewer on the phone (main not pushed yet), 120 Hz (`MainActivity`, committed, needs a
-build), the offline gate. Before (2026-11-16): all steps written, committed and checked on the phone (LAN builds,
+tap there got the leave dialog); a fix in the Worker is the user's call. The dev app (`com.valjdakosta.nastava.dev`,
+"Mašinci dev", the debug build) installs beside the release one. 120 Hz checked on it: the release app runs at 90,
+the dev app at 120 (`MainActivity.fullRefreshRate`; the release gets it with the next tag). The offline gate passed
+(step 9). Waiting: a real post in a followed subject (the next sync), the PDF viewer on the phone (main not pushed
+yet). Before (2026-11-16): all steps written, committed and checked on the phone (LAN builds,
 over adb). Step 0 passed
 (the bridge on the live site). Step 1: icons, notification icon, the logo splash (`LogoView`), the header clear of
 the status bar, the offline page (the site's look, a sky and a meadow). Steps 4 and 5: the Worker keeps `fcm:`
@@ -294,8 +296,12 @@ the phone.
 How it is served (decided 2026-11-16, replacing "in the APK"): a service worker can't read the APK's own files, and
 the native alternative needs a Capacitor internal, so the user chose the service worker with the base downloaded.
 `sw.js` is registered in the app too. Online, its fetch goes through Capacitor (`resolveServiceWorkerRequests`,
-on by default), which still adds the app's bridge to each page; **first check on the phone, before the rest: online
-pages keep the bridge (files to apps, links to the browser, the bell) while the service worker is in control.**
+on by default), which still adds the app's bridge to each page. **Checked 2026-11-17** (the dev app against the dev
+server through `adb reverse`, a pass-through test worker): a page the service worker fetched (`workerStart` > 0,
+controlled) has `Capacitor` with every plugin, and `App.getInfo` and `PushNotifications.checkPermissions` answer.
+To build on: `sw.js` sits in `/static/`, so its scope is `/static/` only; for the site's pages it needs scope `/`,
+so the Worker sends `Service-Worker-Allowed: /` with it (and serve.py the same), and site.js registers it with
+`{scope: "/"}`.
 Offline, a page from the copy has no bridge: our PDFs still open in the viewer (it is the site's own), but its
 "Otvori u aplikaciji" and the other file types (a phone app) wait for the network. Not in the copy: the service worker returns an error, and Capacitor shows
 `offline.html` as now.
