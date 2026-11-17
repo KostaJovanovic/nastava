@@ -1,7 +1,15 @@
 # Android app (Capacitor)
 
-Status (2026-11-16): all steps written, committed and checked on the phone (LAN builds, over adb); waiting on the
-deploy (Worker and site) and the first `app-v` tag, which test step 6's `app.yml` and the real chain. Step 0 passed
+Status (2026-11-17): deployed; `app-v0.723` built and signed by `app.yml` (0.722 failed: `gradlew` not executable),
+installed on the phone. The release build checked over adb: the bell on for three subjects asks Android's
+permission, and the Worker holds the phone's `fcm:` token with them; a calendar PDF opens in Moon Reader, a .docx
+gets the chooser, a .zip Files/Total Commander, studenti.mas and the guestbook go to Firefox, Veliki drajv to
+OneDrive, a teacher's mail to Gmail, no "Skini aplikaciju" in the app. Known limit: post and news pages are cached
+a day (Cloudflare and the phone), so for up to a day after a deploy a post seen before keeps the old site.js (a PDF
+tap there got the leave dialog); a fix in the Worker is the user's call. Waiting: a real post in a followed subject
+(the next sync), the PDF viewer on the phone (main not pushed yet), 120 Hz (`MainActivity`, committed, needs a
+build), the offline gate. Before (2026-11-16): all steps written, committed and checked on the phone (LAN builds,
+over adb). Step 0 passed
 (the bridge on the live site). Step 1: icons, notification icon, the logo splash (`LogoView`), the header clear of
 the status bar, the offline page (the site's look, a sky and a meadow). Steps 4 and 5: the Worker keeps `fcm:`
 tokens, `push.py` sends through FCM (tests pass). Steps 2, 3 and 7 in `site.js`. Phone checks passed: a PDF, .docx
