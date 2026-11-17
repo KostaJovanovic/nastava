@@ -77,23 +77,24 @@ def gh(*args):
 
 
 def release_assets(tag, title, notes):
-    """The uploaded assets' names of the release tag in REPO; the release is made when missing. An asset an upload left
-    half done (state "starter", a cancelled run) is deleted: its name would block the upload that sends it again."""
+    """{name: sha256 hex, or "" when GitHub has none} of the uploaded assets of the release tag in REPO; the release is
+    made when missing. An asset an upload left half done (state "starter", a cancelled run) is deleted: its name would
+    block the upload that sends it again."""
     import subprocess
 
     try:
         rid = json.loads(gh("api", f"repos/{REPO}/releases/tags/{tag}"))["id"]
     except subprocess.CalledProcessError:
         gh("release", "create", tag, "-R", REPO, "--latest=false", "--title", title, "--notes", notes)
-        return set()
-    q = '.[] | "\\(.state) \\(.id) \\(.name)"'
-    have = set()
+        return {}
+    q = '.[] | "\\(.state) \\(.id) \\(.digest // "-") \\(.name)"'
+    have = {}
     for line in gh("api", "--paginate", f"repos/{REPO}/releases/{rid}/assets?per_page=100", "-q", q).split("\n"):
         if not line:
             continue
-        state, asset_id, name = line.split(" ", 2)
+        state, asset_id, digest, name = line.split(" ", 3)
         if state == "uploaded":
-            have.add(name)
+            have[name] = digest.removeprefix("sha256:").replace("-", "")
         else:
             gh("api", "-X", "DELETE", f"repos/{REPO}/releases/assets/{asset_id}")
     return have

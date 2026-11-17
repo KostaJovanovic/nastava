@@ -44,9 +44,9 @@ def check():
     assert thumbnail("a.pdf", b"<html>x</html>") is None and thumbnail("a.docx", b"PK") is None and thumbnail("a.png", b"x") is None
     # A half-uploaded asset (a cancelled run's) is deleted, not counted: the next upload sends it again.
     calls, real_gh = [], common.gh
-    common.gh = lambda *a: calls.append(a) or ('{"id": 5}' if a[1].endswith("/tags/t") else "uploaded 1 a.pdf\nstarter 2 b.pdf\n" if "assets?" in a[-3] else "")
+    common.gh = lambda *a: calls.append(a) or ('{"id": 5}' if a[1].endswith("/tags/t") else "uploaded 1 sha256:ab a.pdf\nuploaded 3 - c d.pdf\nstarter 2 - b.pdf\n" if "assets?" in a[-3] else "")
     try:
-        assert common.release_assets("t", "t", "n") == {"a.pdf"}
+        assert common.release_assets("t", "t", "n") == {"a.pdf": "ab", "c d.pdf": ""}
         assert ("api", "-X", "DELETE", f"repos/{common.REPO}/releases/assets/2") in calls, calls
     finally:
         common.gh = real_gh

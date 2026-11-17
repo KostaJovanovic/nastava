@@ -44,9 +44,12 @@ def upload():
         if not p.is_file() or p.suffix == ".json":
             continue
         path = p.relative_to(MAIL).as_posix()
-        if asset_name(path) not in have:
-            todo[asset_name(path)] = p.read_bytes()
-        if thumb_asset(path) not in have and (t := thumbnail(path, todo.get(asset_name(path)) or p.read_bytes())):
+        data = p.read_bytes()
+        # Missing, or changed since its upload (a file redacted again): sent, and its thumbnail made again.
+        changed = have.get(asset_name(path)) not in (hashlib.sha256(data).hexdigest(), "")
+        if changed:
+            todo[asset_name(path)] = data
+        if (changed or thumb_asset(path) not in have) and (t := thumbnail(path, data)):
             todo[thumb_asset(path)] = t
         if thumb_asset(path) in have or thumb_asset(path) in todo:
             thumbs.add(path)
