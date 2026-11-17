@@ -151,9 +151,12 @@ Then turn on GitHub Pages (source: GitHub Actions), publish the site with `bash 
     cd pages && wrangler deploy
 
 The Worker's deploy needs the built site in `pages/.build/site`: its teachers' photos go up as the Worker's static
-assets (`pages/wrangler.toml`), which do not count toward the Worker's 100,000 requests a day. To deploy it with each
-site, add the repository secrets `CLOUDFLARE_API_TOKEN` (a token with Workers Scripts: Edit) and
-`CLOUDFLARE_ACCOUNT_ID`: the deploy workflow then runs `wrangler deploy` after GitHub Pages.
+assets (`pages/wrangler.toml`), which do not count toward the Worker's 100,000 requests a day. Deploy by hand only
+from a build that has `pages/.build/site/.assetsignore`: without it, wrangler takes the whole site (over the free
+plan's 20,000 files). To deploy it with each site, add the repository secrets `CLOUDFLARE_API_TOKEN` (a token from
+the "Edit Cloudflare Workers" template: the custom domains need more than Workers Scripts: Edit) and
+`CLOUDFLARE_ACCOUNT_ID`. The deploy workflow then runs the Worker's tests and `wrangler deploy` after GitHub Pages,
+with the Worker's code on `main`: a deploy by hand from a branch lasts only until the next site deploy.
 
 For notifications, once: `uv run ci/push.py keys` (writes `push-secret.json`; its public key goes in `pages/static/site.js`),
 `wrangler kv namespace create PUSH` (its id into `pages/wrangler.toml`) and `wrangler secret put PUSH_KEY` (the "key"
