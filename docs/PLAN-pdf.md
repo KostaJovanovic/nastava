@@ -3,7 +3,14 @@
 Status: built 2026-11-16 (`static/pdfview.js`, PDF.js 6.5.438's legacy build in `static/pdf/`: the modern build
 needs `Math.sumPrecise`, which Edge 145 and older WebViews lack, and drew the fonts wrong). Checked in the local
 preview (desktop and phone size): drawing, find with highlights, contents, links, last page, Esc and Back, the
-fallback, double tap and pinch. Left: the phone, once deployed.
+fallback, double tap and pinch. On the phone (2026-11-17; the dev app against the dev server, and Firefox): it opens
+from a real tap, draws at the screen's resolution and sharp again after zoom, double tap (×2 and back), pinch, side
+panning, a long press selects text (Android's Copy/Share menu), find (all matches, "n od m", Enter and the arrows),
+contents, a link to a page, an outside link to Firefox, the page number jump, reopening at the last page, Back
+(first the keyboard, then the viewer), "Otvori u aplikaciji" (Android's chooser); an external PDF (the faculty's
+`file.php`) still goes to the browser. Firefox: "Preuzmi", double tap, Back. A PDF whose fonts map letters oddly
+(TeX's Serbian encoding) copies and finds as stored ("taqki" for "тачки"): the file's text, not the viewer. On a
+phone the bar is tight: "Otvori u aplikaciji" leaves the file name a few letters.
 
 A viewer of our own for the PDFs the site hosts, on every device: the browser (phone and desktop) and the app (which
 loads the site, so no new APK). Built on PDF.js (`pdfjs-dist`, 6.5.x), Mozilla's library, the one in Firefox.
