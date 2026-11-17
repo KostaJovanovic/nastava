@@ -18,6 +18,21 @@ import tempfile
 # faculty dropped. The state's set stays; this PC's only fills one the state lacks or has empty.
 WHOLE = {"subject_places", "teacher_subjects"}
 
+# Notices numbered by each copy on its own (nid, autoincrement): the same nid in the two can be two notices. One only
+# this PC has gets the state's next nid, matched by its key; a table of its old texts (nid) follows that number.
+KEYED = {"cent_notices": "cent_notice_old", "katedre_notices": None}
+
+
+def merge_keyed(db, name, old):
+    cols = [r[1] for r in db.execute(f"PRAGMA l.table_info({name})") if r[1] != "nid"]
+    c = ", ".join(f'"{x}"' for x in cols)
+    db.execute(f"INSERT INTO main.{name} ({c}) SELECT {c} FROM l.{name} WHERE key NOT IN (SELECT key FROM main.{name}) ORDER BY nid")
+    if old and db.execute("SELECT 1 FROM l.sqlite_master WHERE name = ?", (old,)).fetchone():
+        db.execute(
+            f"INSERT INTO main.{old} SELECT m.nid, o.html, o.files, o.last_seen FROM l.{old} o JOIN l.{name} n ON n.nid = o.nid "
+            f"JOIN main.{name} m ON m.key = n.key EXCEPT SELECT nid, html, files, last_seen FROM main.{old}"
+        )
+
 
 def merge(state, local):
     """Add to the database at state what the one at local has and it lacks (see above). Returns how many rows."""
@@ -39,9 +54,15 @@ def merge(state, local):
         for _, col, kind, notnull, default, _ in db.execute(f"PRAGMA l.table_info({q})").fetchall():
             if col not in mine:  # a column a newer scraper added here
                 db.execute(f'ALTER TABLE main.{q} ADD COLUMN "{col}" {kind}' + (f" DEFAULT {default}" if default is not None else ""))
+        if name in KEYED or name in KEYED.values():
+            continue
         cols = ", ".join(f'"{r[1]}"' for r in db.execute(f"PRAGMA l.table_info({q})"))
         # OR IGNORE: a row whose key the state has with other values stays the state's.
         db.execute(f"INSERT OR IGNORE INTO main.{q} ({cols}) SELECT {cols} FROM l.{q} EXCEPT SELECT {cols} FROM main.{q}")
+    local = {n for n, _ in tables}
+    for name, old in KEYED.items():
+        if name in local:
+            merge_keyed(db, name, old)
     db.commit()
     added = db.total_changes
     db.execute("DETACH l")

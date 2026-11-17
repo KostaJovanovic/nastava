@@ -48,4 +48,31 @@ def _test():
         m.close()
 
 
+def _test_notices():
+    """nid 1 is notice A in the state and notice B here: B gets the state's next nid, its old text follows it."""
+    schema = (
+        "CREATE TABLE cent_notices (nid integer primary key autoincrement, key text unique, html text);"
+        "CREATE TABLE cent_notice_old (nid integer, html text, files text, last_seen text);"
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        s, l = os.path.join(tmp, "s.db"), os.path.join(tmp, "l.db")
+        a = sqlite3.connect(s)
+        a.executescript(schema + "INSERT INTO cent_notices VALUES (1, 'A', 'a');")
+        a.commit()
+        a.close()
+        b = sqlite3.connect(l)
+        b.executescript(schema + "INSERT INTO cent_notices VALUES (1, 'B', 'b2'); INSERT INTO cent_notice_old VALUES (1, 'b1', '[]', 't');")
+        b.commit()
+        b.close()
+        merge(s, l)
+        m = sqlite3.connect(s)
+        assert m.execute("SELECT nid, key FROM cent_notices ORDER BY nid").fetchall() == [(1, "A"), (2, "B")]
+        assert m.execute("SELECT nid, html FROM cent_notice_old").fetchall() == [(2, "b1")]
+        merge(s, l)  # again: nothing doubled
+        assert m.execute("SELECT count(*) FROM cent_notices").fetchone()[0] == 2
+        assert m.execute("SELECT count(*) FROM cent_notice_old").fetchone()[0] == 1
+        m.close()
+
+
 _test()
+_test_notices()

@@ -89,7 +89,8 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	before=$(uv run -q ci/push.py last | tr -d '\r') || before=
 	print=$(uv run -q ci/plan.py fingerprint | tr -d '\r')
 	uv run -q ci/runs.py snap || true
-	step nastava uv run scrapers/nastava.py sync
+	# A board that does not answer must not cost the run the other sources: noted, the rest still scraped and deployed.
+	step nastava uv run scrapers/nastava.py sync || failed+=(nastava)
 	# Right after the scrape, so a post made since then does not count as missing.
 	step stats uv run scrapers/nastava.py stats || failed+=(stats)
 	# The attachments of the new posts (since October 2026) into the releases files-<school year>, with thumbnails: a
