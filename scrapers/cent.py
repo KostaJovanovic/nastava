@@ -168,10 +168,12 @@ def sync():
     known = dict(
         db.execute("select id, modified from cent_pages c where last_seen = (select max(last_seen) from cent_pages where id = c.id)")
     )
+    # A page that has had notices, its slug "obavestenja…" or not ("industrija40-uvod-u-proizvodne-sisteme").
+    with_notices = {r[0] for r in db.execute("select distinct page from cent_notices")}
     fetched = new = 0
     for p in pages:
         # The notices pages every time: a notice may not change the page's "modified".
-        if known.get(p["id"]) == p["modified"] and "obavestenja" not in p["slug"]:
+        if known.get(p["id"]) == p["modified"] and "obavestenja" not in p["slug"] and p["id"] not in with_notices:
             # gone = 0: a page one listing missed and marked gone is back (as katedre.store does).
             db.execute(
                 "update cent_pages set last_seen = ?, gone = 0 where id = ? and last_seen = "
