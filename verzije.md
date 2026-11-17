@@ -34,6 +34,7 @@ Rasporedi imaju preview.
 - 715, 718, 754 [novo] **Bez interneta** aplikacija kaže da sajt nije dostupan. `Pokušaj ponovo` učita baš stranu
   koja nije uspela.
 - 730 [brže] **Animacije u aplikaciji** su glatkije na telefonima od 120 Hz.
+- 760 [novo] **Aplikacija sama proverava da li ima nova verzija.**
 
 ### Sajt
 - 728, 757 [novo] **PDF-ovi se otvaraju na samom sajtu**, u browseru i u aplikaciji. Back ga zatvara.
@@ -48,8 +49,8 @@ Rasporedi imaju preview.
 - 741–742 [ispravka] **Imena studenata u tabelama** sa Teams-a se bolje zatamne.
 - 743–744, 751–752 [ispravka] **Obaveštenja sa sajtova katedri** se više ne propuštaju.
 - 748–749, 753 [ispravka] **Dva odgovora iz iste sekunde** imaju svaki svoj link. Naslovi vesti nemaju višak razmaka.
-- 694–696, 698–699, 701, 704, 707–709, 711–713, 716–717, 721, 723–727, 731, 736–737, 745–747, 750, 755–756, 758
-  **Održavanje:** plan aplikacije, testovi i scraperi, ova strana.
+- 694–696, 698–699, 701, 704, 707–709, 711–713, 716–717, 721, 723–727, 731, 736–737, 745–747, 750, 755–756, 758–759,
+  761–762 **Održavanje:** plan aplikacije, testovi i scraperi, ova strana.
 
 ## 15. novembra 2026.
 Profesori emeritusi su u arhivi.
