@@ -1176,31 +1176,80 @@
     if (iphone) said('Obaveštenja na iPhone-u: Deli → Dodaj na početni ekran, pa otvori sajt odatle.');
   }
 
-  /* "Skini aplikaciju" (sidebar.html): in an Android browser, not in the app itself; the i explains, in a dialog like
-     the notifications' one (.leave). */
-  var appGet = d.querySelector('[data-app-get]'), appInfo = null;
-  if (appGet && android && !app && !inApp) {
-    appGet.hidden = false;
-    appGet.querySelector('[data-app-info]').addEventListener('click', function () {
-      if (!appInfo) {
-        appInfo = d.createElement('dialog');
-        appInfo.className = 'leave';
-        appInfo.setAttribute('aria-labelledby', 'app-h');
-        appInfo.innerHTML = '<div class="leave__in"><h2 id="app-h">Aplikacija za Android</h2>'
-          + '<p>Browser na telefonu ponekad propusti obaveštenja: Android ga uspava kad ga ne koristiš, pa stignu kasno ili ne uopšte. '
-          + 'Aplikacija nema taj problem.</p>'
-          + '<ol class="leave__steps"><li>Dodirni „Skini aplikaciju”.</li><li>Otvori preuzeti fajl (masinci.apk).</li>'
-          + '<li>Ako telefon pita, dozvoli instalaciju iz browsera, pa se vrati.</li><li>Dodirni „Install”.</li></ol>'
-          + '<p>Telefon može da upozori da aplikacija nije sa Google Play-a: ona je ovaj sajt, iz iste arhive.</p>'
-          + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div></div>';
-        d.body.appendChild(appInfo);
-        appInfo.addEventListener('click', function (e) {
-          if (e.target === appInfo || e.target.closest('button')) appInfo.close();
+  /* "Skini aplikaciju" (sidebar.html): in an Android browser, not in the app itself. The button is an outside link
+     (the leave dialog below), with why above it; the i says how to install, in a dialog like that one. */
+  var appGet = d.querySelector('[data-app-get]');
+  var appDialog = function (id, body) {
+    var dlg = null;
+    return function (e) {
+      e.preventDefault();
+      if (!dlg) {
+        dlg = d.createElement('dialog');
+        dlg.className = 'leave';
+        dlg.setAttribute('aria-labelledby', id);
+        dlg.innerHTML = '<div class="leave__in"><h2 id="' + id + '">Aplikacija za Android</h2>' + body + '</div>';
+        d.body.appendChild(dlg);
+        dlg.addEventListener('click', function (e2) {
+          if (e2.target === dlg || e2.target.closest('button, a')) setTimeout(function () { dlg.close(); });
         });
       }
-      appInfo.showModal();
-      appInfo.querySelector('button').focus();
+      dlg.showModal();
+      dlg.querySelector('.leave__acts > :last-child').focus();
+    };
+  };
+  if (appGet && android && !app && !inApp) {
+    appGet.hidden = false;
+    var apk = appGet.querySelector('a');
+    // "Prikaži više" goes once opened (style.css): the focus moves on to the row it showed.
+    appGet.addEventListener('toggle', function () { if (appGet.open) apk.focus({ preventScroll: true }); });
+    apk.setAttribute('data-leave-lead', 'Browser na telefonu ponekad propusti obaveštenja: Android ga uspava kad ga ne koristiš, '
+      + 'pa stignu kasno ili ne uopšte. Aplikacija nema taj problem.');
+    appGet.querySelector('[data-app-info]').addEventListener('click', appDialog('app-h',
+      '<p>Browser na telefonu ponekad propusti obaveštenja: Android ga uspava kad ga ne koristiš, pa stignu kasno ili ne uopšte. '
+      + 'Aplikacija nema taj problem.</p>'
+      + '<ol class="leave__steps"><li>Dodirni „Skini aplikaciju”.</li><li>Otvori preuzeti fajl (masinci.apk).</li>'
+      + '<li>Ako telefon pita, dozvoli instalaciju iz browsera, pa se vrati.</li><li>Dodirni „Install”.</li></ol>'
+      + '<p>Telefon može da upozori da aplikacija nije sa Google Play-a: ona je ovaj sajt, iz iste arhive.</p>'
+      + '<div class="leave__acts"><button type="button" class="btn">U redu</button></div>'));
+  }
+  /* In the app: the same button for a newer APK, once AppUpdate (MainActivity, its day's check) has one. A tap
+     downloads it in the app, then Android asks to install (docs/PLAN-app.md step 10). Not folded, no i. */
+  if (appGet && app && app.AppUpdate) app.AppUpdate.available().then(function (r) {
+    if (!r.version) return;
+    var get = appGet.querySelector('a'), label = 'Skini noviju verziju', icon = get.querySelector('svg').outerHTML;
+    var say = function (t) { get.innerHTML = icon + t; };
+    say(label);
+    appGet.querySelector('summary').style.display = 'none';
+    appGet.querySelector('[data-app-info]').hidden = true;
+    appGet.open = true;
+    appGet.hidden = false;
+    app.AppUpdate.addListener('progress', function (p) { say('Preuzimanje… ' + p.percent + ' %'); });
+    get.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (get.getAttribute('aria-busy')) return;
+      get.setAttribute('aria-busy', 'true');
+      say('Preuzimanje…');
+      app.AppUpdate.install().then(function () { say(label); }, function () { say('Nije uspelo, pokušaj ponovo'); })
+        .then(function () { get.removeAttribute('aria-busy'); });
     });
+  });
+  /* In place of the browser's own "install the site" offer (head.js cancels it): a bar offering the APK, until
+     closed or followed, then never again ("apkbar"). Not on the picker, whose foot bar takes the same place. */
+  var seenBar = function () { try { return localStorage.getItem('apkbar'); } catch (e) { return '1'; } };
+  if (android && !app && !inApp && !seenBar() && !d.querySelector('.mp, .apkbar')) {
+    var bar = d.createElement('div');
+    bar.className = 'apkbar';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Aplikacija za Android');
+    bar.innerHTML = '<span>Aplikacija za Android: obaveštenja stižu na vreme.</span>'
+      + '<a class="btn btn--pri" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk">Skini</a>'
+      + '<button type="button" class="apkbar__x" aria-label="Zatvori"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-x"></use></svg></button>';
+    bar.addEventListener('click', function (e) {
+      if (!e.target.closest('a, button')) return;
+      try { localStorage.setItem('apkbar', '1'); } catch (e2) {}
+      setTimeout(function () { bar.remove(); }); // after the link's download has started
+    });
+    d.body.appendChild(bar);
   }
 
   /* The followed subjects' feeds as one OPML file, which a feed reader imports. Made on the click, from the list now. */
@@ -1367,7 +1416,7 @@
       leave.className = 'leave';
       leave.setAttribute('aria-labelledby', 'leave-h');
       leave.innerHTML = '<div class="leave__in"><h2 id="leave-h">Napuštate arhivu</h2>'
-        + '<p data-leave-say></p>'
+        + '<p data-leave-lead></p><p data-leave-say></p>'
         + '<p class="leave__url" data-leave-url data-notx></p><div class="leave__acts">'
         + '<button type="button" class="btn" data-leave-stay>Ostani</button>'
         + '<a class="btn btn--pri" data-leave-go target="_blank" rel="noopener noreferrer">Nastavi</a></div></div>';
@@ -1384,6 +1433,9 @@
     leave.querySelector('h2').hidden = leave.querySelector('[data-leave-url]').hidden = !!named;
     leave.querySelector('[data-leave-stay]').textContent = named ? 'Nazad' : 'Ostani';
     leave.querySelector('[data-leave-go]').textContent = named ? 'Potvrdi' : 'Nastavi';
+    var lead = leave.querySelector('[data-leave-lead]');
+    lead.textContent = a.getAttribute('data-leave-lead') || '';
+    say.hidden = !(lead.hidden = !lead.textContent); // a lead says it instead
     leave.querySelector('[data-leave-url]').textContent = a.href;
     leave.querySelector('[data-leave-go]').href = a.href;
     leave.showModal();

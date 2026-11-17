@@ -34,8 +34,9 @@
             colour (head.js); a phone shows only the pencil, joined to the switch (style.css). -#}
         <div class="moji__open"><a class="btn" href="/mojipredmeti/" data-moji-open><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-star"></use></svg><span>Izaberi predmete</span><svg class="i moji__edit" aria-hidden="true"><use href="/static/icons.svg#i-pencil"></use></svg></a></div>
         {#- The Android app (app/, docs/PLAN-app.md): shown by site.js in an Android browser only, not in the app. The
-            APK's fixed address is the release "app" (.github/workflows/app.yml); the i says why and how. -#}
-        <div class="moji__app" data-app-get hidden><a class="btn" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk">Skini aplikaciju</a><button type="button" class="btn moji__info" data-app-info aria-label="Zašto aplikacija i kako se instalira">i</button></div>
+            APK's fixed address is the release "app" (.github/workflows/app.yml); the i says why and how. Folded under
+            "Prikaži više" (style.css), which goes once opened: an offer, not the card's point. -#}
+        <details class="moji__app" data-app-get hidden><summary>Prikaži više</summary><div class="moji__row"><a class="btn" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk"><svg class="i" aria-hidden="true"><use href="/static/icons.svg#i-github"></use></svg>Skini aplikaciju</a><button type="button" class="btn moji__info" data-app-info aria-label="Zašto aplikacija i kako se instalira">i</button></div></details>
       </div>
 
     </div>

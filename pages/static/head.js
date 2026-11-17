@@ -13,6 +13,10 @@ try {
 	if (f) document.documentElement.style.setProperty("--sans", f);
 } catch (e) {}
 
+// No "install the site" banner on arrival (Samsung Internet, Chrome's mini-infobar): the manifest stays, for the
+// iPhone's home screen push (base.html); the browser's menu can still install it. site.js offers the APK instead.
+addEventListener("beforeinstallprompt", (e) => e.preventDefault());
+
 // Teacher photos fade in once loaded (style.css [data-fade]): too small for a progressive JPG's passes to show, they
 // would otherwise appear all at once. Set here, before any <img> is parsed, so no load is missed; a failed one shows too.
 document.documentElement.dataset.fade = "";
