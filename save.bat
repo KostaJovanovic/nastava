@@ -13,6 +13,8 @@ rem   save.bat update [all]             add + commit ("update") + push, then scr
 rem                                     the database, build and publish (ci/deploy.sh forum^|sync); no prompts, no pause
 rem   save.bat update-app               update, and a new Android app: pushes the tag app-v0.<commit count>, which
 rem                                     .github/workflows/app.yml builds into the release "app" (masinci.apk)
+rem   save.bat ocr                      OCR the site's own attachments on this PC's graphics card, save the
+rem                                     database (bash ci/ocr.sh): no commit, no scrape, no build
 rem   save.bat push                     push the current branch to its upstream
 rem   save.bat pull                     git pull (current branch, from its upstream)
 rem   save.bat quick "message"          add + commit + push, no menu, no prompts
@@ -64,6 +66,7 @@ if /i "%ACTION%"=="update-app" (
   set "MSG="
   goto checkrepo
 )
+if /i "%ACTION%"=="ocr"          goto ocr
 if /i "%ACTION%"=="push"         goto pushonly
 if /i "%ACTION%"=="pull"         goto pull
 if not "%ACTION%"=="" goto usage
@@ -81,9 +84,10 @@ echo   6  deploy-sync  the same as 3, scraping first (ci/deploy.sh sync)
 echo   7  update       add + commit + push, scrape the forum, build and publish
 echo   8  update-app   the same as 7, and a new Android app (APK) built from this commit
 echo   9  quit
+echo  10  ocr          OCR the site's own attachments on the graphics card, save the database
 echo.
 set "CHOICE="
-set /p CHOICE=select [1-9]:
+set /p CHOICE=select [1-10]:
 if "%CHOICE%"=="1" (set "COMMIT_ONLY=1" & goto checkrepo)
 if "%CHOICE%"=="2" goto checkrepo
 if "%CHOICE%"=="3" (set "DEPLOY=1" & goto checkrepo)
@@ -93,13 +97,14 @@ if "%CHOICE%"=="6" (set "DEPLOY=1" & set "DEPLOY_ARGS=sync" & goto checkrepo)
 if "%CHOICE%"=="7" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & goto checkrepo)
 if "%CHOICE%"=="8" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & set "APP=1" & goto checkrepo)
 if "%CHOICE%"=="9" exit /b 0
+if "%CHOICE%"=="10" goto ocr
 echo [err]  invalid choice
 goto menu
 
 
 :usage
 echo [err]  unknown action "%ACTION%"
-echo        use: save.bat [save^|commit^|deploy [sync]^|update [all]^|update-app^|push^|pull^|quick "message"^|quick-commit "message"]
+echo        use: save.bat [save^|commit^|deploy [sync]^|update [all]^|update-app^|ocr^|push^|pull^|quick "message"^|quick-commit "message"]
 exit /b 1
 
 
@@ -292,8 +297,7 @@ goto end
 rem `deploy`: once the push is in, build and publish the site from this PC (ci/deploy.sh; with `sync`, scrape
 rem first). Run with Git's own bash: cmd's PATH has none, and C:\Windows\System32\bash.exe would be WSL.
 :deploy
-set "BASH="
-for /f "delims=" %%g in ('where git 2^>nul') do if not defined BASH set "BASH=%%~dpg..\bin\bash.exe"
+call :findbash
 if not exist "%BASH%" (
   echo [err]  Git's bash.exe not found next to git.exe - run "bash ci/deploy.sh %DEPLOY_ARGS%" by hand
   set "SAVE_ERROR=1"
@@ -309,6 +313,34 @@ if errorlevel 1 (
   set "SAVE_ERROR=1"
 )
 goto end
+
+
+rem `ocr`: the site's own attachments through PaddleOCR-VL on this PC's graphics card; ci/ocr.sh gets the database
+rem first and saves it after (not beside a scheduled run). Nothing to commit: the text lives in the database.
+:ocr
+call :findbash
+if not exist "%BASH%" (
+  echo [err]  Git's bash.exe not found next to git.exe - run "bash ci/ocr.sh" by hand
+  set "SAVE_ERROR=1"
+  goto end
+)
+echo.
+echo === ocr: ci/ocr.sh ===
+echo.
+"%BASH%" ci/ocr.sh
+if errorlevel 1 (
+  echo.
+  echo [err]  ci/ocr.sh failed or did not save - see above
+  set "SAVE_ERROR=1"
+)
+goto end
+
+
+rem Git's own bash into %BASH%: cmd's PATH has none, and C:\Windows\System32\bash.exe would be WSL.
+:findbash
+set "BASH="
+for /f "delims=" %%g in ('where git 2^>nul') do if not defined BASH set "BASH=%%~dpg..\bin\bash.exe"
+exit /b 0
 
 
 :pull

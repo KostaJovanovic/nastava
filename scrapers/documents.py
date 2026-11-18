@@ -1,16 +1,17 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["requests", "beautifulsoup4", "pymupdf", "python-docx", "python-pptx", "openpyxl", "libarchive-c"]
+# dependencies = ["requests", "beautifulsoup4", "pymupdf", "python-docx", "python-pptx", "openpyxl", "libarchive-c", "pillow"]
 # ///
 """Archive every attachment of nastava.mas.bg.ac.rs.
 
-Usage: documents.py download | extract [--all] | sync | stats | host
+Usage: documents.py download | extract [--all] | sync | stats | host | ocr
   download  fetch the pending attachments: the ones the posts link, and every id from 1 up to
             the highest linked id that no post links (an attachment can outlive its post link)
   extract   extract text from the downloaded files (no network)
   sync      download + extract
   host      the attachments of the posts since HOST_FROM: download, extract, thumbnail, upload to
             the release files-<school year> (ci/deploy.sh, every scrape)
+  ocr       OCR the hosted attachments that need it, on this PC's graphics card (scrapers/ocr.py; ci/ocr.sh)
 
 An attachment's name is <id>/<file name> (documents.path); its bytes go to files/blobs/, once per distinct file, named
 by its SHA-256, and files/index.sqlite maps the name to them (file_at, store). Older copies may still be at
@@ -510,6 +511,60 @@ def show_stats(db):
         print(f"damaged copies in files/blobs: {len(damaged)} {damaged[:10]}")
 
 
+def run_ocr(db):
+    """OCR the site's own attachments (documents.release) not looked at yet: an image, or a PDF whose text is too short
+    or garbled (ocr.pages). A good reading (ocr.good) becomes documents.text. documents.ocr: 'good', 'poor' (read,
+    not kept) or 'skip' (nothing to read), so no file is read twice. Only on a PC with the model (save.bat ocr)."""
+    import ocr
+
+    if not ocr.available():
+        print(f"no OCR model here ({ocr.SERVER}, {ocr.MODELS}): nothing done")
+        return
+    if "ocr" not in {r[1] for r in db.execute("pragma table_info(documents)")}:
+        db.execute("alter table documents add column ocr text")
+    rows = db.execute("select id, path, text from documents where release is not null and fetched = 1 and error is null "
+                      "and ocr is null order by id").fetchall()
+    print(f"{len(rows)} hosted attachments to look at", flush=True)
+    server = vocab = None
+    counts = {"good": 0, "poor": 0, "skip": 0}
+    try:
+        for file_id, path, text in rows:
+            at = file_at(path)
+            if at.exists():
+                data = at.read_bytes()
+            else:  # hosted by a GitHub run: not on this PC yet
+                result = fetch(file_id)
+                if not result:
+                    continue
+                data = result[1]
+                store(path, data)
+            try:
+                images = ocr.pages(path, data, text)
+            except Exception as error:  # a PDF pymupdf cannot open: nothing to read
+                print(f"{path}: {type(error).__name__}", flush=True)
+                images = []
+            if not images:
+                mark = "skip"
+            else:
+                if server is None:
+                    server = ocr.Server().__enter__()
+                    vocab = ocr.vocabulary(db)
+                with ThreadPoolExecutor(4) as pool:
+                    reading = "\n".join(pool.map(ocr.read, images))
+                mark = "good" if ocr.good(reading, vocab) else "poor"
+                if mark == "good":
+                    db.execute("update documents set text = ? where id = ?", (reading[:TEXT_LIMIT], file_id))
+            db.execute("update documents set ocr = ? where id = ?", (mark, file_id))
+            db.commit()
+            counts[mark] += 1
+            if mark != "skip":
+                print(f"{path}: {len(images)} page(s), {mark}", flush=True)
+    finally:
+        if server:
+            server.__exit__()
+    print(f"ocr: {counts}")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     db = connect()
@@ -522,6 +577,8 @@ def main():
         show_stats(db)
     if command == "host":
         host(db)
+    if command == "ocr":
+        run_ocr(db)
 
 
 if __name__ == "__main__":
