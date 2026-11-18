@@ -483,9 +483,10 @@ html[lang="sr-Cyrl"] .ft__by [data-lat], html:not([lang="sr-Cyrl"]) .ft__by [dat
      smer's notices: data-nodana): there it is only in the way. */
   .frame:has(article.post, [data-nodana]) .filters--dana { display: none; }
   .filters:not(:has(.fgroup:not([hidden]), .hcard)) { display: none; }
-  /* "Moji predmeti" only on the home and search page (#res): elsewhere it pushed the page down; a subject page has
-     its star. */
-  body:not(:has(#res)) .filters:has([data-izbor]) { display: none; }
+  /* "Moji predmeti" only on the home and search page (#res) and the board's lists (a smer's, a subject's, all
+     threads, a smer's notices: data-nodana): elsewhere it pushed the page down. Not under a post or topic. */
+  body:not(:has(#res, .fb--forums, .fb--topics, [data-nodana])) .filters:has([data-izbor]),
+  body:has(article.post) .filters:has([data-izbor]) { display: none; }
 }
 /* Wide: the page links as a list (phone: the tab bar below). */
 .snav { display: flex; gap: 2px; padding: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line-2); }
