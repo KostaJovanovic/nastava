@@ -1597,6 +1597,17 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--vest .aligncenter { margin-inline: auto; }
 .prose--vest::after { content: ""; display: block; clear: both; }
 @media (max-width: 600px) { .prose--vest :is(.alignleft, .alignright) { float: none; margin: 1.1em 0; } }
+/* A captioned photo and a gallery (clean.py vesti_tidy): the caption small under its photo; a floated one as wide as
+   its photo (a table, its caption the table's), the gallery's thumbnails in a grid. */
+.prose--vest figure { margin: 1.1em 0; }
+.prose--vest figure img { margin: 0; }
+.prose--vest figcaption { margin-top: .4em; color: var(--dim); font-size: .8125rem; line-height: 1.4; }
+.prose--vest figure:is(.alignleft, .alignright) { display: table; }
+.prose--vest figure:is(.alignleft, .alignright) figcaption { display: table-caption; caption-side: bottom; }
+.prose--vest .gallery { clear: both; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-block: 1.1em; }
+.prose--vest .gallery figure { margin: 0; }
+.prose--vest .gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.prose--vest :is(video, audio) { display: block; max-width: 100%; height: auto; margin: 1.1em 0; }
 /* A post's attachments (build.py attachments): "Prilozi", then a row per file with its type as a coloured badge. */
 .prose--html dl:has(> dd > .att) { display: grid; gap: 6px; margin-top: 1.2rem; }
 .prose--html dl:has(> dd > .att) > dt { color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }

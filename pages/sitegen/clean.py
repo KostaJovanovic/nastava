@@ -14,6 +14,10 @@ def preuzeto(text):
     return re.sub(r"Downloaded (\d+) times?", r"preuzeto \1 puta", text or "")
 
 
+# A video or a sound with the browser's own player (the news site's uploads); what a player needs and nothing else.
+MEDIA = {"video": {"controls", "preload", "width", "height", "src"}, "audio": {"controls", "preload", "src"}, "source": {"src", "type"}}
+
+
 def clean_html(html, base=BASE, local=lambda value: None, classes=None):
     """Sanitize; a link that local() maps goes to this site, every other relative link to the faculty's page.
     classes: the classes to keep ({tag: {class}}, cent's CENT_CLASSES); none by default."""
@@ -33,7 +37,8 @@ def clean_html(html, base=BASE, local=lambda value: None, classes=None):
     html = preuzeto(re.sub(r">\s*Attachments\s*<", ">Prilozi<", html or ""))
     html = nh3.clean(
         html,
-        tags=nh3.ALLOWED_TAGS | {"tfoot"},
+        tags=nh3.ALLOWED_TAGS | {"tfoot"} | MEDIA.keys(),
+        attributes=nh3.ALLOWED_ATTRIBUTES | MEDIA,
         attribute_filter=attribute,
         allowed_classes=classes,
         url_schemes=nh3.ALLOWED_URL_SCHEMES | {"data"},
@@ -53,6 +58,56 @@ CENT_CLASSES = {
     # A file's type as on a post's attachments (FILE_KINDS).
     "span": {"cent-t", "cent-wk", "cent-btn", "att__t"} | {f"att__t--{k}" for k in ("pdf doc xls ppt zip img file video".split())},
 }
+
+
+YOUTUBE = re.compile(r"youtube(?:-nocookie)?\.com/embed/([\w-]{6,})")
+SIZED = re.compile(r"-\d+x\d+(?=\.\w+$)")  # WordPress's smaller copy of an image: name-150x150.jpg
+
+
+def vesti_tidy(html):
+    """The news site's WordPress pieces clean_html would lose, as plain HTML it keeps (load_vesti, before it): an
+    embedded video (YouTube, Facebook) as a link to it, not Google's player on the page; a captioned image as a
+    figure; a gallery as figures in a div.gallery, each opening its image, not WordPress's page for it."""
+    if not re.search(r"<iframe|wp-caption|gallery-item", html or ""):
+        return html
+    soup = BeautifulSoup(html, "html.parser")
+    for f in soup.find_all("iframe"):
+        src = unescape(f.get("src") or "")
+        if m := YOUTUBE.search(src):
+            href, text = f"https://www.youtube.com/watch?v={m[1]}", "Video na YouTube-u"
+        elif m := re.search(r"facebook\.com/plugins/\w+\.php\?.*?href=([^&]+)", src):
+            href, text = unquote(m[1]), "Video na Facebooku"
+        else:
+            href, text = src, urlsplit(src).hostname or src
+        a = soup.new_tag("a", href=href)
+        a.string = text
+        f.replace_with(a)
+
+    def figure(img, caption, align=None):
+        fig = soup.new_tag("figure", attrs={"class": align} if align else {})
+        link = img.find_parent("a", href=True)
+        keep = link and "attachment_id" not in link["href"] and "/?attachment" not in link["href"]
+        a = soup.new_tag("a", href=link["href"] if keep else SIZED.sub("", img["src"]))
+        a.append(img.extract())
+        fig.append(a)
+        if caption and caption.get_text(strip=True):
+            cap = soup.new_tag("figcaption")
+            cap.extend(list(caption.contents))
+            fig.append(cap)
+        return fig
+
+    for g in soup.select("div.gallery"):
+        grid = soup.new_tag("div", attrs={"class": "gallery"})
+        for item in g.select(".gallery-item"):
+            if img := item.find("img", src=True):
+                grid.append(figure(img, item.find(class_="wp-caption-text")))
+        g.replace_with(grid)
+    for c in soup.select("div.wp-caption"):
+        img = c.find("img", src=True)
+        if img:
+            align = next((k for k in c.get("class", []) if k in ("alignleft", "alignright", "aligncenter")), None)
+            c.replace_with(figure(img, c.find(class_="wp-caption-text"), align))
+    return str(soup)
 
 
 def cent_tidy(html):

@@ -10,15 +10,16 @@ from urllib.parse import quote
 from bs4 import BeautifulSoup
 from translit import fold
 from mail import asset_name, thumb_asset, TAG as MAIL_TAG
-from .clean import CENT_CLASSES, cent_changes, cent_tidy, clean_html, file_rows, linkify
+from .clean import CENT_CLASSES, cent_changes, cent_tidy, clean_html, file_rows, linkify, vesti_tidy
 from .known import FORUMS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
 from .load_board import book_subject
 from .output import HERE, PAGE_TEXT, VESTI
 from .text import parse_date, slug, strip_tags
 
 VESTI_TIDY = HERE.resolve().parent / "data" / "vesti-tidy.jsonl"
-# The news site's image alignment (style.css .prose--vest .alignleft …).
-VESTI_CLASSES = {"img": {"alignleft", "alignright", "aligncenter"}}
+# The news site's image alignment, and vesti_tidy's galleries (style.css .prose--vest .alignleft …, .gallery).
+ALIGN = {"alignleft", "alignright", "aligncenter"}
+VESTI_CLASSES = {"img": ALIGN, "figure": ALIGN, "div": {"gallery"}}
 
 
 def load_vesti(db):
@@ -51,7 +52,7 @@ def load_vesti(db):
                 cats=names,
                 cat_keys="|".join(slug(c) for c in names),
                 find=fold(" ".join([title] + names)),
-                html=clean_html(t.get("html") or r["html"], VESTI, classes=VESTI_CLASSES),
+                html=clean_html(vesti_tidy(t.get("html") or r["html"]), VESTI, classes=VESTI_CLASSES),
                 body=strip_tags(r["html"])[:PAGE_TEXT],
                 gone=r["gone"],
                 source_url=r["link"],

@@ -24,6 +24,7 @@ from sitegen.clean import cent_changes  # noqa: E402
 from sitegen.clean import cent_tidy  # noqa: E402
 from sitegen.clean import clean_html  # noqa: E402
 from sitegen.clean import downloads  # noqa: E402
+from sitegen.clean import vesti_tidy  # noqa: E402
 from sitegen.clean import drop_empty_tables  # noqa: E402
 from sitegen.clean import file_rows  # noqa: E402
 from sitegen.clean import linkify  # noqa: E402
@@ -509,6 +510,31 @@ assert _ct == (
 # A toggle without a title: its content in place, no empty fold.
 _ct = cent_tidy('<div class="et_pb_toggle"><h4 class="et_pb_toggle_title"></h4><div class="et_pb_toggle_content"><p>x</p></div></div>')
 assert "<details" not in _ct and "<p>x</p>" in _ct, _ct
+# A news post's WordPress pieces (vesti_tidy, then clean_html as load_vesti): a YouTube or Facebook embed a link to the
+# video, a captioned photo a figure keeping its alignment, a gallery's thumbnails opening the image, an upload's player.
+_U = "https://vesti.mas.bg.ac.rs/wp-content/uploads/2022/05/"
+_vt = clean_html(
+    vesti_tidy(
+        '<p><iframe src="https://www.youtube.com/embed/w8gGMK9VY_M?si=x"></iframe></p>'
+        '<p><iframe src="https://www.facebook.com/plugins/video.php?height=314&amp;href=https%3A%2F%2Fwww.facebook.com%2Freel%2F19%2F&amp;t=0"></iframe></p>'
+        f'<div id="attachment_1" style="width: 955px" class="wp-caption alignleft"><a href="{_U}a.jpg"><img class="wp-image-1" src="{_U}a.jpg"></a>'
+        '<p class="wp-caption-text">Foto</p></div>'
+        "<style>#gallery-1 {margin: auto}</style><div id='gallery-1' class='gallery gallery-columns-5'><dl class='gallery-item'><dt class='gallery-icon'>"
+        f"<a href='https://vesti.mas.bg.ac.rs/?attachment_id=9'><img src=\"{_U}3-150x150.jpg\"></a></dt></dl></div>"
+        f'<video class="wp-video-shortcode" controls="controls" preload="metadata"><source type="video/mp4" src="{_U}v.mp4?_=1"></video>'
+    ),
+    classes={"figure": {"alignleft"}, "div": {"gallery"}},
+)
+for _want in (
+    '<a href="https://www.youtube.com/watch?v=w8gGMK9VY_M" rel="noopener noreferrer">Video na YouTube-u</a>',
+    '<a href="https://www.facebook.com/reel/19/" rel="noopener noreferrer">Video na Facebooku</a>',
+    f'<figure class="alignleft"><a href="{_U}a.jpg"',
+    "<figcaption>Foto</figcaption>",
+    f'<div class="gallery"><figure><a href="{_U}3.jpg"',
+    f'<source src="{_U}v.mp4?_=1" type="video/mp4">',
+):
+    assert _want in _vt, (_want, _vt)
+assert "<iframe" not in _vt and "margin" not in _vt and "attachment_id" not in _vt and "controls" in _vt, _vt
 # A cent page's change against its older version: TMO's "Smena 5" button to a new PDF, a new text in a fold, a removed
 # link; nothing changed, the page as it was.
 _old = '<a class="cent-btn" href="/s5_v3.pdf">Smena 5</a><a href="/x.pdf">Raspored</a><details><p>a</p></details>'
