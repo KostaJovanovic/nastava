@@ -103,7 +103,15 @@ def vesti_tidy(html):
         for item in g.select(".gallery-item"):
             if img := item.find("img", src=True):
                 grid.append(figure(img, item.find(class_="wp-caption-text")))
-        g.replace_with(grid)
+        # Galleries one after another (WordPress's 5 and 5 more) one grid: the photos in one run, no gap between.
+        prev = g.previous_sibling
+        while prev is not None and (getattr(prev, "name", None) in ("style", "br") or not str(prev).strip()):
+            prev = prev.previous_sibling
+        if getattr(prev, "name", None) == "div" and prev.get("class") == ["gallery"]:
+            prev.extend(list(grid.contents))
+            g.decompose()
+        else:
+            g.replace_with(grid)
     for c in soup.select("div.wp-caption"):
         img = c.find("img", src=True)
         if img:

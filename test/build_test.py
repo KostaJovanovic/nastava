@@ -521,6 +521,8 @@ _vt = clean_html(
         '<p class="wp-caption-text">Foto</p></div>'
         "<style>#gallery-1 {margin: auto}</style><div id='gallery-1' class='gallery gallery-columns-5'><dl class='gallery-item'><dt class='gallery-icon'>"
         f"<a href='https://vesti.mas.bg.ac.rs/?attachment_id=9'><img src=\"{_U}3-150x150.jpg\"></a></dt></dl></div>"
+        "<br style='clear: both' />\n<style>#gallery-2 {margin: auto}</style><div id='gallery-2' class='gallery'><dl class='gallery-item'>"
+        f"<dt class='gallery-icon'><a href='https://vesti.mas.bg.ac.rs/?attachment_id=10'><img src=\"{_U}4-150x150.jpg\"></a></dt></dl></div>"
         f'<video class="wp-video-shortcode" controls="controls" preload="metadata"><source type="video/mp4" src="{_U}v.mp4?_=1"></video>'
     ),
     classes={"figure": {"alignleft"}, "div": {"gallery"}},
@@ -534,6 +536,7 @@ for _want in (
     f'<source src="{_U}v.mp4?_=1" type="video/mp4">',
 ):
     assert _want in _vt, (_want, _vt)
+assert _vt.count('class="gallery"') == 1 and f'<img src="{_U}4.jpg"' in _vt, _vt  # two galleries in a row: one grid
 assert "<iframe" not in _vt and "margin" not in _vt and "attachment_id" not in _vt and "controls" in _vt, _vt
 # A cent page's change against its older version: TMO's "Smena 5" button to a new PDF, a new text in a fold, a removed
 # link; nothing changed, the page as it was.
