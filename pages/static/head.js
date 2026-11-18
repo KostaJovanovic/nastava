@@ -185,6 +185,17 @@ window.showBackLink = function () {
 	return prev || null;
 };
 
+// The failed-update banner (base.html .fail): its two UTC times in the reader's, "sutra" before the next try when
+// that is on the day after the failure.
+window.showFail = function () {
+	const t = document.querySelectorAll(".fail time"), p2 = (n) => String(n).padStart(2, "0");
+	const a = new Date(t[0] && t[0].dateTime), n = new Date(t[1] && t[1].dateTime);
+	if (isNaN(a) || isNaN(n)) return;
+	const hm = (d) => "u " + p2(d.getHours()) + ":" + p2(d.getMinutes());
+	t[0].textContent = hm(a);
+	t[1].textContent = (n.toDateString() !== a.toDateString() ? "sutra " : "") + hm(n);
+};
+
 // "Profesor dana" (sidebar.html): t is one of /izbor.json dana (site.js picks it, load_teachers.of_the_day).
 window.fillDana = function (dana, t) {
 	const a = dana.querySelector(".dana__b");
