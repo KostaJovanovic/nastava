@@ -24,7 +24,7 @@ from sitegen.clean import cent_changes  # noqa: E402
 from sitegen.clean import cent_tidy  # noqa: E402
 from sitegen.clean import clean_html  # noqa: E402
 from sitegen.clean import downloads  # noqa: E402
-from sitegen.clean import vesti_tidy  # noqa: E402
+from sitegen.clean import vesti_media  # noqa: E402
 from sitegen.clean import drop_empty_tables  # noqa: E402
 from sitegen.clean import file_rows  # noqa: E402
 from sitegen.clean import linkify  # noqa: E402
@@ -510,11 +510,11 @@ assert _ct == (
 # A toggle without a title: its content in place, no empty fold.
 _ct = cent_tidy('<div class="et_pb_toggle"><h4 class="et_pb_toggle_title"></h4><div class="et_pb_toggle_content"><p>x</p></div></div>')
 assert "<details" not in _ct and "<p>x</p>" in _ct, _ct
-# A news post's WordPress pieces (vesti_tidy, then clean_html as load_vesti): a YouTube or Facebook embed a link to the
+# A news post's WordPress pieces (vesti_media, then clean_html as load_vesti): a YouTube or Facebook embed a link to the
 # video, a captioned photo a figure keeping its alignment, a gallery's thumbnails opening the image, an upload's player.
 _U = "https://vesti.mas.bg.ac.rs/wp-content/uploads/2022/05/"
 _vt = clean_html(
-    vesti_tidy(
+    vesti_media(
         '<p><iframe src="https://www.youtube.com/embed/w8gGMK9VY_M?si=x"></iframe></p>'
         '<p><iframe src="https://www.facebook.com/plugins/video.php?height=314&amp;href=https%3A%2F%2Fwww.facebook.com%2Freel%2F19%2F&amp;t=0"></iframe></p>'
         f'<div id="attachment_1" style="width: 955px" class="wp-caption alignleft"><a href="{_U}a.jpg"><img class="wp-image-1" src="{_U}a.jpg"></a>'

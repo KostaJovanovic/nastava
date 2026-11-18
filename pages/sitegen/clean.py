@@ -64,7 +64,7 @@ YOUTUBE = re.compile(r"youtube(?:-nocookie)?\.com/embed/([\w-]{6,})")
 SIZED = re.compile(r"-\d+x\d+(?=\.\w+$)")  # WordPress's smaller copy of an image: name-150x150.jpg
 
 
-def vesti_tidy(html):
+def vesti_media(html):
     """The news site's WordPress pieces clean_html would lose, as plain HTML it keeps (load_vesti, before it): an
     embedded video (YouTube, Facebook) as a link to it, not Google's player on the page; a captioned image as a
     figure; a gallery as figures in a div.gallery, each opening its image, not WordPress's page for it."""

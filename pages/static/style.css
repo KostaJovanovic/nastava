@@ -1597,7 +1597,7 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--vest .aligncenter { margin-inline: auto; }
 .prose--vest::after { content: ""; display: block; clear: both; }
 @media (max-width: 600px) { .prose--vest :is(.alignleft, .alignright) { float: none; margin: 1.1em 0; } }
-/* A captioned photo and a gallery (clean.py vesti_tidy): the caption small under its photo; a floated one as wide as
+/* A captioned photo and a gallery (clean.py vesti_media): the caption small under its photo; a floated one as wide as
    its photo (a table, its caption the table's), the gallery's thumbnails in a grid. */
 .prose--vest figure { margin: 1.1em 0; }
 .prose--vest figure img { margin: 0; }
