@@ -20,7 +20,11 @@
 {#- tp--gone: the grey corner of the departed. -#}
 <section class="tp{% if t.gone %} tp--gone" style="--p: {{ t.age }}%{% endif %}" aria-labelledby="title">
   {%- if t.photo %}
-  <img class="tp__img" src="{{ t.photo }}" alt="{{ t.page_name | lat }}" fetchpriority="high">
+  {#- The photos have no licence: a takedown asked by mail. -#}
+  <figure class="tp__fig">
+    <img class="tp__img" src="{{ t.photo }}" alt="{{ t.page_name | lat }}" fetchpriority="high">
+    <figcaption><a href="mailto:valjdakosta@gmail.com?subject={{ ('Uklanjanje fotografije: ' ~ (t.page_name | lat)) | urlencode }}">Zahtev za uklanjanje</a></figcaption>
+  </figure>
   {%- else %}
   <span class="tp__img tp__img--none" aria-hidden="true"><svg class="nophoto"><use href="#i-nophoto"/></svg></span>
   {%- endif %}
