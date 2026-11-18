@@ -1557,6 +1557,14 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--html th, .prose--html td { border: 1px solid var(--line); padding: .3rem .6rem; text-align: start; vertical-align: top; }
 .prose--html tr:first-child td { font-weight: 800; background: var(--alt); }
 .prose--html img { max-width: 100%; height: auto; }
+/* A news post (vest.html): the news site's paragraphs apart, its headings as the wiki pages', its photos set off. */
+.prose--vest :is(p, ul, ol, table) { margin-block: 0 .8em; }
+.prose--vest :is(ul, ol) { padding-left: 1.3em; }
+.prose--vest li + li { margin-top: .3em; }
+.prose--vest :is(h2, h3, h4) { margin: 1.5em 0 .5em; color: var(--fg); font: 800 1.0625rem/1.35 var(--sans); }
+.prose--vest :is(h3, h4) { font-size: .9375rem; }
+.prose--vest img { display: block; margin: 1.1em 0; border-radius: var(--r); }
+.prose--vest p:has(> img:only-child) { margin: 0; }
 /* A post's attachments (build.py attachments): "Prilozi", then a row per file with its type as a coloured badge. */
 .prose--html dl:has(> dd > .att) { display: grid; gap: 6px; margin-top: 1.2rem; }
 .prose--html dl:has(> dd > .att) > dt { color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
