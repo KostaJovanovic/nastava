@@ -530,7 +530,7 @@ for _want in (
     '<a href="https://www.facebook.com/reel/19/" rel="noopener noreferrer">Video na Facebooku</a>',
     f'<figure class="alignleft"><a href="{_U}a.jpg"',
     "<figcaption>Foto</figcaption>",
-    f'<div class="gallery"><figure><a href="{_U}3.jpg"',
+    f'<div class="gallery"><figure><a href="{_U}3.jpg" rel="noopener noreferrer"><img src="{_U}3.jpg"',
     f'<source src="{_U}v.mp4?_=1" type="video/mp4">',
 ):
     assert _want in _vt, (_want, _vt)

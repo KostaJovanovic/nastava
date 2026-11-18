@@ -88,6 +88,8 @@ def vesti_tidy(html):
         link = img.find_parent("a", href=True)
         keep = link and "attachment_id" not in link["href"] and "/?attachment" not in link["href"]
         a = soup.new_tag("a", href=link["href"] if keep else SIZED.sub("", img["src"]))
+        # The full image, not WordPress's 150px crop: a gallery's row stretches its thumbnails wider than that.
+        img["src"] = SIZED.sub("", img["src"])
         a.append(img.extract())
         fig.append(a)
         if caption and caption.get_text(strip=True):

@@ -1604,9 +1604,10 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--vest figcaption { margin-top: .4em; color: var(--dim); font-size: .8125rem; line-height: 1.4; }
 .prose--vest figure:is(.alignleft, .alignright) { display: table; }
 .prose--vest figure:is(.alignleft, .alignright) figcaption { display: table-caption; caption-side: bottom; }
-.prose--vest .gallery { clear: both; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-block: 1.1em; }
-.prose--vest .gallery figure { margin: 0; }
-.prose--vest .gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+/* Rows that fill: a short last row's thumbnails grow wider, not a gap at its end; all of one height. */
+.prose--vest .gallery { clear: both; display: flex; flex-wrap: wrap; gap: 8px; margin-block: 1.1em; }
+.prose--vest .gallery figure { flex: 1 1 140px; margin: 0; }
+.prose--vest .gallery img { width: 100%; height: 150px; object-fit: cover; }
 .prose--vest :is(video, audio) { display: block; max-width: 100%; height: auto; margin: 1.1em 0; }
 /* A post's attachments (build.py attachments): "Prilozi", then a row per file with its type as a coloured badge. */
 .prose--html dl:has(> dd > .att) { display: grid; gap: 6px; margin-top: 1.2rem; }
