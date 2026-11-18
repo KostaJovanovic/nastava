@@ -118,20 +118,19 @@ QUIET = [
 # the page the faculty links; its unlinked fakultet/kontakt-novo differs, kontakt.html says how.
 KONTAKT = [
     (
-        "Fakultet",
-        [
-            ("Opšti mejl", "mf@mas.bg.ac.rs", None, "fakultet/kontakt"),
-            ("Telefon (lokali: 3302 + broj lokala)", None, "011 3302-205", "fakultet/kontakt"),
-            ("Faks", None, "011 3370-364", "fakultet/kontakt"),
-            ("Sajt fakulteta", "webmaster@mas.bg.ac.rs", None, "fakultet/kontakt"),
-        ],
-    ),
-    (
         "Studentska služba",
         [
             ("Upis, predmeti, greške na studentskom servisu", "ssit@mas.bg.ac.rs", None, "studenti/start"),
             ("Molbe, samo sa studentskog mejla (@studenti.mas.bg.ac.rs)", "molbe@mas.bg.ac.rs", None, "studenti/start"),
             ("Sekretar prodekana za nastavu", "se_nast@mas.bg.ac.rs", "011 3302-455", "fakultet/dokumenti/obrazovanje"),
+        ],
+    ),
+    (
+        "Fakultet",
+        [
+            ("Centrala (lokal: 3302 + broj lokala)", "mf@mas.bg.ac.rs", "011 3302-205", "fakultet/kontakt"),
+            ("Faks", None, "011 3370-364", "fakultet/kontakt"),
+            ("Sajt fakulteta", "webmaster@mas.bg.ac.rs", None, "fakultet/kontakt"),
         ],
     ),
     (

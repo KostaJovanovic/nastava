@@ -555,8 +555,21 @@ a[aria-busy="true"] { opacity: .5; cursor: progress; }
 .leave__rss .leave__url { display: block; font-weight: 400; text-decoration: none; user-select: all; }
 .leave__acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-/* Kontakt (kontakt.html): an address or number in one piece; the line breaks between them. */
-.kt a[href^="mailto:"], .kt a[href^="tel:"] { white-space: nowrap; }
+/* Kontakt (kontakt.html): who | e-mail | phone, the e-mail and phone columns the same width in every card so they
+   line up down the page; a row with no e-mail keeps its phone in the phone column. An address or number never
+   breaks. Narrow: who on its line, e-mail and phone under it. */
+.kt { margin: 0; padding: 0; list-style: none; }
+.kt__r { display: grid; grid-template-columns: minmax(0, 1fr) 13rem 6.5rem; gap: 2px 16px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--line-2); font-size: .875rem; line-height: 1.4; }
+.kt__r:first-child { border-top: 0; padding-top: 0; }
+.kt__who { color: var(--fg); }
+.kt a { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.kt__note { margin-top: 10px; color: var(--dim); font-size: .8125rem; line-height: 1.45; }
+.kt__src { margin: 2px 4px 0; padding-top: 0; border-top: 0; }
+@media (max-width: 640px) {
+  .kt__r { grid-template-columns: auto auto; justify-content: start; column-gap: 14px; }
+  .kt__who { grid-column: 1 / -1; font-weight: 600; }
+  .kt__m:empty, .kt__p:empty { display: none; }
+}
 
 /* The PDF viewer (static/pdfview.js): the whole screen over the page, its bar in the header's colour. */
 .pv-on, .pv-on body { overflow: hidden; }
