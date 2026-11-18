@@ -555,6 +555,9 @@ a[aria-busy="true"] { opacity: .5; cursor: progress; }
 .leave__rss .leave__url { display: block; font-weight: 400; text-decoration: none; user-select: all; }
 .leave__acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
+/* Kontakt (kontakt.html): an address or number in one piece; the line breaks between them. */
+.kt a[href^="mailto:"], .kt a[href^="tel:"] { white-space: nowrap; }
+
 /* The PDF viewer (static/pdfview.js): the whole screen over the page, its bar in the header's colour. */
 .pv-on, .pv-on body { overflow: hidden; }
 .pv [hidden] { display: none !important; }
