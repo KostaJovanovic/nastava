@@ -298,7 +298,7 @@ def write_sitemap(site):
         + "</urlset>\n",
         encoding="utf-8",
     )
-    (site / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}/sitemap.xml\n", encoding="utf-8")
+    (site / "robots.txt").write_text(f"User-agent: *\nAllow: /\n# Teachers' photos (load_teachers.photo_path): no licence, so out of image search.\nDisallow: /foto/\n\nSitemap: {SITE_URL}/sitemap.xml\n", encoding="utf-8")
 
 
 def write_assets_config(site):
