@@ -99,7 +99,9 @@ def vesti_tidy(html):
         return fig
 
     for g in soup.select("div.gallery"):
-        grid = soup.new_tag("div", attrs={"class": "gallery"})
+        # The editor's number of columns, as the news site shows it (gallery-columns-5: rows of 5).
+        cols = next((k for k in g.get("class", []) if re.fullmatch(r"gallery-columns-[1-9]", k)), "")
+        grid = soup.new_tag("div", attrs={"class": f"gallery {cols}".strip()})
         for item in g.select(".gallery-item"):
             if img := item.find("img", src=True):
                 grid.append(figure(img, item.find(class_="wp-caption-text")))
@@ -107,7 +109,7 @@ def vesti_tidy(html):
         prev = g.previous_sibling
         while prev is not None and (getattr(prev, "name", None) in ("style", "br") or not str(prev).strip()):
             prev = prev.previous_sibling
-        if getattr(prev, "name", None) == "div" and prev.get("class") == ["gallery"]:
+        if getattr(prev, "name", None) == "div" and "gallery" in prev.get("class", []):
             prev.extend(list(grid.contents))
             g.decompose()
         else:

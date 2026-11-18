@@ -19,7 +19,7 @@ from .text import parse_date, slug, strip_tags
 VESTI_TIDY = HERE.resolve().parent / "data" / "vesti-tidy.jsonl"
 # The news site's image alignment, and vesti_tidy's galleries (style.css .prose--vest .alignleft …, .gallery).
 ALIGN = {"alignleft", "alignright", "aligncenter"}
-VESTI_CLASSES = {"img": ALIGN, "figure": ALIGN, "div": {"gallery"}}
+VESTI_CLASSES = {"img": ALIGN, "figure": ALIGN, "div": {"gallery"} | {f"gallery-columns-{n}" for n in range(1, 10)}}
 
 
 def load_vesti(db):

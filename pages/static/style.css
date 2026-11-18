@@ -1604,7 +1604,11 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--vest figcaption { margin-top: .4em; color: var(--dim); font-size: .8125rem; line-height: 1.4; }
 .prose--vest figure:is(.alignleft, .alignright) { display: table; }
 .prose--vest figure:is(.alignleft, .alignright) figcaption { display: table-caption; caption-side: bottom; }
-.prose--vest .gallery { clear: both; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-block: 1.1em; }
+/* The news site's columns (gallery-columns-N, 3 when it says none); a phone fits 2 a row. */
+.prose--vest .gallery { clear: both; display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 8px; margin-block: 1.1em; }
+.gallery-columns-1 { --n: 1; } .gallery-columns-2 { --n: 2; } .gallery-columns-4 { --n: 4; } .gallery-columns-5 { --n: 5; }
+.gallery-columns-6 { --n: 6; } .gallery-columns-7 { --n: 7; } .gallery-columns-8 { --n: 8; } .gallery-columns-9 { --n: 9; }
+@media (max-width: 600px) { .prose--vest .gallery { grid-template-columns: repeat(min(var(--n, 3), 2), 1fr); } }
 .prose--vest .gallery figure { margin: 0; }
 .prose--vest .gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; }
 .prose--vest :is(video, audio) { display: block; max-width: 100%; height: auto; margin: 1.1em 0; }

@@ -525,18 +525,18 @@ _vt = clean_html(
         f"<dt class='gallery-icon'><a href='https://vesti.mas.bg.ac.rs/?attachment_id=10'><img src=\"{_U}4-150x150.jpg\"></a></dt></dl></div>"
         f'<video class="wp-video-shortcode" controls="controls" preload="metadata"><source type="video/mp4" src="{_U}v.mp4?_=1"></video>'
     ),
-    classes={"figure": {"alignleft"}, "div": {"gallery"}},
+    classes={"figure": {"alignleft"}, "div": {"gallery", "gallery-columns-5"}},
 )
 for _want in (
     '<a href="https://www.youtube.com/watch?v=w8gGMK9VY_M" rel="noopener noreferrer">Video na YouTube-u</a>',
     '<a href="https://www.facebook.com/reel/19/" rel="noopener noreferrer">Video na Facebooku</a>',
     f'<figure class="alignleft"><a href="{_U}a.jpg"',
     "<figcaption>Foto</figcaption>",
-    f'<div class="gallery"><figure><a href="{_U}3.jpg" rel="noopener noreferrer"><img src="{_U}3.jpg"',
+    f'<div class="gallery gallery-columns-5"><figure><a href="{_U}3.jpg" rel="noopener noreferrer"><img src="{_U}3.jpg"',
     f'<source src="{_U}v.mp4?_=1" type="video/mp4">',
 ):
     assert _want in _vt, (_want, _vt)
-assert _vt.count('class="gallery"') == 1 and f'<img src="{_U}4.jpg"' in _vt, _vt  # two galleries in a row: one grid
+assert _vt.count('class="gallery') == 1 and f'<img src="{_U}4.jpg"' in _vt, _vt  # two galleries in a row: one grid
 assert "<iframe" not in _vt and "margin" not in _vt and "attachment_id" not in _vt and "controls" in _vt, _vt
 # A cent page's change against its older version: TMO's "Smena 5" button to a new PDF, a new text in a fold, a removed
 # link; nothing changed, the page as it was.
