@@ -208,7 +208,7 @@ def split_page(html):
 
 # A section's pages count as its side panel link: a teacher under Nastavnici, an archived schedule page under Raspored,
 # a news post under Vesti, an archived page of the faculty's site under Linkovi (site.js has the same rule).
-SECTION = {"/nastavnik/": "/nastavnici/", "/katedra/": "/predmeti/", "/katedre/": "/predmeti/", "/studije/": "/raspored/", "/vest/": "/vesti/", "/mf/": "/link/"}
+SECTION = {"/nastavnik/": "/nastavnici/", "/katedra/": "/katedre/", "/predmeti/": "/katedre/", "/studije/": "/raspored/", "/vest/": "/vesti/", "/mf/": "/link/"}
 
 snav = []  # the side panel's links (sidebar.html), set by main()
 

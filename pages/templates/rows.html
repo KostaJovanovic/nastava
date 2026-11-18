@@ -8,10 +8,10 @@
   {%- if href %} <a href="{{ href }}">{{ link }}</a>{% endif %}</p>
 {%- endmacro -%}
 
-{#- "Katedre i predmeti": the side menu's one entry for /predmeti/ and /katedre/, the two as tabs. -#}
+{#- "Katedre i predmeti": the side menu's one entry for /katedre/ (its start) and /predmeti/, the two as tabs. -#}
 {%- macro kp_tabs(here) -%}
 <nav class="mp__tabs rs__tabs" aria-label="Katedre i predmeti">
-  {%- for href, name in [('/predmeti/', 'Predmeti'), ('/katedre/', 'Katedre')] %}<a class="mp__tab" href="{{ href }}"{% if href == here %} aria-current="page"{% endif %}><span>{{ name }}</span></a>{% endfor %}
+  {%- for href, name in [('/katedre/', 'Katedre'), ('/predmeti/', 'Predmeti')] %}<a class="mp__tab" href="{{ href }}"{% if href == here %} aria-current="page"{% endif %}><span>{{ name }}</span></a>{% endfor %}
 </nav>
 {%- endmacro -%}
 
