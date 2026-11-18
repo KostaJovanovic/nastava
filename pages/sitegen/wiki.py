@@ -67,12 +67,14 @@ def wiki_link(value, hrefs):
 
 
 def kontakt(db):
-    """KONTAKT for kontakt.html: (group, [dict(who, mail, phone, tel, src)]), src: this site's copy of the page that
-    says it, else the faculty's. An address or number its page no longer has is warned about (a new dean, a moved
-    office), still shown: the faculty's own page is linked under it."""
-    html = dict(db.execute("SELECT path, html FROM wiki_pages WHERE gone = 0 ORDER BY last_seen")) if archived_wiki(db) else {}
+    """KONTAKT for kontakt.html: ([(group, [dict(who, mail, phone, tel)])], the pages that say them: [(title, href)],
+    each this site's copy, else the faculty's). An address or number its page no longer has is warned about (a new
+    dean, a moved office), still shown: the sources are linked under it."""
+    rows = db.execute("SELECT path, html, title FROM wiki_pages WHERE gone = 0 ORDER BY last_seen").fetchall() if archived_wiki(db) else []
+    html = {r[0]: r[1] for r in rows}
+    titles = {r[0]: wiki_title(r[2]) for r in rows}
     digits = lambda s: re.sub(r"\D", "", s)
-    out = []
+    out, sources = [], {}
     for group, rows in KONTAKT:
         shown = []
         for who, mail, phone, path in rows:
@@ -81,10 +83,10 @@ def kontakt(db):
             if html and (page is None or (mail and mail not in page) or (phone and digits(phone)[-7:] not in digits(page))):
                 print(f"[warn] /kontakt/: {mail or phone} is no longer on mf/{path}", file=sys.stderr)
             tel = phone and "+381" + digits(phone)[1:]
-            src = wiki_href(path) if path in SHOWN else STUDY_SITE + path
-            shown.append(dict(who=who, mail=mail, phone=phone, tel=tel, src=src))
+            sources[path] = (titles.get(path, path), wiki_href(path) if path in SHOWN else STUDY_SITE + path)
+            shown.append(dict(who=who, mail=mail, phone=phone, tel=tel))
         out.append((group, shown))
-    return out
+    return out, list(sources.values())
 
 
 def render_wiki_pages(site, db, render):

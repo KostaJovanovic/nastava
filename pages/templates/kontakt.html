@@ -15,7 +15,7 @@
   <div class="prose prose--html">
     <ul>
       {%- for r in rows %}
-      <li><b>{{ r.who }}</b>{% if r.mail %} · <a href="mailto:{{ r.mail }}">{{ r.mail }}</a>{% endif %}{% if r.phone %} · <a href="tel:{{ r.tel }}">{{ r.phone }}</a>{% endif %} <a class="src" href="{{ r.src }}" title="Gde to piše">izvor</a></li>
+      <li><b>{{ r.who }}</b>{% if r.mail %} · <a href="mailto:{{ r.mail }}">{{ r.mail }}</a>{% endif %}{% if r.phone %} · <a href="tel:{{ r.tel }}">{{ r.phone }}</a>{% endif %}</li>
       {%- endfor %}
     </ul>
     {%- if group == "Uprava" %}
@@ -24,4 +24,14 @@
   </div>
 </section>
 {%- endfor %}
+{#- The pages it is from, behind one fold (the house details: the push dialog's RSS fold, style.css .leave__rss). -#}
+<section class="st">
+  <details class="leave__rss">
+    <summary>Izvori</summary>
+    <div>
+      <p>Sve je prepisano sa sajta fakulteta:</p>
+      <ul>{% for title, href in sources %}<li><a href="{{ href }}">{{ title }}</a></li>{% endfor %}</ul>
+    </div>
+  </details>
+</section>
 {% endblock %}

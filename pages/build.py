@@ -209,7 +209,8 @@ def main(db_path, out, dev_mode=False):
     # Every day's "Profesor dana": linked from nowhere, out of search and the sitemap. Dev mode: the days ahead too.
     write(site / "profdana" / "index.html", env.get_template("profdana.html").render(dev=dev), index=False)
     write(site / "link" / "index.html", env.get_template("link.html").render(icons=link_icons(), groups=links))
-    write(site / "kontakt" / "index.html", env.get_template("kontakt.html").render(groups=kontakt(db)))
+    groups, sources = kontakt(db)
+    write(site / "kontakt" / "index.html", env.get_template("kontakt.html").render(groups=groups, sources=sources))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())
     if dev:
