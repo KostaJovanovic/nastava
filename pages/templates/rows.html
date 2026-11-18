@@ -138,10 +138,21 @@
     year's list (filter: the list filter's data, its title and categories). Enrollment news: the enrollment icon and
     a mark. -#}
 {#- A paged list's pages (site.js pager fills it; without the script, hidden: the first page only). top: also the
-    page size select. -#}
-{%- macro pager(top=false) -%}
-<nav class="lp{% if top %} lp--top{% endif %}" aria-label="Strane" data-pg hidden>
-  <span class="lp__pages" data-pg-pages></span>
+    page size select. pages (a subject's, each page built at <base>strana/<n>/): its links in the HTML too, as
+    site.js draws them, for search engines and without the script. -#}
+{%- macro at(base, k) %}{{ base }}{% if k > 1 %}strana/{{ k }}/{% endif %}{% endmacro -%}
+{%- macro pager(top=false, page=1, pages=1, base='') -%}
+<nav class="lp{% if top %} lp--top{% endif %}" aria-label="Strane" data-pg{% if pages < 2 %} hidden{% endif %}>
+  <span class="lp__pages" data-pg-pages>
+  {%- if pages > 1 %}
+    {%- if page > 1 %}<a class="lp__a" href="{{ at(base, page - 1) }}" aria-label="Prethodna strana">‹</a>{% else %}<span class="lp__a lp__a--off" aria-hidden="true">‹</span>{% endif %}
+    {%- set ns = namespace(last=0) %}
+    {%- for k in range(1, pages + 1) if k == 1 or k == pages or (k - page) | abs <= 2 %}
+      {%- if ns.last and k - ns.last > 1 %}<span class="lp__gap">…</span>{% endif %}{% set ns.last = k %}
+      {%- if k == page %}<span class="lp__a" aria-current="page">{{ k }}</span>{% else %}<a class="lp__a" href="{{ at(base, k) }}">{{ k }}</a>{% endif %}
+    {%- endfor %}
+    {%- if page < pages %}<a class="lp__a" href="{{ at(base, page + 1) }}" aria-label="Sledeća strana">›</a>{% else %}<span class="lp__a lp__a--off" aria-hidden="true">›</span>{% endif %}
+  {%- endif %}</span>
   {%- if top %}
   <label class="lp__per"><span>Po strani</span><select class="field" data-pg-per>{% for n in [25, 50, 100, 200] %}<option{% if n == 50 %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
   {%- endif %}

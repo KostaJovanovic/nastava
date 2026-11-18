@@ -74,19 +74,25 @@ def render_places(site, topics, smerovi, subjects):
         # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
         quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
         s["katedra"] = row_katedra(s, rows)  # before its page: predmet.html links it
-        # Its topics paged as /vesti/'s (paged_rows): the page has the first PER_PAGE, a big subject's page was over 1 MB.
-        # By the year of their last post, as /objave/'s; no year pages, the subject's page has all of them.
+        # Its topics paged as /vesti/'s (paged_rows): a page has PER_PAGE, a big subject's page was over 1 MB. By the year
+        # of their last post, as /objave/'s; no year pages. Each page is also built, <subject>strana/<n>/, so search
+        # engines (which index no topic page) reach every topic's title through the pager's links.
         by_year = defaultdict(list)
         for t in rows:
             if t["last"]["year"]:
                 by_year[t["last"]["year"]].append(t)
-        _, counts, vs, first = paged_rows(site, s["href"], by_year, topic_row, lambda t: (t["find"], t["authors"], "")) if rows else ([], {}, {}, [])
-        # An empty one is not for search engines: a page with nothing on it counts against the whole site.
-        write(
-            site / s["href"].strip("/") / "index.html",
-            env.get_template("predmet.html").render(subj=s, topics=first, counts=counts, vs=vs, authors=authors, quiet=quiet),
-            index=bool(rows),
-        )
+        years, counts, vs, _ = paged_rows(site, s["href"], by_year, topic_row, lambda t: (t["find"], t["authors"], "")) if rows else ([], {}, {}, [])
+        ordered = [t for y in years for t in by_year[y]]  # the pager's order: newest year first
+        pages = max(1, -(-len(ordered) // PER_PAGE))
+        for k in range(1, pages + 1):
+            # An empty one is not for search engines: a page with nothing on it counts against the whole site.
+            write(
+                site / s["href"].strip("/") / (f"strana/{k}" if k > 1 else "") / "index.html",
+                env.get_template("predmet.html").render(
+                    subj=s, topics=ordered[(k - 1) * PER_PAGE : k * PER_PAGE], page=k, pages=pages, counts=counts, vs=vs, authors=authors, quiet=quiet
+                ),
+                index=bool(rows),
+            )
         # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows. Each with
         # the slugs of the teachers who posted in it: the teachers picked for the subject (/mojipredmeti/) narrow them.
         (site / s["href"].strip("/")).mkdir(parents=True, exist_ok=True)  # dev mode writes no page there

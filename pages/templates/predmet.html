@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "rows.html" import crumb, topic_rows, post_href, pager %}
 
-{% block title %}{{ subj.name }}{% endblock %}
+{% block title %}{{ subj.name }}{% if page > 1 %} · strana {{ page }}{% endif %}{% endblock %}
 {#- One name is a subject in several smerovi. The kind of page: the subject's description (predmet_opis.html) has
     the same name. -#}
 {% block title_more %} · {{ subj.smer.short }} · obaveštenja i rezultati{% endblock %}
@@ -61,7 +61,7 @@
     render_places), without a year select. -#}
 {% call topic_rows('Threadovi', topics, filter=true) %}
 {#- Its own search filters the topics (site.js pager); Enter searches the text of this subject's posts. -#}
-<form class="fbar" data-pager data-base="{{ subj.href }}" data-counts="{{ counts | tojson | forceescape }}" data-vs="{{ vs | tojson | forceescape }}" data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
+<form class="fbar" data-pager data-paths data-page="{{ page }}" data-base="{{ subj.href }}"data-counts="{{ counts | tojson | forceescape }}" data-vs="{{ vs | tojson | forceescape }}" data-enter="/?subject={{ subj.name | slug }}&" onsubmit="return false">
   <input class="field" type="search" name="q" data-f="find" placeholder="Naslov ili autor; Enter: u tekstu" aria-label="Pretraži threadove predmeta" autocomplete="off" enterkeyhint="search">
   <label class="vh" for="f-a">Autor</label>
   {#- value: the username; pismo.js changes the option text, not the value. -#}
@@ -71,9 +71,9 @@
   </select>
   <span class="fbar__n" data-shown>{{ subj.topics | n }}</span>
 </form>
-{{ pager(true) }}
+{{ pager(true, page, pages, subj.href) }}
 {% endcall %}
-{{ pager() }}
+{{ pager(false, page, pages, subj.href) }}
 {%- endif %}
 {%- if subj.lit %}
 {#- The subject's material on its department's site (build.py load_katedre: ie's "Literatura") or in its Teams

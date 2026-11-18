@@ -644,6 +644,7 @@
     var ol = d.querySelector('[data-rows]'), navs = [].slice.call(d.querySelectorAll('[data-pg]'));
     var shown = pgBar.querySelector('[data-shown]'), none = d.querySelector('[data-none]'), h1 = d.querySelector('[data-pg-h]');
     var moji = pgBar.hasAttribute('data-moji'), data = {}, loads = {}, page = 1, asBuilt = true, ask = 0;
+    var paths = pgBar.hasAttribute('data-paths'), builtPage = +pgBar.dataset.page || 1; // the page the HTML has
     // ?v=: the year's file's hash (data-vs, render_paged), so a browser keeps it until it changes; a page from before
     // data-vs, the total count.
     var vs = JSON.parse(pgBar.dataset.vs || '{}');
@@ -660,9 +661,11 @@
       var q = new URLSearchParams(), y = ysel.value;
       if (findBox.value.trim()) q.set('q', findBox.value.trim());
       if (sel.value) q.set(sel.name, sel.value);
-      if (p > 1) q.set('strana', p);
+      // A subject's pages are built (data-paths): <base>strana/<n>/, as the links in its HTML.
+      var built = paths && p > 1 && !findBox.value.trim() && !sel.value && size() === 50;
+      if (p > 1 && !built) q.set('strana', p);
       if (size() !== 50) q.set('po', size());
-      return base + (y ? y + '/' : '') + (String(q) ? '?' + q : '');
+      return base + (y ? y + '/' : '') + (built ? 'strana/' + p + '/' : '') + (String(q) ? '?' + q : '');
     };
     // The page links: first, last, and two either side of this one; ' …' between.
     var drawNav = function (pages) {
@@ -700,7 +703,7 @@
         history.replaceState(history.state, '', href(page));
         drawNav(Math.ceil(total / n));
         shown.textContent = total ? num(start + 1) + '–' + num(Math.min(start + n, total)) + ' od ' + num(total) : '0';
-        if (asBuilt && page === 1 && n === 50) return;
+        if (asBuilt && page === builtPage && n === 50) return;
       }
       asBuilt = false;
       var acc = 0, want = filtering ? inView : inView.filter(function (yy) {
@@ -750,7 +753,8 @@
       try { po = po || localStorage.getItem('po'); } catch (e) {}
       per.value = po || '50';
       if (per.selectedIndex < 0) per.value = '50';
-      page = +q.get('strana') || 1;
+      var at = paths && /\/strana\/(\d+)\/$/.exec(location.pathname);
+      page = +q.get('strana') || (at ? +at[1] : 1);
     };
     fromUrl();
     run(false);
