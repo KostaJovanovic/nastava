@@ -678,6 +678,9 @@ a[aria-busy="true"] { opacity: .5; cursor: progress; }
 .rs-chips a:hover { border-color: var(--accent); color: var(--accent-t); }
 /* The exam page's tables are wider than a phone: they scroll inside the panel, not the whole page. */
 .rs > .prose { min-width: 0; overflow-x: auto; }
+/* So does a program tab's (upis: the dates' table): a grid item grows to its widest table unless allowed smaller. */
+.rs > .rs-prog, .rs-prog > * { min-width: 0; }
+.rs-prog .prose { overflow-x: auto; }
 @media (max-width: 600px) {
   .rs .rs__tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rs .rs__tabs .mp__tab { align-content: start; padding: 6px 10px; font-size: .8125rem; }
@@ -1565,6 +1568,12 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--vest :is(h3, h4) { font-size: .9375rem; }
 .prose--vest img { display: block; margin: 1.1em 0; border-radius: var(--r); }
 .prose--vest p:has(> img:only-child) { margin: 0; }
+/* The news site's WordPress alignment (alignleft …): text beside the photo, as there; a narrow screen stacks them. */
+.prose--vest .alignleft { float: left; margin: .3em 1.2em .8em 0; }
+.prose--vest .alignright { float: right; margin: .3em 0 .8em 1.2em; }
+.prose--vest .aligncenter { margin-inline: auto; }
+.prose--vest::after { content: ""; display: block; clear: both; }
+@media (max-width: 600px) { .prose--vest :is(.alignleft, .alignright) { float: none; margin: 1.1em 0; } }
 /* A post's attachments (build.py attachments): "Prilozi", then a row per file with its type as a coloured badge. */
 .prose--html dl:has(> dd > .att) { display: grid; gap: 6px; margin-top: 1.2rem; }
 .prose--html dl:has(> dd > .att) > dt { color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
