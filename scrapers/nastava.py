@@ -366,8 +366,14 @@ def main():
     if command == "stats":
         show_stats(db)
     elif command == "sync":
-        crawl_tree(db)
-        fetch_topics(db)
+        try:
+            crawl_tree(db)
+            fetch_topics(db)
+        except Exception:
+            # The site's red banner (build.py forum_failed) until a later read works.
+            db.execute("insert or replace into meta values ('forum_failed', strftime('%Y-%m-%dT%H:%MZ', 'now'))")
+            db.commit()
+            raise
         # The footer's "Provereno" (pages/build.py): when the board was last read, whether or not it had new posts.
         db.execute("insert or replace into meta values ('forum_synced', strftime('%Y-%m-%dT%H:%MZ', 'now'))")
         db.commit()

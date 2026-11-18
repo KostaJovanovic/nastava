@@ -1299,9 +1299,8 @@
      the words stay whole (nowrap), an emoji with its variation selector one letter. The name is there in both scripts
      (base.html), one shown: the steps are counted along the shown one, again when pismo.js switches (html lang), so
      the hump runs on through the name and past it. The hidden one keeps animating (style.css), so a switch shows
-     letters already in step. */
-  var wave = d.querySelector('[data-wave]');
-  if (wave) {
+     letters already in step. Also the failed-update banner (base.html .fail), at half the height (style.css). */
+  [].forEach.call(d.querySelectorAll('[data-wave]'), function (wave) {
     var waveText = [], walker = d.createTreeWalker(wave, NodeFilter.SHOW_TEXT), tn;
     while ((tn = walker.nextNode())) waveText.push(tn);
     var waveSteps = []; // [letter span or null (a plain space), script: 'cyr', 'lat' or '' (shown in both)]
@@ -1335,7 +1334,7 @@
     if (window.IntersectionObserver) new IntersectionObserver(function (es) {
       wave.classList.toggle('wave--off', !es[es.length - 1].isIntersecting);
     }).observe(wave);
-  }
+  });
 
   /* The Android app (app/, docs/PLAN-app.md): a file opens in the phone's app for it (a PDF reader, Word…), another
      site in the phone's browser, without the dialog below. A WebView neither downloads nor opens files itself. */

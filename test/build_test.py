@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1"]
+# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1", "tzdata"]
 # ///
 """The asserts of pages/build.py (were its __main__ block), no network: uv run test/build_test.py"""
 
@@ -30,6 +30,7 @@ from sitegen.clean import file_rows  # noqa: E402
 from sitegen.clean import linkify  # noqa: E402
 from sitegen.clean import preuzeto  # noqa: E402
 from sitegen.feeds import atom  # noqa: E402
+from sitegen.output import forum_failed  # noqa: E402
 from sitegen.links import mark_elsewhere  # noqa: E402
 from sitegen.links import service  # noqa: E402
 from sitegen.load_board import hosted_files  # noqa: E402
@@ -563,6 +564,13 @@ _chip = '<a class="cent-file" href="/r.pdf"><span class="att__t att__t--pdf">PDF
 assert cent_changes("", _chip)[1] == ["novo – r.pdf"]
 assert '<a class="cent-btn cent-new" href="/s5_v4.pdf">' in _html and "<details open" in _html and '<p class="cent-new">b</p>' in _html, _html
 assert "<p>a</p>" in _html and cent_changes(_new, _new) == (_new, [])
+# The board's failed read: Belgrade's times, the next try the cron's next run; none once a later read worked.
+_cron = "17 6,10,14,18,21 * * *"
+assert forum_failed("2026-11-18T10:18Z", "2026-11-18T06:20Z", _cron) == ("u 11:18", "u 15:17")
+assert forum_failed("2026-11-18T21:20Z", None, _cron) == ("u 22:20", "sutra u 07:17")
+assert forum_failed("2026-11-18T23:30Z", None, _cron) == ("u 00:30", "u 07:17")  # past midnight in Belgrade already
+assert forum_failed("2026-07-01T10:18Z", None, _cron) == ("u 12:18", "u 16:17")  # summer time
+assert forum_failed("2026-11-18T10:18Z", "2026-11-18T14:20Z", _cron) is None and forum_failed(None, None, _cron) is None
 _s, _f = split_page(f"<html><title>T</title><meta>{HEAD_END}<x>{MAIN}a</main><p></main></html>")
 assert (_s, _f) == (
     f"<html><title></title><x>{MAIN}<!--main--></main></html>",

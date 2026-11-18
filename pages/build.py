@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1"]
+# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1", "tzdata"]
 # ///
 """Render nastava.db as a static site for GitHub Pages, with its Pagefind search index.
 
@@ -16,6 +16,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import tomllib
 from datetime import date
 from collections import defaultdict
 from pathlib import Path
@@ -138,8 +139,12 @@ def main(db_path, out, dev_mode=False):
     # Not "checked": raspored.html has its own (the schedule pages' last read), which would change the footer there.
     try:
         env.globals["forum_checked"] = (db.execute("SELECT value FROM meta WHERE key = 'forum_synced'").fetchone() or [None])[0]
+        failed = (db.execute("SELECT value FROM meta WHERE key = 'forum_failed'").fetchone() or [None])[0]
     except sqlite3.OperationalError:
-        env.globals["forum_checked"] = None
+        env.globals["forum_checked"] = failed = None
+    # The red banner at the top of every page (base.html) while the board's last read failed.
+    cron = tomllib.loads((HERE / "wrangler.toml").read_text(encoding="utf-8"))["triggers"]["crons"][0]
+    env.globals["forum_failed"] = output.forum_failed(failed, env.globals["forum_checked"], cron)
     output.site_dir = site
     output.shell = shell = split_page(str(env.get_template("base.html").render()))[0]
     nav = shell[shell.index('<nav class="snav"') :]

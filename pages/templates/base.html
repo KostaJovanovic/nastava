@@ -61,6 +61,11 @@
 {#- The icons in the page itself: an external sprite loads as its own document, often after the first frame. -#}
 <div hidden>{% include "icons.svg" %}</div>
 <a class="skip" href="#sadrzaj">Preskoči na sadržaj</a>
+{#- The board's last read failed (build.py forum_failed: Belgrade's times), until a later read works. It waves as the
+    footer's credit (site.js data-wave), lower. -#}
+{%- if forum_failed %}
+<p class="fail" role="status" data-wave><span data-notx>Update</span> {{ forum_failed[0] }} nije uspeo. Sledeći pokušaj {{ forum_failed[1] }}.</p>
+{%- endif %}
 <header class="hd">
   {#- Not a link (home is Početna in the side panel): a button, for an easter egg to come (site.js). -#}
   <button type="button" class="brand">

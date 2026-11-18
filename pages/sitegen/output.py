@@ -45,6 +45,25 @@ env.filters["dmy"] = lambda iso: ".".join(reversed((iso or "")[:10].split("-")))
 
 env.filters["katedra"] = katedra
 
+
+def forum_failed(failed, synced, cron):
+    """The red banner's two times (base.html), Belgrade's, when the board's last read failed (nastava.py's meta
+    forum_failed, newer than forum_synced; both "2026-11-18T10:18Z"), else None: ("u 11:18", "u 15:17" or "sutra u
+    07:17"). cron: pages/wrangler.toml's ("17 6,10,14,18,21 * * *", UTC), whose next run is the next try."""
+    if not failed or (synced and synced >= failed):
+        return None
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    at = datetime.fromisoformat(failed)
+    minute, hours = cron.split()[:2]
+    nxt = min(
+        t for d in (0, 1) for h in hours.split(",") if (t := at.replace(hour=int(h), minute=int(minute)) + timedelta(days=d)) > at
+    )
+    bg = ZoneInfo("Europe/Belgrade")
+    a, n = at.astimezone(bg), nxt.astimezone(bg)
+    return f"u {a:%H:%M}", f"{'sutra ' if n.date() > a.date() else ''}u {n:%H:%M}"
+
 # The katedre with a page of their own (render_katedre): the ones with listed teachers, set by main() before any page.
 katedra_pages = set()
 
