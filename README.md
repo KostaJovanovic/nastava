@@ -53,7 +53,10 @@ pipeline and site, with new scrapers for phpBB.
 
 - `scrapers/nastava.py`: scrape the forum tree and the posts into `nastava.db`. `stats` compares the board's counts with the
   stored rows and exits 1 when posts are missing.
-- `scrapers/documents.py`: download the attachments into `files/` and extract their text. Not run for now (not in the Action);
+- `scrapers/documents.py`: download the attachments into `files/` and extract their text. Each distinct file is kept
+  once, named by its SHA-256 (`files/blobs/`); `files/index.sqlite` maps an attachment (`<id>/<name>`, as
+  `documents.path`) to its copy, so a file posted again takes no room. `stats` also reports a copy whose bytes no
+  longer match its name. Not run for now (not in the Action);
   `stats` writes `files/no-text.txt` (scans: need OCR).
 - `scrapers/studije.py`: archive the schedule pages of www.mas.bg.ac.rs (kalendar nastave, raspored predavanja, raspored ispita),
   the rest of its wiki that no other scraper keeps (the site shows only the pages a student needs, `SHOWN`: enrollment,

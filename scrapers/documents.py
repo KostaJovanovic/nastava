@@ -12,13 +12,17 @@ Usage: documents.py download | extract [--all] | sync | stats | host
   host      the attachments of the posts since HOST_FROM: download, extract, thumbnail, upload to
             the release files-<school year> (ci/deploy.sh, every scrape)
 
-Files go to files/<id>/<file name>. The download is a plain GET of download/file.php?id=N.
+An attachment's name is <id>/<file name> (documents.path); its bytes go to files/blobs/, once per distinct file, named
+by its SHA-256, and files/index.sqlite maps the name to them (file_at, store). Older copies may still be at
+files/<id>/<file name>, which file_at falls back to. The download is a plain GET of download/file.php?id=N.
 """
 
+import hashlib
 import io
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -36,6 +40,10 @@ from common import DELAY, ROOT, asset_name, is_html_page, release_assets, sessio
 from nastava import BASE, WORKERS, connect
 
 FILES = os.getenv("FILES", str(ROOT / "files"))
+# Each distinct file once, named by its SHA-256 (blobs/ab/ab12….pdf); index.sqlite maps documents.path (<id>/<name>,
+# which the hosted files' URLs are made of) to it. Local, like files/: a GitHub run starts with none.
+BLOBS = Path(FILES, "blobs")
+INDEX = Path(FILES, "index.sqlite")
 TEXT_LIMIT = 5_000_000
 MEMBER_LIMIT = 100_000_000
 SOFFICE = shutil.which("soffice") or r"C:\Program Files\LibreOffice\program\soffice.exe"
@@ -139,6 +147,43 @@ def trim_image(kind, data):
     return data
 
 
+def blob_name(digest, name):
+    ext = Path(name).suffix.lower()
+    ext = ext if 1 < len(ext) <= 6 and ext[1:].isalnum() else ""
+    return f"{digest[:2]}/{digest}{ext}"
+
+
+def index_db():
+    db = sqlite3.connect(INDEX)
+    db.execute("create table if not exists files (path text primary key, sha256 text not null, size integer not null, "
+               "blob text not null)")
+    return db
+
+
+def file_at(path):
+    """Where the attachment <id>/<name> is on disk: its copy in blobs/, else the old place files/<id>/<name>."""
+    if INDEX.exists():
+        with sqlite3.connect(INDEX) as db:
+            row = db.execute("select blob from files where path = ?", (path,)).fetchone()
+        if row:
+            return BLOBS / row[0]
+    return Path(FILES, path)
+
+
+def store(path, data):
+    """Keep the attachment's bytes once (a file posted again shares the copy) and point its path at them."""
+    digest = hashlib.sha256(data).hexdigest()
+    with index_db() as db:
+        blob = (db.execute("select blob from files where sha256 = ?", (digest,)).fetchone() or [blob_name(digest, path)])[0]
+        target = BLOBS / blob
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            tmp = target.with_name(target.name + ".part")
+            tmp.write_bytes(data)
+            os.replace(tmp, target)  # a crash leaves a .part, never a half file under the real name
+        db.execute("insert or replace into files values (?, ?, ?, ?)", (path, digest, len(data), blob))
+
+
 def fetch(file_id):
     """Return (file name, bytes, Last-Modified) or raise; a 404 returns None."""
     r = session().get(f"{BASE}download/file.php?id={file_id}", timeout=300)
@@ -165,14 +210,12 @@ def save(db, file_id, result):
     kind = sniff(data)
     if kind in IMAGE_END:
         data = trim_image(kind, data)
-    folder = Path(FILES, str(file_id))
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / safe_name(name)
-    path.write_bytes(data)
+    path = f"{file_id}/{safe_name(name)}"
+    store(path, data)
     db.execute(
         "update documents set filename = ?, path = ?, size = ?, mime = ?, uploaded_at = ?, fetched = 1, error = null, "
         "title = coalesce(title, ?) where id = ?",
-        (name, f"{file_id}/{path.name}", len(data), kind, modified, name, file_id),
+        (name, path, len(data), kind, modified, name, file_id),
     )
     return "ok"
 
@@ -341,7 +384,7 @@ def extract_bytes(name, data):
 def extract_file(args):
     doc_id, path = args
     try:
-        with open(os.path.join(FILES, path), "rb") as f:
+        with open(file_at(path), "rb") as f:
             return doc_id, extract_bytes(path, f.read()), None
     except Exception as error:  # extraction libraries raise anything
         # The text stays null, so a later run (with LibreOffice or libarchive installed) tries again.
@@ -352,7 +395,7 @@ def run_extract(db, everything):
     where = "" if everything else "and text is null"
     rows = db.execute(f"select id, path from documents where fetched = 1 and path is not null {where}").fetchall()
     # In CI the old files are in the releases, not on disk.
-    todo = [r for r in rows if os.path.exists(os.path.join(FILES, r[1]))]
+    todo = [r for r in rows if file_at(r[1]).exists()]
     print(f"extracting {len(todo)} files", flush=True)
     with ProcessPoolExecutor(max(WORKERS, os.cpu_count() or 1)) as pool:
         for index, (doc_id, content, error) in enumerate(pool.map(extract_file, todo, chunksize=4), 1):
@@ -395,7 +438,7 @@ def host(db):
     if not rows:
         return
     # In CI the files are not on disk: fetched again, as the first time.
-    need = [i for i, _, path in rows if not (path and os.path.exists(os.path.join(FILES, path)))]
+    need = [i for i, _, path in rows if not (path and file_at(path).exists())]
     with ThreadPoolExecutor(WORKERS) as pool:
         for file_id, result in zip(need, pool.map(_try_fetch, need)):
             if isinstance(result, Exception):
@@ -410,7 +453,7 @@ def host(db):
         if not path:
             continue
         path = path[0]
-        data = Path(FILES, path).read_bytes()
+        data = file_at(path).read_bytes()
         # A failed extraction (an old .doc without LibreOffice) leaves no text, not an error: an error hides the page.
         text = extract_file((file_id, path))[1]
         base = release_base(posted)
@@ -456,6 +499,15 @@ def show_stats(db):
     Path(FILES).mkdir(exist_ok=True)
     Path(FILES, "no-text.txt").write_text("\n".join(r[0] for r in no_text), encoding="utf-8")
     print(f"no text (need OCR): {len(no_text)}, listed in files/no-text.txt")
+    # A copy whose bytes no longer hash to its name was damaged on disk (a file is never changed in place).
+    if BLOBS.exists():
+
+        def digest(p):
+            with p.open("rb") as f:
+                return hashlib.file_digest(f, "sha256").hexdigest()
+
+        damaged = [p.name for p in BLOBS.glob("*/*") if not p.name.endswith(".part") and digest(p) != p.name.split(".")[0]]
+        print(f"damaged copies in files/blobs: {len(damaged)} {damaged[:10]}")
 
 
 def main():
