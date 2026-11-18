@@ -198,6 +198,7 @@ def main(db_path, out, dev_mode=False):
         env.get_template("stats.html").render(st=archive_stats(items, topics, teachers, saved_cloud(db, date.today()))),
     )
     write(site / "mojipredmeti" / "index.html", env.get_template("mojipredmeti.html").render(), index=False)
+    write(site / "sacuvano" / "index.html", env.get_template("sacuvano.html").render(), index=False)
     about = env.get_template("o_sajtu.html").render()
     write(site / "o-sajtu" / "index.html", about)
     write(site / "about" / "index.html", about, canonical="/o-sajtu/")  # the English address, same page

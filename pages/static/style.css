@@ -783,6 +783,10 @@ a[aria-busy="true"] { opacity: .5; cursor: progress; }
      standing still, shows from the top down behind it (a clip); then it is gone: no folding back (a reload brings it
      again). The card takes its new height at once: easing it relaid the whole page under it each frame (it lagged). */
   .fgroup[data-izbor] > .moji__app { position: relative; grid-column: 1 / -1; margin-top: -4px; }
+  /* "Sačuvano" (the saved posts, once there are some): a row of its own, the whole width. */
+  .fgroup[data-izbor] > .moji__saved { grid-area: auto / 1 / auto / -1; padding: 0 12px; }
+  .moji__saved .btn { justify-content: flex-start; }
+  .moji__saved .tgl__n { margin-left: auto; }
   .moji__app[hidden] { display: none !important; }
   .moji__app > summary { display: flex; justify-content: center; align-items: center; gap: 6px; width: fit-content; margin: 0 auto; padding: 2px 8px;
     border-radius: 6px; color: var(--dim); font-size: .75rem; cursor: pointer; list-style: none; }
@@ -2144,6 +2148,14 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
 /* ---- Pager -------------------------------------------------------------- */
 
 /* ---- Empty, error --------------------------------------------------------- */
+/* /sacuvano/ (sacuvano.html, site.js): a saved post or topic a row, its title, subject and date, and "Ukloni". */
+.sv { margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); }
+.sv:empty { display: none; }
+.sv__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 10px 12px 10px 16px; }
+.sv__row + .sv__row { border-top: 1px solid var(--line-2); }
+.sv__t { grid-column: 1; font-weight: 700; overflow-wrap: anywhere; }
+.sv__sub { grid-column: 1; color: var(--dim); font-size: .78125rem; }
+.sv__x { grid-column: 2; grid-row: 1 / span 2; }
 .empty { padding: 24px 16px; color: var(--dim); font-size: .875rem; }
 /* An empty state with its icon (rows.html empty): centered, the icon above the text. */
 .empty:has(> .empty__i) { text-align: center; }

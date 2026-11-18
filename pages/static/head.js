@@ -117,12 +117,38 @@ window.showSaved = function () {
 		const chip = iz.querySelector("[data-moji-c]");
 		if (chip.textContent !== String(n || "")) chip.textContent = n || "";
 	}
+	// The side panel's link to the saved posts (/sacuvano/): only once something is saved, with how many.
+	const sv = d.querySelector("[data-saved]"), ns = window.savedList().length;
+	if (sv) {
+		sv.hidden = !ns;
+		sv.querySelector("[data-saved-n]").textContent = ns || "";
+	}
 	const tb = d.getElementById("tema"), dark = d.documentElement.dataset.tema === "dark";
 	if (tb) {
 		tb.querySelector("use").setAttribute("href", dark ? "#i-moon" : "#i-sun");
 		tb.setAttribute("aria-label", "Tema: " + (dark ? "tamna" : "svetla"));
 	}
 	if (window.pismoButton) window.pismoButton();
+};
+
+// Saved posts and topics, in this browser only: [{href, title, sub, date}] in localStorage "sacuvano", newest first
+// (site.js saves; /sacuvano/ lists them).
+window.savedList = function () {
+	try { return JSON.parse(localStorage.getItem("sacuvano")) || []; } catch (e) { return []; }
+};
+// The page's address as saved: its canonical path (the github.io copy's canonical is the main domain's).
+window.herePath = function () {
+	return new URL((document.querySelector('link[rel="canonical"]') || location).href).pathname;
+};
+// A post's or topic's "Sačuvaj" (detail.html, tema.html): saved or not.
+window.showBookmark = function () {
+	const here = window.herePath(), on = window.savedList().some((s) => s.href === here);
+	for (const b of document.querySelectorAll("[data-save]")) {
+		b.hidden = false;
+		b.setAttribute("aria-pressed", on);
+		b.querySelector("use").setAttribute("href", "#i-bookmark" + (on ? "-on" : ""));
+		b.querySelector("span").textContent = on ? "Sačuvano" : "Sačuvaj";
+	}
 };
 
 // A subject page's star (predmet.html): followed or not.

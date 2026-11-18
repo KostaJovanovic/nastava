@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "rows.html" import empty %}
+
+{% block title %}Sačuvano{% endblock %}
+
+{#- The posts and topics saved with "Sačuvaj" (rows.html save_btn), newest first: site.js fills the list from this
+    browser's localStorage; nothing is on the server. -#}
+{% block main %}
+<div class="mh">
+  <h1 id="title">Sačuvano</h1>
+  <p class="mh__sub">Postovi i threadovi koje si sačuvao. Pamte se samo u ovom browseru.</p>
+</div>
+<noscript><p class="empty">Za sačuvane postove potreban je JavaScript.</p></noscript>
+<ol class="sv" data-saved-list></ol>
+<p class="empty" data-saved-none hidden><svg class="i empty__i" aria-hidden="true"><use href="#i-bookmark"></use></svg><span>Još ništa nije sačuvano. Ispod svakog posta i threada je dugme <b>Sačuvaj</b>.</span></p>
+{% endblock %}

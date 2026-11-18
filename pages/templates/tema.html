@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "rows.html" import crumb, post %}
+{% from "rows.html" import crumb, post, save_btn %}
 
 {% block title %}{{ t.title }}{% endblock %}
 {% block title_more %}{% if t.subj %} · {{ t.subj.name }}{% endif %}{% endblock %}
@@ -21,6 +21,6 @@
   {{ post(r) }}
   {%- endfor %}
 </div>{%- if t.subj %}
-<p class="acts"><a class="btn" href="{{ t.subj.href }}"><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Nazad na {{ t.subj.name }}</a><button type="button" class="btn" data-share hidden><svg class="i" aria-hidden="true"><use href="#i-link"></use></svg><span>Podeli</span></button></p>
+<p class="acts"><a class="btn" href="{{ t.subj.href }}"><svg class="i" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Nazad na {{ t.subj.name }}</a><button type="button" class="btn" data-share hidden><svg class="i" aria-hidden="true"><use href="#i-link"></use></svg><span>Podeli</span></button>{{ save_btn(t.title, t.subj.name, t.last.date) }}</p>
 {%- endif %}
 {% endblock %}

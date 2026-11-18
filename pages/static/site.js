@@ -1501,6 +1501,48 @@
     }, function () {});
   });
 
+  /* "Sačuvaj" under a post or topic (detail.html, tema.html): kept in this browser (head.js savedList), newest first;
+     the side panel links the list (/sacuvano/) once there is one. 'sacuvano': the list changed. */
+  var keepSaved = function (list) {
+    try { localStorage.setItem('sacuvano', JSON.stringify(list)); } catch (e) {}
+    d.dispatchEvent(new Event('sacuvano'));
+  };
+  d.addEventListener('sacuvano', function () { window.showBookmark(); window.showSaved(); });
+  [].forEach.call(d.querySelectorAll('[data-save]'), function (b) {
+    b.addEventListener('click', function () {
+      var here = window.herePath(), list = window.savedList(), rest = list.filter(function (s) { return s.href !== here; });
+      keepSaved(rest.length < list.length ? rest
+        : [{ href: here, title: b.dataset.title, sub: b.dataset.sub, date: b.dataset.date }].concat(list));
+    });
+  });
+  // /sacuvano/ (sacuvano.html): the list, each with a button that removes it.
+  var savedOl = d.querySelector('[data-saved-list]');
+  if (savedOl) {
+    var drawSaved = function () {
+      var list = window.savedList();
+      savedOl.textContent = '';
+      d.querySelector('[data-saved-none]').hidden = list.length > 0;
+      list.forEach(function (s) {
+        var li = el('li', 'sv__row'), a = el('a', 'sv__t'), more = [s.sub, s.date].filter(Boolean);
+        a.href = s.href;
+        a.textContent = s.title || s.href;
+        li.appendChild(a);
+        if (more.length) li.appendChild(el('small', 'sv__sub', more.join(' · ')));
+        var x = el('button', 'btn sv__x');
+        x.type = 'button';
+        x.setAttribute('aria-label', 'Ukloni: ' + (s.title || s.href));
+        x.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-bookmark-on"></use></svg><span>Ukloni</span>';
+        x.addEventListener('click', function () {
+          keepSaved(window.savedList().filter(function (t) { return t.href !== s.href; }));
+        });
+        li.appendChild(x);
+        savedOl.appendChild(li);
+      });
+    };
+    d.addEventListener('sacuvano', drawSaved);
+    drawSaved();
+  }
+
   /* "Podeli" under a post or topic (detail.html, tema.html): the phone's share sheet, else the link copied. */
   [].forEach.call(d.querySelectorAll('[data-share]'), function (b) {
     if (!navigator.share && !navigator.clipboard) return;

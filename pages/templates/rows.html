@@ -15,6 +15,12 @@
 </nav>
 {%- endmacro -%}
 
+{#- "Sačuvaj" under a post or topic, beside "Podeli": saved in this browser (site.js), its state set before the first
+    frame (head.js showBookmark). The list on /sacuvano/ shows the title, subject and date given here. -#}
+{%- macro save_btn(title, subject, date) -%}
+<button type="button" class="btn" data-save data-title="{{ title }}" data-sub="{{ subject or '' }}" data-date="{{ date | dmy }}" aria-pressed="false" hidden><svg class="i" aria-hidden="true"><use href="#i-bookmark"></use></svg><span>Sačuvaj</span></button><script>showBookmark()</script>
+{%- endmacro -%}
+
 {%- macro crumb(href, name) -%}
 <svg class="i crumbs__sep" aria-hidden="true"><use href="#i-chevron-right"></use></svg><a href="{{ href }}" title="{{ name }}">{{ name }}</a>
 {%- endmacro -%}

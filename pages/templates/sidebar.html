@@ -36,6 +36,8 @@
         {#- The Android app (app/, docs/PLAN-app.md): shown by site.js in an Android browser only, not in the app. The
             APK's fixed address is the release "app" (.github/workflows/app.yml); the i says why and how. Folded under
             "Prikaži više" (style.css), which goes once opened: an offer, not the card's point. -#}
+        {#- The saved posts (/sacuvano/, site.js): only once something is saved (head.js showSaved), with how many. -#}
+        <div class="moji__open moji__saved" data-saved hidden><a class="btn" href="/sacuvano/"><svg class="i" aria-hidden="true"><use href="#i-bookmark"></use></svg><span>Sačuvano</span><span class="tgl__n" data-saved-n></span></a></div>
         <details class="moji__app" data-app-get hidden><summary>Prikaži više</summary><div class="moji__row"><a class="btn" href="https://github.com/KostaJovanovic/nastava/releases/download/app/masinci.apk"><svg class="i" aria-hidden="true"><use href="#i-github"></use></svg>Skini aplikaciju</a><button type="button" class="btn moji__info" data-app-info aria-label="Zašto aplikacija i kako se instalira">i</button></div></details>
       </div>
 
