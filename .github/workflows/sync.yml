@@ -44,6 +44,22 @@ jobs:
         run: |
           if [[ -n $PUSH_SECRET ]]; then printf '%s' "$PUSH_SECRET" > push-secret.json; fi
           if [[ -n $FCM_SECRET ]]; then printf '%s' "$FCM_SECRET" > fcm-secret.json; fi
+      # The board (nastava.mas.bg.ac.rs) answers GitHub's servers 403 since 2026-11-18: its requests go through
+      # Cloudflare WARP's local SOCKS proxy (common.py session, FORUM_PROXY), every other request goes direct. When WARP
+      # does not come up, FORUM_PROXY stays unset and the run goes on as before (the board's steps fail, the rest runs).
+      - name: Connect Cloudflare WARP for the board
+        continue-on-error: true
+        run: |
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq cloudflare-warp
+          warp-cli --accept-tos registration new
+          warp-cli --accept-tos mode proxy
+          warp-cli --accept-tos connect
+          for _ in $(seq 30); do warp-cli --accept-tos status | grep -q Connected && break; sleep 1; done
+          curl -fsS -x socks5h://127.0.0.1:40000 https://www.cloudflare.com/cdn-cgi/trace | grep '^warp='
+          echo "board: $(curl -s -o /dev/null -w '%{http_code}' -x socks5h://127.0.0.1:40000 -A 'Mozilla/5.0 (personal archive)' https://nastava.mas.bg.ac.rs/nastava/index.php)"
+          echo "FORUM_PROXY=socks5h://127.0.0.1:40000" >> "$GITHUB_ENV"
       - name: Scrape, build, publish, notify
         # Unquoted: the words are the arguments (the input is one of the choices above).
         run: bash ci/deploy.sh $WHAT

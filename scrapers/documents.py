@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["requests", "beautifulsoup4", "pymupdf", "python-docx", "python-pptx", "openpyxl", "libarchive-c", "pillow"]
+# dependencies = ["requests[socks]", "beautifulsoup4", "pymupdf", "python-docx", "python-pptx", "openpyxl", "libarchive-c", "pillow"]
 # ///
 """Archive every attachment of nastava.mas.bg.ac.rs.
 

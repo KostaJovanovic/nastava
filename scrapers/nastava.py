@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["requests", "beautifulsoup4"]
+# dependencies = ["requests[socks]", "beautifulsoup4"]
 # ///
 """Archive every post of nastava.mas.bg.ac.rs (phpBB, public, no login).
 

@@ -138,6 +138,10 @@ def session():
         s.headers["User-Agent"] = USER_AGENT
         retry = Retry(total=6, backoff_factor=2, status_forcelist=(429, 500, 502, 503, 504), allowed_methods=("GET",))
         s.mount("https://", HTTPAdapter(max_retries=retry))
+        # The board blocks GitHub's servers (since 2026-11-18): sync.yml sets FORUM_PROXY to Cloudflare WARP's local
+        # proxy, for the board's host alone.
+        if os.getenv("FORUM_PROXY"):
+            s.proxies["https://nastava.mas.bg.ac.rs"] = os.environ["FORUM_PROXY"]
         LOCAL.s = instrument(s)
     return LOCAL.s
 
