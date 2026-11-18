@@ -31,9 +31,13 @@ links the file as now (the faculty's link for older files, the site's own since 
   which a text fix mends (ˇs → š, ´c → ć). Symbol fonts in formulas read fine.
 - This PC has neither LibreOffice nor libarchive, so doc, xls, ppt and rar give no text here yet.
 
+- The first 1,500 characters of each file only (the user: no bloat). The estimate: the index from 97 MB to
+  ~180 MB, the site from 414 MB to ~500 MB; 3,000 would nearly double that. A file posted again is indexed once,
+  in the first post that has it.
+- A result is the post, as any other: no mark that the match is in a file.
+- The storage plan (`PLAN-storage.md`) comes first.
+
 ## Open
 
-- The size of the index and the build time with the text of 12,000+ attachments: measure first.
-- How a result shows that the match is in an attachment (e.g. the file's name before the excerpt).
-- The storage plan first or not: one copy per distinct file, named by its SHA-256 (2.1 GiB of the 7.32 are copies),
-  which re-keys `files/ocr.jsonl` from paths to checksums.
+- The real size, from a test build outside `pages/.build`.
+- The OCR of new files: PaddleOCR runs on this PC's graphics card, the GitHub runs have none.
