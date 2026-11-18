@@ -16,7 +16,9 @@ links the file as now (the faculty's link for older files, the site's own since 
 - New OCR only for the files since 1 October 2026 (the ones the site hosts).
 - The OCR already done (one-off, 2026-11-18, `work/ocr/ocr_images.py`) is used too: `files/ocr.jsonl`, 2,352
   readings by PaddleOCR-VL 1.5 (1,759 images, loose and inside archives; 593 pages of 62 scanned or TeX-encoded
-  PDFs). Handwriting keeps its rough reading; nobody re-reads it by hand.
+  PDFs). Only the good readings go into search: 5 words or more (formulas dropped), at least 80% of them words the
+  archive's own text has (`work/ocr/good_ocr.py`, a list in `work/ocr/good_ocr.jsonl`): 553 of the 2,352, the
+  printed pages. Below that is mostly handwriting, half read; nobody re-reads it by hand.
 - 20784 (`Predavanja - Elektromagnetika 2.pdf`) was broken in the faculty's own copy; `files/20784/` now holds the
   intact copy of 16751 (the broken one: `work/redl-20784/fresh.pdf`).
 
