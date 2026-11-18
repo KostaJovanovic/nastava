@@ -18,7 +18,6 @@ import json
 import re
 import sys
 import time
-from pathlib import Path
 from urllib.parse import quote
 
 from wayback_files import DELAY, OUT, SKIP_HOSTS, get, key_of, safe

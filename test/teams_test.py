@@ -118,8 +118,10 @@ def check_private():
                 if with_list:
                     up = {"General/predavanje.pdf": teacher, "General/moj rad.pdf": "student-id", "General/rezultati.xlsx": teacher}
                     w.writestr(teams.UPLOADERS, json.dumps(up))
-            assert own_zip(zipfile.ZipFile(z), "abcd1234")
-            teams.material(dict(groupId="abcd1234-0000", name="Klasa"), "/predmet/x/y/", [zipfile.ZipFile(z)], set(), set())
+            # Closed: Windows cannot delete the temp folder around an open zip.
+            with zipfile.ZipFile(z) as zf:
+                assert own_zip(zf, "abcd1234")
+                teams.material(dict(groupId="abcd1234-0000", name="Klasa"), "/predmet/x/y/", [zf], set(), set())
             m = Path(tmp) / "teams-abcd1234" / "material.json"
             if with_list:
                 assert json.loads(m.read_text(encoding="utf-8"))["files"] == ["General/predavanje.pdf", "General/rezultati.xlsx"], m.read_text()
