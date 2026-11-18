@@ -75,13 +75,14 @@
 {% endcall %}
 {{ pager(false, page, pages, subj.href) }}
 {%- endif %}
-{%- if subj.lit %}
+{%- for lit in [subj.lit, subj.stari] if lit %}
 {#- The subject's material on its department's site (build.py load_katedre: ie's "Literatura") or in its Teams
-    classes (load_mail), as a post's files; more than five open on a tap (style.css .lit). -#}
-<section class="fb lit{% if subj.lit.n > 5 %} lit--short{% endif %}">
-  <div class="fb__h"><h2>{{ subj.lit.title or 'Materijal sa sajta katedre' }} <span class="src src--{{ subj.lit.mark }}">{{ subj.lit.mark }}</span></h2></div>
-  <div class="prose prose--html">{{ subj.lit.html | safe }}</div>
-  {%- if subj.lit.n > 5 %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ subj.lit.n - 5 }}</span></label>{% endif %}
+    classes (load_mail), and on the old faculty sites (load_stari_fajlovi), as a post's files; more than five open on a
+    tap (style.css .lit). -#}
+<section class="fb lit{% if lit.n > 5 %} lit--short{% endif %}">
+  <div class="fb__h"><h2>{{ lit.title or 'Materijal sa sajta katedre' }} <span class="src src--{{ lit.mark }}">{{ lit.mark }}</span></h2></div>
+  <div class="prose prose--html">{{ lit.html | safe }}</div>
+  {%- if lit.n > 5 %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ lit.n - 5 }}</span></label>{% endif %}
 </section>
-{%- endif %}
+{%- endfor %}
 {% endblock %}

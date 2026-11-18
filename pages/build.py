@@ -25,11 +25,12 @@ from pathlib import Path
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent / "scrapers"))
 from translit import fold  # noqa: E402
+from sitegen.clean import file_rows  # noqa: E402
 from sitegen.feeds import write_feeds  # noqa: E402
 from sitegen.links import mark_elsewhere  # noqa: E402
 from sitegen.load_board import load_items, load_places, load_topics  # noqa: E402
 from sitegen.load_book import load_book  # noqa: E402
-from sitegen.load_sources import load_cent, load_katedre, load_mail, load_stare, load_vesti  # noqa: E402
+from sitegen.load_sources import load_cent, load_katedre, load_mail, load_stare, load_stari_fajlovi, load_vesti  # noqa: E402
 from sitegen.load_teachers import load_teachers, of_the_day, write_photos  # noqa: E402
 from sitegen.load_sajtovi import load_sajtovi  # noqa: E402
 from sitegen.output import (
@@ -76,9 +77,10 @@ def load_all(db):
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
     vesti = load_vesti(db)
     old_vesti, old_items = load_stare(smerovi, subjects, vesti)
+    archive, old_files, referati = load_stari_fajlovi(subjects)
     items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + old_items + load_mail(subjects)
-    vesti = sorted(vesti + old_vesti, key=lambda v: v["date"] or "", reverse=True)
-    return smerovi, subjects, items, cent_pushed, vesti
+    vesti = sorted(vesti + old_vesti + old_files, key=lambda v: v["date"] or "", reverse=True)
+    return smerovi, subjects, items, cent_pushed, vesti, (archive, referati)
 
 
 def words(db_path):
@@ -111,8 +113,10 @@ def main(db_path, out, dev_mode=False):
     version_static(site / "static")
     db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
-    smerovi, subjects, items, cent_pushed, vesti = load_all(db)
+    smerovi, subjects, items, cent_pushed, vesti, (archive, referati) = load_all(db)
     teachers = load_teachers(db, subjects)
+    for t in teachers:  # their election reports on the old site (load_stari_fajlovi), on their page
+        t["referati"] = file_rows(sorted(referati.get(str(t["id"]), []), key=lambda f: f[2]), "Izbori u zvanja")
     if teachers:
         write_photos(db, site)
     katedra_pages.clear()
@@ -227,6 +231,7 @@ def main(db_path, out, dev_mode=False):
         page.fresh["days"] = days
     write(site / "verzije" / "index.html", page)
     render_vesti(site, vesti)
+    write(site / "stari-sajt" / "index.html", env.get_template("stari_sajt.html").render(sections=archive))
     render_objave(site, topics)
     write_page(site / "index.html", render_home(topics, smerovi, items, vesti))
     write_page(site / "404.html", env.get_template("error.html").render())

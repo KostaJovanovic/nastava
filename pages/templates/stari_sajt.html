@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{#- The old faculty sites' files that are no subject's and no news post's (build.py, load_stari_fajlovi), by section:
+    each a box of files as a subject's material (predmet.html .lit), more than five open on a tap. -#}
+{% block title %}Stari sajt fakulteta{% endblock %}
+{% block description %}Dokumenti sa starog sajta Mašinskog fakulteta (mas.bg.ac.yu, do 2014): nastavni planovi, propisi, zapisnici veća, izbori u zvanja, reforma nastave, radovi.{% endblock %}
+
+{% block main %}
+<div class="mh">
+  <h1 id="title">Stari sajt fakulteta</h1>
+  <p class="mh__sub">Fajlovi sa mas.bg.ac.yu do 2014, iz kopija na Wayback Machine. Vesti su u <a href="/vesti/?kategorija={{ 'Стари сајт' | slug }}">Vestima</a>, materijal predmeta na stranama predmeta.</p>
+</div>
+{%- for title, n, html in sections %}
+<section class="fb lit{% if n > 5 %} lit--short{% endif %}">
+  <div class="fb__h"><h2>{{ title }} <span class="fb__n">{{ n | n }}</span></h2></div>
+  <div class="prose prose--html">{{ html | safe }}</div>
+  {%- if n > 5 %}<label class="fb__more"><input type="checkbox"><span>Prikaži još {{ n - 5 }}</span></label>{% endif %}
+</section>
+{%- endfor %}
+{% endblock %}

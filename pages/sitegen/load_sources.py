@@ -6,12 +6,12 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from html import unescape
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 from bs4 import BeautifulSoup
 from translit import fold
 from mail import asset_name, thumb_asset, TAG as MAIL_TAG
 from .clean import CENT_CLASSES, cent_changes, cent_tidy, clean_html, file_rows, linkify, vesti_media
-from .known import FORUMS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
+from .known import FORUMS, SAME_AS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
 from .load_board import book_subject
 from .output import HERE, PAGE_TEXT, VESTI
 from .text import parse_date, slug, strip_tags
@@ -363,6 +363,54 @@ def load_stare(smerovi, subjects, vesti, path=STARE):
             )
         )
     return news, items
+
+
+STARI_FAJLOVI = HERE.parent / "data" / "stari-fajlovi.jsonl"
+STARI_PLANS = "Nastavni planovi i programi"
+
+
+def load_stari_fajlovi(subjects, path=STARI_FAJLOVI):
+    """The old sites' other files (tools/stari_sajt.py fajlovi), each where it was placed: a subject's in a box on its
+    page (s["stari"]), a section's on the archive page /stari-sajt/, an event's as a news post of its own. A subject
+    named that the board lacks: its file goes to the archive's study plans (an old subject's description), and is
+    printed when the rule named a subject. Returns ([(section, files, file_rows html)] in the page's order, news,
+    {teacher id: file rows} of the election reports about them)."""
+    if not path.exists():
+        return {}, []
+    archive, by_subj, events, by_teacher = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
+    for r in map(json.loads, path.read_text(encoding="utf-8").splitlines()):
+        for t in r.get("people", []):  # an election report's candidate (tools/stari_sajt.py candidates)
+            by_teacher[SAME_AS.get(str(t), str(t))].append((r["href"], r["name"], r["date"][:4]))
+        row = (r["href"], r["name"], " · ".join(filter(None, [r["folder"] if r["to"] != "v" else None, r["date"][:4]])))
+        if r["to"] == "v":
+            events[r["where"]].append(r)
+        elif r["to"] == "a":
+            archive[r["where"]].append(row)
+        elif subs := board_subjects(subjects, r["where"]):
+            for s in subs:
+                by_subj[s["href"]].append(row)
+        else:
+            if re.search(r"[а-ш]", r["where"]):  # a rule's subject (Cyrillic), not a file's own name
+                print(f"stari fajlovi: no subject {r['where']}", file=sys.stderr)
+            archive[STARI_PLANS].append((r["href"], r["name"], r["where"]))
+    by_href = {s["href"]: s for s in subjects.values()}
+    for href, files in by_subj.items():
+        by_href[href]["stari"] = dict(mark="staro", title="Materijal sa starog sajta", n=len(files), html=file_rows(sorted(files, key=lambda f: (f[2], f[1])), "Stari sajt"))
+    news = []
+    for key, rs in events.items():
+        day = rs[0]["day"] or min(r["date"] for r in rs)
+        html = file_rows([(r["href"], r["name"], None) for r in rs])
+        news.append(
+            dict(
+                id=f"s{key}", kind="vest", href=f"/vest/s{key}/", title=rs[0]["title"], date=day, year=int(day[:4]), upis=False,
+                posted=f"{day}T10:00:00Z", modified=None, cats=[STARI], cat_keys=slug(STARI), find=fold(f"{rs[0]['title']} {STARI}"),
+                html=html, body=rs[0]["title"], gone=False, old=urlsplit(rs[0]["wayback"].split("/", 5)[5]).hostname.removeprefix("www."),
+                source_url=rs[0]["wayback"], smer=None, subj=None, subject=None, author=None, who="Mašinski fakultet",
+            )
+        )
+    order = [STARI_PLANS, "Dokumenti fakulteta", "Zapisnici Nastavno-naučnog veća", "Izbori u zvanja", "Reforma nastave", "Radovi i saopštenja"]
+    sections = [(k, len(archive[k]), file_rows(sorted(archive[k], key=lambda f: (f[2], f[1])), k)) for k in sorted(archive, key=order.index)]
+    return sections, news, by_teacher
 
 
 MAIL = HERE.parent / "mail"

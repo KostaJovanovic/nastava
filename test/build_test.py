@@ -363,6 +363,22 @@ with tempfile.TemporaryDirectory() as _t:
 assert [(v["href"], v["cats"]) for v in _v] == [("/vest/sa1b2c3d4e5f6/", ["Стари сајт"])], _v
 assert 'href="/files/stari-www/x.pdf/R.pdf"' in _v[0]["html"], _v[0]["html"]
 assert [(i["id"], i["subj"]["id"]) for i in _o] == [("s" + "c" * 12, 1), ("s" + "d" * 12, "k:meh")], _o
+# The old sites' other files (load_stari_fajlovi): a subject's in its box, one of a subject the board lacks to the
+# archive's study plans, an event's files as a news post, an election report under its candidate (SAME_AS merged).
+from sitegen.load_sources import load_stari_fajlovi  # noqa: E402
+
+_subj[1]["href"] = "/predmet/mi/transportni-uredjaji/"
+
+with tempfile.TemporaryDirectory() as _t:
+    _f = dict(key="k", name="a.pdf", href="/files/stari-www/x.pdf/a.pdf", date="2006-05-01", folder="me 1", wayback="https://web.archive.org/web/2006/http://www.mas.bg.ac.yu/a.pdf")
+    _rows = [dict(_f, to="p", where="Транспортни уређаји"), dict(_f, to="p", where="osnovi aerotehnike"),
+             dict(_f, to="v", where="tqm", title="TQM 2007", day=None), dict(_f, to="a", where="Izbori u zvanja", people=[1062])]
+    (Path(_t) / "f.jsonl").write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in _rows), encoding="utf-8")
+    _sec, _news, _ref = load_stari_fajlovi(_subj, Path(_t) / "f.jsonl")
+assert _subj[1]["stari"]["n"] == 1 and "me 1 · 2006" in _subj[1]["stari"]["html"]
+assert [(s, n) for s, n, _ in _sec] == [("Nastavni planovi i programi", 1), ("Izbori u zvanja", 1)], _sec
+assert [(v["href"], v["date"], v["old"]) for v in _news] == [("/vest/stqm/", "2006-05-01", "mas.bg.ac.yu")], _news
+assert list(_ref) == ["494"], _ref
 # A mail's "Re:" is in the topic of the oldest mail it answers that is here; one answering a mail not here, or with
 # a new subject line, starts its own.
 import tempfile

@@ -259,6 +259,15 @@
 </details>
 {%- endif %}
 
+{%- if t.referati %}
+{#- The election reports about them on the faculty's old site (2002-2014; build.py, load_stari_fajlovi), each with
+    its year. -#}
+<details class="tp__bio">
+  <summary><svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>Izveštaji o izboru u zvanje sa starog sajta fakulteta</summary>
+  <div class="prose prose--html">{{ t.referati | safe }}</div>
+</details>
+{%- endif %}
+
 {%- if html %}
 <details class="tp__bio">
   <summary><svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>{% if source_name == 'masinac.org' %}Profil sa studentskog portala masinac.org{% elif t.source %}Odakle su ovi podaci{% else %}Ceo profil sa sajta fakulteta: obrazovanje, radovi{% endif %}</summary>
