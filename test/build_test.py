@@ -347,6 +347,21 @@ with contextlib.redirect_stderr(io.StringIO()):
     _k = load_katedre(_db, {1: _sm, 2: _kat}, _subj)
 assert [(i["id"], i["subj"]["id"]) for i in _k] == [("k8", 1), ("k9", "k:meh")], _k
 assert _subj[(2, "катедра за механизацију")]["href"] == "/predmet/katedre/katedra-za-mehanizaciju/"
+# The old sites' items (load_stare): the faculty's into the news (a vesti.mas.bg.ac.rs post the news has left out, our
+# file copies kept as links), a department's to the subject its title names, else to its forum.
+import tempfile  # noqa: E402
+from sitegen.load_sources import load_stare  # noqa: E402
+
+with tempfile.TemporaryDirectory() as _t:
+    _row = dict(key="a1b2c3d4e5f6", date="2005-03-01", title="Распоред", author=None, html='<a href="/files/stari-www/x.pdf/R.pdf">R</a>',
+                full="", forum=None, upis=False, wp=None, host="mas.bg.ac.yu", wayback="https://web.archive.org/web/2005/http://www.mas.bg.ac.yu/")
+    _rows = [_row, dict(_row, key="b" * 12, wp=7), dict(_row, key="c" * 12, title="Транспортни уређаји – резултати", forum="катедра за механизацију"),
+             dict(_row, key="d" * 12, title="Обавештење", forum="катедра за механизацију")]
+    (Path(_t) / "s.jsonl").write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in _rows), encoding="utf-8")
+    _v, _o = load_stare({1: _sm, 2: _kat}, _subj, [dict(id="v7")], Path(_t) / "s.jsonl")
+assert [(v["href"], v["cats"]) for v in _v] == [("/vest/sa1b2c3d4e5f6/", ["Стари сајт"])], _v
+assert 'href="/files/stari-www/x.pdf/R.pdf"' in _v[0]["html"], _v[0]["html"]
+assert [(i["id"], i["subj"]["id"]) for i in _o] == [("s" + "c" * 12, 1), ("s" + "d" * 12, "k:meh")], _o
 # A mail's "Re:" is in the topic of the oldest mail it answers that is here; one answering a mail not here, or with
 # a new subject line, starts its own.
 import tempfile

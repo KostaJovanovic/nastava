@@ -28,7 +28,7 @@ from sitegen.feeds import write_feeds  # noqa: E402
 from sitegen.links import mark_elsewhere  # noqa: E402
 from sitegen.load_board import load_items, load_places, load_topics  # noqa: E402
 from sitegen.load_book import load_book  # noqa: E402
-from sitegen.load_sources import load_cent, load_katedre, load_mail, load_vesti  # noqa: E402
+from sitegen.load_sources import load_cent, load_katedre, load_mail, load_stare, load_vesti  # noqa: E402
 from sitegen.load_teachers import load_teachers, of_the_day, write_photos  # noqa: E402
 from sitegen.load_sajtovi import load_sajtovi  # noqa: E402
 from sitegen.output import (
@@ -69,11 +69,15 @@ from sitegen import output  # noqa: E402
 
 
 def load_all(db):
-    """Every source's posts as items (and what they hang on): main's start, and words's."""
+    """Every source's posts as items (and what they hang on), and the news (the old sites' with them, by date): main's
+    start, and words's."""
     place, smerovi, subjects = load_places(db)
     cent_items, cent_pushed = load_cent(db, smerovi, subjects)
-    items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + load_mail(subjects)
-    return smerovi, subjects, items, cent_pushed
+    vesti = load_vesti(db)
+    old_vesti, old_items = load_stare(smerovi, subjects, vesti)
+    items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + old_items + load_mail(subjects)
+    vesti = sorted(vesti + old_vesti, key=lambda v: v["date"] or "", reverse=True)
+    return smerovi, subjects, items, cent_pushed, vesti
 
 
 def words(db_path):
@@ -106,7 +110,7 @@ def main(db_path, out, dev_mode=False):
     version_static(site / "static")
     db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
-    smerovi, subjects, items, cent_pushed = load_all(db)
+    smerovi, subjects, items, cent_pushed, vesti = load_all(db)
     teachers = load_teachers(db, subjects)
     if teachers:
         write_photos(db, site)
@@ -217,7 +221,6 @@ def main(db_path, out, dev_mode=False):
     if dev:
         page.fresh["days"] = days
     write(site / "verzije" / "index.html", page)
-    vesti = load_vesti(db)
     render_vesti(site, vesti)
     render_objave(site, topics)
     write_page(site / "index.html", render_home(topics, smerovi, items, vesti))

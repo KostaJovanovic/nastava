@@ -56,6 +56,7 @@ def clean(fragment):
     """Only the text's own markup (nh3 also closes what a cut left open)."""
     out = nh3.clean(fragment, tags=TAGS, attributes={"a": {"href"}}, link_rel=None, strip_comments=True)
     out = re.sub(r"[-_=]{6,}", "", out)  # the hand-made pages' text rules between items
+    out = re.sub(r"Н\s*О\s*В\s*О\s*!+", "", out)  # the old front page's "Н О В О !!!" heading over the next item
     return re.sub(r"(\s*<br>\s*)+$|^(\s*<br>\s*)+", "", re.sub(r"(<br>\s*){3,}", "<br><br>", out)).strip()
 
 
@@ -81,7 +82,7 @@ def section(key):
     m = re.match(r"(.*?/?news[^/]*)/", path)
     if host == "www" and m:
         return f"www/{m.group(1)}"
-    if host == "www" and re.match(r"(index\.html?|default\.html?|najvesti.*|arhivavesti\.html|template/.*|vesti/.*|news/.*)?$", path):
+    if host == "www" and re.match(r"(index\.html?|default\.html?|(mfb-en/)?najvesti.*|arhivavesti\.html|template/.*|vesti/.*|news/.*)?$", path):
         return "www/vesti"
     if host == "www":
         return f"www/{path}"

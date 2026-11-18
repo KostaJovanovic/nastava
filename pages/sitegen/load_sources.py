@@ -177,6 +177,32 @@ def load_cent(db, smerovi, subjects):
     return items, pushed
 
 
+def name_key(name):
+    """A subject's name for comparing: "čovek-mašina" is "човек - машина"."""
+    return re.sub(r"[^a-z0-9]", "", fold(name))
+
+
+def board_subjects(subjects, name, smer=None):
+    """The board subjects of a name (in the smer, when given)."""
+    return [s for s in subjects.values() if name_key(s["name"]) == name_key(name) and (not smer or s["smer"]["key"] == smer)]
+
+
+def titled_subject(subjects, title):
+    """The one board subject a notice's title names ("Транспортни уређаји – резултати"), or None."""
+    return next((f[0] for t in (title, re.split(r"\s+[–-]\s+", title)[0]) if len(f := board_subjects(subjects, t)) == 1), None)
+
+
+def katedra_forum(smerovi, subjects, name, key):
+    """A department's forum on the board (smer Katedre), by its name; made when the board has none."""
+    katedre = next((m for m in smerovi.values() if m.get("key") == "katedre"), None)
+    s = next((s for s in subjects.values() if s["smer"] is katedre and fold(s["name"]) == fold(name)), None)
+    if not s and katedre:
+        s = dict(id=f"k:{key}", name=name, smer=katedre, codes=[])
+        s["href"] = f"{katedre['href'].replace('/smer/', '/predmet/', 1)}{slug(s['name'])}/"
+        subjects[(katedre["id"], s["name"])] = s
+    return s
+
+
 def load_katedre(db, smerovi, subjects):
     """katedre.py's notices of the departments' sites as posts (items), and a subject's material there (s["lit"]:
     dict(mark, n, html), ie's "Literatura" as file rows). A subject's page (SUBJECT_PAGE) is the subject it names (ie:
@@ -186,25 +212,13 @@ def load_katedre(db, smerovi, subjects):
     has a page."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'katedre_notices'").fetchone():
         return []
-    key = lambda name: re.sub(r"[^a-z0-9]", "", fold(name))
     book = (
         list(db.execute("SELECT id, name, program FROM subjects"))
         if db.execute("SELECT 1 FROM sqlite_master WHERE name = 'subjects'").fetchone()
         else []
     )
-    katedre = next((m for m in smerovi.values() if m.get("key") == "katedre"), None)
-
-    def board(name, smer=None):
-        """The board subjects of a name."""
-        return [s for s in subjects.values() if key(s["name"]) == key(name) and (not smer or s["smer"]["key"] == smer)]
-
-    def forum(site):
-        s = next((s for s in subjects.values() if s["smer"] is katedre and fold(s["name"]) == fold(FORUMS[site])), None)
-        if not s and katedre:
-            s = dict(id=f"k:{site}", name=FORUMS[site], smer=katedre, codes=[])
-            s["href"] = f"{katedre['href'].replace('/smer/', '/predmet/', 1)}{slug(s['name'])}/"
-            subjects[(katedre["id"], s["name"])] = s
-        return s
+    board = lambda name, smer=None: board_subjects(subjects, name, smer)
+    forum = lambda site: katedra_forum(smerovi, subjects, FORUMS[site], site)
 
     subj_of, department = {}, set()
     # A page gone from its site (or missed by one crawl) too: its notices stay in the archive, as cent's do.
@@ -221,7 +235,7 @@ def load_katedre(db, smerovi, subjects):
         name = (soup.h1.get_text(" ", strip=True) if soup.h1 else "") if r["site"] == "ie" else r["title"]
         name, smer = SITE_NAMES.get(fold(name), (name, None))
         found = board(name, smer)
-        b = next((b for b in book if key(b["name"]) == key(name)), None)
+        b = next((b for b in book if name_key(b["name"]) == name_key(name)), None)
         s = found[0] if len(found) == 1 else book_subject(b, smerovi, subjects) if b and not found else None
         if not s:
             print(
@@ -241,8 +255,7 @@ def load_katedre(db, smerovi, subjects):
     for n in db.execute("SELECT * FROM katedre_notices ORDER BY nid"):
         s = subj_of.get(n["url"])
         if n["url"] in department:
-            named = next((f for t in (n["title"], re.split(r"\s+[–-]\s+", n["title"])[0]) if len(f := board(t)) == 1), None)
-            s = named[0] if named else s
+            s = titled_subject(subjects, n["title"]) or s
         if not s:
             continue
         day = n["date"] or n["first_seen"][:10]
@@ -273,6 +286,83 @@ def load_katedre(db, smerovi, subjects):
             )
         )
     return items
+
+
+STARE = HERE.parent / "data" / "stare-vesti.jsonl"
+STARI = "Стари сајт"  # the old items' category in /vesti/'s filter
+
+
+def load_stare(smerovi, subjects, vesti, path=STARE):
+    """The old faculty sites' news (tools/stari_sajt.py vesti, mas.bg.ac.yu to 2014): (the faculty's, as news for
+    /vesti/; the departments', as posts of their forum or of the subject the title names, as load_katedre's). A post of
+    vesti.mas.bg.ac.rs the news already has (vesti: load_vesti's) is left out. Their links are the item's: our copies of
+    the old files (/files/stari-<host>/), the old pages' Wayback copies; the original is the item's Wayback copy."""
+    if not path.exists():
+        return [], []
+    have = {v["id"] for v in vesti}
+    news, items = [], []
+    for r in map(json.loads, path.read_text(encoding="utf-8").splitlines()):
+        if r["wp"] and f"v{r['wp']}" in have:
+            continue
+        own = lambda v: v if v.startswith("/files/") else None
+        html = linkify(clean_html(r["html"] + (f"<hr>{r['full']}" if r["full"] else ""), r["wayback"], own))
+        day = r["date"]
+        if not r["forum"]:
+            news.append(
+                dict(
+                    id=f"s{r['key']}",
+                    kind="vest",
+                    href=f"/vest/s{r['key']}/",
+                    title=r["title"],
+                    date=day,
+                    year=int(day[:4]),
+                    upis=r["upis"],
+                    posted=f"{day}T10:00:00Z",
+                    modified=None,
+                    cats=[STARI],
+                    cat_keys=slug(STARI),
+                    find=fold(f"{r['title']} {STARI}"),
+                    html=html,
+                    body=strip_tags(html)[:PAGE_TEXT],
+                    gone=False,
+                    old=r["host"],
+                    source_url=r["wayback"],
+                    smer=None,
+                    subj=None,
+                    subject=None,
+                    author=None,
+                    who="Mašinski fakultet",
+                )
+            )
+            continue
+        s = titled_subject(subjects, r["title"]) or katedra_forum(smerovi, subjects, r["forum"], r["key"])
+        if not s:
+            continue
+        items.append(
+            dict(
+                id=f"s{r['key']}",
+                kind="katedra",
+                title=r["title"],
+                smer=s["smer"],
+                subj=s,
+                subject=s["name"],
+                date=day,
+                year=int(day[:4]),
+                topic=f"s{r['key']}",
+                num=int(r["key"][:7], 16),  # the post's anchor (#p…), as katedre_notices' nid
+                when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.",
+                posted=f"{day}T10:00:00+00:00",
+                # A CuteNews username (rradulovic): build.py makes it the teacher's name when it is still theirs.
+                author=r["author"],
+                site=dict(mark="staro", host=r["host"], name=f"{r['forum'][0].upper()}{r['forum'][1:]}, stari sajt"),
+                body=strip_tags(html),
+                html=html,
+                files=[],
+                gone=False,
+                source_url=r["wayback"],
+            )
+        )
+    return news, items
 
 
 MAIL = HERE.parent / "mail"

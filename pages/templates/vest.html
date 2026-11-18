@@ -18,7 +18,9 @@
     <h1 class="post__title" id="title">{{ v.title }}</h1>
     <p class="post__meta">{% if v.upis %}<span class="tag">upis</span> {% endif %}<time datetime="{{ v.date or '' }}">{{ v.date | dmy }}</time>
       {%- for c in v.cats %} · <a href="{{ v.year_href }}?kategorija={{ c | slug }}">{{ c }}</a>{% endfor %}
-      {%- if v.gone %} · <span class="gone">uklonjeno sa sajta vesti</span>
+      {#- One of the old sites' (load_stare): its original is the Wayback Machine's copy. -#}
+      {%- if v.old %} · sa starog sajta {{ v.old }} · <a href="{{ v.source_url }}" rel="noopener" target="_blank">kopija na Wayback Machine <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a>
+      {%- elif v.gone %} · <span class="gone">uklonjeno sa sajta vesti</span>
       {%- else %} · <a href="{{ v.source_url }}" rel="noopener" target="_blank">original <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a>{% endif %}</p>
     <div class="prose prose--html prose--vest">{{ v.html | safe }}</div>
   </div>
