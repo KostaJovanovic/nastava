@@ -1495,11 +1495,12 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--wiki :is(ul, ol):not([class]) > li + li { margin-top: .3em; }
 .prose--wiki :is(ul, ol):not([class]) > li::marker { color: var(--slate); font-weight: 800; }
 .prose--wiki strong { color: var(--fg); }
-.prose--wiki .wt-hl { color: var(--accent-t); }
+.prose--wiki .wt-hl { color: var(--fg); }
 .prose--wiki .wt-amt { color: var(--fg); font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.prose--wiki .wt-note { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--alt); }
+/* Set apart by a line at the left, not a box: notes, the faculty's boxes, its all-bold warnings (wiki_tidy.py). */
+.prose--wiki :is(.wt-note, .wt-warn) { padding: 1px 0 1px 12px; border-left: 3px solid var(--accent); color: var(--fg); }
 .prose--wiki .wt-lbl { margin: 1em 0 .3em; color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
-.prose--wiki .wt-box { margin-block: 0 1em; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--alt); }
+.prose--wiki .wt-box { margin-block: 0 1em; padding: 1px 0 1px 12px; border-left: 3px solid var(--line); }
 .prose--wiki .wt-box > :last-child { margin-bottom: 0; }
 .prose--wiki .wt-box :is(h2, h3, h4) { margin: 0 0 .5em; padding: 0; border: 0; color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 .prose--wiki a.wt-go {
@@ -1517,8 +1518,8 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 }
 .prose--wiki .wt-links a::after { content: "→"; color: var(--accent-t); }
 @media (hover: hover) { .prose--wiki .wt-links a:hover { border-color: var(--accent); transform: translateY(-1px); } }
-.prose--wiki .wt-kv { display: grid; grid-template-columns: 1fr auto; max-width: 620px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.prose--wiki .wt-kv > * { margin: 0; padding: 6px 12px; border-top: 1px solid var(--line-2); }
+.prose--wiki .wt-kv { display: grid; grid-template-columns: 1fr auto; max-width: 620px; }
+.prose--wiki .wt-kv > * { margin: 0; padding: 6px 12px 6px 0; border-top: 1px solid var(--line-2); }
 .prose--wiki .wt-kv > :is(dt, dd):nth-child(-n+2) { border-top: 0; }
 .prose--wiki .wt-kv dd { color: var(--fg); font-weight: 800; text-align: end; font-variant-numeric: tabular-nums; }
 /* The timeline: a dot per date on a line down the left, its times in a column. */
@@ -1538,6 +1539,9 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--wiki .wt-card { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: .84375rem; line-height: 1.5; }
 .prose--wiki .wt-card > :is(strong, b):first-child { display: block; margin-bottom: 2px; font-size: .90625rem; line-height: 1.3; }
 .prose--wiki .wt-mod td:last-child { text-align: end; font-weight: 800; }
+/* The wiki's tables: row lines only, no grid of boxes. */
+.prose--wiki.prose--html :is(th, td) { border-width: 1px 0 0; border-color: var(--line-2); padding-left: 0; }
+.prose--wiki.prose--html tr:first-child td { border-top: 0; background: none; }
 /* upis/start's tabs (studije.html): each page's dates first, in a tinted box. */
 .wt-tab__h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--fg); font: 800 1.125rem var(--sans); }
 .wt-tab__h a { color: var(--dim); font-size: .8125rem; font-weight: 400; }
@@ -1574,6 +1578,31 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--vest .aligncenter { margin-inline: auto; }
 .prose--vest::after { content: ""; display: block; clear: both; }
 @media (max-width: 600px) { .prose--vest :is(.alignleft, .alignright) { float: none; margin: 1.1em 0; } }
+/* The hand-tidied posts' pieces (data/vesti-tidy.jsonl, the only classes load_vesti keeps besides align*): the opening
+   paragraph, an event's when and where, a deadline or contact note, an interview's questions, photos side by side,
+   a list of files or forms. */
+.prose--vest .vt-lead { color: var(--fg); font-size: 1rem; line-height: 1.55; }
+.prose--vest .vt-when {
+  display: flex; flex-wrap: wrap; gap: 6px 22px; margin-block: 0 1.1em; padding: 10px 14px;
+  border-left: 4px solid var(--head); border-radius: 0 var(--r) var(--r) 0; background: var(--alt);
+  color: var(--fg); font-weight: 800;
+}
+.vt-when > span { display: inline-flex; align-items: center; gap: 7px; }
+.vt-when > span::before { content: ""; flex: none; width: 1.05em; height: 1.05em; background: var(--head); mask: var(--vt-i) center / contain no-repeat; }
+.vt-date { --vt-i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 10h18'/%3E%3C/svg%3E"); }
+.vt-time { --vt-i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); }
+.vt-place { --vt-i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z'/%3E%3Ccircle cx='12' cy='9' r='2.5'/%3E%3C/svg%3E"); }
+.prose--vest .vt-note { margin-block: 1.1em; padding: 1px 0 1px 12px; border-left: 3px solid var(--accent); color: var(--fg); }
+.vt-note > :last-child { margin-bottom: 0; }
+/* flow-root: beside a floated photo, the bar stays by the text, not under the photo. */
+.prose--vest .vt-q { display: flow-root; padding-left: 12px; border-left: 3px solid var(--accent); }
+.prose--vest :is(.vt-note, .vt-files, .vt-photos) { clear: both; }
+.prose--vest .vt-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-block: 1.1em; }
+.vt-photos img { width: 100%; height: 100%; margin: 0; aspect-ratio: 4 / 3; object-fit: cover; }
+.vt-photos > p { margin: 0; }
+.prose--vest .vt-files { display: grid; gap: 6px; padding: 0; list-style: none; }
+.vt-files a { display: block; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); font-weight: 600; text-decoration: none; }
+.vt-files a:hover { border-color: var(--accent); }
 /* A post's attachments (build.py attachments): "Prilozi", then a row per file with its type as a coloured badge. */
 .prose--html dl:has(> dd > .att) { display: grid; gap: 6px; margin-top: 1.2rem; }
 .prose--html dl:has(> dd > .att) > dt { color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }

@@ -17,7 +17,7 @@ CLASSES = {
     "b": {"wt-tl__d"},
     "span": {"wt-tl__h", "wt-amt"},
     "strong": {"wt-hl"},
-    "p": {"wt-note", "wt-lbl"},
+    "p": {"wt-note", "wt-lbl", "wt-warn"},
     "ul": {"wt-links", "wt-tl__l"},
     "dl": {"wt-kv"},
     "div": {"wt-box", "wt-card", "wt-cards"},
@@ -41,6 +41,7 @@ FILLER = re.compile(
 )
 RED = re.compile(r"color:\s*(?:#f00\b|#ff0000|red\b|#e[0-9a-f]0000|#c00\b|#cc0000)", re.I)
 COLOR = re.compile(r"color:\s*#?[0-9a-z]+", re.I)
+YEAR = re.compile(r"\s*\d{4}\.?\s*(?:године|год\.)?\s*\.?\s*$", re.I)
 LARGE = re.compile(r"font-size:\s*(?:large|x+-large|larger|1[.,][2-9]em|[2-9]em)", re.I)
 
 
@@ -274,6 +275,48 @@ def tidy(html, path, lex):
             ol = new("ol", "wt-tl")
             li.replace_with(ol)
             ol.append(li)
+    # A timeline's same-day steps one after another: one date, their times together. The year off when the whole
+    # timeline is in one (the page's title says it).
+    for ol in root.select("ol.wt-tl"):
+        steps = ol.find_all("li", class_="wt-tl__i", recursive=False)
+        dates = [li.find("b", class_="wt-tl__d") for li in steps]
+        if len({m[0] for d in dates for m in [re.search(r"\d{4}", d.get_text())] if m}) == 1:
+            for d in dates:
+                d.string = YEAR.sub("", d.get_text())
+        prev = None
+        for li, d in zip(steps, dates):
+            if prev is not None and prev.find("b", class_="wt-tl__d").get_text() == d.get_text():
+                prev.find("ul", class_="wt-tl__l").extend(list(li.find("ul", class_="wt-tl__l").children))
+                li.decompose()
+            else:
+                prev = li
+    # A one-row table the timeline's last step points to ("према плану у табели:", the same day and hour): its words
+    # in that step, the table gone. Its columns past the date and hour that say something; with two, each named.
+    for t in root.find_all("table"):
+        ol = t.find_previous("ol", class_="wt-tl")
+        rows = [[c.get_text(" ", strip=True) for c in tr.find_all(["td", "th"])] for tr in t.find_all("tr")]
+        if ol is None or ol.find_next(["table", "ol"]) is not t or len(rows) != 2 or len(rows[1]) < 3:
+            continue
+        step = ol.find_all("li", class_="wt-tl__i", recursive=False)[-1]
+        row = step.find("ul", class_="wt-tl__l").find_all("li", recursive=False)[-1]
+        hour, words = row.find_all("span", recursive=False)[:2]
+        day = lambda s: (re.match(r"\D*(\d{1,2})\.", s) or [None, None])[1]
+        extra = [(h, v) for h, v in zip(rows[0][2:], rows[1][2:]) if v.strip(" -–")]
+        if not (extra and re.search(r"табел\w*\s*:?\s*$", words.get_text(strip=True), re.I)
+                and day(rows[1][0]) and day(rows[1][0]).lstrip("0") == (day(step.find("b").get_text()) or "").lstrip("0")
+                and rows[1][1] in hour.get_text()):
+            continue
+        words.string = extra[0][1] if len(extra) == 1 else "; ".join(f"{h}: {v}" for h, v in extra)
+        t.decompose()
+    # A paragraph all in bold (the faculty's warnings) is too much bold: plain, set apart by a line (style.css
+    # .wt-warn). A short one is a heading in all but name ("Број студената…: 100"), left.
+    for p in root.find_all("p"):
+        texts = [s for s in p.find_all(string=True) if s.strip()]
+        if len(p.get_text(" ", strip=True)) >= 90 and texts and all(s.find_parent(["strong", "b", "p"]) is not p for s in texts):
+            for b in p.find_all(["strong", "b"]):
+                if not b.get("class"):
+                    b.unwrap()
+            p["class"] = "wt-warn"
     # Cards one after another make a grid.
     for card in root.select("div.wt-card"):
         prev = card.find_previous_sibling()
@@ -444,4 +487,18 @@ if __name__ == "__main__":
         '<a class="wt-go" href="/x">Важни датуми</a>' in out and 'Упис страних студената <a class="wt-go" href="/y">Детаљније</a>' in out
     ), out
     assert '<span class="wt-amt">111.000,00 динара</span>' in out, out
+    # Same-day steps merged, the year off; the table the last step points to folded into it; an all-bold warning plain.
+    out = tidy(
+        '<div class="page"><h1>Д</h1><p><strong>16. септембар 2026. године</strong><br/>12:00 — Пријава.</p>'
+        "<p><strong>16. септембар 2026. године</strong><br/>17:00 — Објава.</p>"
+        "<p><strong>23. септембра 2026. године</strong><br/>10:00 — Упис према плану у табели:</p>"
+        "<table><tr><td>Датум</td><td>Време</td><td>Полагали на МФ-у</td><td>Остали</td></tr>"
+        "<tr><td>23. септембар</td><td>10:00</td><td>Прозивка, затим упис</td><td>-</td></tr></table>"
+        "<p><strong>Кандидат који је стекао право уписа, а не упише се у предвиђеном року, губи право на упис и место.</strong></p></div>",
+        "x",
+        lex,
+    )
+    assert out.count('class="wt-tl__i"') == 2 and "<b class=\"wt-tl__d\">16. септембар</b>" in out and "2026" not in out, out
+    assert "<table" not in out and "<span>Прозивка, затим упис</span>" in out, out
+    assert '<p class="wt-warn">Кандидат' in out and "<strong>" not in out.split("wt-warn")[1], out
     print("ok")
