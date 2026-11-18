@@ -17,6 +17,30 @@ above the first `## ` is this note and is not shown.
 - Short: an entry is one or two short sentences, and so is a day's lead. No semicolons, and no long lists strung
   together with commas: name the main thing and leave the rest out.
 
+## 17. novembra 2026.
+Sačuvani postovi i strana Kontakt fakulteta.
+
+- 812 [novo] **Postove i threadove možeš da sačuvaš** dugmetom `Sačuvaj`. Sačuvano je u side panelu, samo u tvom
+  browseru.
+- 786–789 [novo] **Strana Kontakt fakulteta** ima mejlove i telefone službi na jednom mestu. Link je u Linkovima.
+- 769, 772–773, 775, 777 [brže] **Strane se brže otvaraju**, najviše na telefonu. Dodir dok se strana učitava se više
+  ne gubi.
+- 770–771 [ispravka] **Profesor dana** se pojavi odmah sa stranom, a slika ne trepne.
+- 779 [novo] **Strane sa cent-a** pokazuju šta je izmenjeno u novoj verziji.
+- 780 [novo] **Više novih postova istog predmeta** stiže kao jedno obaveštenje sa naslovima. Otvara stranu predmeta,
+  gde izmenjene strane sa cent-a imaju crvenu tačku.
+- 784–785 [brže] **Threadovi predmeta idu po stranama**, pa se veliki predmeti brže učitavaju.
+- 783 **Dugme `Moji predmeti`** je i na spiskovima threadova.
+- 793, 795, 801, 803–805 **Vesti fakulteta** izgledaju kao na sajtu fakulteta, sa videima, galerijama i potpisima
+  ispod slika.
+- 796, 800 **Upis na Studijama** ima manje okvira. `Važni datumi` se otvaraju na klik.
+- 794 [ispravka] **Upis na telefonu** više ne izlazi iz ekrana.
+- 806 **`Katedre i predmeti`** u side panelu vodi na stranu Katedre.
+- 782 **Talas u footer-u** se opet talasa bez prestanka.
+- 781 [ispravka] **Slika jednog nastavnika** je zamenjena pravom.
+- 774, 776, 778, 790–792, 797–799, 802, 807–811 **Održavanje:** planovi, čuvanje priloga i OCR za buduću pretragu
+  priloga.
+
 ## 16. novembra 2026.
 Rasporedi imaju preview.
 
