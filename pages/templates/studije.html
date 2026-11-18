@@ -44,10 +44,11 @@
     </div>
     {%- endif %}
     {%- for label, rok in t.rok %}
-    <div class="wt-rok">
-      <p class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="#i-calendar"></use></svg>Važni datumi{% if label %} <span>· {{ label }}</span>{% endif %}</p>
+    {#- Folded: Ukratko above has the dates that matter most; the whole timeline opens on a tap. -#}
+    <details class="wt-rok wt-rok--fold">
+      <summary class="wt-rok__h"><svg class="i" aria-hidden="true"><use href="#i-calendar"></use></svg>Važni datumi{% if label %} <span>· {{ label }}</span>{% endif %}</summary>
       <div class="prose prose--html prose--wiki">{{ rok | safe }}</div>
-    </div>
+    </details>
     {%- endfor %}
     <div class="prose prose--html prose--wiki">{{ t.html | safe }}</div>
   </section>

@@ -1497,10 +1497,10 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .prose--wiki strong { color: var(--fg); }
 .prose--wiki .wt-hl { color: var(--fg); }
 .prose--wiki .wt-amt { color: var(--fg); font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
-/* Set apart by a line at the left, not a box: notes, the faculty's boxes, its all-bold warnings (wiki_tidy.py). */
-.prose--wiki :is(.wt-note, .wt-warn) { padding: 1px 0 1px 12px; border-left: 3px solid var(--accent); color: var(--fg); }
+/* Notes and the faculty's all-bold warnings (wiki_tidy.py): no box, no line, a weight between the text's and bold. */
+.prose--wiki :is(.wt-note, .wt-warn) { color: var(--fg); font-weight: 500; }
 .prose--wiki .wt-lbl { margin: 1em 0 .3em; color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
-.prose--wiki .wt-box { margin-block: 0 1em; padding: 1px 0 1px 12px; border-left: 3px solid var(--line); }
+.prose--wiki .wt-box { margin-block: 0 1em; }
 .prose--wiki .wt-box > :last-child { margin-bottom: 0; }
 .prose--wiki .wt-box :is(h2, h3, h4) { margin: 0 0 .5em; padding: 0; border: 0; color: var(--dim); font: 800 .71875rem var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 .prose--wiki a.wt-go {
@@ -1550,8 +1550,27 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
 .wt-rok__h .i { width: 18px; height: 18px; }
 .wt-rok__h span { color: var(--dim); letter-spacing: .02em; text-transform: none; font-weight: 400; }
 .wt-rok .wt-tl__i::before { border-color: var(--alt); }
+/* Važni datumi folded (studije.html): the whole box opens it; a chevron at the end, as the house folds. */
+.wt-rok--fold { padding: 0; }
+/* Its label wraps whole (the program's name under it on a phone), the chevron held at the right. */
+.wt-rok--fold > summary { position: relative; flex-wrap: wrap; row-gap: 2px; min-height: 44px; margin: 0; padding: 10px 40px 10px 16px; border-radius: 10px; cursor: pointer; list-style: none; }
+.wt-rok--fold > summary::-webkit-details-marker { display: none; }
+.wt-rok--fold > summary::after { content: ""; position: absolute; right: 18px; top: calc(50% - 6px); width: 7px; height: 7px; border: solid var(--dim); border-width: 0 2px 2px 0; rotate: 45deg; transition: rotate .15s; }
+.wt-rok--fold[open] > summary::after { top: calc(50% - 2px); rotate: -135deg; }
+.wt-rok--fold > summary:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; }
+@media (hover: hover) { .wt-rok--fold > summary:hover { background: var(--hover); } }
+.wt-rok--fold > .prose { padding: 4px 16px 14px; }
+@media (prefers-reduced-motion: reduce) { .wt-rok--fold > summary::after { transition: none; } }
 /* An upis tab's short version (studije.html t.summary): label and text in two columns, one under the other on a phone. */
-.wt-sum { margin-bottom: 12px; }
+/* An upis tab's parts one gap apart: the summary, the dates, the page. */
+.wt-tabs .rs-prog { gap: 14px; }
+@media (max-width: 600px) {
+  .wt-tabs.panel { padding: 12px 10px 14px; }
+  .wt-rok { padding: 12px; }
+  .wt-rok--fold { padding: 0; }
+  .wt-rok--fold > summary { padding-left: 12px; }
+  .wt-rok--fold > .prose { padding-inline: 12px; }
+}
 .wt-sum__l { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: .875rem; line-height: 1.45; }
 .wt-sum__l dt { color: var(--dim); font-weight: 700; }
 .wt-sum__l dd { margin: 0; color: var(--fg); }
@@ -1962,16 +1981,16 @@ details.sg[open] > summary.sg__h::before { transform: rotate(45deg); }
 /* Folding (a group, a teacher's full profile): the content's height eases instead of jumping. A browser without
    ::details-content skips these rules and folds at once. The clip margin keeps the cards' focus outline. */
 /* The same for the other folds with a turning chevron: the RSS feeds, the picker's groups, cent's material. */
-:is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc) { interpolate-size: allow-keywords; }
-:is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc)::details-content {
+:is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc, .wt-rok--fold) { interpolate-size: allow-keywords; }
+:is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc, .wt-rok--fold)::details-content {
   height: 0; overflow: clip; overflow-clip-margin: 6px;
   transition: height 200ms ease-out, content-visibility 200ms ease-out allow-discrete;
 }
-:is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc)[open]::details-content { height: auto; }
+:is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc, .wt-rok--fold)[open]::details-content { height: auto; }
 /* Safari has ::details-content but no clip margin, which cut the cards' focus outline; nor interpolate-size, so it
    folds at once and an open group need not clip at all. */
 @supports not (overflow-clip-margin: 6px) {
-  :is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc)[open]::details-content { overflow: visible; }
+  :is(details.sg, .tp__bio, .leave__rss, .mp__group, .cent-acc, .wt-rok--fold)[open]::details-content { overflow: visible; }
 }
 summary.sg__h:hover { background: var(--hover); }
 summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; }
