@@ -628,7 +628,7 @@
     d.addEventListener('moji', runRows);
   }
 
-  /* A paged list (vesti.html, objave.html; build.py render_paged). The page has the first rows as built; every row is
+  /* A paged list (vesti.html, objave.html, predmet.html; build.py paged_rows). The page has the first rows as built; every row is
      in <base>rows-<year>.json ([search text, select values, subject href, HTML]), fetched only as needed: paging
      through, the years up to the page shown (data-counts says how many each has); a search, the select or "Samo moji
      predmeti", every year in view (once; then the browser's cache). The URL keeps the view: the year as the path
@@ -637,7 +637,9 @@
   if (pgBar) (function () {
     var base = pgBar.dataset.base, counts = JSON.parse(pgBar.dataset.counts);
     var years = Object.keys(counts).sort().reverse(), all = years.reduce(function (s, y) { return s + counts[y]; }, 0);
-    var ysel = pgBar.querySelector('[data-pg-year]'), findBox = pgBar.querySelector('[data-f="find"]');
+    // A subject's page has no year select: all its years, always.
+    var ysel = pgBar.querySelector('[data-pg-year]') || { value: '', addEventListener: function () {} };
+    var findBox = pgBar.querySelector('[data-f="find"]');
     var sel = pgBar.querySelector('select[data-f]'), per = d.querySelector('[data-pg-per]');
     var ol = d.querySelector('[data-rows]'), navs = [].slice.call(d.querySelectorAll('[data-pg]'));
     var shown = pgBar.querySelector('[data-shown]'), none = d.querySelector('[data-none]'), h1 = d.querySelector('[data-pg-h]');
@@ -755,6 +757,7 @@
     var again = function () { page = 1; run(false); };
     // The heading and the tab's title name the year (pismo.js converts them as they change).
     var named = function () {
+      if (!h1) return; // a subject's page: no year in its heading
       h1.textContent = h1.dataset.pgH + (ysel.value ? ' ' + ysel.value : '');
       // From the original (data-pg-h), not the shown text: pismo.js converts it now and at a switch.
       var t = h1.dataset.pgH + (ysel.value ? ' ' + ysel.value : '') + title;

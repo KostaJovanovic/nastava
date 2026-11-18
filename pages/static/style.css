@@ -1356,18 +1356,21 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fbar__n[data-shown] { font-variant-numeric: tabular-nums; }
 /* A paged list's pages (rows.html pager, site.js): the top one under the filter, with the page size; the bottom one
    under the list. */
-.lp { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; font-size: .84375rem; }
+/* Low-key: plain numbers, a tint on hover, this page's in the accent with a line under it. */
+.lp { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px; font-size: .8125rem; }
 .lp--top { border-bottom: 1px solid var(--line-2); }
-.lp:not(.lp--top) { justify-content: center; margin-top: 10px; }
-.lp__pages { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.lp__a { display: grid; place-items: center; min-width: 32px; height: 32px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px;
-  font: inherit; background: var(--card); color: var(--link); font-variant-numeric: tabular-nums; text-decoration: none; cursor: pointer; }
-.lp__a:hover { border-color: var(--accent); }
-.lp__a[aria-current] { border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 700; }
-.lp__a--off { color: var(--dim); opacity: .45; }
+.lp:not(.lp--top) { justify-content: center; margin-top: 6px; }
+.lp__pages { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.lp__a { display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 4px; border-radius: 6px;
+  color: var(--dim); font-variant-numeric: tabular-nums; text-decoration: none; cursor: pointer; }
+.lp__a:hover { background: var(--alt); color: var(--link); }
+.lp__a[aria-current] { color: var(--accent-t); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
+.lp__a--off { opacity: .35; }
+.lp__a--off:hover { background: none; color: var(--dim); }
+@media (pointer: coarse) { .lp__a { min-width: 36px; height: 36px; } } /* a finger's target */
 .lp__gap { padding: 0 2px; color: var(--dim); }
-.lp__per { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--dim); }
-.lp__per .field { width: auto; }
+.lp__per { display: flex; align-items: center; gap: 6px; margin-left: auto; color: var(--dim); }
+.lp__per .field { width: auto; height: 28px; padding: 0 6px; border-color: var(--line); font-size: inherit; }
 /* The lists' own search box: typed in, not picked (the bar's selects show a pointer). */
 .people__bar > input.field { cursor: text; }
 

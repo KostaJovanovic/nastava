@@ -74,10 +74,17 @@ def render_places(site, topics, smerovi, subjects):
         # quiet: a subject without posts says so with one of QUIET, the same one on every build (no change to deploy).
         quiet = QUIET[int(hashlib.md5(s["href"].encode()).hexdigest(), 16) % len(QUIET)]
         s["katedra"] = row_katedra(s, rows)  # before its page: predmet.html links it
+        # Its topics paged as /vesti/'s (paged_rows): the page has the first PER_PAGE, a big subject's page was over 1 MB.
+        # By the year of their last post, as /objave/'s; no year pages, the subject's page has all of them.
+        by_year = defaultdict(list)
+        for t in rows:
+            if t["last"]["year"]:
+                by_year[t["last"]["year"]].append(t)
+        _, counts, vs, first = paged_rows(site, s["href"], by_year, topic_row, lambda t: (t["find"], t["authors"], "")) if rows else ([], {}, {}, [])
         # An empty one is not for search engines: a page with nothing on it counts against the whole site.
         write(
             site / s["href"].strip("/") / "index.html",
-            env.get_template("predmet.html").render(subj=s, topics=rows, authors=authors, quiet=quiet),
+            env.get_template("predmet.html").render(subj=s, topics=first, counts=counts, vs=vs, authors=authors, quiet=quiet),
             index=bool(rows),
         )
         # Its newest topics as the home page's rows: site.js merges those of the subjects a browser follows. Each with
@@ -438,11 +445,10 @@ def picker(subjects, book, teachers, items=()):
 PER_PAGE = 50  # a paged list's rows in its page's HTML (site.js pager: its default page size)
 
 
-def render_paged(site, base, template, by_year, row, keys, **data):
-    """A list paged in the browser (site.js pager), newest first: <base> all years, <base><year>/ one, each page with
-    its first PER_PAGE rows; every row in <base>rows-<year>.json, fetched as the pages need them. A row there:
-    [its folded search text, its select's values ("a|b"), its subject's href (data-pid, for "Samo moji predmeti"), its
-    HTML]. keys(item) gives the first three."""
+def paged_rows(site, base, by_year, row, keys):
+    """A paged list's rows (site.js pager), every one in <base>rows-<year>.json, fetched as the pages need them. A row
+    there: [its folded search text, its select's values ("a|b"), its subject's href (data-pid, for "Samo moji
+    predmeti"), its HTML]. keys(item) gives the first three. -> years (newest first), counts, vs, the first page."""
     years = sorted(by_year, reverse=True)
     folder = site / base.strip("/")
     folder.mkdir(parents=True, exist_ok=True)  # dev mode writes no page there
@@ -452,7 +458,14 @@ def render_paged(site, base, template, by_year, row, keys, **data):
         (folder / f"rows-{y}.json").write_bytes(text)
         vs[y] = v_of(text)
     counts = {y: len(by_year[y]) for y in years}
-    first = [i for y in years for i in by_year[y][:PER_PAGE]][:PER_PAGE]
+    return years, counts, vs, [i for y in years for i in by_year[y][:PER_PAGE]][:PER_PAGE]
+
+
+def render_paged(site, base, template, by_year, row, keys, **data):
+    """A list paged in the browser (paged_rows), newest first: <base> all years, <base><year>/ one, each page with its
+    first PER_PAGE rows."""
+    years, counts, vs, first = paged_rows(site, base, by_year, row, keys)
+    folder = site / base.strip("/")
     for y in [None, *years]:
         write(
             folder / (str(y) if y else "") / "index.html",
