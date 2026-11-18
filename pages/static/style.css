@@ -441,9 +441,8 @@ svg.cmd__img { justify-self: center; width: 24px; height: 24px; background: none
   .ft__note > .ft__dot { display: none; }
 }
 /* The credit's wave (site.js): each letter rises in turn, as on valjdakosta.com's header. */
-/* 3.2s a wave, 0.15s a letter (site.js): one hump about 21 letters long. A few waves, then still: a slow endless loop
-   pulls the eye from the page (the counted time runs only on the screen, site.js .wave--off). */
-.wave { display: inline-block; animation: wave 3.2s ease-in-out 3; }
+/* 3.2s a wave, 0.15s a letter (site.js): one hump about 21 letters long. */
+.wave { display: inline-block; animation: wave 3.2s ease-in-out infinite; }
 @keyframes wave { 50% { transform: translateY(-3px); } }
 .wave--off .wave { animation-play-state: paused; }
 /* A link's underline skips its inline-block letters: each letter has its own, so it waves with them. */
