@@ -49,7 +49,7 @@ def load_vesti(db):
                 cats=names,
                 cat_keys="|".join(slug(c) for c in names),
                 find=fold(" ".join([title] + names)),
-                html=clean_html(t.get("html") or r["html"], VESTI),
+                html=clean_html(t.get("html") or r["html"], VESTI, classes={"img": {"alignleft", "alignright", "aligncenter"}}),
                 body=strip_tags(r["html"])[:PAGE_TEXT],
                 gone=r["gone"],
                 source_url=r["link"],
