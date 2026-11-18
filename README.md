@@ -25,8 +25,8 @@ pipeline and site, with new scrapers for phpBB.
   `gh workflow run sync.yml -f what=forum` (or `"forum studije"`, `sync`); on a PC: `bash ci/deploy.sh forum`
   (or `forum studije`, `sync`), which first gets the saved state. A run:
   1. gets the state (`ci/state.sh pull`) and runs the tests that need no network (`test/*_test.py`; the build's before the build);
-  2. reads the forum tree and fetches the forums and topics whose counts or last post changed, and again the topics
-     with a post in the last 14 days (an edit does not change the counts);
+  2. reads the forum tree and fetches the forums and topics whose counts or last post changed (an edit to a post,
+     which changes neither, is not fetched);
   3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and the schedules, the
      teachers and the subjects when they are due (the departments' sites only with `sync`). A failure in these does
      not stop the run;

@@ -284,12 +284,10 @@ def store_topic(db, topic_id, last_post, result):
     return len(posts)
 
 
-def fetch_topics(db, quiet=False, recent=False):
-    """Fetch the pending topics. recent: also the ones with a post in the last 14 days, as an edit does not change
-    the last post id. Only once per run: these stay "recent" after the fetch."""
-    # shortcut: an edit to a post older than 14 days is not seen; a periodic full refetch would catch it.
-    extra = " or id in (select topic from posts where posted >= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-14 days'))" if recent else ""
-    pending = db.execute(f"select id, last_post from topics where gone = 0 and ({PENDING}{extra})").fetchall()
+def fetch_topics(db, quiet=False):
+    """Fetch the pending topics: new ones and those with a new last post. An edit to a post is not seen (it does not
+    change the last post id); re-reading recent topics for edits was most of each run's requests to the board."""
+    pending = db.execute(f"select id, last_post from topics where gone = 0 and ({PENDING})").fetchall()
     if not quiet or len(pending) >= 100:
         print(f"{len(pending)} topics to fetch", flush=True)
     done = posts = 0
@@ -369,7 +367,7 @@ def main():
         show_stats(db)
     elif command == "sync":
         crawl_tree(db)
-        fetch_topics(db, recent=True)
+        fetch_topics(db)
         # The footer's "Provereno" (pages/build.py): when the board was last read, whether or not it had new posts.
         db.execute("insert or replace into meta values ('forum_synced', strftime('%Y-%m-%dT%H:%MZ', 'now'))")
         db.commit()
