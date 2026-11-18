@@ -7,7 +7,7 @@ from urllib.parse import quote, unquote, urljoin, urlsplit
 from bs4 import BeautifulSoup
 from studije import SHOWN, SITE as STUDY_SITE
 from wiki_tidy import CLASSES as WIKI_CLASSES, lexicon, recase, tidy as wiki_tidy
-from .known import LINKS, UPIS, UPIS_TABS
+from .known import KONTAKT, LINKS, UPIS, UPIS_TABS
 from .output import HERE
 from .text import slug
 from .upis_summary import UPIS_SUMMARY
@@ -64,6 +64,27 @@ def wiki_link(value, hrefs):
     path = path.replace(":", "/")
     href = hrefs.get(path) or hrefs.get(path + "/start")
     return href and href + (f"#{u.fragment}" if u.fragment else "")
+
+
+def kontakt(db):
+    """KONTAKT for kontakt.html: (group, [dict(who, mail, phone, tel, src)]), src: this site's copy of the page that
+    says it, else the faculty's. An address or number its page no longer has is warned about (a new dean, a moved
+    office), still shown: the faculty's own page is linked under it."""
+    html = dict(db.execute("SELECT path, html FROM wiki_pages WHERE gone = 0 ORDER BY last_seen")) if archived_wiki(db) else {}
+    digits = lambda s: re.sub(r"\D", "", s)
+    out = []
+    for group, rows in KONTAKT:
+        shown = []
+        for who, mail, phone, path in rows:
+            page = html.get(path)
+            # The page writes 011 as (+381 11); the number's last 7 digits are enough to find it.
+            if html and (page is None or (mail and mail not in page) or (phone and digits(phone)[-7:] not in digits(page))):
+                print(f"[warn] /kontakt/: {mail or phone} is no longer on mf/{path}", file=sys.stderr)
+            tel = phone and "+381" + digits(phone)[1:]
+            src = wiki_href(path) if path in SHOWN else STUDY_SITE + path
+            shown.append(dict(who=who, mail=mail, phone=phone, tel=tel, src=src))
+        out.append((group, shown))
+    return out
 
 
 def render_wiki_pages(site, db, render):

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Kontakt fakulteta{% endblock %}
+{% block description %}Mejlovi i telefoni službi Mašinskog fakulteta u Beogradu na jednom mestu: studentska služba, molbe, dekanat, biblioteka, mreža.{% endblock %}
+
+{#- The offices (known.py KONTAKT, wiki.py kontakt), each with a link to the faculty page that says it. -#}
+{% block main %}
+<div class="mh">
+  <h1 id="title">Kontakt fakulteta</h1>
+  <p class="mh__sub">Mašinski fakultet, Kraljice Marije 16, 11120 Beograd 35 · <a href="tel:+381113302205">011 3302-205</a> · <a href="mailto:mf@mas.bg.ac.rs">mf@mas.bg.ac.rs</a></p>
+</div>
+{%- for group, rows in groups %}
+<section class="st">
+  <h2 class="st__h">{{ group }}</h2>
+  <div class="prose prose--html">
+    <ul>
+      {%- for r in rows %}
+      <li><b>{{ r.who }}</b>{% if r.mail %} · <a href="mailto:{{ r.mail }}">{{ r.mail }}</a>{% endif %}{% if r.phone %} · <a href="tel:{{ r.tel }}">{{ r.phone }}</a>{% endif %} <a class="src" href="{{ r.src }}" title="Gde to piše">izvor</a></li>
+      {%- endfor %}
+    </ul>
+    {%- if group == "Uprava" %}
+    <p class="note">Novija verzija kontakt stranice, koju fakultet još nije objavio, navodi i prodekana za nastavu (<a href="mailto:pronast@mas.bg.ac.rs">pronast@mas.bg.ac.rs</a>, <a href="tel:+381113302249">011 3302-249</a>) i prodekana za akreditaciju i organizaciju (<a href="mailto:proorg@mas.bg.ac.rs">proorg@mas.bg.ac.rs</a>).</p>
+    {%- endif %}
+  </div>
+</section>
+{%- endfor %}
+{% endblock %}

@@ -113,6 +113,49 @@ QUIET = [
     "Ćuti kao kamen.",
 ]
 
+# Kontakt (kontakt.html): the faculty's offices, not its teachers: (group, [(who, e-mail, phone, the wiki page that
+# says it)]). build.py checks each address and number is still on its page (wiki.py kontakt). fakultet/kontakt is
+# the page the faculty links; its unlinked fakultet/kontakt-novo differs, kontakt.html says how.
+KONTAKT = [
+    (
+        "Fakultet",
+        [
+            ("Opšti mejl", "mf@mas.bg.ac.rs", None, "fakultet/kontakt"),
+            ("Telefon (lokali: 3302 + broj lokala)", None, "011 3302-205", "fakultet/kontakt"),
+            ("Faks", None, "011 3370-364", "fakultet/kontakt"),
+            ("Sajt fakulteta", "webmaster@mas.bg.ac.rs", None, "fakultet/kontakt"),
+        ],
+    ),
+    (
+        "Studentska služba",
+        [
+            ("Upis, predmeti, greške na studentskom servisu", "ssit@mas.bg.ac.rs", None, "studenti/start"),
+            ("Molbe, samo sa studentskog mejla (@studenti.mas.bg.ac.rs)", "molbe@mas.bg.ac.rs", None, "studenti/start"),
+            ("Sekretar prodekana za nastavu", "se_nast@mas.bg.ac.rs", "011 3302-455", "fakultet/dokumenti/obrazovanje"),
+        ],
+    ),
+    (
+        "Uprava",
+        [
+            ("Dekan", "dekan@mas.bg.ac.rs", "011 3302-251", "fakultet/kontakt"),
+            ("Prodekan za naučno-istraživačku delatnost", "pronid@mas.bg.ac.rs", "011 3302-254", "fakultet/kontakt"),
+            ("Prodekan za finansije", "profin@mas.bg.ac.rs", "011 3302-252", "fakultet/kontakt"),
+            ("Prodekan za međunarodnu saradnju", "proint@mas.bg.ac.rs", None, "fakultet/kontakt"),
+            ("Sekretar fakulteta, pristup informacijama od javnog značaja", "sekretar@mas.bg.ac.rs", "011 3370-340", "fakultet/kontakt"),
+            ("Zaštita podataka o ličnosti, poverenik za ravnopravnost, uzbunjivanje", "mmrdovic@mas.bg.ac.rs", "011 3370-350", "fakultet/kontakt"),
+            ("Rodna ravnopravnost", "kvila@mas.bg.ac.rs", "060 333-8170", "fakultet/kontakt"),
+        ],
+    ),
+    (
+        "Biblioteka i mreža",
+        [
+            ("Biblioteka", "biblioteka@mas.bg.ac.rs", "011 3302-266", "biblioteka/start"),
+            ("Skriptarnica (prodaja knjiga, 7:30–15:30)", None, "011 3302-384", "biblioteka/start"),
+            ("Mreža, eduroam, VPN", "mreza@mas.bg.ac.rs", None, "servisi/eduroam"),
+        ],
+    ),
+]
+
 # Linkovi's cards (link.html), also found by the header search (izbor.json linkovi): (group, [(name, href, icon from
 # icons.svg, data-domain)]). An href "mf:<path>" is a page of www.mas.bg.ac.rs this site shows (studije.py SHOWN).
 LINKS = [
@@ -141,7 +184,7 @@ LINKS = [
             ("eduroam", "mf:servisi/eduroam", "globe", None),
             ("VPN", "mf:servisi/vpn", "globe", None),
             ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
-            ("Kontakt fakulteta", "mf:fakultet/kontakt", "home", None),
+            ("Kontakt fakulteta", "/kontakt/", "home", None),
         ],
     ),
     (

@@ -64,7 +64,7 @@ from sitegen.schedule import render_study_pages  # noqa: E402
 from sitegen.stats import archive_stats, cloud, saved_cloud  # noqa: E402
 from sitegen.stil import stil_data  # noqa: E402
 from sitegen.text import acronyms  # noqa: E402
-from sitegen.wiki import archived_wiki, link_groups, link_icons  # noqa: E402
+from sitegen.wiki import archived_wiki, kontakt, link_groups, link_icons  # noqa: E402
 from sitegen import output  # noqa: E402
 
 
@@ -209,6 +209,7 @@ def main(db_path, out, dev_mode=False):
     # Every day's "Profesor dana": linked from nowhere, out of search and the sitemap. Dev mode: the days ahead too.
     write(site / "profdana" / "index.html", env.get_template("profdana.html").render(dev=dev), index=False)
     write(site / "link" / "index.html", env.get_template("link.html").render(icons=link_icons(), groups=links))
+    write(site / "kontakt" / "index.html", env.get_template("kontakt.html").render(groups=kontakt(db)))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())
     if dev:
