@@ -249,6 +249,7 @@ def render_teachers(site, teachers, items, book):
         write(
             site / t["href"].strip("/") / "index.html",
             env.get_template("nastavnik.html").render(t=t, html=html, source_url=source, source_name=name),
+            index=False,  # their photos: no licence, so kept out of search engines
         )
     # A merged teacher's old address: a page that sends the browser on (GitHub Pages has no redirects), its canonical
     # link the new one for search engines; no sitemap entry.
