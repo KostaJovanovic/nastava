@@ -16,6 +16,8 @@ from .load_board import book_subject
 from .output import HERE, PAGE_TEXT, VESTI
 from .text import parse_date, slug, strip_tags
 
+VESTI_TIDY = HERE.resolve().parent / "data" / "vesti-tidy.jsonl"
+
 
 def load_vesti(db):
     """vesti.py's news, the newest version of each, newest first. Each is also an item for pagefind_tags (no smer,
@@ -23,12 +25,15 @@ def load_vesti(db):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'vesti'").fetchone():
         return []
     cats = dict(db.execute("SELECT id, name FROM vesti_categories"))
+    # Hand-tidied posts (title, html), each for the version it was made from: an edited post shows as the news site has it.
+    tidy = {(t["id"], t["modified"]): t for t in map(json.loads, VESTI_TIDY.read_text(encoding="utf-8").splitlines())} if VESTI_TIDY.exists() else {}
     out = []
     for r in db.execute("SELECT * FROM vesti v WHERE modified = (SELECT max(modified) FROM vesti WHERE id = v.id) ORDER BY date DESC"):
         iso, year = parse_date(r["date"])
         names = [cats[c] for c in json.loads(r["categories"]) if c in cats]
+        t = tidy.get((r["id"], r["modified"]), {})
         # The news site's titles have non-breaking spaces in runs (at the end, between words): one plain space.
-        title = " ".join(unescape(r["title"]).split())
+        title = t.get("title") or " ".join(unescape(r["title"]).split())
         # upis: in the news site's category Упис (its id 8), the enrollment news (the wiki's upis/vesti lists them).
         out.append(
             dict(
@@ -44,7 +49,7 @@ def load_vesti(db):
                 cats=names,
                 cat_keys="|".join(slug(c) for c in names),
                 find=fold(" ".join([title] + names)),
-                html=clean_html(r["html"], VESTI),
+                html=clean_html(t.get("html") or r["html"], VESTI),
                 body=strip_tags(r["html"])[:PAGE_TEXT],
                 gone=r["gone"],
                 source_url=r["link"],
