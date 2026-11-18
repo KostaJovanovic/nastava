@@ -1,6 +1,8 @@
 # Plan: one copy per file in files/ (2026-11-18)
 
-Decided with the user ("carefully"). Not started.
+Decided with the user ("carefully"). Done 2026-11-18 (9f50750): 11,438 copies in `files/blobs/` (5.22 GiB), each
+checked against its hash and its old file; the old folders zipped first (`files/old-folders-2026-11-18.zip`, 14,309
+files, tested by 7-Zip), then deleted with the user's yes.
 
 ## Why
 
