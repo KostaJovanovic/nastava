@@ -17,6 +17,16 @@ from .output import HERE, PAGE_TEXT, VESTI
 from .text import parse_date, slug, strip_tags
 
 VESTI_TIDY = HERE.resolve().parent / "data" / "vesti-tidy.jsonl"
+# The news site's image alignment, and the hand-tidied posts' pieces (style.css .vt-…).
+VESTI_CLASSES = {
+    "img": {"alignleft", "alignright", "aligncenter"},
+    "p": {"vt-lead", "vt-when"},
+    "span": {"vt-date", "vt-time", "vt-place"},
+    "div": {"vt-note", "vt-photos"},
+    "h2": {"vt-q"},
+    "h3": {"vt-q"},
+    "ul": {"vt-files"},
+}
 
 
 def load_vesti(db):
@@ -49,7 +59,7 @@ def load_vesti(db):
                 cats=names,
                 cat_keys="|".join(slug(c) for c in names),
                 find=fold(" ".join([title] + names)),
-                html=clean_html(t.get("html") or r["html"], VESTI, classes={"img": {"alignleft", "alignright", "aligncenter"}}),
+                html=clean_html(t.get("html") or r["html"], VESTI, classes=VESTI_CLASSES),
                 body=strip_tags(r["html"])[:PAGE_TEXT],
                 gone=r["gone"],
                 source_url=r["link"],
