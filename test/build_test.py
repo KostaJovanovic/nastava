@@ -351,15 +351,24 @@ assert _subj[(2, "катедра за механизацију")]["href"] == "/p
 # The old sites' items (load_stare): the faculty's into the news (a vesti.mas.bg.ac.rs post the news has left out, our
 # file copies kept as links), a department's to the subject its title names, else to its forum.
 import tempfile  # noqa: E402
+from sitegen import output as _out  # noqa: E402
 from sitegen.load_sources import load_stare  # noqa: E402
 
+# The public build links the originals (docs/PLAN-pravno.md 1): an old file's Wayback copy, a mail file's name only;
+# the local server (output.dev) our copies under /files/.
+_WB = "https://web.archive.org/web/2005/http://www.mas.bg.ac.yu/R.pdf"
 with tempfile.TemporaryDirectory() as _t:
     _row = dict(key="a1b2c3d4e5f6", date="2005-03-01", title="Распоред", author=None, html='<a href="/files/stari-www/x.pdf/R.pdf">R</a>',
-                full="", forum=None, upis=False, wp=None, host="mas.bg.ac.yu", wayback="https://web.archive.org/web/2005/http://www.mas.bg.ac.yu/")
+                full="", forum=None, upis=False, wp=None, host="mas.bg.ac.yu", wayback="https://web.archive.org/web/2005/http://www.mas.bg.ac.yu/",
+                files={"/files/stari-www/x.pdf/R.pdf": _WB})
     _rows = [_row, dict(_row, key="b" * 12, wp=7), dict(_row, key="c" * 12, title="Транспортни уређаји – резултати", forum="катедра за механизацију"),
              dict(_row, key="d" * 12, title="Обавештење", forum="катедра за механизацију")]
     (Path(_t) / "s.jsonl").write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in _rows), encoding="utf-8")
     _v, _o = load_stare({1: _sm, 2: _kat}, _subj, [dict(id="v7")], Path(_t) / "s.jsonl")
+    assert f'href="{_WB}"' in _v[0]["html"] and "/files/" not in _v[0]["html"] + _o[0]["html"], _v[0]["html"]
+    _out.dev = True
+    _v, _o = load_stare({1: _sm, 2: _kat}, _subj, [dict(id="v7")], Path(_t) / "s.jsonl")
+    _out.dev = False
 assert [(v["href"], v["cats"]) for v in _v] == [("/vest/sa1b2c3d4e5f6/", ["Стари сајт"])], _v
 assert 'href="/files/stari-www/x.pdf/R.pdf"' in _v[0]["html"], _v[0]["html"]
 assert [(i["id"], i["subj"]["id"]) for i in _o] == [("s" + "c" * 12, 1), ("s" + "d" * 12, "k:meh")], _o
@@ -374,7 +383,13 @@ with tempfile.TemporaryDirectory() as _t:
     _rows = [dict(_f, to="p", where="Транспортни уређаји"), dict(_f, to="p", where="osnovi aerotehnike"),
              dict(_f, to="v", where="tqm", title="TQM 2007", day=None), dict(_f, to="a", where="Izbori u zvanja", people=[1062])]
     (Path(_t) / "f.jsonl").write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in _rows), encoding="utf-8")
+    # Public: only the event's news, its file the Wayback copy; no subject box, archive page or election report.
     _sec, _news, _ref = load_stari_fajlovi(_subj, Path(_t) / "f.jsonl")
+    assert not _sec and not _ref and "stari" not in _subj[1] and len(_news) == 1, (_sec, _ref)
+    assert f'href="{_f["wayback"]}"' in _news[0]["html"] and "/files/" not in _news[0]["html"], _news[0]["html"]
+    _out.dev = True
+    _sec, _news, _ref = load_stari_fajlovi(_subj, Path(_t) / "f.jsonl")
+    _out.dev = False
 assert _subj[1]["stari"]["n"] == 1 and "me 1 · 2006" in _subj[1]["stari"]["html"]
 assert [(s, n) for s, n, _ in _sec] == [("Nastavni planovi i programi", 1), ("Izbori u zvanja", 1)], _sec
 assert [(v["href"], v["date"], v["old"]) for v in _news] == [("/vest/stqm/", "2006-05-01", "mas.bg.ac.yu")], _news
@@ -419,7 +434,12 @@ with tempfile.TemporaryDirectory() as _t:
         json.dumps(dict(page="/2/", name="M 2024/2025", source="moodle", files=["2. nedelja/c.pdf"])), encoding="utf-8"
     )
     _ms, _ms2 = dict(id=1, name="S", smer=_sm, href="/1/"), dict(id=2, name="S2", smer=_sm, href="/2/")
+    # Public: each file's name, no link.
     _m = load_mail({1: _ms, 2: _ms2}, Path(_t))
+    assert "href" not in _ms["lit"]["html"] + _m[0]["html"] and '<span class="att">' in _m[0]["html"] and ">r.pdf<small>" in _m[0]["html"], _m[0]["html"]
+    _out.dev = True
+    _m = load_mail({1: _ms, 2: _ms2}, Path(_t))
+    _out.dev = False
 assert _ms2["lit"]["mark"] == "moodle" and _ms2["lit"]["title"] == "Materijal sa Moodle-a" and "2024/2025 · 2. nedelja" in _ms2["lit"]["html"], _ms2["lit"]
 assert _ms["lit"]["mark"] == "teams" and _ms["lit"]["title"] == "Materijal sa Teams-a"
 assert _ms["lit"]["n"] == 2 and f'href="/files/mail/{asset_name("teams-x/Predavanja/P 1.pdf")}/P%201.pdf"' in _ms["lit"]["html"], _ms["lit"]

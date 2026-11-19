@@ -103,6 +103,8 @@ def words(db_path):
 
 def main(db_path, out, dev_mode=False):
     output.dev = dev = dev_mode
+    # The local server shows what the public build leaves out (docs/PLAN-pravno.md): the templates ask this.
+    env.globals["dev"] = dev
     if dev:  # see Lazy
         env.template_class = LazyTemplate
         env.cache.clear()
@@ -231,7 +233,8 @@ def main(db_path, out, dev_mode=False):
         page.fresh["days"] = days
     write(site / "verzije" / "index.html", page)
     render_vesti(site, vesti)
-    write(site / "stari-sajt" / "index.html", env.get_template("stari_sajt.html").render(sections=archive))
+    if archive:  # the public build has none (load_stari_fajlovi)
+        write(site / "stari-sajt" / "index.html", env.get_template("stari_sajt.html").render(sections=archive))
     render_objave(site, topics)
     write_page(site / "index.html", render_home(topics, smerovi, items, vesti))
     write_page(site / "404.html", env.get_template("error.html").render())

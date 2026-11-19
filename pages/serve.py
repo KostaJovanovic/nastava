@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1"]
+# dependencies = ["jinja2==3.1.6", "nh3==0.3.2", "beautifulsoup4==4.15.0", "pillow==12.1.1", "pymupdf"]
 # ///
 """The site on this PC: uv run pages/serve.py [port] [--built]
 
@@ -29,13 +29,12 @@ import webbrowser
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.error import HTTPError
-from urllib.parse import unquote, urlsplit
-from urllib.request import Request, urlopen
+from urllib.parse import quote, unquote, urlsplit
 
 from qr import qr_terminal
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "scrapers"))  # common.py (local_file)
 SITE = HERE / ".build" / "site"
 # The notification subscriptions made on this server (do_POST), kept across restarts.
 PUSH_SUBS, PUSH_LOCK = HERE / ".build" / "push-subs.json", threading.Lock()
@@ -67,6 +66,66 @@ WATCH = [
     ),
 ]
 build = None  # dev mode: the build module, its pages loaded (dev())
+
+
+INLINE = {"pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif"}
+FILES, MAIL, WAYBACK = HERE.parent / "files", HERE.parent / "mail", HERE.parent / "work" / "wayback"
+assets = None  # {(tag kind, asset name): file on disk}, made at the first /files/ request (file_assets)
+
+
+def file_assets():
+    """Every file the local build may link, by its release's kind ("files" for files-<year>, "mail", "stari") and its
+    asset name: the board's attachments (files/index.sqlite -> files/blobs/, else files/<id>/<name>), mail/'s files,
+    the old sites' saved files (work/wayback/files.jsonl). A thumbnail's asset (thumb_asset) maps to its file too,
+    with "#thumb" after the kind."""
+    import sqlite3
+    from common import asset_name, thumb_asset
+
+    out = {}
+
+    def add(kind, path, file):
+        out[(kind, asset_name(path))] = file
+        out[(kind + "#thumb", thumb_asset(path))] = file
+
+    if (FILES / "index.sqlite").exists():
+        db = sqlite3.connect(FILES / "index.sqlite")
+        for path, blob in db.execute("select path, blob from files"):
+            add("files", path, FILES / "blobs" / blob)
+        db.close()
+    for d in FILES.iterdir() if FILES.exists() else ():
+        if d.name.isdigit():  # the old place, files/<id>/<name>, of an attachment the index has no copy of
+            for f in d.iterdir():
+                out.setdefault(("files", asset_name(f"{d.name}/{f.name}")), f)
+    for f in MAIL.rglob("*") if MAIL.exists() else ():
+        if f.is_file() and f.parent != MAIL and f.name not in ("post.json", "material.json"):
+            add("mail", f.relative_to(MAIL).as_posix(), f)
+    if (WAYBACK / "files.jsonl").exists():
+        for line in (WAYBACK / "files.jsonl").read_text(encoding="utf-8").splitlines():
+            r = json.loads(line)
+            if r.get("ok"):
+                add("stari", r["key"], WAYBACK / r["path"])
+    return out
+
+
+def local_file(path):
+    """/files/<tag>/<asset>/<name> -> (bytes, name) from this PC, or None. A thumbnail (<name> thumb.jpg) is made from
+    its file (common.thumbnail)."""
+    global assets
+    from common import thumbnail
+
+    parts = path.removeprefix("/files/").split("/")
+    if len(parts) != 3:
+        return None
+    tag, asset, name = parts[0], parts[1], unquote(parts[2])
+    kind = "files" if tag.startswith("files-") else "stari" if tag.startswith("stari-") else tag
+    if assets is None:
+        assets = file_assets()
+    if file := assets.get((kind, asset)):
+        return (file.read_bytes(), name) if file.exists() else None
+    if name == "thumb.jpg" and (file := assets.get((kind + "#thumb", asset))) and file.exists():
+        thumb = thumbnail(file.name, file.read_bytes())
+        return (thumb, name) if thumb else None
+    return None
 
 
 def join(shell, fragment):
@@ -142,24 +201,22 @@ class Handler(SimpleHTTPRequestHandler):
                 kept = json.loads(PUSH_SUBS.read_text()) if PUSH_SUBS.exists() else {}
                 PUSH_SUBS.write_text(json.dumps({e: s for e, s in kept.items() if f"{e[-12:]}: gone" not in run.stdout}, indent=1))
             return self.send_text(run.stdout + run.stderr)
-        # The releases' files (the board's since October 2026, the mails'): the live Worker has them, this PC does not.
-        # Fetched from there, not redirected: the app (a LAN test build, app/) downloads them, and Android doesn't
-        # follow a redirect from http to https.
+        # The files the local build links (/files/<tag>/<asset>/<name>), from this PC's copies (local_file); the
+        # public site links the originals instead (docs/PLAN-pravno.md 1).
         if self.path.startswith("/files/"):
-            try:
-                # Cloudflare turns away Python's own client name.
-                ask = Request("https://masinci.org" + self.path, headers={"User-Agent": "Mozilla/5.0"})
-                with urlopen(ask, timeout=30) as r:
-                    body = r.read()
-                    self.send_response(200)
-                    self.send_header("Content-Type", r.headers.get("Content-Type", "application/octet-stream"))
-                    self.send_header("Content-Length", str(len(body)))
-                    self.end_headers()
-                    return self.wfile.write(body)
-            except HTTPError as e:
-                return self.send_error(e.code)
-            except OSError:  # no connection, a timeout: the live site did not answer
-                return self.send_error(502)
+            found = local_file(urlsplit(self.path).path)
+            if not found:
+                return self.send_error(404)
+            body, name = found
+            ext = name.rsplit(".", 1)[-1].lower()
+            self.send_response(200)
+            # As the Worker served them: a PDF or an image inline, anything else a download.
+            self.send_header("Content-Type", INLINE.get(ext, "application/octet-stream"))
+            self.send_header("Content-Disposition", f"{'inline' if ext in INLINE else 'attachment'}; filename*=UTF-8''{quote(name)}")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if build:
             url = urlsplit(self.path)
             path = unquote(url.path)

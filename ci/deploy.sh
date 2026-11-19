@@ -98,9 +98,6 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	step nastava uv run scrapers/nastava.py $board || failed+=(nastava)
 	# Right after the scrape, so a post made since then does not count as missing.
 	step stats uv run scrapers/nastava.py stats || failed+=(stats)
-	# The attachments of the new posts (since October 2026) into the releases files-<school year>, with thumbnails: a
-	# few a day.
-	step files uv run scrapers/documents.py host || failed+=(files)
 	# The news: the recently changed posts, one request when nothing changed (the full listing: ~46).
 	step vesti uv run scrapers/vesti.py $news || failed+=(vesti)
 	# The subjects' pages on cent.mas.bg.ac.rs: the pages list (3 requests) and the notices pages, asked "changed?".

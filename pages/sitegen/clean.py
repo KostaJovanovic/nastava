@@ -325,23 +325,25 @@ def linkify(html):
 def file_rows(files, title="Prilozi"):
     """Files [(href, name, note[, thumbnail href])] as a post's attachments (style.css .att): the type's badge, the
     name, a note under it, and a hosted file's thumbnail (thumb_img). A file's name loses ie's upload number
-    ("1815_РЕЗУЛТАТИ_2.docx"); one without (katedre.py's "link") is the address's."""
+    ("1815_РЕЗУЛТАТИ_2.docx"); one without (katedre.py's "link") is the address's. href None: the name alone, no link
+    (the public build's mail files)."""
 
     def row(href, name, note, thumb=None):
-        path = unquote(urlsplit(href).path)
+        path = unquote(urlsplit(href or name).path)
         ext = (re.search(r"\.([a-z0-9]{1,5})$", path.lower()) or [None, ""])[1]
         file = re.sub(r"^\d+_", "", path.rsplit("/", 1)[-1])
         name, note = (file if x in (None, "", "link") or re.fullmatch(r"\d+_.+", x) else x for x in (name, note))
         note = None if note == name else note
+        tag = f'a class="att" href="{escape(href)}" rel="noopener noreferrer"' if href else 'span class="att"'
         return (
-            f'<dd><a class="att" href="{escape(href)}" rel="noopener noreferrer">{thumb_img(thumb)}<span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
+            f'<dd><{tag}>{thumb_img(thumb)}<span class="att__t att__t--{FILE_KINDS.get(ext, "file")}">'
             f'{ext.upper() or "FAJL"}</span><span class="att__n">{escape(name)}'
             + (f"<small>{escape(note)}</small>" if note else "")
-            + "</span></a></dd>"
+            + f"</span></{tag.split()[0]}></dd>"
         )
 
     # The links come from other sites, not through clean_html: a web address or the release's file, no javascript:.
-    files = [f for f in files if re.match(r"(https?://|/files/)", f[0], re.I)]
+    files = [f for f in files if f[0] is None or re.match(r"(https?://|/files/)", f[0], re.I)]
     return f"<dl><dt>{title}</dt>{''.join(row(*f) for f in files)}</dl>" if files else ""
 
 

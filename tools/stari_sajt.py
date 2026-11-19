@@ -207,8 +207,9 @@ def links(html):
     return [a for a in BeautifulSoup(html, "html.parser").find_all("a", href=True) if is_old(a["href"])]
 
 
-def fix(html, ts, saved):
-    """The item's links made to work (see the module's note)."""
+def fix(html, ts, saved, wayback=None):
+    """The item's links made to work (see the module's note). wayback: gets {our copy's href: its Wayback copy}, which
+    the public build links instead (load_stare)."""
     soup = BeautifulSoup(html, "html.parser")
     for a in soup.find_all("a", href=True):
         if not is_old(a["href"]):
@@ -216,6 +217,8 @@ def fix(html, ts, saved):
         k = key_of(a["href"])
         if k in saved:
             a["href"] = href_of(k, saved[k])
+            if wayback is not None:
+                wayback[a["href"]] = f"https://web.archive.org/web/{saved[k]['ts']}/{saved[k]['url']}"
         elif PAGE.search(urlsplit(a["href"]).path):
             a["href"] = f"https://web.archive.org/web/{ts}/{a['href']}"
         else:
@@ -230,14 +233,16 @@ def vesti():
         last = a["copies"][-1]  # https://web.archive.org/web/<ts>/<url>, the newest copy
         ts = last.split("/")[4]
         forum = next((f for pat, f in FORUM if re.search(pat, a["section"])), None)
+        wayback = {}
         out.append(
             dict(
                 key=a["key"],
                 date=a["date"],
                 title=a["title"],
                 author=a["author"] or None,
-                html=fix(a["html"], ts, saved),
-                full=fix(a["full"], ts, saved) if a["full"] else "",
+                html=fix(a["html"], ts, saved, wayback),
+                full=fix(a["full"], ts, saved, wayback) if a["full"] else "",
+                files=wayback,
                 forum=forum,
                 upis=bool(UPIS.match(a["section"])),
                 wp=int(a["id"]) if a["kind"] == "wordpress" and a["id"] else None,

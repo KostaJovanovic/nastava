@@ -10,7 +10,8 @@ rem                       restarts the server by itself (~15 s). The text search
 rem   server.bat build    build first (build.py, with Pagefind: a fresh text search), then dev mode
 rem   server.bat built    the last build in pages\.build\site, exactly as deployed (builds if there is none)
 rem
-rem The attachments link to nastava.mas.bg.ac.rs, as on the live site.
+rem Dev mode links the files this PC keeps (files\, mail\, work\wayback\; pages\serve.py local_file); the live site
+rem and "built" link the originals (docs\PLAN-pravno.md).
 
 rem 15497 was drawn at random from 10000-49151, so no other repo's dev server picks it by habit or by a shared
 rem scheme: below Windows' outgoing-connection range (49152+), and outside the ranges Windows reserved on this PC

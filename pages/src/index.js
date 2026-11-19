@@ -1,8 +1,6 @@
-// Serve the site from GitHub Pages through the edge cache. The board's attachments link straight to the faculty's
-// site, but those of the posts since October 2026 (documents.py host); these and the mails' and Teams files (mail/)
-// come from GitHub releases (/files/). The site is public: no auth.
+// Serve the site from GitHub Pages through the edge cache. Every file links to where it was published (the board,
+// the faculty's sites, the Wayback Machine): no files here (docs/PLAN-pravno.md 1). The site is public: no auth.
 const PAGES = "https://kostajovanovic.github.io/nastava";
-const RELEASES = "https://github.com/KostaJovanovic/nastava/releases/download";
 // Most pages are stored as a fragment, <html lang="sr"> with their <title> and main part; join() puts it into
 // shell.html (build.py split_page). A whole page starts with <!doctype html>. pages/serve.py joins the same way.
 const FRAGMENT = '<html lang="sr"><title>';
@@ -14,8 +12,6 @@ const OLD_HOSTS = ["nastava.masinci.org", "nastava.valjdakosta.com", "www.masinc
 
 function cacheControl(url) {
 	const path = url.pathname;
-	// An asset never changes: a changed file is a new path, so a new asset (mail.py asset_name).
-	if (path.startsWith("/files/")) return `public, max-age=${YEAR}, immutable`;
 	if (path.startsWith("/pagefind/") && !ENTRY.test(path)) return `public, max-age=${YEAR}, immutable`;
 	// An item or a news post rarely changes, but its side panel (counts, links) and an edited post do: a day, at the
 	// edge too.
@@ -92,34 +88,6 @@ async function page(url, ctx) {
 	if (shell === null) return new Response("shell.html missing", { status: 502 });
 	return new Response(join(shell, fragment), response);
 }
-
-async function releaseFile(path) {
-	// build.py links /files/<release tag>/<asset name>/<file name> (mail_href).
-	const [tag, asset, name, extra] = path.slice("/files/".length).split("/");
-	if (!tag || !asset || !name || extra !== undefined) return null;
-	let filename;
-	try {
-		filename = decodeURIComponent(name);
-	} catch {
-		return null;
-	}
-	const response = await fetch(`${RELEASES}/${encodeURIComponent(tag)}/${encodeURIComponent(asset)}`);
-	if (!response.ok) return null;
-	// A PDF or an image shows in the browser (detail.html's preview, the thumbnails), as its own type only: with nosniff a
-	// file that is HTML under a .pdf name stays a broken PDF. Anything else is a download: an uploaded HTML or SVG file
-	// must not run on this origin.
-	const type = INLINE[filename.toLowerCase().split(".").pop()];
-	return new Response(response.body, {
-		headers: {
-			"Content-Type": type || "application/octet-stream",
-			"Content-Disposition": `${type ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(filename)}`,
-			"X-Content-Type-Options": "nosniff",
-		},
-	});
-}
-
-// scrapers/common.py PREVIEW.
-const INLINE = { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif" };
 
 // The fragment's own head (<title>, description, canonical) ends at this mark; the main part follows.
 const HEAD_END = "<!--/head-->";
@@ -269,8 +237,7 @@ export default {
 			response.headers.delete("X-Cache-Control");
 			return response;
 		}
-		const origin = url.pathname.startsWith("/files/") ? await releaseFile(url.pathname) : await page(url, ctx);
-		if (!origin) return new Response("Not found", { status: 404 });
+		const origin = await page(url, ctx);
 		// Cache only a 200: a 404 for a new Pagefind file must not stay in the cache.
 		if (origin.status !== 200) return origin;
 		const check = await verified(url, origin);

@@ -4,7 +4,8 @@
 {% block title %}{{ it.title }}{% endblock %}
 {#- The board repeats titles ("Обавештење", "Re: …"): the subject and the date tell them apart. -#}
 {% block title_more %}{% if it.subject %} · {{ it.subject }}{% endif %}{% if it.date %} · {{ it.date | dmy }}{% endif %}{% endblock %}
-{% block description %}{{ (it.body or it.title) | desc }}{% endblock %}
+{#- A document's text is in the search index only, not on its page (docs/PLAN-pravno.md 1.4); the local server shows it. -#}
+{% block description %}{{ (it.title if doc and not dev else it.body or it.title) | desc }}{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block crumbs %}
 {%- if it.smer %}{{ crumb(it.smer.href, it.smer.label) }}{% endif %}
@@ -29,7 +30,9 @@
     <a class="doc-view" href="{{ download_url }}"><img src="{{ doc.thumb }}" alt="Prva strana: {{ doc.filename }}" width="240" loading="lazy" decoding="async"><span>Otvori u browseru</span></a>
     {%- endif %}
     {%- set _lines = (it.body or '') | trim -%}
-    {% if _lines %}
+    {% if _lines and not dev %}
+    <p class="note">Tekst ovog dokumenta se nalazi u pretrazi, ali ne i ovde. Ceo fajl je na sajtu nastave.</p>
+    {% elif _lines %}
     <ol class="code">
       {%- for line in _lines.splitlines() %}
       <li>{{ line }}</li>

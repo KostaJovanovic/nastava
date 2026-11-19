@@ -13,6 +13,7 @@ from mail import asset_name, thumb_asset, TAG as MAIL_TAG
 from .clean import CENT_CLASSES, cent_changes, cent_tidy, clean_html, file_rows, linkify, vesti_media
 from .known import FORUMS, SAME_AS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
 from .load_board import book_subject
+from . import output
 from .output import HERE, PAGE_TEXT, VESTI
 from .text import parse_date, slug, strip_tags
 
@@ -296,7 +297,8 @@ def load_stare(smerovi, subjects, vesti, path=STARE):
     """The old faculty sites' news (tools/stari_sajt.py vesti, mas.bg.ac.yu to 2014): (the faculty's, as news for
     /vesti/; the departments', as posts of their forum or of the subject the title names, as load_katedre's). A post of
     vesti.mas.bg.ac.rs the news already has (vesti: load_vesti's) is left out. Their links are the item's: our copies of
-    the old files (/files/stari-<host>/), the old pages' Wayback copies; the original is the item's Wayback copy."""
+    the old files (/files/stari-<host>/; the public build links their Wayback copies, r["files"]), the old pages'
+    Wayback copies; the original is the item's Wayback copy."""
     if not path.exists():
         return [], []
     have = {v["id"] for v in vesti}
@@ -304,7 +306,7 @@ def load_stare(smerovi, subjects, vesti, path=STARE):
     for r in map(json.loads, path.read_text(encoding="utf-8").splitlines()):
         if r["wp"] and f"v{r['wp']}" in have:
             continue
-        own = lambda v: v if v.startswith("/files/") else None
+        own = lambda v, r=r: (v if output.dev else r["files"].get(v)) if v.startswith("/files/") else None
         html = linkify(clean_html(r["html"] + (f"<hr>{r['full']}" if r["full"] else ""), r["wayback"], own))
         day = r["date"]
         if not r["forum"]:
@@ -374,11 +376,17 @@ def load_stari_fajlovi(subjects, path=STARI_FAJLOVI):
     page (s["stari"]), a section's on the archive page /stari-sajt/, an event's as a news post of its own. A subject
     named that the board lacks: its file goes to the archive's study plans (an old subject's description), and is
     printed when the rule named a subject. Returns ([(section, files, file_rows html)] in the page's order, news,
-    {teacher id: file rows} of the election reports about them)."""
+    {teacher id: file rows} of the election reports about them).
+    The public build (not output.dev) has only the news, each file linked to its Wayback copy: no subject's box, no
+    archive page, no election reports (docs/PLAN-pravno.md 1.3)."""
     if not path.exists():
-        return {}, []
+        return [], [], {}
     archive, by_subj, events, by_teacher = defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
     for r in map(json.loads, path.read_text(encoding="utf-8").splitlines()):
+        if not output.dev:
+            if r["to"] == "v":
+                events[r["where"]].append(dict(r, href=r["wayback"]))
+            continue
         for t in r.get("people", []):  # an election report's candidate (tools/stari_sajt.py candidates)
             by_teacher[SAME_AS.get(str(t), str(t))].append((r["href"], r["name"], r["date"][:4]))
         row = (r["href"], r["name"], " · ".join(filter(None, [r["folder"] if r["to"] != "v" else None, r["date"][:4]])))
@@ -422,7 +430,10 @@ def mail_href(path):
 
 
 def mail_file(path, note, thumbs):
-    """A file of mail/ as a file_rows row: with its thumbnail when mail.py upload made one (thumbs: mail/thumbs.json)."""
+    """A file of mail/ as a file_rows row: with its thumbnail when mail.py upload made one (thumbs: mail/thumbs.json).
+    The public build: its name only, no link (docs/PLAN-pravno.md 1.2)."""
+    if not output.dev:
+        return (None, path.rsplit("/", 1)[-1], note)
     thumb = f"/files/{MAIL_TAG}/{thumb_asset(path)}/thumb.jpg" if path in thumbs else None
     return (mail_href(path), path.rsplit("/", 1)[-1], note, thumb)
 

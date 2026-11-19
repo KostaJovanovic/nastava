@@ -1627,8 +1627,8 @@ a.post__name:hover { color: var(--accent-t); text-decoration: underline; }
   border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--fg); text-decoration: none;
   transition: border-color .12s;
 }
-.prose--html .att:hover { border-color: var(--accent); }
-.prose--html .att:hover .att__n { color: var(--accent-t); }
+.prose--html a.att:hover { border-color: var(--accent); }
+.prose--html a.att:hover .att__n { color: var(--accent-t); }
 .att__t {
   display: grid; place-items: center; flex: none; width: 46px; height: 38px; border-radius: 7px;
   background: var(--slate); color: #fff; font: 800 .6875rem var(--sans); letter-spacing: .04em;

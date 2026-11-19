@@ -6,6 +6,7 @@ from urllib.parse import quote
 from common import asset_name, thumb_asset
 from translit import fold
 from .clean import attachments, clean_html, downloads, has_kinds, preuzeto
+from . import output
 from .known import RENAMED
 from .output import PAGE_TEXT
 from .text import BASE, parse_date, set_hrefs, short_smer, slug, smer_abbr, smer_label
@@ -58,7 +59,7 @@ def load_places(db):
 
 def hosted_files(docs):
     """{attachment id: (href, thumbnail href or None)} of the attachments in a release (documents.py host), as the
-    Worker serves them under /files/."""
+    local server serves them under /files/ (serve.py local_file)."""
     out = {}
     for d in docs.values():
         if d.get("release"):
@@ -70,7 +71,9 @@ def hosted_files(docs):
 
 def load_items(db, place):
     docs = {r["id"]: dict(r) for r in db.execute("SELECT * FROM documents WHERE fetched = 1 AND error IS NULL")}
-    hosted = hosted_files(docs)
+    # The public build links every attachment to the board, no thumbnails (docs/PLAN-pravno.md 1.1); the local server
+    # serves our copies (serve.py /files/).
+    hosted = hosted_files(docs) if output.dev else {}
     posts = {r["id"]: dict(r) for r in db.execute("SELECT * FROM posts")}
     items = []
     # A smer's own thread about a završni predmet or rad (teachers post them outside the subject) goes to the smer's
