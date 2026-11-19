@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}Privatnost{% endblock %}
-{% block description %}Šta sajt nastava pamti o posetiocima: skoro ništa.{% endblock %}
+{% block description %}Šta sajt masinci.org čuva o posetiocima i o ljudima u arhivi, zašto, koliko dugo i kako da tražiš uklanjanje.{% endblock %}
 
-{#- Keep in step with the code: the visitor counter and push (src/index.js visit, push), the localStorage keys
-    (static/site.js, head.js, pismo.js). -#}
+{#- Keep in step with the code: the visitor counter, push and the contact form (src/index.js visit, push, kontakt), the
+    localStorage keys (static/site.js, head.js, pismo.js), what the public build leaves out (sitegen/withhold.py;
+    docs/PLAN-pravno.md). -#}
 {% block main %}
 <div class="mh">
   <h1 id="title">Privatnost</h1>
@@ -12,9 +13,23 @@
 </div>
 
 <section class="st">
+  <h2 class="st__h">Ljudi u arhivi</h2>
+  <div class="prose prose--html">
+    <p>Ovde je samo ono što je fakultet već objavio: javni podaci o nastavnicima i imena iz objava fakulteta. Spiskovi studenata (rezultati sa imenima i indeksima) se ne prikazuju, samo link na original. Svrha: sva obaveštenja na jednom mestu, sa pretragom. Ostaje dok ga ima na izvoru, ili dok ne tražiš da se ukloni.</p>
+  </div>
+</section>
+
+<section class="st">
+  <h2 class="st__h">Tvoja prava</h2>
+  <div class="prose prose--html">
+    <p>Uvid, ispravku ili uklanjanje traži preko <a href="/kontakt/?tema=uklanjanje">forme za kontakt</a>. Žalba ide <a href="https://www.poverenik.rs/" rel="noopener">Povereniku za zaštitu podataka</a>.</p>
+  </div>
+</section>
+
+<section class="st">
   <h2 class="st__h">Brojač poseta</h2>
   <div class="prose prose--html">
-    <p>Svaka stranica javi brojaču da je neko došao. Da se isti posetilac ne bi brojao stalno, IP adresa se pamti tri dana, pa se briše. Ostaje samo ukupan broj, koji se vidi na <a href="/statistika/">Statistici</a>.</p>
+    <p>Tri dana se pamti heš IP adrese, ne sama adresa. Ostaje samo ukupan broj, na <a href="/statistika/">Statistici</a>.</p>
   </div>
 </section>
 
@@ -22,6 +37,13 @@
   <h2 class="st__h">Obaveštenja</h2>
   <div class="prose prose--html">
     <p>Ako uključiš obaveštenja, čuva se adresa koju ti browser da za slanje obaveštenja, predmeti koje pratiš i nastavnici koje si izabrao. Nema imena, mejla ni naloga. Kad isključiš obaveštenja, sve to se briše.</p>
+  </div>
+</section>
+
+<section class="st">
+  <h2 class="st__h">Forma za kontakt</h2>
+  <div class="prose prose--html">
+    <p>Čuvaju se mejl, tema, stranica i poruka, samo da bih odgovorio. Brišu se najkasnije posle 90 dana. Protiv spama je Cloudflare Turnstile.</p>
   </div>
 </section>
 
@@ -35,7 +57,7 @@
 <section class="st">
   <h2 class="st__h">Hosting</h2>
   <div class="prose prose--html">
-    <p>Sajt je na Cloudflare-u. Cloudflare vidi zahteve kao za svaki sajt, po svojim pravilima. Nema skripti, fontova ni analitike sa drugih sajtova.</p>
+    <p>Sajt je na Cloudflare-u, koji radi i preko servera u SAD. Nema skripti, fontova ni analitike sa drugih sajtova, osim Turnstile-a na formi.</p>
   </div>
 </section>
 {% endblock %}
