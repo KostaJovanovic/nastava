@@ -414,7 +414,7 @@ with tempfile.TemporaryDirectory() as _t:
                     id=_id,
                     refs=_refs,
                     page="/1/",
-                    author="llecic",
+                    author="Student #1" if _id == "<c>" else "llecic",  # a student's reply: the local server's only
                     posted=f"{_d[:10]}T{_at}:00+00:00",
                     when="",
                     title=_ti,
@@ -437,6 +437,7 @@ with tempfile.TemporaryDirectory() as _t:
     # Public: each file's name, no link.
     _m = load_mail({1: _ms, 2: _ms2}, Path(_t))
     assert "href" not in _ms["lit"]["html"] + _m[0]["html"] and '<span class="att">' in _m[0]["html"] and ">r.pdf<small>" in _m[0]["html"], _m[0]["html"]
+    assert "mcccccccc" not in [i["id"] for i in _m] and len(_m) == 4, _m
     _out.dev = True
     _m = load_mail({1: _ms, 2: _ms2}, Path(_t))
     _out.dev = False

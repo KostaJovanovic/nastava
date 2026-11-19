@@ -448,6 +448,9 @@ def load_mail(subjects, folder=MAIL):
     key = {m["id"]: m["dir"][-8:] for m in mails}
     items = []
     for m in mails:
+        # The public build: the teachers' posts only, no student's reply (teams.py's "Student #N"; docs/PLAN-pravno.md 6).
+        if not output.dev and (m["author"] or "").startswith("Student #"):
+            continue
         s = by_href.get(m["page"])
         if not s:
             print(f"mail: no subject page {m['page']} ({m['dir']})", file=sys.stderr)
