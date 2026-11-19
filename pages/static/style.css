@@ -1248,7 +1248,8 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 .fb__clear:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .fb__clear:hover::before { background: currentColor; }
 .fb__clear:active { transform: scale(.97); }
-/* A smer's name: the program in full, on a phone its abbreviation (rows.html). */
+/* A smer's name: the program in full, on a phone its abbreviation (rows.html); the same for the footer's takedown
+   link (base.html). */
 .fr__abbr { display: none; }
 @media (max-width: 759px) { .fr__long { display: none; } .fr__abbr { display: inline; } }
 .fr__sub { margin-top: 1px; color: var(--dim); font-size: .78125rem; overflow-wrap: anywhere; }
