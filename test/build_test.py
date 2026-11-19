@@ -800,3 +800,11 @@ assert _w["p5"]["body"] == "… и …" and _w["d6"]["html"] is None and _w["d6"
 assert mark_for_pagefind("<article>x</article>", _w["p1"]) == "<article>x</article>"
 _pg = withhold_pages([dict(url="https://ie/a", html=f"<p>{_list}</p>"), dict(url="https://ie/b", html="<p>o nama</p>")], _kept)
 assert "Петровић" not in _pg[0]["html"] and _pg[1]["html"] == "<p>o nama</p>"
+# A living teacher's birth out of the public summary (withhold.py unborn); a year's dot does not end the sentence; a
+# maiden name, and the dead's, stay.
+from sitegen.withhold import unborn  # noqa: E402
+
+_p = ["Ana (rođena Petrović) je profesor. Rođena je 1989. u Čačku, gde je 2007. završila gimnaziju. Diplomirala je 2012.",
+      "Rođen je 1960. u Nišu."]
+assert unborn(dict(summary=_p)) == ["Ana (rođena Petrović) je profesor. Diplomirala je 2012."], unborn(dict(summary=_p))
+assert unborn(dict(summary=_p, history=dict(life="1960–2020"))) == _p and unborn(dict(summary=_p + ["Preminuo je 2020."])) == _p + ["Preminuo je 2020."]

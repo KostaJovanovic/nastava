@@ -47,6 +47,22 @@ def unname(text, names):
     return text
 
 
+# A summary's sentence of a birth (nastavnici-sazetak.jsonl: "Rođena je 1966. u Beogradu, gde …"), to the sentence's
+# end: a dot before a capital (a year's dot, "2007. završila", goes on). Not a maiden name ("(rođena Mileusnić)").
+BORN = re.compile(r"(?:^|(?<=\.\s))[^.]*?\b[Rr]ođen[ao]?\b[^.]*?\b(?:1[89]|20)\d\d\..*?(?:\.(?=\s+[A-ZŠĐČĆŽ])|\.$|$)\s*", re.S)
+DEAD = re.compile(r"preminu|umr(?:o|la)\b|smrt|†", re.I)
+
+
+def unborn(t):
+    """A living teacher's summary without their birth (docs/PLAN-pravno.md 4.2): dead when the history says so (a death
+    year, a span 1950–2020) or the summary does."""
+    h = t.get("history") or {}
+    paras = t.get("summary") or []
+    if h.get("died") or "–" in (h.get("life") or "") or DEAD.search(" ".join(paras)):
+        return paras
+    return [q for p in paras if (q := BORN.sub("", p).strip())]
+
+
 def withhold(items, kept):
     """The public build's items: the removed ones left out; a list's text a note (html) and nothing to search (body
     "", noindex: no Pagefind body, output.mark_for_pagefind); a removed name out of the title and text."""

@@ -68,7 +68,7 @@ from sitegen.stil import stil_data  # noqa: E402
 from sitegen.text import acronyms  # noqa: E402
 from sitegen.wiki import archived_wiki, kontakt, link_groups, link_icons  # noqa: E402
 from sitegen.text import strip_tags  # noqa: E402
-from sitegen.withhold import is_list, load_kept, note, withhold, withhold_pages  # noqa: E402
+from sitegen.withhold import is_list, load_kept, note, unborn, withhold, withhold_pages  # noqa: E402
 from sitegen import output  # noqa: E402
 
 KEPT = load_kept()  # data/izostavljeno.json
@@ -126,6 +126,8 @@ def main(db_path, out, dev_mode=False):
     if not dev:  # a teacher's page removed on request (withhold.py): not built, not listed
         teachers = [t for t in teachers if t["href"] not in KEPT["uklonjeno"]]
         output.removed = KEPT["uklonjeno"]
+        for t in teachers:  # a living teacher's birth out of their summary (withhold.py unborn)
+            t["summary"] = unborn(t)
         for s in subjects.values():  # a cent page listing students, as a post (withhold.py)
             for p in s.get("cent", []):
                 for v in p["versions"]:

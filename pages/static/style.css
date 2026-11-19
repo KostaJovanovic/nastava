@@ -1863,6 +1863,8 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
 #biografija .tp__biotext { padding-top: 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
 .tp__src { margin: 14px 0 0; padding: 10px 18px 12px; border-top: 1px solid var(--line-2); color: var(--dim); font-size: .78125rem; }
 .tp__src a { color: var(--link); }
+.tp__links { margin: 0; padding-left: 1.2rem; line-height: 1.8; }
+.tp__links a { color: var(--link); }
 
 /* ---- The teachers ---------------------------------------------------------- */
 /* A list's bar: one wrapping row of pills, the filters outlined, grouping and order (.arrange) tinted; the count last. */
