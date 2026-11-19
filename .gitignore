@@ -21,6 +21,8 @@ fcm-secret.json
 # The raw Teams and Moodle exports (tools/): every student's messages and names, before teams.py / moodle.py clean them.
 teams-export*.json
 moodle-*.zip
+# The plans: local only.
+docs/PLAN*.md
 # Phase 1 probes and Omar's dlwms (the base of this repo), local only.
 recon/
 ref/
