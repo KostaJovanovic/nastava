@@ -327,3 +327,20 @@ test("the VAPID JWT verifies with the public key, for the push service's origin"
 	assert.equal(claims.aud, "https://fcm.googleapis.com");
 	assert.equal(claims.exp, Date.UTC(2026, 10, 19) / 1000 + 12 * 3600);
 });
+
+test("the visitor counter keeps a salted hash of the IP, never the IP", async () => {
+	const bound = [];
+	const DB = {
+		prepare: (sql) => ({
+			bind: (...a) => (bound.push([sql, a]), { run: async () => ({ meta: { changes: 0 } }) }),
+			first: async () => ({ n: 1 }),
+		}),
+	};
+	await call({ DB, COUNTER_SALT: "s" }, "/visit", { method: "POST", headers: { "CF-Connecting-IP": "203.0.113.7" } });
+	await call({ DB, COUNTER_SALT: "t" }, "/visit", { method: "POST", headers: { "CF-Connecting-IP": "203.0.113.7" } });
+	const [[, [a, period]], [, [b]]] = bound;
+	assert.match(a, /^[0-9a-f]{64}$/);
+	assert.notEqual(a, b); // the salt is in it
+	assert.match(period, /^\d{4}-\d\d-\d\d$/);
+	assert.ok(!JSON.stringify(bound).includes("203.0.113.7"));
+});

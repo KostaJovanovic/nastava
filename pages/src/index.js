@@ -168,16 +168,20 @@ async function push(request, env, url) {
 	return status(204);
 }
 
+const sha256hex = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+
 // Visitor counter, as on valjdakosta.com: each IP counts once per three-day period (D1 binding DB, schema.sql). The
 // IPs older than that are deleted, so the total is kept on its own. site.js posts from every page; /statistika/ shows n,
 // and asks (?push) for push too: the browsers with notifications on (push_subs).
 async function visit(request, env, url) {
 	if (request.method !== "POST") return new Response(null, { status: 405 });
 	if (!env.DB) return new Response(null, { status: 503 });
-	const ip = request.headers.get("CF-Connecting-IP") || "";
-	const { meta } = await env.DB
-		.prepare("INSERT OR IGNORE INTO visits (ip, period) VALUES (?, date(cast(julianday('now') / 3 as integer) * 3))")
-		.bind(ip).run();
+	// Not the IP: its SHA-256 with the period and the secret COUNTER_SALT (docs/PLAN-pravno.md 7.3), which tells one
+	// visitor's visits of a period apart from another's and nothing more. The period as SQLite's
+	// date(cast(julianday('now') / 3 as integer) * 3).
+	const period = new Date((Math.floor((Date.now() / 864e5 + 2440587.5) / 3) * 3 - 2440587.5) * 864e5).toISOString().slice(0, 10);
+	const ip = await sha256hex(`${request.headers.get("CF-Connecting-IP") || ""}|${period}|${env.COUNTER_SALT || ""}`);
+	const { meta } = await env.DB.prepare("INSERT OR IGNORE INTO visits (ip, period) VALUES (?, ?)").bind(ip, period).run();
 	if (meta.changes) {
 		await env.DB.batch([
 			env.DB.prepare("UPDATE visit_total SET n = n + 1"),
