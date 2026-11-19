@@ -299,6 +299,10 @@ def candidates(path, name, teachers):
         return one(full)
     if initial := [t for t in teachers if any(tok.startswith(t[1][0] + t[3]) for tok in tokens)]:
         return one([t for t in initial if named(t)] if len(initial) > 1 else initial)
+    # "Jovovic_izvestaj.pdf": the surname alone, when the text names that teacher too (not "Marina Milovanović
+    # Aranđelović" for Ivan Aranđelović)
+    if surname := [t for t in teachers if t[3] in tokens and named(t)]:
+        return one(surname)
     if any(tok in {t[1] for t in teachers} for tok in tokens):
         return []
     near = " | ".join(text[m.end():m.end() + 160] for m in re.finditer(r"kandidat|prijavi", text))
