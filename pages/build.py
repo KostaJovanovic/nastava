@@ -67,7 +67,11 @@ from sitegen.stats import archive_stats, cloud, saved_cloud  # noqa: E402
 from sitegen.stil import stil_data  # noqa: E402
 from sitegen.text import acronyms  # noqa: E402
 from sitegen.wiki import archived_wiki, kontakt, link_groups, link_icons  # noqa: E402
+from sitegen.text import strip_tags  # noqa: E402
+from sitegen.withhold import is_list, load_kept, note, withhold, withhold_pages  # noqa: E402
 from sitegen import output  # noqa: E402
+
+KEPT = load_kept()  # data/izostavljeno.json
 
 
 def load_all(db):
@@ -80,6 +84,8 @@ def load_all(db):
     archive, old_files, referati = load_stari_fajlovi(subjects)
     items = load_items(db, place) + cent_items + load_katedre(db, smerovi, subjects) + old_items + load_mail(subjects)
     vesti = sorted(vesti + old_vesti + old_files, key=lambda v: v["date"] or "", reverse=True)
+    if not output.dev:  # the lists of students, what was removed on request (withhold.py)
+        items, vesti = withhold(items, KEPT), withhold(vesti, KEPT)
     return smerovi, subjects, items, cent_pushed, vesti, (archive, referati)
 
 
@@ -117,6 +123,14 @@ def main(db_path, out, dev_mode=False):
     db.row_factory = sqlite3.Row
     smerovi, subjects, items, cent_pushed, vesti, (archive, referati) = load_all(db)
     teachers = load_teachers(db, subjects)
+    if not dev:  # a teacher's page removed on request (withhold.py): not built, not listed
+        teachers = [t for t in teachers if t["href"] not in KEPT["uklonjeno"]]
+        output.removed = KEPT["uklonjeno"]
+        for s in subjects.values():  # a cent page listing students, as a post (withhold.py)
+            for p in s.get("cent", []):
+                for v in p["versions"]:
+                    if is_list(v["href"], strip_tags(v["html"]), KEPT):
+                        v["html"] = note(p["link"])
     for t in teachers:  # their election reports on the old site (load_stari_fajlovi), on their page
         t["referati"] = file_rows(sorted(referati.get(str(t["id"]), []), key=lambda f: f[2]), "Izbori u zvanja")
     if teachers:
@@ -125,6 +139,11 @@ def main(db_path, out, dev_mode=False):
     katedra_pages.update(t["katedra"] for t in teachers if not t["gone"] and not t.get("aside") and t["katedra"])
     # The departments' whole sites: a katedra's pages on its page (render_katedre), a teacher's own on theirs.
     sajt_katedre, sajt_nastavnika = load_sajtovi(db, teachers)
+    if not dev:
+        for k in sajt_katedre.values():
+            k["groups"] = [(label, ps) for label, ps in ((label, withhold_pages(ps, KEPT)) for label, ps in k["groups"]) if ps]
+        for s in sajt_nastavnika.values():
+            s["pages"] = withhold_pages(s["pages"], KEPT)
     for t in teachers:
         s = sajt_nastavnika.get(t["id"])
         # Not a page that is already their biography (nastavnici-biografije.jsonl: bmi's, pt's).

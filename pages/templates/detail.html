@@ -30,7 +30,9 @@
     <a class="doc-view" href="{{ download_url }}"><img src="{{ doc.thumb }}" alt="Prva strana: {{ doc.filename }}" width="240" loading="lazy" decoding="async"><span>Otvori u browseru</span></a>
     {%- endif %}
     {%- set _lines = (it.body or '') | trim -%}
-    {% if _lines and not dev %}
+    {% if it.noindex and not dev %}
+    {#- A list of students (sitegen/withhold.py): its name and the original only. -#}
+    {% elif _lines and not dev %}
     <p class="note">Tekst ovog dokumenta se nalazi u pretrazi, ali ne i ovde. Ceo fajl je na sajtu nastave.</p>
     {% elif _lines %}
     <ol class="code">

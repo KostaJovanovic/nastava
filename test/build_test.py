@@ -778,3 +778,25 @@ with tempfile.TemporaryDirectory() as _d:
     write_assets_config(Path(_d))
     assert (Path(_d) / ".assetsignore").read_text(encoding="utf-8").split() == ["*", "!foto/", "!foto/**"]
     assert (Path(_d) / "_headers").read_text(encoding="utf-8").startswith("/foto/*\n")
+
+# The public build's lists of students (withhold.py, docs/PLAN-pravno.md 2): five index numbers or more is a list,
+# shown as a note with the original's link and left out of the search; a school year or a file number is no index;
+# the hand-kept lists add and take away; a removed item is gone, a removed name out of every text.
+from sitegen.output import mark_for_pagefind  # noqa: E402
+from sitegen.withhold import lists_students, withhold, withhold_pages  # noqa: E402
+
+_list = "Резултати: " + " ".join(f"Петар Петровић {100 + i}/2023 {i}" for i in range(5))
+assert lists_students(_list) and not lists_students(_list.replace("104/2023", "x"))
+assert lists_students("ВУКОВИЋ /1212 /2024 /27 " * 5)  # a table's cells, "/" between
+assert not lists_students("2021/2022 2022/2023 2023/2024 2024/2025 2025/2026 ev.br. 451-03-68/2020-14 451-03-9/2021 1/2026 22/11/2008 11/11/2008")
+_kept = dict(liste={"p3"}, nisu_liste={"p2"}, uklonjeno={"p4"}, imena=["Мика Микић"])
+_it = lambda i, body, kind="post": dict(id=i, kind=kind, title="T", html=f"<p>{body}</p>", body=body, source_url="https://x/" + i)
+_w = {it["id"]: it for it in withhold([_it("p1", _list), _it("p2", _list), _it("p3", "x"), _it("p4", "x"), _it("p5", "Мика Микић и Mika Mikić"),
+                                      _it("d6", _list, "document")], _kept)}
+assert sorted(_w) == ["d6", "p1", "p2", "p3", "p5"], _w
+assert _w["p1"]["noindex"] and _w["p1"]["body"] == "" and 'href="https://x/p1"' in _w["p1"]["html"] and "Петровић" not in _w["p1"]["html"]
+assert _w["p3"]["noindex"] and not _w["p2"].get("noindex") and "Петровић" in _w["p2"]["html"]
+assert _w["p5"]["body"] == "… и …" and _w["d6"]["html"] is None and _w["d6"]["noindex"]
+assert mark_for_pagefind("<article>x</article>", _w["p1"]) == "<article>x</article>"
+_pg = withhold_pages([dict(url="https://ie/a", html=f"<p>{_list}</p>"), dict(url="https://ie/b", html="<p>o nama</p>")], _kept)
+assert "Петровић" not in _pg[0]["html"] and _pg[1]["html"] == "<p>o nama</p>"

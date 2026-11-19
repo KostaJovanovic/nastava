@@ -1,0 +1,7 @@
+{
+  "_": "What the public build leaves out (pages/sitegen/withhold.py; docs/PLAN-pravno.md 2 and 5.3); the local server shows all. liste: texts that list students the rule (5 index numbers or more) misses, by item id (p123 a post, v123 a news post, k12 a department's notice, d45 a document) or a department site page's URL; nisu_liste: texts the rule takes for a list but are not one; uklonjeno: removed on request, an item id or a page's path (/nastavnik/x/); imena: names taken out of every text.",
+  "liste": [],
+  "nisu_liste": ["v28878", "v31327"],
+  "uklonjeno": [],
+  "imena": []
+}

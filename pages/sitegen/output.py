@@ -113,8 +113,8 @@ def pagefind_tags(it):
 
 def mark_for_pagefind(page, it):
     """Index only a folded copy of the title and text (one copy, so the excerpt does not repeat the title). Dev mode
-    has no Pagefind: the page as it is."""
-    if dev:
+    has no Pagefind: the page as it is. noindex (a list of students, withhold.py): not in the search at all."""
+    if dev or it.get("noindex"):
         return page
     assert page.count("</article>") == 1, it["id"]
     folded = escape(fold(f"{it['title']}\n{it['body'] or ''}"))
@@ -140,6 +140,8 @@ HEAD_END = "<!--/head-->"
 shell = None  # shell.html, set by main()
 
 site_dir = None  # the site's folder, set by main(): write() makes a page's URL from its path in it
+
+removed = set()  # the pages removed on request (withhold.py), set by main(): write() leaves them out
 
 # Every page's canonical URL -> the day its content last changed (or None), for sitemap.xml (write).
 urls = {f"{SITE_URL}/": None}
@@ -250,6 +252,8 @@ def write(path, html, index=True, canonical=None, lastmod=None):
     own = f"/{folder[len(root) + 1 :] or '.'}/"
     if dev:
         pages[own] = html
+        return
+    if own in removed:
         return
     page_shell, fragment = split_page(html)
     assert page_shell == shell, f"{path}: the page differs from shell.html outside its head and <main>"
