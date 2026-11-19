@@ -1,7 +1,8 @@
 name: ping
 
 # Does the faculty answer GitHub's runners? One request per site and User-Agent, the status only: the scraper's and a
-# browser's, to tell a block by IP from one by User-Agent. By hand only.
+# browser's, to tell a block by IP from one by User-Agent; direct, then through Cloudflare WARP (as sync.yml connects
+# it, its local SOCKS proxy). By hand only.
 on:
   workflow_dispatch:
 
@@ -13,10 +14,23 @@ jobs:
     timeout-minutes: 5
     steps:
       - run: |
-          curl -s https://www.cloudflare.com/cdn-cgi/trace | grep -E '^(ip|loc)='
-          for url in https://nastava.mas.bg.ac.rs/nastava/index.php https://www.mas.bg.ac.rs/ https://cent.mas.bg.ac.rs/; do
-            # The first: scrapers/common.py USER_AGENT.
-            for ua in 'masinci.org arhiva (+https://masinci.org/; valjdakosta@gmail.com)' 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36'; do
-              echo "$(curl -s -o /dev/null -m 20 -w '%{http_code}' -A "$ua" "$url") $url (${ua:0:30})"
+          ping() {  # ping [curl's proxy args]
+            curl -s "$@" https://www.cloudflare.com/cdn-cgi/trace | grep -E '^(ip|loc|warp)='
+            for url in https://nastava.mas.bg.ac.rs/nastava/index.php https://www.mas.bg.ac.rs/ https://cent.mas.bg.ac.rs/; do
+              # The first: scrapers/common.py USER_AGENT.
+              for ua in 'masinci.org arhiva (+https://masinci.org/; valjdakosta@gmail.com)' 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36'; do
+                echo "$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$@" -A "$ua" "$url") $url (${ua:0:30})"
+              done
             done
-          done
+          }
+          echo "== direct"
+          ping
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list >/dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq cloudflare-warp >/dev/null
+          warp-cli --accept-tos registration new
+          warp-cli --accept-tos mode proxy
+          warp-cli --accept-tos connect
+          for _ in $(seq 30); do warp-cli --accept-tos status | grep -q Connected && break; sleep 1; done
+          echo "== warp"
+          ping -x socks5h://127.0.0.1:40000
