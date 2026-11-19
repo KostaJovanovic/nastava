@@ -126,6 +126,8 @@ def fingerprint(db):
         # The departments' notices (pushed as cent's are): unsaved, the next run would find and notify them again.
         "select count(*), sum(gone), total(length(html)) from katedre_notices",
         "select count(*) from cent_notice_old",
+        # cent's ETags: unsaved, the next run has none and downloads every notices page whole again.
+        "select group_concat(ifnull(etag, '') || ifnull(last_modified, '')) from (select * from cent_http order by id)",
         "select count(*) from photos",
         "select count(*), total(length(html)) from departments",
     ]
