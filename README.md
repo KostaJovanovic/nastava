@@ -88,8 +88,9 @@ pipeline and site, with new scrapers for phpBB.
 - `scrapers/mail.py`: mails a teacher sent a subject's students (exported from webmail as .eml), in `mail/`: a folder per
   mail with `post.json` (sender, date, subject line, the text without the quoted mail) and its attachments. To and Cc
   are never read. The site shows them as that subject's board posts (a "Re:" in its mail's topic). Git keeps only the
-  `.json` files; `mail.py upload` puts the attachments (and teams.py's files) in the release `mail` (an asset per
-  file, named by a hash of its path). Keep a copy of `mail/` elsewhere (OneDrive). Done by hand, not in the Action.
+  `.json` files; the attachments (and teams.py's files) stay on this PC, the public site shows their names only (the
+  release `mail` was deleted 2026-11-19: don't run `mail.py upload`). Keep a copy of `mail/` elsewhere (OneDrive).
+  Done by hand, not in the Action.
 - `scrapers/teams.py`: the posts of the faculty's Teams classes into `mail/`, in the same form: each thread a teacher started,
   with its replies (a student's is "Student #N", numbered per thread, with no name, index, e-mail or file of theirs),
   and the rest of each class's SharePoint library as the subject's "Materijal sa Teams-a". `tools/teams/teams-export.js` reads
@@ -191,7 +192,7 @@ When the attachments are wanted: `uv run scrapers/documents.py sync`. Old .doc/.
 
 To add mails: in webmail (RainLoop) open each mail, ▾ next to Reply → "Download as .eml", into one folder; then
 `uv run scrapers/mail.py add <folder> /predmet/<smer>/<subject>/` (the subject page's URL; in Git Bash prefix
-`MSYS_NO_PATHCONV=1`), `uv run scrapers/mail.py upload`, and commit `mail/`. A mail already there is skipped.
+`MSYS_NO_PATHCONV=1`) and commit `mail/`. A mail already there is skipped.
 
 To add Teams posts: open teams.microsoft.com in a browser, paste `tools/teams/teams-export.js` into the DevTools console (Firefox:
 Ctrl+B for the multi-line editor) and run it: it saves `teams-export.json` (every channel's messages, read with the
@@ -200,12 +201,12 @@ SharePoint library as a zip in Downloads (its `CLASSES` list is teams.py's group
 page. A new class goes in `CLASSES` (its group id → subject page; in both files), a new teacher in
 `TEACHERS` (their Teams account → board username), a student's name written in a reply with no index next to it in
 `NAMED`; then `uv run scrapers/teams.py add <teams-export.json> <zip folder>`, read the students' replies in `mail/` for names
-it missed, `uv run scrapers/mail.py upload`, and commit `mail/`.
+it missed, and commit `mail/`.
 
 To add a Moodle course: enrol, open its page (`course/view.php?id=…`), paste `tools/moodle/moodle-export.js` into the
 DevTools console and run it: it saves `moodle-<host>-<id>.zip` in Downloads. Then `uv run scrapers/moodle.py add <zip>
 /predmet/<smer>/<subject>/ <teacher's board username>`, plus week 1's Monday (`2026-03-09`) when the sections are
-"N. nedelja" with no dates; `uv run scrapers/mail.py upload`, and commit `mail/`.
+"N. nedelja" with no dates; and commit `mail/`.
 
 ## License
 
