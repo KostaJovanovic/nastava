@@ -13,6 +13,7 @@ rem   save.bat update [all]             add + commit ("update") + push, then scr
 rem                                     the database, build and publish (ci/deploy.sh forum^|sync); no prompts, no pause
 rem   save.bat update-app               update, and a new Android app: pushes the tag app-v0.<commit count>, which
 rem                                     .github/workflows/app.yml builds into the release "app" (masinci.apk)
+rem   save.bat deploy-app               add + commit + push, build and publish (no scrape), and a new Android app
 rem   save.bat ocr                      OCR the site's own attachments on this PC's graphics card, save the
 rem                                     database (bash ci/ocr.sh): no commit, no scrape, no build
 rem   save.bat push                     push the current branch to its upstream
@@ -66,6 +67,13 @@ if /i "%ACTION%"=="update-app" (
   set "MSG="
   goto checkrepo
 )
+if /i "%ACTION%"=="deploy-app" (
+  set "QUICK=1"
+  set "DEPLOY=1"
+  set "APP=1"
+  set "MSG="
+  goto checkrepo
+)
 if /i "%ACTION%"=="ocr"          goto ocr
 if /i "%ACTION%"=="push"         goto pushonly
 if /i "%ACTION%"=="pull"         goto pull
@@ -85,9 +93,10 @@ echo   7  update       add + commit + push, scrape the forum, build and publish
 echo   8  update-app   the same as 7, and a new Android app (APK) built from this commit
 echo   9  quit
 echo  10  ocr          OCR the site's own attachments on the graphics card, save the database
+echo  11  deploy-app   the same as 8, without scraping (3 and a new APK)
 echo.
 set "CHOICE="
-set /p CHOICE=select [1-10]:
+set /p CHOICE=select [1-11]:
 if "%CHOICE%"=="1" (set "COMMIT_ONLY=1" & goto checkrepo)
 if "%CHOICE%"=="2" goto checkrepo
 if "%CHOICE%"=="3" (set "DEPLOY=1" & goto checkrepo)
@@ -98,13 +107,14 @@ if "%CHOICE%"=="7" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & goto checkrepo)
 if "%CHOICE%"=="8" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & set "APP=1" & goto checkrepo)
 if "%CHOICE%"=="9" exit /b 0
 if "%CHOICE%"=="10" goto ocr
+if "%CHOICE%"=="11" (set "DEPLOY=1" & set "APP=1" & goto checkrepo)
 echo [err]  invalid choice
 goto menu
 
 
 :usage
 echo [err]  unknown action "%ACTION%"
-echo        use: save.bat [save^|commit^|deploy [sync]^|update [all]^|update-app^|ocr^|push^|pull^|quick "message"^|quick-commit "message"]
+echo        use: save.bat [save^|commit^|deploy [sync]^|update [all]^|update-app^|deploy-app^|ocr^|push^|pull^|quick "message"^|quick-commit "message"]
 exit /b 1
 
 
