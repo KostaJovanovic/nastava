@@ -1,0 +1,22 @@
+name: ping
+
+# Does the faculty answer GitHub's runners? One request per site and User-Agent, the status only: the scraper's and a
+# browser's, to tell a block by IP from one by User-Agent. By hand only.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          curl -s https://www.cloudflare.com/cdn-cgi/trace | grep -E '^(ip|loc)='
+          for url in https://nastava.mas.bg.ac.rs/nastava/index.php https://www.mas.bg.ac.rs/ https://cent.mas.bg.ac.rs/; do
+            # The first: scrapers/common.py USER_AGENT.
+            for ua in 'masinci.org arhiva (+https://masinci.org/; valjdakosta@gmail.com)' 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36'; do
+              echo "$(curl -s -o /dev/null -m 20 -w '%{http_code}' -A "$ua" "$url") $url (${ua:0:30})"
+            done
+          done
