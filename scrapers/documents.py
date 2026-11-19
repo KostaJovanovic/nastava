@@ -9,8 +9,8 @@ Usage: documents.py download | extract [--all] | sync | stats | host | ocr
             the highest linked id that no post links (an attachment can outlive its post link)
   extract   extract text from the downloaded files (no network)
   sync      download + extract
-  host      the attachments of the posts since HOST_FROM: download, extract, thumbnail, upload to
-            the release files-<school year> (ci/deploy.sh, every scrape)
+  host      the attachments of the posts since HOST_FROM: download and extract (ci/deploy.sh, every
+            scrape); nothing is uploaded, the public site links the board's file
   ocr       OCR the hosted attachments that need it, on this PC's graphics card (scrapers/ocr.py; ci/ocr.sh)
 
 An attachment's name is <id>/<file name> (documents.path); its bytes go to files/blobs/, once per distinct file, named
@@ -37,7 +37,7 @@ from urllib.parse import unquote
 
 import requests
 
-from common import DELAY, ROOT, asset_name, is_html_page, release_assets, session, thumb_asset, thumbnail, upload_assets
+from common import DELAY, ROOT, is_html_page, session, thumbnail
 from nastava import BASE, WORKERS, connect
 
 FILES = os.getenv("FILES", str(ROOT / "files"))
@@ -409,23 +409,20 @@ def run_extract(db, everything):
 
 # ---------- host ----------
 
-# The attachments of the posts from this day on are the site's own: assets of a release per school year, as dlwms's.
+# The attachments of the posts from this day on are read every scrape (the older ones: sync, by hand).
 HOST_FROM = "2026-10-01"
-# Files to a release: each has a thumbnail asset too, and a release holds at most 1000 assets.
-PER_RELEASE = 490
 
 
-def release_base(posted):
-    """'files-2026-2027' for a post of that school year (from 1 October)."""
-    y, m = int(posted[:4]), int(posted[5:7])
-    y = y if m >= 10 else y - 1
-    return f"files-{y}-{y + 1}"
+# The tag of the attachments done since nothing is uploaded (docs/PLAN-pravno.md 1): only the local server serves them
+# (pages/serve.py local_file, from files/), and OCR (ocr) takes them as before.
+LOCAL = "files-local"
 
 
 def host(db):
-    """Download the attachments of the posts since HOST_FROM that no release has yet, extract their text, render
-    their thumbnails (common.thumbnail) and upload both. Then documents.release is the file's release tag and
-    documents.thumb 1 when it has a thumbnail. A failed upload leaves release null: the next run tries again."""
+    """Download the attachments of the posts since HOST_FROM not done yet and extract their text, for their document
+    pages and the search. Then documents.release is LOCAL (the older ones keep the release they were uploaded to) and
+    documents.thumb 1 when the local server can make a thumbnail. Nothing is uploaded: the public site links the
+    board's file."""
     cols = {r[1] for r in db.execute("pragma table_info(documents)")}
     for col, kind in (("release", "text"), ("thumb", "integer not null default 0")):
         if col not in cols:
@@ -447,9 +444,8 @@ def host(db):
             else:
                 save(db, file_id, result)
     db.commit()
-    used = dict(db.execute("select release, count(*) from documents where release is not null group by release").fetchall())
-    by_tag, done = {}, []
-    for file_id, posted, _ in rows:
+    done = []
+    for file_id, _, _ in rows:
         path = db.execute("select path from documents where id = ? and fetched = 1 and error is null", (file_id,)).fetchone()
         if not path:
             continue
@@ -457,21 +453,10 @@ def host(db):
         data = file_at(path).read_bytes()
         # A failed extraction (an old .doc without LibreOffice) leaves no text, not an error: an error hides the page.
         text = extract_file((file_id, path))[1]
-        base = release_base(posted)
-        tag = next(t for n in range(1, 100) if used.get(t := base if n == 1 else f"{base}-{n}", 0) < PER_RELEASE)
-        used[tag] = used.get(tag, 0) + 1
-        files = by_tag.setdefault(tag, {})
-        files[asset_name(path)] = data
-        if thumb := thumbnail(path, data):
-            files[thumb_asset(path)] = thumb
-        done.append((tag, int(bool(thumb)), text, file_id))
-    for tag, files in by_tag.items():
-        have = release_assets(tag, tag, "The board's attachments of one school year (documents.py host). An asset's name is a hash of the file's path.")
-        # An asset a run uploaded before its state was saved (a cancelled or failed run) is not sent again.
-        upload_assets(tag, {name: data for name, data in files.items() if name not in have})
+        done.append((LOCAL, int(thumbnail(path, data) is not None), text, file_id))
     db.executemany("update documents set release = ?, thumb = ?, text = ? where id = ?", done)
     db.commit()
-    print(f"hosted {len(done)} of {len(rows)}", flush=True)
+    print(f"done {len(done)} of {len(rows)}", flush=True)
 
 
 def _try_fetch(file_id):

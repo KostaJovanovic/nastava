@@ -2,8 +2,8 @@
 # requires-python = ">=3.11"
 # dependencies = ["beautifulsoup4", "pymupdf", "requests"]
 # ///
-"""The asserts of scrapers/mail.py (were its __main__ block), and of the release files they share with documents.py
-(common.thumbnail, documents.release_base), no network: uv run test/mail_test.py"""
+"""The asserts of scrapers/mail.py (were its __main__ block), and of the release files (common.thumbnail), no
+network: uv run test/mail_test.py"""
 
 import sys
 from pathlib import Path
@@ -15,7 +15,6 @@ import re  # noqa: E402
 from email import policy  # noqa: E402
 import common  # noqa: E402
 from common import THUMB_WIDTH, thumbnail  # noqa: E402
-from documents import release_base  # noqa: E402
 from mail import asset_name, text_of, unique  # noqa: E402
 
 
@@ -50,11 +49,6 @@ def check():
         assert ("api", "-X", "DELETE", f"repos/{common.REPO}/releases/assets/2") in calls, calls
     finally:
         common.gh = real_gh
-    assert [release_base(p) for p in ("2026-10-01T00:00:00+00:00", "2027-09-30T22:00:00+00:00", "2027-10-02T00:00:00")] == [
-        "files-2026-2027",
-        "files-2026-2027",
-        "files-2027-2028",
-    ]
 
 
 check()
