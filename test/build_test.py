@@ -809,3 +809,4 @@ _p = ["Ana (rođena Petrović) je profesor. Rođena je 1989. u Čačku, gde je 2
       "Rođen je 1960. u Nišu."]
 assert unborn(dict(summary=_p)) == ["Ana (rođena Petrović) je profesor. Diplomirala je 2012."], unborn(dict(summary=_p))
 assert unborn(dict(summary=_p, history=dict(life="1960–2020"))) == _p and unborn(dict(summary=_p + ["Preminuo je 2020."])) == _p + ["Preminuo je 2020."]
+assert unborn(dict(summary=["Rođen je 1986. u Beogradu. Mentor je bio X, a posle njegove smrti Y."])) == ["Mentor je bio X, a posle njegove smrti Y."]

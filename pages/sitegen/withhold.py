@@ -50,7 +50,8 @@ def unname(text, names):
 # A summary's sentence of a birth (nastavnici-sazetak.jsonl: "Rođena je 1966. u Beogradu, gde …"), to the sentence's
 # end: a dot before a capital (a year's dot, "2007. završila", goes on). Not a maiden name ("(rođena Mileusnić)").
 BORN = re.compile(r"(?:^|(?<=\.\s))[^.]*?\b[Rr]ođen[ao]?\b[^.]*?\b(?:1[89]|20)\d\d\..*?(?:\.(?=\s+[A-ZŠĐČĆŽ])|\.$|$)\s*", re.S)
-DEAD = re.compile(r"preminu|umr(?:o|la)\b|smrt|†", re.I)
+# Their own death ("Preminuo je 2022."), not someone else's in their story ("posle njegove smrti", a mentor's).
+DEAD = re.compile(r"\b(?:preminu(?:o|la)|umr(?:o|la)) je\b|†", re.I)
 
 
 def unborn(t):
