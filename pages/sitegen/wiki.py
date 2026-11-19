@@ -67,7 +67,7 @@ def wiki_link(value, hrefs):
 
 
 def kontakt(db):
-    """KONTAKT for kontakt.html: ([(group, [dict(who, mail, phone, tel)])], the pages that say them: [(title, href)],
+    """KONTAKT for kontakt_fakulteta.html: ([(group, [dict(who, mail, phone, tel)])], the pages that say them: [(title, href)],
     each this site's copy, else the faculty's). An address or number its page no longer has is warned about (a new
     dean, a moved office), still shown: the sources are linked under it."""
     rows = db.execute("SELECT path, html, title FROM wiki_pages WHERE gone = 0 ORDER BY last_seen").fetchall() if archived_wiki(db) else []

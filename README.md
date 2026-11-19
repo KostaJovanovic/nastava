@@ -42,12 +42,15 @@ pipeline and site, with new scrapers for phpBB.
 - A Cloudflare Worker (`pages/src/index.js`) serves the domain. It gets the pages from GitHub Pages and keeps them in the
   edge cache for a day at most (Pagefind's hashed files: a year). Most pages are stored as only their title and main
   part; the Worker puts them into `shell.html` (head, header, sidebar), which saves about 190 MB on GitHub Pages.
-- The attachments of the posts since 1 October 2026 are the site's own, as dlwms's: every scrape downloads the new
-  ones (`documents.py host`) into the release `files-<school year>` (a new `-2`, `-3` one at 490 files), each with a
-  thumbnail of its first page (PDFs and images). The older attachments and the images link straight to
-  nastava.mas.bg.ac.rs; the local `files/` folder keeps a copy of each one. The mails' and Teams files (`mail/`) are
-  assets of the release `mail` (`mail.py upload`, thumbnails listed in `mail/thumbs.json`). The Worker serves the
-  releases under `/files/`: a PDF or an image inline (the document page's preview), anything else as a download.
+- The public site keeps no files (docs/PLAN-pravno.md): a board attachment links to nastava.mas.bg.ac.rs, an old
+  site's file to its Wayback copy, a mail's or Teams file is its name only. A document page has its text in the
+  search, not on the page. A text that lists students (5 index numbers or more, `pages/sitegen/withhold.py`) shows a
+  note and the original's link instead, and is not in the search; `data/izostavljeno.json` is the hand-kept part
+  (lists the rule misses, texts it takes wrongly, removals on request, names). Teacher pages link the copied texts
+  (the monograph, the faculty's profile, the department sites) instead of showing them, and a living teacher's
+  birth is not shown. The students' Teams replies are left out.
+- The local server (`server.bat`, dev mode) shows all of that, and serves this PC's copies under `/files/`
+  (`pages/serve.py local_file`: `files/`, `mail/`, `work/wayback/`).
 - Search finds Cyrillic and Latin alike: the index holds the text in Latin without diacritics, and the search box
   converts the query the same way ("распоред", "raspored", "rasporedjen").
 - Nothing is deleted: a post that disappears from the board stays in the archive.
@@ -119,8 +122,14 @@ pipeline and site, with new scrapers for phpBB.
 - Notifications (web push): the switch on `/mojipredmeti/` subscribes the browser (`pages/static/sw.js` shows them; an
   iPhone only from the home screen). The Worker keeps each subscription with its subjects and picked teachers in KV,
   and it goes with the switch off; for `/statistika/`'s count of them, D1 keeps each one's push address too
-  (`push_subs`, gone with it). Besides it the site keeps only a visitor's IP, three days, for the visitor counter on
-  `/statistika/` (D1, `pages/schema.sql`; counted like valjdakosta.com's, each IP once per three days). After a deploy with a scrape, `ci/deploy.sh`
+  (`push_subs`, gone with it). Besides it the site keeps only a hash of a visitor's IP (with the secret
+  `COUNTER_SALT`), three days, for the visitor counter on `/statistika/` (D1, `pages/schema.sql`; each IP once per
+  three days), and the contact form's messages.
+- The contact form (`/kontakt/`; the faculty's contacts are `/kontakt-fakulteta/`): the Worker checks Cloudflare
+  Turnstile and the fields, keeps the message in D1 (`messages`) and sends a push with no payload to `INBOX_PUSH`. The
+  inbox is `/kontakt/poruke/` (HTTP Basic auth, `INBOX_PASSWORD`); the cron deletes messages after 90 days. Locally
+  (`serve.py`): Turnstile's test key, messages in `pages/.build/poruke.json`, the inbox's password from
+  `$INBOX_PASSWORD`. After a deploy with a scrape, `ci/deploy.sh`
   runs `ci/push.py send`: once the new posts are on the site, each browser gets one notification for those in its
   subjects. The keys are in `push-secret.json` (git-ignored) and, for sync.yml, in the repository secret `PUSH_SECRET`
   (`gh secret set PUSH_SECRET < push-secret.json`). Lost keys mean new ones and every subscriber turning the switch
@@ -135,7 +144,7 @@ pipeline and site, with new scrapers for phpBB.
   schedule` replays the board's posts since 2022 against the schedule in use and the best 2–6 runs a day per season.
 - `test/parsers_test.py`: the parsers on the saved pages in `test/fixtures/`, no network. The other `test/*_test.py`:
   each script's own asserts (`build_test.py`: the site's parts), plain asserts, `uv run test/<name>_test.py`.
-- `test/worker_test.mjs`: the Worker's page join, push subscriptions and `/files/` paths, no network
+- `test/worker_test.mjs`: the Worker's page join, push subscriptions, contact form, inbox and counter, no network
   (`node --test test/worker_test.mjs`, before `wrangler deploy`).
 - `test/browser/`: real searches, filters and screenshots in Edge against a running site (`browser_test.py`, …).
 - `save.bat`: git (commit, push, pull), and `deploy [sync]`: commit, push, then `ci/deploy.sh`. `server.bat`: build
@@ -168,7 +177,10 @@ with the Worker's code on `main`: a deploy by hand from a branch lasts only unti
 For notifications, once: `uv run ci/push.py keys` (writes `push-secret.json`; its public key goes in `pages/static/site.js`),
 `wrangler kv namespace create PUSH` (its id into `pages/wrangler.toml`) and `wrangler secret put PUSH_KEY` (the "key"
 from `push-secret.json`), before `wrangler deploy`. For the visitor counter, once: `wrangler d1 create nastava` (its id
-into `pages/wrangler.toml`) and `wrangler d1 execute nastava --remote --file schema.sql`. `/push` takes any
+into `pages/wrangler.toml`) and `wrangler d1 execute nastava --remote --file schema.sql`, then
+`wrangler secret put COUNTER_SALT` (any long random string). For the contact form: `wrangler secret put` each of
+`TURNSTILE_SECRET`, `INBOX_PASSWORD`, `VAPID_PRIVATE` (push-secret.json's "vapid") and `INBOX_PUSH` (the endpoint the
+inbox page shows once the bell is on in your browser). `/push` takes any
 browser's subscription with no sign-in, so a rate limit keeps a script from filling KV: in Cloudflare, masinci.org →
 Security → WAF → Rate limiting rules, a rule for URI Path equals `/push`, by IP, action Block. The Free plan has one
 such rule, matches the path only (no method: the Worker answers anything but a POST there with 405 anyway) and counts
