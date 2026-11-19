@@ -1225,8 +1225,9 @@
   }
   /* In the app: the same button for a newer APK, once AppUpdate (MainActivity, its day's check) has one. A tap
      downloads it in the app, then Android asks to install (docs/PLAN-app.md step 10). Not folded, no i. */
-  if (appGet && app && app.AppUpdate) app.AppUpdate.available().then(function (r) {
-    if (!r.version) return;
+  var offered = false, offer = function (r) {
+    if (!r.version || offered) return;
+    offered = true;
     var get = appGet.querySelector('a'), label = 'Skini noviju verziju', icon = get.querySelector('svg').outerHTML;
     var say = function (t) { get.innerHTML = icon + t; };
     say(label);
@@ -1243,7 +1244,12 @@
       app.AppUpdate.install().then(function () { say(label); }, function () { say('Nije uspelo, pokušaj ponovo'); })
         .then(function () { get.removeAttribute('aria-busy'); });
     });
-  });
+  };
+  if (appGet && app && app.AppUpdate) {
+    app.AppUpdate.available().then(offer);
+    // A tap on the logo checks again (AppUpdate keeps it to once in 2 minutes); an older APK without recheck: nothing.
+    if (brand) brand.addEventListener('click', function () { app.AppUpdate.recheck().then(offer, function () {}); });
+  }
   /* In place of the browser's own "install the site" offer (head.js cancels it): a bar offering the APK, until
      closed or followed, then never again ("apkbar"). Not on the picker, whose foot bar takes the same place. On an
      iPhone (ios) no APK: the site on the home screen (the PWA, where its notifications work), its "Kako?" the

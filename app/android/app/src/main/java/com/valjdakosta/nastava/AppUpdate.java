@@ -47,7 +47,7 @@ import org.json.JSONObject;
 public class AppUpdate extends Plugin {
 
     private static final String PREFS = "update";
-    private static final long DAY_MS = 24L * 60 * 60 * 1000;
+    private static final long DAY_MS = 24L * 60 * 60 * 1000, RECHECK_MS = 2L * 60 * 1000;
     private static final int FEED_MAX = 256 * 1024;
     private static final Pattern DIGEST = Pattern.compile("^sha256:([0-9a-f]{64})$");
     private static final ExecutorService NET = Executors.newSingleThreadExecutor();
@@ -56,13 +56,13 @@ public class AppUpdate extends Plugin {
 
     @Override
     public void load() {
-        checking = NET.submit(this::check);
+        checking = NET.submit(() -> check(DAY_MS));
     }
 
-    /** The day's check. Offline or a bad answer: nothing kept, the next opening tries again. */
-    private void check() {
+    /** The check, unless the last was under every ms ago. Offline or a bad answer: nothing kept, the next tries again. */
+    private void check(long every) {
         SharedPreferences prefs = prefs();
-        if (System.currentTimeMillis() - prefs.getLong("checked", 0) < DAY_MS) return;
+        if (System.currentTimeMillis() - prefs.getLong("checked", 0) < every) return;
         try {
             JSONObject release = new JSONObject(get(BuildConfig.UPDATE_FEED));
             JSONArray assets = release.optJSONArray("assets");
@@ -93,6 +93,13 @@ public class AppUpdate extends Plugin {
             if (v != null && newer(v, installedName())) r.put("version", v);
             call.resolve(r);
         });
+    }
+
+    /** The logo's tap (site.js): the check now, at most once in 2 minutes, then as available(). */
+    @PluginMethod
+    public void recheck(PluginCall call) {
+        checking = NET.submit(() -> check(RECHECK_MS));
+        available(call);
     }
 
     /** Downloads, checks and installs the newer APK; "progress" events ({percent}) while it downloads. Resolves when
