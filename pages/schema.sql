@@ -20,3 +20,16 @@ INSERT OR IGNORE INTO visit_total (id, n) VALUES (1, 0);
 CREATE TABLE IF NOT EXISTS push_subs (
   endpoint TEXT PRIMARY KEY
 );
+
+-- The contact form's messages (src/index.js kontakt), read on /kontakt/poruke/; deleted there, or by the cron after
+-- 90 days (docs/PLAN-pravno.md 5a).
+CREATE TABLE IF NOT EXISTS messages (
+  id    INTEGER PRIMARY KEY,
+  time  TEXT NOT NULL DEFAULT (datetime('now')),
+  email TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  page  TEXT,
+  text  TEXT NOT NULL
+);
+-- The cron's DELETE of the old ones.
+CREATE INDEX IF NOT EXISTS messages_time ON messages (time);
