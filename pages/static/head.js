@@ -196,6 +196,17 @@ window.showFail = function () {
 	t[1].textContent = (n.toDateString() !== a.toDateString() ? "sutra " : "") + hm(n);
 };
 
+// The stale banner (base.html .fail[data-stale]): the board last read over a day ago, its time as the footer's
+// (site.js); it replaces the failed-update banner.
+window.showStale = function () {
+	const b = document.querySelector(".fail[data-stale]"), t = b && b.querySelector("time"), d = new Date(t && t.dateTime);
+	if (isNaN(d) || Date.now() - d < 864e5) return;
+	const p2 = (n) => String(n).padStart(2, "0"), f = document.querySelector(".fail:not([data-stale])");
+	t.textContent = "u " + p2(d.getHours()) + ":" + p2(d.getMinutes()) + ", " + p2(d.getDate()) + "." + p2(d.getMonth() + 1) + "." + d.getFullYear() + ".";
+	if (f) f.hidden = true;
+	b.hidden = false;
+};
+
 // "Profesor dana" (sidebar.html): t is one of /izbor.json dana (site.js picks it, load_teachers.of_the_day).
 window.fillDana = function (dana, t) {
 	const a = dana.querySelector(".dana__b");
