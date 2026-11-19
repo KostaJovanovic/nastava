@@ -13,7 +13,7 @@ and then (ci/plan.py: the semesters' first days), for the katedra and teacher pa
 
 Usage: katedre.py sync [site ...] | site [site ...]
   sync   fetch each site's announcement pages (or only the named sites'), store new versions and notices; a page or
-         notice no longer there is marked gone.
+         notice no longer there is marked gone. Without names: every site but DAILY's (ie: `sync ie`, once a day).
   site   crawl each whole site (WHOLE) from its home page; every page but the announcement ones is stored the same way.
 """
 
@@ -33,8 +33,10 @@ from bs4 import BeautifulSoup, Comment
 from common import FILE, connect, name_icons, now, plain_session
 
 # One request at a time, never two in flight: 8 of the 10 sites are one server (147.91.26.9), so they are not crawled
-# in parallel; 0.3 s keeps it to ~2-3 requests a second, a run ~3-4 minutes.
-DELAY = float(os.getenv("DELAY", "0.3"))
+# in parallel; 1.5 s apart (docs/PLAN-scraping.md).
+DELAY = float(os.getenv("DELAY", "1.5"))
+# Read once a day (ci/plan.py: the morning run), not every run: ie's ~40 pages answer no "changed?" question.
+DAILY = {"ie"}
 MAX = int(os.getenv("MAX", "400"))  # pages a site, so a calendar or a gallery cannot crawl forever
 # Each site: the pages a crawl starts from (read for their links), and the pages it keeps (its announcements; ie's
 # subject pages also have the subject's material): only those are followed and stored.
@@ -490,7 +492,7 @@ def sync(names, whole=False):
 if __name__ == "__main__":
     match sys.argv[1:]:
         case ["sync", *names] if all(n in SITES for n in names):
-            sync(names or list(SITES))
+            sync(names or [n for n in SITES if n not in DAILY])
         case ["site", *names] if all(n in WHOLE for n in names):
             sync(names or list(WHOLE), whole=True)
         case _:

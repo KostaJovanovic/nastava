@@ -8,7 +8,8 @@ The site links its files (wp-content/uploads, Google Drive); they are not downlo
 
 Usage: cent.py sync
   sync   list the pages (REST API, 3 requests), fetch each new or changed one (the list's "modified") and every
-         notices page, store new versions and notices; a page or notice no longer there is marked gone.
+         notices page, store new versions and notices; a page or notice no longer there is marked gone. A page read
+         before is asked with its ETag and Last-Modified: unchanged, it answers 304 with no body.
 """
 
 import copy
@@ -22,11 +23,11 @@ from html import unescape
 
 from bs4 import BeautifulSoup
 
-# The board's session: retries a 429 or 5xx with backoff, so one hiccup does not end the run.
+# The board's session: retries a 5xx with backoff, so one hiccup does not end the run; a 403 or 429 stops it.
 from common import connect, name_icons, now, session
 
 SITE = "https://cent.mas.bg.ac.rs"
-DELAY = float(os.getenv("DELAY", "1.0"))
+DELAY = float(os.getenv("DELAY", "1.5"))
 SCHEMA = """
 create table if not exists cent_pages (id integer, sha text, parent integer, menu_order integer, slug text, title text,
 	link text, modified text, code text, html text, first_seen text, last_seen text, gone integer not null default 0,
@@ -34,6 +35,7 @@ create table if not exists cent_pages (id integer, sha text, parent integer, men
 create table if not exists cent_notices (nid integer primary key autoincrement, key text unique, page integer,
 	title text, date text, html text, files text, first_seen text, last_seen text, gone integer not null default 0);
 create table if not exists cent_notice_old (nid integer, html text, files text, last_seen text);
+create table if not exists cent_http (id integer primary key, etag text, last_modified text);
 """
 FOOTER = "ОАС МАС ДАС"
 
@@ -171,20 +173,33 @@ def sync():
     # A page that has had notices, its slug "obavestenja…" or not ("industrija40-uvod-u-proizvodne-sisteme").
     with_notices = {r[0] for r in db.execute("select distinct page from cent_notices")}
     fetched = new = 0
+    # The server's ETag and Last-Modified of each page read: asked back, so an unchanged page answers 304, no body.
+    # (The notices pages were downloaded whole every run: 8 MB a run.)
+    http = {i: (e, m) for i, e, m in db.execute("select id, etag, last_modified from cent_http")}
+
+    def unchanged(p):
+        # gone = 0: a page one listing missed and marked gone is back (as katedre.store does).
+        db.execute(
+            "update cent_pages set last_seen = ?, gone = 0 where id = ? and last_seen = (select max(last_seen) from cent_pages where id = ?)",
+            (seen, p["id"], p["id"]),
+        )
+
     for p in pages:
         # The notices pages every time: a notice may not change the page's "modified".
         if known.get(p["id"]) == p["modified"] and "obavestenja" not in p["slug"] and p["id"] not in with_notices:
-            # gone = 0: a page one listing missed and marked gone is back (as katedre.store does).
-            db.execute(
-                "update cent_pages set last_seen = ?, gone = 0 where id = ? and last_seen = "
-                "(select max(last_seen) from cent_pages where id = ?)",
-                (seen, p["id"], p["id"]),
-            )
+            unchanged(p)
             continue
-        code, html, notices = parse(get(s, p["link"]).text, p["link"])
+        etag, modified = http.get(p["id"], (None, None)) if p["id"] in known else (None, None)
+        ask = {k: v for k, v in (("If-None-Match", etag), ("If-Modified-Since", modified)) if v}
+        r = get(s, p["link"], headers=ask)
+        if r.status_code == 304:
+            unchanged(p)
+            continue
+        code, html, notices = parse(r.text, p["link"])
         fetched += 1
         new += store_page(db, p, code, html, seen)
         store_notices(db, p["id"], notices, seen)
+        db.execute("insert or replace into cent_http values (?, ?, ?)", (p["id"], r.headers.get("ETag"), r.headers.get("Last-Modified")))
         db.commit()
     live = [p["id"] for p in pages]
     db.execute(f"update cent_pages set gone = 1 where id not in ({','.join('?' * len(live))})", live)

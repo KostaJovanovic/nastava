@@ -4,20 +4,25 @@
 # ///
 """Archive every post of nastava.mas.bg.ac.rs (phpBB, public, no login).
 
-Usage: nastava.py sync | stats
-  sync    walk the forum tree, then fetch the topics that changed (the first run fetches all)
+Usage: nastava.py feed | sync | stats
+  feed    the frequent run: the board's Atom feed (its 30 newest posts, one request), then for each post not stored
+          the page of its topic that has it. More than 30 new since the last run, or a forum not known yet: sync.
+  sync    walk the forum tree, then fetch the topics that changed (the first run fetches all); the weekly check
+          (ci/plan.py "provera"): it also finds deleted and moved topics
   stats   compare the counts the board shows with the stored rows; exit 1 when posts are missing
 
 Each forum page lists its subforums with their topic and post counts and last post id.
 A forum is walked only when these differ from the last complete walk, and a topic is
-fetched only when its last post id changed. So the first run and the daily run are the
-same code, and the counts double as the completeness check.
+fetched only when its last post id changed. But a changed forum is walked whole (every
+page) and so is each forum above it: that was 60-400 requests a run, so the frequent
+runs read the feed instead (docs/PLAN-scraping.md).
 """
 
 import os
 import re
 import sys
 import time
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from bs4 import BeautifulSoup
@@ -26,7 +31,8 @@ import common
 from common import DELAY, session
 
 BASE = "https://nastava.mas.bg.ac.rs/nastava/"
-WORKERS = int(os.getenv("WORKERS", "2"))
+FEED = "app.php/feed"  # phpBB's Atom feed of the newest posts, all forums a guest sees
+WORKERS = int(os.getenv("WORKERS", "1"))  # one request at a time (docs/PLAN-scraping.md)
 # A topic to fetch: never fetched, or its last post changed since.
 PENDING = "(done_last_post is null or done_last_post != coalesce(last_post, -1))"
 
@@ -216,41 +222,48 @@ def panel_text(node):
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
 
+def page_posts(soup):
+    """The posts of one topic page."""
+    posts = []
+    for post in soup.select("div.post[id^=p]"):
+        content = post.select_one("div.content")
+        if content is None:
+            continue
+        files = post.select_one("dl.attachbox")
+        when = post.select_one("p.author time")
+        html = str(content) + (str(files) if files else "")
+        posts.append(
+            {
+                "id": int(post["id"][1:]),
+                "title": text(post.select_one("h3 a")),
+                "author": text(post.select_one("p.author .username, p.author .username-coloured")),
+                "date": text(when),
+                "posted": when["datetime"] if when else None,
+                "content": panel_text(content),
+                "html": html,
+                "files": [(int(i), text(a)) for a in post.select('a[href*="download/file.php?id="]') for i in [param(a["href"], "id")] if i],
+                "images": {
+                    int(i)
+                    for i in re.findall(r"download/file\.php\?id=(\d+)", " ".join(img.get("src", "") for img in content.find_all("img")))
+                },
+            }
+        )
+    return posts
+
+
+def page_forum(soup):
+    """(forum id, forum name) of a topic page, from its breadcrumb; (None, None) when it has none."""
+    crumb = soup.select(".crumb[data-forum-id]")
+    return (int(crumb[-1]["data-forum-id"]), text(crumb[-1])) if crumb else (None, None)
+
+
 def read_topic(topic_id):
     """Return (forum id, forum name, posts) of one topic, or None when the topic is gone."""
     forum = name = None
     posts = []
     for soup in walk_pages(f"viewtopic.php?t={topic_id}"):
-        crumb = soup.select(".crumb[data-forum-id]")
-        if crumb:
-            forum, name = int(crumb[-1]["data-forum-id"]), text(crumb[-1])
-        for post in soup.select("div.post[id^=p]"):
-            content = post.select_one("div.content")
-            if content is None:
-                continue
-            files = post.select_one("dl.attachbox")
-            when = post.select_one("p.author time")
-            html = str(content) + (str(files) if files else "")
-            posts.append(
-                {
-                    "id": int(post["id"][1:]),
-                    "title": text(post.select_one("h3 a")),
-                    "author": text(post.select_one("p.author .username, p.author .username-coloured")),
-                    "date": text(when),
-                    "posted": when["datetime"] if when else None,
-                    "content": panel_text(content),
-                    "html": html,
-                    "files": [
-                        (int(i), text(a)) for a in post.select('a[href*="download/file.php?id="]') for i in [param(a["href"], "id")] if i
-                    ],
-                    "images": {
-                        int(i)
-                        for i in re.findall(
-                            r"download/file\.php\?id=(\d+)", " ".join(img.get("src", "") for img in content.find_all("img"))
-                        )
-                    },
-                }
-            )
+        forum, name = page_forum(soup) if soup.select(".crumb[data-forum-id]") else (forum, name)
+        posts += page_posts(soup)
     if forum and not posts:
         # The page is there but no post parses: a markup change, not a deleted topic. Not stored, tried again next run.
         raise ValueError(f"topic {topic_id}: no posts parsed")
@@ -263,6 +276,16 @@ def store_topic(db, topic_id, last_post, result):
         db.execute("update posts set gone = 1 where topic = ?", (topic_id,))
         return 0
     forum, name, posts = result
+    store_posts(db, topic_id, forum, name, posts)
+    # A post deleted on the board stays in the archive, marked gone.
+    ids = [p["id"] for p in posts]
+    db.execute(f"update posts set gone = 1 where topic = ? and id not in ({','.join('?' * len(ids))})", (topic_id, *ids))
+    db.execute("update topics set forum = coalesce(?, forum), done_last_post = coalesce(?, -1) where id = ?", (forum, last_post, topic_id))
+    return len(posts)
+
+
+def store_posts(db, topic_id, forum, name, posts):
+    """Store posts of a topic (all of it, or one page: nothing is marked gone here) and their attachments."""
     for p in posts:
         db.execute(
             "insert into posts (id, topic, forum, subject, title, author, date, posted, content, html) values (?,?,?,?,?,?,?,?,?,?) "
@@ -277,11 +300,86 @@ def store_topic(db, topic_id, last_post, result):
                 "post = coalesce(documents.post, excluded.post), title = coalesce(excluded.title, documents.title)",
                 (file_id, p["id"], label),
             )
-    # A post deleted on the board stays in the archive, marked gone.
-    ids = [p["id"] for p in posts]
-    db.execute(f"update posts set gone = 1 where topic = ? and id not in ({','.join('?' * len(ids))})", (topic_id, *ids))
-    db.execute("update topics set forum = coalesce(?, forum), done_last_post = coalesce(?, -1) where id = ?", (forum, last_post, topic_id))
-    return len(posts)
+
+
+# ---------- feed ----------
+
+
+def feed_ids(xml):
+    """The post ids of the board's Atom feed, newest first (each entry links viewtopic.php?p=<id>)."""
+    atom = "{http://www.w3.org/2005/Atom}"
+    ids = []
+    for entry in ET.fromstring(xml).iter(f"{atom}entry"):
+        link = entry.find(f"{atom}link")
+        if link is not None and (i := param(link.get("href"), "p")):
+            ids.append(i)
+    return ids
+
+
+def feed(db):
+    """The frequent run: the feed, then the page of each new post's topic that has it (viewtopic.php?p=<id>), one
+    request a page; a page with several new posts is read once. Falls back to sync (the walk) when the feed may have
+    missed posts: all of its posts are new and the newest stored is older than its oldest (more than its 30 posts since
+    the last run), or a post is in a forum not stored yet (its parent and place come from the walk)."""
+    r = session().get(BASE + FEED, timeout=60)
+    time.sleep(DELAY)
+    r.raise_for_status()
+    ids = feed_ids(r.text)
+    if not ids:
+        raise ValueError("feed: no entries (the board changed its feed?)")
+    stored = {i for (i,) in db.execute(f"select id from posts where id in ({','.join('?' * len(ids))})", ids)}
+    new = sorted(i for i in ids if i not in stored)
+    newest = db.execute("select max(id) from posts").fetchone()[0] or 0
+    print(f"feed: {len(ids)} posts, {len(new)} new", flush=True)
+    if new and len(new) == len(ids) and newest < min(ids):
+        print("feed: more new posts than it shows: walking the forums", flush=True)
+        return sync(db)
+    forums = {f for (f,) in db.execute("select id from forums")}
+    for post_id in new:
+        if post_id in stored:  # on a page read for an earlier one
+            continue
+        soup = get(f"viewtopic.php?p={post_id}")
+        if soup is None:  # deleted since the feed listed it
+            continue
+        forum, name = page_forum(soup)
+        title = soup.select_one("h2.topic-title a")
+        topic_id = param(title["href"], "t") if title else None
+        posts = page_posts(soup)
+        if not (forum and topic_id and posts):
+            raise ValueError(f"post {post_id}: no forum, topic or posts on its page (the board changed its markup?)")
+        if forum not in forums:
+            print(f"feed: post {post_id} is in a forum not stored yet ({forum}): walking the forums", flush=True)
+            return sync(db)
+        store_posts(db, topic_id, forum, name, posts)
+        store_feed_topic(db, topic_id, forum, text(title), max(p["id"] for p in posts), bool(soup.find("a", rel="next")))
+        stored |= {p["id"] for p in posts}
+        db.commit()
+    # Topics left to fetch whole (a run that failed, a new topic of more than one page): rare, so fetched now.
+    fetch_topics(db)
+
+
+def store_feed_topic(db, topic_id, forum, title, last_post, more_pages):
+    """A topic after its page from the feed: its last post is the newest one seen. It stays done (no full fetch) when
+    it was done before, or is new and all on this page; else fetch_topics reads it whole. Its replies follow the
+    stored posts, so stats sees a done topic complete."""
+    old = db.execute("select last_post, done_last_post from topics where id = ?", (topic_id,)).fetchone()
+    last = max(last_post, (old and old[0]) or 0)
+    done = old[0] == old[1] if old else not more_pages
+    db.execute(
+        "insert into topics (id, forum, title, last_post, done_last_post) values (?,?,?,?,?) on conflict(id) do update set "
+        "forum = excluded.forum, title = excluded.title, last_post = excluded.last_post, "
+        "done_last_post = case when ? then excluded.done_last_post else topics.done_last_post end, gone = 0",
+        (topic_id, forum, title, last, last if done else None, done),
+    )
+    db.execute(
+        "update topics set replies = (select count(*) - 1 from posts where topic = ? and gone = 0) where id = ? and done_last_post = last_post",
+        (topic_id, topic_id),
+    )
+
+
+def sync(db):
+    crawl_tree(db)
+    fetch_topics(db)
 
 
 def fetch_topics(db, quiet=False):
@@ -344,7 +442,8 @@ def show_stats(db):
         problems.append("topics with missing posts")
     bad = db.execute(
         "select f.id, f.name, f.own_topics, count(t.id) from forums f left join topics t on t.forum = f.id and t.gone = 0 "
-        "where f.own_topics is not null group by f.id having count(t.id) != f.own_topics"
+        # Fewer stored than the page showed: missing. More is a topic the feed brought since the last walk.
+        "where f.own_topics is not null group by f.id having count(t.id) < f.own_topics"
     ).fetchall()
     print(f"forums whose stored topics differ from the forum page: {len(bad)}", bad[:10])
     if bad:
@@ -365,11 +464,10 @@ def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "sync"
     if command == "stats":
         show_stats(db)
-    elif command == "sync":
+    elif command in ("feed", "sync"):
         try:
-            crawl_tree(db)
-            fetch_topics(db)
-        except Exception:
+            (feed if command == "feed" else sync)(db)
+        except BaseException:  # common.Blocked too (a 403): the banner, then out
             # The site's red banner (build.py forum_failed) until a later read works.
             db.execute("insert or replace into meta values ('forum_failed', strftime('%Y-%m-%dT%H:%MZ', 'now'))")
             db.commit()

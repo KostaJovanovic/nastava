@@ -45,14 +45,16 @@ assert _w == [
     ("rok", D(2027, 9, 13), D(2027, 9, 26)),
 ], _w
 _p = lambda slot, *ymd: parts(slot, D(*ymd), _w)
-assert _p("morning", 2027, 1, 18) == "forum studije" and _p("afternoon", 2027, 1, 18) == "forum"  # an exam period starts
-assert _p("morning", 2027, 3, 1) == "forum studije sajtovi" and _p("noon", 2027, 3, 1) == "forum"  # the 1st: morning only
-assert _p("morning", 2026, 11, 10) == "forum" and _p("late", 2027, 3, 30) == "forum"  # every run scrapes
+assert _p("morning", 2027, 1, 18) == "forum ie studije" and _p("afternoon", 2027, 1, 18) == "forum"  # an exam period starts
+assert _p("morning", 2027, 3, 1) == "forum ie studije sajtovi" and _p("noon", 2027, 3, 1) == "forum"  # the 1st: morning only
+assert _p("morning", 2026, 11, 10) == "forum ie" and _p("late", 2027, 3, 30) == "forum"  # every run scrapes
 assert _p("evening", 2026, 12, 5) == "forum" and _p("late", 2027, 3, 1) == "forum"
-assert _p("morning", 2027, 1, 11) == "forum studije" and _p("noon", 2027, 1, 11) == "forum"  # registration opens
-assert _p("noon", 2027, 2, 2) == "forum" and _p("morning", 2027, 2, 1) == "forum studije"  # after January's; the 1st
-assert _p("morning", 2027, 10, 1) == "forum studije nastavnici predmeti sajtovi"  # the 1st, 1 October
+assert _p("morning", 2027, 1, 11) == "forum ie studije" and _p("noon", 2027, 1, 11) == "forum"  # registration opens
+assert _p("noon", 2027, 2, 2) == "forum" and _p("morning", 2027, 2, 1) == "forum ie studije"  # after January's; the 1st
+assert _p("morning", 2027, 10, 1) == "forum ie studije nastavnici predmeti sajtovi"  # the 1st, 1 October
 assert _p("noon", 2026, 10, 1) == "forum"
+# Sunday's late run: the weekly full check; not its other runs, not another day's late run.
+assert _p("late", 2026, 11, 22) == "forum provera" and _p("evening", 2026, 11, 22) == "forum" and _p("late", 2026, 11, 21) == "forum"
 assert hot(D(2026, 10, 3), [("rok", D(2026, 9, 13), D(2026, 9, 26))]) and not hot(D(2026, 10, 4), [("rok", D(2026, 9, 13), D(2026, 9, 26))])
 _c = {2026: _w}
 assert for_year(_c, 2027)[0] == ("prijave", D(2028, 1, 11), D(2028, 1, 13)) and for_year(_c, 2026) == _w and for_year({}, 2026) == []

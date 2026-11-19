@@ -20,11 +20,11 @@ from urllib.parse import quote, unquote, urljoin, urlsplit
 import requests
 from bs4 import BeautifulSoup
 
-from common import DB, FILE, ROOT, is_html_page
+from common import DB, FILE, ROOT, is_html_page, plain_session
 from studije import SITE as STUDY_SITE, media_path
 
 OUT = ROOT / "files" / "sites"
-DELAY = float(os.getenv("DELAY", "0.3"))
+DELAY = float(os.getenv("DELAY", "1.5"))
 
 
 def links(db):
@@ -74,8 +74,7 @@ def target(url):
 
 
 def download(urls):
-    s = requests.Session()
-    s.headers["User-Agent"] = "nastava-arhiva (backup of linked files)"
+    s = plain_session()
     done = failed = 0
     for i, url in enumerate(urls, 1):
         path = target(url)

@@ -25,8 +25,11 @@ pipeline and site, with new scrapers for phpBB.
   `gh workflow run sync.yml -f what=forum` (or `"forum studije"`, `sync`); on a PC: `bash ci/deploy.sh forum`
   (or `forum studije`, `sync`), which first gets the saved state. A run:
   1. gets the state (`ci/state.sh pull`) and runs the tests that need no network (`test/*_test.py`; the build's before the build);
-  2. reads the forum tree and fetches the forums and topics whose counts or last post changed (an edit to a post,
-     which changes neither, is not fetched);
+  2. reads the board's Atom feed (its 30 newest posts) and, for each post not stored, the page of its topic that has
+     it; the news' recently changed posts; cent's pages asked "changed?" (ETag); ie once a day. Sunday's late run
+     (`provera`) walks the whole forum tree and lists every news post, which finds deleted and moved topics. An edit to
+     a post is not fetched. The faculty found the earlier runs too heavy (2026-11-18): one request at a time, 1.5 s
+     apart, a User-Agent with a contact, and a 403 or 429 stops that scraper (`common.Blocked`);
   3. checks the counts, archives the news and the subjects' pages on cent.mas.bg.ac.rs, and the schedules, the
      teachers and the subjects when they are due (the departments' sites only with `sync`). A failure in these does
      not stop the run;
@@ -51,8 +54,9 @@ pipeline and site, with new scrapers for phpBB.
 
 ## Files
 
-- `scrapers/nastava.py`: scrape the forum tree and the posts into `nastava.db`. `stats` compares the board's counts with the
-  stored rows and exits 1 when posts are missing.
+- `scrapers/nastava.py`: scrape the posts into `nastava.db`: `feed` (every run: the feed, then one page per new post's
+  topic; the walk when the feed may have missed some), `sync` (the forum tree walk: the first run, and weekly).
+  `stats` compares the board's counts with the stored rows and exits 1 when posts are missing.
 - `scrapers/documents.py`: download the attachments into `files/` and extract their text. Each distinct file is kept
   once, named by its SHA-256 (`files/blobs/`); `files/index.sqlite` maps an attachment (`<id>/<name>`, as
   `documents.path`) to its copy, so a file posted again takes no room. `stats` also reports a copy whose bytes no
@@ -63,7 +67,7 @@ pipeline and site, with new scrapers for phpBB.
   re-enrollment, payments, accounts, in Linkovi)
   and every file they link, into `nastava.db`. A changed page or file adds a version; the site shows the newest and
   serves the files itself (PDFs open in the browser).
-- `scrapers/vesti.py`: archive the news of vesti.mas.bg.ac.rs (WordPress REST API: each run lists every post, and reads the new or changed ones) into the
+- `scrapers/vesti.py`: archive the news of vesti.mas.bg.ac.rs (WordPress REST API: `sync` lists the most recently changed posts until a stored one, `full` every post weekly; both read the new or changed ones) into the
   `vesti` and `vesti_categories` tables; a changed post adds a version, a deleted one stays, marked gone. Images and
   files stay on the news site (linked). The site has `/vesti/` (a year per page, filter by category), a page per news
   post (which search finds; the header's scope "Vesti"), the newest five on the home page, and `/vesti/feed.xml`.

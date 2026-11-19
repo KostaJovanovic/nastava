@@ -102,14 +102,28 @@ if "%CHOICE%"=="2" goto checkrepo
 if "%CHOICE%"=="3" (set "DEPLOY=1" & goto checkrepo)
 if "%CHOICE%"=="4" goto pull
 if "%CHOICE%"=="5" goto pushonly
-if "%CHOICE%"=="6" (set "DEPLOY=1" & set "DEPLOY_ARGS=sync" & goto checkrepo)
-if "%CHOICE%"=="7" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & goto checkrepo)
-if "%CHOICE%"=="8" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & set "APP=1" & goto checkrepo)
+if "%CHOICE%"=="6" (set "DEPLOY=1" & set "DEPLOY_ARGS=sync" & goto confirmscrape)
+if "%CHOICE%"=="7" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & goto confirmscrape)
+if "%CHOICE%"=="8" (set "DEPLOY=1" & set "DEPLOY_ARGS=forum" & set "APP=1" & goto confirmscrape)
 if "%CHOICE%"=="9" exit /b 0
 if "%CHOICE%"=="10" goto ocr
 if "%CHOICE%"=="11" (set "DEPLOY=1" & set "APP=1" & goto checkrepo)
 echo [err]  invalid choice
 goto menu
+
+
+rem 6, 7, 8 scrape the faculty's servers from this PC: the faculty found the runs too heavy (2026-11-18), so asked
+rem first (docs/PLAN-scraping.md). 3 and 11 build without scraping.
+:confirmscrape
+echo.
+echo [warn] this scrapes the faculty's servers ^(nastava, vesti, cent, the departments^) from this PC
+set "OKSCRAPE="
+set /p OKSCRAPE=scrape anyway? (y/n): 
+if /i not "%OKSCRAPE%"=="y" (
+  echo [git]  nothing done - 3 or 11 build without scraping
+  goto end
+)
+goto checkrepo
 
 
 :usage

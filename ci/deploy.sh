@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Scrape, build and publish: the scheduled run (sync.yml) and this PC (by hand, as an override) run the same steps.
 # The site goes up as an asset of the "site" release, and the deploy workflow puts it on GitHub Pages as it is.
-# Usage: bash ci/deploy.sh [auto SLOT | sync | forum [studije] [nastavnici] [predmeti]]   (from the repo root)
+# Usage: bash ci/deploy.sh [auto SLOT | sync | forum [ie] [provera] [studije] [nastavnici] [predmeti]]   (from the repo root)
+#   (forum: the board's and the news's feeds, cent, the departments but ie; ie: ie's too; provera: the full listings)
 #   auto SLOT  the scheduled run: SLOT is morning, noon, afternoon, evening or late; ci/plan.py adds the scrapers due
 #              that day to the board and the news
 #   sync       every scraper: the board, the news, the departments' sites, the schedule pages, the teachers, the
@@ -69,10 +70,10 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 			step kalendar uv run -q ci/plan.py check || failed+=(kalendar)
 		fi
 	elif [[ $1 == sync ]]; then
-		parts=(forum studije nastavnici predmeti)
+		parts=(forum ie provera studije nastavnici predmeti)
 	fi
 	for p in "${parts[@]:1}"; do
-		[[ $p == studije || $p == nastavnici || $p == predmeti || $p == sajtovi ]] || { echo "unknown scraper: $p" >&2; exit 2; }
+		[[ $p =~ ^(ie|provera|studije|nastavnici|predmeti|sajtovi)$ ]] || { echo "unknown scraper: $p" >&2; exit 2; }
 	done
 	# Every test that needs no network or site (test/*_test.py), but the build's (before the build) and docs_test.py
 	# (it downloads attachments). A failure stops the run here: a broken parser must not scrape.
@@ -89,24 +90,32 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	before=$(uv run -q ci/push.py last | tr -d '\r') || before=
 	print=$(uv run -q ci/plan.py fingerprint | tr -d '\r')
 	uv run -q ci/runs.py snap || true
+	# The board and the news: their feeds (a few requests) every run; the full listings only in the weekly check
+	# (provera, ci/plan.py: Sunday's late run), which finds deleted and moved topics (docs/PLAN-scraping.md).
+	board=feed news=sync
+	[[ " ${parts[*]} " == *" provera "* ]] && board=sync news=full
 	# A board that does not answer must not cost the run the other sources: noted, the rest still scraped and deployed.
-	step nastava uv run scrapers/nastava.py sync || failed+=(nastava)
+	step nastava uv run scrapers/nastava.py $board || failed+=(nastava)
 	# Right after the scrape, so a post made since then does not count as missing.
 	step stats uv run scrapers/nastava.py stats || failed+=(stats)
 	# The attachments of the new posts (since October 2026) into the releases files-<school year>, with thumbnails: a
 	# few a day.
 	step files uv run scrapers/documents.py host || failed+=(files)
-	# The news change daily too, and all of them are ~46 requests.
-	step vesti uv run scrapers/vesti.py sync || failed+=(vesti)
-	# The subjects' pages on cent.mas.bg.ac.rs: ~40 requests a run.
+	# The news: the recently changed posts, one request when nothing changed (the full listing: ~46).
+	step vesti uv run scrapers/vesti.py $news || failed+=(vesti)
+	# The subjects' pages on cent.mas.bg.ac.rs: the pages list (3 requests) and the notices pages, asked "changed?".
 	step cent uv run scrapers/cent.py sync || failed+=(cent)
-	# The other departments' sites, every run as cent (a subject's material changes with its posts): ~400 requests,
-	# ~3-4 minutes.
+	# The other departments' announcements, every run but ie's (a subject's material changes with its posts): ~10
+	# requests. ie's ~40 once a day (the part ie).
 	step katedre uv run scrapers/katedre.py sync || failed+=(katedre)
 	for p in "${parts[@]:1}"; do
 		# sajtovi: the departments' whole sites (katedre.py site), twice a year: ~700 requests, ~10 minutes.
 		if [[ $p == sajtovi ]]; then
 			step sajtovi uv run scrapers/katedre.py site || failed+=(sajtovi)
+		elif [[ $p == ie ]]; then
+			step ie uv run scrapers/katedre.py sync ie || failed+=(ie)
+		elif [[ $p == provera ]]; then
+			:  # the board's and the news's full listings above
 		else
 			step "$p" uv run "scrapers/$p.py" sync || failed+=("$p")
 		fi

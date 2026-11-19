@@ -76,6 +76,82 @@ nastava.get = lambda path: BeautifulSoup(
 nastava.walk_forum(db, 5, "viewforum.php?f=5")
 assert db.execute("select gone, done_last_post from topics").fetchone() == (0, None)
 
+# The frequent run reads the feed (30 newest posts), then only the page of each new post's topic.
+ids = nastava.feed_ids(read("feed.xml"))
+assert len(ids) == len(set(ids)) == 30 and ids[0] == 29351, ids[:5]
+nastava.DELAY = 0
+fetched, walked = [], []
+
+
+class FeedSession:
+    def get(self, url, timeout):
+        assert url == nastava.BASE + nastava.FEED, url
+        return type("R", (), dict(text=read("feed.xml"), raise_for_status=lambda self: None))()
+
+
+nastava.session = lambda: FeedSession()
+nastava.get = lambda path: fetched.append(path) or soup("viewtopic-p.html")
+nastava.sync = lambda db: walked.append(1)
+
+
+def feed_db(stored, forums=(51,)):
+    db = sqlite3.connect(":memory:")
+    db.executescript(nastava.SCHEMA)
+    db.executemany("insert into forums (id, name) values (?, 'f')", [(f,) for f in forums])
+    db.executemany("insert into posts (id, topic) values (?, 1)", [(i,) for i in stored])
+    return db
+
+
+# All but the newest stored: one page read, the topic stored as done, nothing walked.
+db = feed_db(set(ids) - {29351})
+nastava.feed(db)
+assert fetched == ["viewtopic.php?p=29351"] and not walked, (fetched, walked)
+assert db.execute("select forum, last_post, done_last_post, replies from topics where id = 21114").fetchone() == (51, 29351, 29351, 0)
+assert db.execute("select topic, forum from posts where id = 29351").fetchone() == (21114, 51)
+# Nothing new: no page read.
+fetched.clear()
+nastava.feed(db)
+assert not fetched and not walked
+# More new posts than the feed shows (the newest stored is older than its oldest): the walk, no pages one by one.
+nastava.feed(feed_db({100}))
+assert walked == [1] and not fetched
+# A new post in a forum not stored yet: the walk too.
+walked.clear()
+nastava.feed(feed_db(set(ids) - {29351}, forums=()))
+assert walked == [1]
+# A faculty server's 403 or 429 stops a scraper: Blocked passes the scrapers' `except Exception`.
+import common  # noqa: E402
+
+blocked = common.stop_on(type("S", (), dict(request=lambda self, *a, **k: type("R", (), dict(status_code=403, close=lambda s: None))()))(), (403, 429))
+try:
+    try:
+        blocked.request("GET", "https://nastava.mas.bg.ac.rs/x")
+    except Exception:
+        raise AssertionError("Blocked caught as an Exception")
+    raise AssertionError("no Blocked on a 403")
+except common.Blocked:
+    pass
+
+# vesti's frequent run lists the most recently changed posts only up to the first page with a stored one.
+import vesti  # noqa: E402
+
+vesti.DELAY = 0
+pages = {1: [dict(id=9, modified="b"), dict(id=8, modified="b")], 2: [dict(id=7, modified="a"), dict(id=6, modified="a")], 3: [dict(id=5, modified="a")]}
+asked = []
+
+
+class VestiSession:
+    def get(self, url, timeout):
+        page = int(url.rsplit("page=", 1)[1].split("&")[0])
+        asked.append(page)
+        return type("R", (), dict(json=lambda self: pages[page], headers={"X-WP-TotalPages": "3"}, raise_for_status=lambda self: None))()
+
+
+vesti.session = lambda: VestiSession()
+assert [p["id"] for p in vesti.recent({(7, "a")})] == [9, 8, 7, 6] and asked == [1, 2]
+asked.clear()
+assert len(vesti.recent(set())) == 5 and asked == [1, 2, 3]  # nothing stored: every page
+
 # The teacher list, a profile and the emeritus page.
 listed = nastavnici.parse_list(read("nastavnici.html"))
 assert len(listed) == 201 and all(t["katedra"] for t in listed) and sum(not t["email"] for t in listed) == 4
@@ -208,6 +284,26 @@ assert db.execute("select title, html, first_seen, last_seen from cent_pages ord
     ("X & Y", "a", "s1", "s4"),
     ("X & Y", "b", "s3", "s3"),
 ]
+# A notices page read before is asked with its ETag: a 304 is "seen again", nothing parsed; the first read stores it.
+db = sqlite3.connect(":memory:")
+db.executescript(cent.SCHEMA)
+listed = [dict(page, slug="obavestenja", link=T + "obavestenja/")]
+answers, asked = [(200, {"ETag": '"v1"'}), (304, {})], []
+cent.connect, cent.session, cent.list_pages = (lambda schema: db), (lambda: None), (lambda s: listed)
+
+
+def cent_get(s, url, headers=None):
+    asked.append(headers)
+    status, h = answers.pop(0)
+    return type("R", (), dict(status_code=status, headers=h, text=read("cent-obavestenja.html")))()
+
+
+cent.get = cent_get
+cent.sync()
+cent.sync()
+assert asked == [{}, {"If-None-Match": '"v1"'}], asked
+assert db.execute("select count(*), count(distinct last_seen) from cent_pages").fetchone() == (1, 1)
+assert db.execute("select etag from cent_http").fetchone() == ('"v1"',)
 
 # A department's site (katedre.py): the content without menus, hidden spam, Word's styles; links absolute; what to
 # follow from the whole page; one URL a page.

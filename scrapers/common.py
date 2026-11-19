@@ -18,9 +18,31 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent  # the repo (this file is in scrapers/)
 DB = os.getenv("DB", str(ROOT / "nastava.db"))
-# The pause between requests to www.mas.bg.ac.rs, the board and the news (cent.py and katedre.py have their own).
-DELAY = float(os.getenv("DELAY", "0.5"))
-USER_AGENT = "Mozilla/5.0 (personal archive)"
+# The pause between requests to www.mas.bg.ac.rs, the board and the news (cent.py and katedre.py have their own): the
+# faculty found the runs too heavy (2026-11-18), so one request at a time, 1.5 s apart (docs/PLAN-scraping.md).
+DELAY = float(os.getenv("DELAY", "1.5"))
+# Who is asking, and how to reach them: the faculty's admins see it in their logs.
+USER_AGENT = "masinci.org arhiva (+https://masinci.org/; valjdakosta@gmail.com)"
+
+
+class Blocked(BaseException):
+    """A faculty server said 403 or 429: the scraper stops, no retry. A BaseException, so the scrapers' `except
+    Exception` (one bad topic or page must not stop a run) does not swallow it."""
+
+
+def stop_on(s, codes):
+    """s, raising Blocked on an answer in codes (after the run log has it)."""
+    request = s.request
+
+    def checked(method, url, *a, **kw):
+        r = request(method, url, *a, **kw)
+        if r.status_code in codes:
+            r.close()
+            raise Blocked(f"{urlsplit(url).hostname} answered {r.status_code}: stopped, no retry")
+        return r
+
+    s.request = checked
+    return s
 LOCAL = threading.local()
 # A logged run (ci/deploy.sh): the folder its log is gathered in, for ci/runs.py.
 RUN_DIR = os.getenv("RUN_DIR")
@@ -128,7 +150,8 @@ def now():
 
 
 def session():
-    # One session per thread; retries with backoff on server errors and timeouts.
+    # One session per thread; two retries with backoff on server errors and timeouts (a server that struggles is not
+    # asked six times); a 403 or 429 stops the scraper (Blocked).
     if not hasattr(LOCAL, "s"):
         import requests
         from requests.adapters import HTTPAdapter
@@ -136,21 +159,22 @@ def session():
 
         s = requests.Session()
         s.headers["User-Agent"] = USER_AGENT
-        retry = Retry(total=6, backoff_factor=2, status_forcelist=(429, 500, 502, 503, 504), allowed_methods=("GET",))
+        retry = Retry(total=2, backoff_factor=5, status_forcelist=(500, 502, 503, 504), allowed_methods=("GET",))
         s.mount("https://", HTTPAdapter(max_retries=retry))
         # The board blocks GitHub's servers (since 2026-11-18): sync.yml sets FORUM_PROXY to Cloudflare WARP's local
         # proxy, for the board's host alone.
         if os.getenv("FORUM_PROXY"):
             s.proxies["https://nastava.mas.bg.ac.rs"] = os.environ["FORUM_PROXY"]
-        LOCAL.s = instrument(s)
+        LOCAL.s = stop_on(instrument(s), (403, 429))
     return LOCAL.s
 
 
 def plain_session():
-    """No retries (katedre.py's crawl meets dead links, and backing off on each would take minutes apiece)."""
+    """No retries (katedre.py's crawl meets dead links, and backing off on each would take minutes apiece). A 429 stops
+    it; a 403 does not, as a whole-site crawl meets forbidden folders (a blocked site gives no page, so it ends there)."""
     import requests
 
-    s = instrument(requests.Session())
+    s = stop_on(instrument(requests.Session()), (429,))
     s.headers["User-Agent"] = USER_AGENT
     return s
 

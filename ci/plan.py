@@ -89,9 +89,11 @@ def parts(slot, d, wins):
     """The scrapers for a run: "forum" (the board and the news) and those due today. All five runs scrape, every day;
     the morning run also takes the schedule pages (studije) on the 1st of the month and on the first day of a
     registration or an exam period, on 1 October the teachers and the subjects, and on 1 October and 1 March the
-    departments' whole sites (sajtovi). (Their announcements run every time, in deploy.sh.)"""
+    departments' whole sites (sajtovi). (Their announcements run every time, in deploy.sh.) The morning run also reads
+    ie's announcements (ie: no "changed?" answer, so once a day), and Sunday's late run the weekly full check of the board
+    and the news (provera: deleted and moved topics, a news post taken down). docs/PLAN-scraping.md."""
     first = slot == "morning"
-    p = ["forum"]
+    p = ["forum"] + (["ie"] if first else []) + (["provera"] if slot == "late" and d.weekday() == 6 else [])
     if first and (d.day == 1 or any(d == a for _, a, _ in wins)):
         p.append("studije")
     if first and (d.month, d.day) == YEARLY:
