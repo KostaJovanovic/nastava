@@ -810,3 +810,11 @@ _p = ["Ana (rođena Petrović) je profesor. Rođena je 1989. u Čačku, gde je 2
 assert unborn(dict(summary=_p)) == ["Ana (rođena Petrović) je profesor. Diplomirala je 2012."], unborn(dict(summary=_p))
 assert unborn(dict(summary=_p, history=dict(life="1960–2020"))) == _p and unborn(dict(summary=_p + ["Preminuo je 2020."])) == _p + ["Preminuo je 2020."]
 assert unborn(dict(summary=["Rođen je 1986. u Beogradu. Mentor je bio X, a posle njegove smrti Y."])) == ["Mentor je bio X, a posle njegove smrti Y."]
+# A department site's page: the public build links it, the local server folds its copied text (cards.html site_fold).
+_sfp = dict(title="Lab", url="https://meh.mas.bg.ac.rs/lab", html="<p>kopiran tekst</p>", seen="2026-11-01")
+_sf = env.get_template("cards.html").module.site_fold
+env.globals["dev"] = False
+assert "kopiran" not in str(_sf(_sfp)) and 'href="https://meh.mas.bg.ac.rs/lab"' in str(_sf(_sfp))
+env.globals["dev"] = True
+assert "kopiran" in str(env.get_template("cards.html").make_module().site_fold(_sfp))
+env.globals["dev"] = False

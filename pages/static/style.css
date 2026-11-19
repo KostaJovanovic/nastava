@@ -11,62 +11,11 @@
 @font-face { font-family: "IBM Plex Sans"; src: url("/static/fonts/IBMPlexSans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 @font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/IBMPlexMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "IBM Plex Mono"; src: url("/static/fonts/IBMPlexMono-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-/* An OG image's font, for its specimen on /stil/ (stil.html). */
+/* The OG images' fonts, for their specimens on /stil/ (stil.html): each downloads only there. */
 @font-face { font-family: "Roboto Mono"; src: url("/static/fonts/RobotoMono-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-/* Fonts to try in place of Plex Sans (site.js, the font menu): each downloads only once something uses it. Latin,
-   Latin Extended and Cyrillic only; variable ones cut to 400–800. "Roboto Lab": not the system's Roboto in --sans. */
 @font-face { font-family: "Geist"; src: url("/static/fonts/Geist-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Geist"; src: url("/static/fonts/Geist-ExtraBold.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "Golos Text"; src: url("/static/fonts/lab/GolosText.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Roboto Lab"; src: url("/static/fonts/lab/Roboto.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Inter"; src: url("/static/fonts/lab/Inter.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Montserrat"; src: url("/static/fonts/lab/Montserrat.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Literata"; src: url("/static/fonts/lab/Literata.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Source Serif 4"; src: url("/static/fonts/lab/SourceSerif4.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "LT Wave Text"; src: url("/static/fonts/lab/LTWaveText-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "LT Wave Text"; src: url("/static/fonts/lab/LTWaveText-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "LT Wave Text"; src: url("/static/fonts/lab/LTWaveText-Black.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "LT Remark"; src: url("/static/fonts/lab/LTRemark-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "LT Remark"; src: url("/static/fonts/lab/LTRemark-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "LT Remark"; src: url("/static/fonts/lab/LTRemark-Black.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "Mint Spirit No2"; src: url("/static/fonts/lab/MintSpiritNo2-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Mint Spirit No2"; src: url("/static/fonts/lab/MintSpiritNo2-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "Onest"; src: url("/static/fonts/lab/Onest.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Manrope"; src: url("/static/fonts/lab/Manrope.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Geologica"; src: url("/static/fonts/lab/Geologica.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Wix Madefor Text"; src: url("/static/fonts/lab/WixMadeforText.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Rubik"; src: url("/static/fonts/lab/Rubik.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Unbounded"; src: url("/static/fonts/lab/Unbounded.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Space Grotesk"; src: url("/static/fonts/lab/SpaceGrotesk.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
-@font-face { font-family: "Bricolage Grotesque"; src: url("/static/fonts/lab/BricolageGrotesque.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "DM Sans"; src: url("/static/fonts/lab/DMSans.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Plus Jakarta Sans"; src: url("/static/fonts/lab/PlusJakartaSans.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Figtree"; src: url("/static/fonts/lab/Figtree.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Outfit"; src: url("/static/fonts/lab/Outfit.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Instrument Sans"; src: url("/static/fonts/lab/InstrumentSans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
-@font-face { font-family: "IBM Plex Math"; src: url("/static/fonts/lab/IBMPlexMath.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "3270"; src: url("/static/fonts/lab/3270.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 125%; }
-/* The PC's screen fonts: PxPlus IBM VGA 8x16 and IBM BIOS from the Ultimate Oldschool PC Font Pack by VileR
-   (int10h.org/oldschool-pc-fonts), CC BY-SA 4.0. Sized up so the 14px text is 16px: a whole screen pixel to each. */
-@font-face { font-family: "IBM VGA 8x16"; src: url("/static/fonts/lab/IBM-VGA-8x16.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 114.29%; }
-@font-face { font-family: "IBM BIOS"; src: url("/static/fonts/lab/IBM-BIOS.woff2") format("woff2"); font-weight: 400; font-display: swap; size-adjust: 114.29%; }
-/* Latin only: Cyrillic falls back to Plex Sans (site.js's stacks). Satoshi and Zina (Fontshare) as their vendor ships them. */
-@font-face { font-family: "Satoshi"; src: url("/static/fonts/lab/Satoshi.woff2") format("woff2"); font-weight: 300 900; font-display: swap; }
-@font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "Barlow"; src: url("/static/fonts/lab/Barlow-ExtraBold.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "Human Sans"; src: url("/static/fonts/lab/HumanSans-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Human Sans"; src: url("/static/fonts/lab/HumanSans-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "Human Sans"; src: url("/static/fonts/lab/HumanSans-Black.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "Claris Sans"; src: url("/static/fonts/lab/ClarisSans.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Zina"; src: url("/static/fonts/lab/Zina.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Fraunces"; src: url("/static/fonts/lab/Fraunces.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Wittgenstein"; src: url("/static/fonts/lab/Wittgenstein.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Faustina"; src: url("/static/fonts/lab/Faustina-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Faustina"; src: url("/static/fonts/lab/Faustina-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "Faustina"; src: url("/static/fonts/lab/Faustina-ExtraBold.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-@font-face { font-family: "Redaction"; src: url("/static/fonts/lab/Redaction-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Redaction"; src: url("/static/fonts/lab/Redaction-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Golos Text"; src: url("/static/fonts/GolosText.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 
 /* The scripts hide with the hidden attribute; a display rule (.opt, .fr) must not show it again. */
 [hidden] { display: none !important; }
@@ -161,7 +110,7 @@ html { scrollbar-color: auto; }
     var(--sb-paper, var(--paper)) 0 calc(100% - var(--ft-h, 0px)), var(--sb-head-line, var(--head-line)) 0 calc(100% - var(--ft-h, 0px) + 3px),
     var(--sb-head, var(--head)) 0);
 }
-.cmd__scroll, .filters, .fl__l { scrollbar-gutter: stable; }
+.cmd__scroll, .filters { scrollbar-gutter: stable; }
 @supports (-moz-appearance: none) {
   html { scrollbar-color: var(--sb-scroll, var(--scroll)) var(--sb-paper, var(--paper)); transition: scrollbar-color .15s; overflow-x: hidden; }
   /* --sbw: the bar's width (site.js measures it), added to the right paddings so it never covers the content. */
@@ -1869,8 +1818,8 @@ a.bib__t:hover { color: var(--accent-t); text-decoration: underline; }
 #biografija .tp__biotext { padding-top: 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
 .tp__src { margin: 14px 0 0; padding: 10px 18px 12px; border-top: 1px solid var(--line-2); color: var(--dim); font-size: .78125rem; }
 .tp__src a { color: var(--link); }
-.tp__links { margin: 0; padding-left: 1.2rem; line-height: 1.8; }
-.tp__links a { color: var(--link); }
+.sf__link { margin: 0; padding: 10px 14px; }
+.sf__link a { color: var(--link); }
 
 /* ---- The teachers ---------------------------------------------------------- */
 /* A list's bar: one wrapping row of pills, the filters outlined, grouping and order (.arrange) tinted; the count last. */
@@ -2226,21 +2175,6 @@ summary.sg__h:focus-visible { outline: 2px solid var(--accent-t); outline-offset
     details.sg > summary.sg__h, .tp__bio summary { pointer-events: none; }
   }
 }
-
-/* ---- Font menu (site.js, the Konami code): bottom right, each font's name in that font. The heading stays, the
-   list scrolls. ---- */
-.fl {
-  position: fixed; right: 16px; bottom: 16px; z-index: 100;
-  display: flex; flex-direction: column; width: 230px; max-height: min(460px, calc(100dvh - 32px)); padding: 8px;
-  border: 1px solid var(--line); border-radius: var(--r); background: var(--card); color: var(--fg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .2); font-size: 1rem; accent-color: var(--accent);
-}
-.fl__l { display: grid; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-.fl__h { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px; font: 800 .8125rem var(--sans); }
-.fl__x { border: 0; background: none; color: var(--dim); font-size: 1.25rem; line-height: 1; cursor: pointer; }
-.fl__g { padding: 8px 6px 2px; color: var(--dim); font: 400 .6875rem var(--mono); }
-.fl label { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 5px; cursor: pointer; }
-.fl label:hover { background: var(--alt); }
 
 /* ---- Preferences ---------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }

@@ -8,9 +8,6 @@ try {
 	if (t) document.documentElement.dataset.tema = t;
 	// The phone's browser bar takes the header's colour (base.html has the light one).
 	if (t === "dark") document.querySelector('meta[name="theme-color"]').content = "#011321";
-	// A font picked in the font menu (site.js), in place of IBM Plex Sans.
-	const f = localStorage.getItem("font");
-	if (f) document.documentElement.style.setProperty("--sans", f);
 } catch (e) {}
 
 // No "install the site" banner on arrival (Samsung Internet, Chrome's mini-infobar): the manifest stays, for the

@@ -2,12 +2,18 @@
 {%- macro est(y, guess) %}{% if guess %}<span class="est" title="procena">~{{ y }}</span>{% else %}{{ y }}{% endif %}{% endmacro %}
 
 {#- A page of a department's own site (load_sajtovi), folded: its title; open, its content and the original. -#}
+{#- A department site's page (load_sajtovi): folded with its text on the local server; the public build links it only,
+    no copied text (docs/PLAN-pravno.md 4.4). -#}
 {%- macro site_fold(p) %}
+{%- if not dev %}
+<p class="tp__bio sf__page sf__link"><a href="{{ p.url }}" rel="noopener" target="_blank">{{ p.title }} <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a></p>
+{%- else %}
 <details class="tp__bio sf__page">
   <summary><svg class="i" aria-hidden="true"><use href="#i-chevron-right"></use></svg>{{ p.title }}</summary>
   <div class="prose prose--html">{{ p.html | safe }}</div>
   <p class="tp__src"><a href="{{ p.url }}" rel="noopener" target="_blank">Original na {{ p.url.split('/')[2] }} <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a> · sačuvano {{ p.seen }}</p>
 </details>
+{%- endif %}
 {%- endmacro %}
 
 {#- The "Studenti pobeđuju" badge (known.py STUDENTSKA_LISTA): its text on hover, or on a tap (focus) on a phone.

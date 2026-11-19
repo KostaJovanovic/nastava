@@ -496,7 +496,7 @@ STIL_FONTS = (
     ("IBM Plex Sans", "IBM Plex Sans", ["IBMPlexSans.woff2"], (400, 700), "tekst celog sajta"),
     ("IBM Plex Mono", "IBM Plex Mono", ["IBMPlexMono-Regular.woff2", "IBMPlexMono-Bold.woff2"], (400, 700), "kodovi, brojevi, datumi"),
     ("Geist", "Geist", ["Geist-Regular.woff2", "Geist-ExtraBold.woff2"], (400, 800), "OG slike sekcija"),
-    ("Golos Text", "Golos Text", ["lab/GolosText.woff2"], (800,), "OG slike linkova"),
+    ("Golos Text", "Golos Text", ["GolosText.woff2"], (800,), "OG slike linkova"),
     ("Roboto Mono", "Roboto Mono", ["RobotoMono-Regular.woff2"], (400,), "OG slike linkova"),
 )
 

@@ -236,11 +236,7 @@
 {%- if t.sajt %}
 <section class="tp__sec" id="sajt-katedre">
   <div class="tp__h"><h2>Sa sajta katedre{% if t.sajt.pages | length > 1 %} <span>{{ t.sajt.pages | length }}</span>{% endif %}</h2><a href="https://{{ t.sajt.host }}/" rel="noopener" target="_blank">{{ t.sajt.host }} <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a></div>
-  {%- if dev %}
   <div class="sf">{% for p in t.sajt.pages %}{{ site_fold(p) }}{% endfor %}</div>
-  {%- else %}
-  <ul class="tp__links">{% for p in t.sajt.pages %}<li><a href="{{ p.url }}" rel="noopener" target="_blank">{{ p.title }} <svg class="i" aria-hidden="true"><use href="#i-external"></use></svg></a></li>{% endfor %}</ul>
-  {%- endif %}
 </section>
 {%- endif %}
 
