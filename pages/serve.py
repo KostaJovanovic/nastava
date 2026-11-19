@@ -15,7 +15,9 @@ build.py's devcheck.py checks that dev mode renders what a build writes.
 shell.html, as the Worker (pages/src/index.js join) does on the live site.
 """
 
+import base64
 import ctypes
+import hmac
 import json
 import os
 import posixpath
@@ -27,9 +29,10 @@ import threading
 import time
 import webbrowser
 from functools import partial
+from html import escape
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import quote, unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from qr import qr_terminal
 
@@ -38,6 +41,9 @@ sys.path.insert(0, str(HERE.parent / "scrapers"))  # common.py (local_file)
 SITE = HERE / ".build" / "site"
 # The notification subscriptions made on this server (do_POST), kept across restarts.
 PUSH_SUBS, PUSH_LOCK = HERE / ".build" / "push-subs.json", threading.Lock()
+# The contact form's messages on this server (Handler.kontakt), read at /kontakt/poruke/ with $INBOX_PASSWORD.
+MESSAGES = HERE / ".build" / "poruke.json"
+TOPICS = {"uklanjanje": "Uklanjanje", "ispravka": "Ispravka", "predlog": "Predlog", "drugo": "Drugo"}  # src/index.js TOPICS
 DEV = None  # dev mode's build.py out dir, .build/dev-<port> (set in __main__): its site/ has the small files, no pages
 DB = HERE.parent / "nastava.db"
 FRAGMENT = '<html lang="sr"><title>'
@@ -163,9 +169,80 @@ class Handler(SimpleHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(body)
 
+    def send_json(self, code, data):
+        body = json.dumps(data).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def inbox_auth(self):
+        """The inbox's HTTP Basic auth, as the Worker's (src/index.js authorized), against $INBOX_PASSWORD."""
+        password = os.environ.get("INBOX_PASSWORD")
+        given = self.headers.get("Authorization", "")
+        try:
+            ok = password and given.startswith("Basic ") and hmac.compare_digest(
+                base64.b64decode(given[6:]).partition(b":")[2], password.encode()
+            )
+        except ValueError:
+            ok = False
+        if not ok:
+            self.send_response(401)
+            self.send_header("WWW-Authenticate", 'Basic realm="poruke", charset="UTF-8"')
+            self.end_headers()
+            self.wfile.write(b"INBOX_PASSWORD" if not password else b"")
+        return ok
+
+    def kontakt(self):
+        """The contact form, as the Worker's (src/index.js kontakt): the same checks (no Turnstile: the page has the
+        test key), the message kept in MESSAGES."""
+        form = {k: v[0] for k, v in parse_qs(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()).items()}
+        page = form.get("str") or (parse_qs(urlsplit(self.headers.get("Referer", "")).query).get("str") or [""])[0]
+        email, topic, text = form.get("email", "").strip(), form.get("tema", ""), form.get("poruka", "").strip()
+        error = (
+            "Mejl adresa nije ispravna." if not re.fullmatch(r'[^\s@<>"]{1,64}@[^\s@<>"]{1,190}\.[^\s@<>".]{2,}', email) or len(email) > 200
+            else "Izaberi temu." if topic not in TOPICS
+            else "Poruka mora imati tekst, do 5.000 znakova." if not text or len(text) > 5000
+            else None
+        )
+        if not error:
+            with PUSH_LOCK:
+                rows = json.loads(MESSAGES.read_text(encoding="utf-8")) if MESSAGES.exists() else []
+                page = page if re.fullmatch(r'/(?!/)[^\s<>"]{0,300}', page) else None
+                rows.append(dict(id=max((r["id"] for r in rows), default=0) + 1, time=time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()), email=email, topic=topic, page=page, text=text))
+                MESSAGES.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+        if "application/json" in self.headers.get("Accept", ""):
+            return self.send_json(400 if error else 200, {"ok": False, "error": error} if error else {"ok": True})
+        self.send_page(400 if error else 200, f"<!doctype html><meta charset=utf-8><p>{escape(error or 'Poslato.')}</p><a href=/kontakt/>Nazad</a>")
+
+    def inbox(self):
+        """/kontakt/poruke/: MESSAGES newest first, each with Odgovori and Obriši, as the Worker's (src/index.js inbox)."""
+        if not self.inbox_auth():
+            return
+        with PUSH_LOCK:
+            rows = json.loads(MESSAGES.read_text(encoding="utf-8")) if MESSAGES.exists() else []
+            if self.command == "POST":
+                gone = parse_qs(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()).get("id", [""])[0]
+                MESSAGES.write_text(json.dumps([r for r in rows if str(r["id"]) != gone], ensure_ascii=False, indent=1), encoding="utf-8")
+                self.send_response(303)
+                self.send_header("Location", "/kontakt/poruke/")
+                return self.end_headers()
+        self.send_page(200, '<!doctype html><meta charset=utf-8><link rel=stylesheet href=/static/style.css><h1>Poruke</h1>' + "".join(
+            f'<article class=note><p><b>{TOPICS.get(r["topic"], r["topic"])}</b> · {r["time"]} UTC · {escape(r["email"])} · {escape(r["page"] or "")}</p>'
+            f'<p style="white-space:pre-wrap">{escape(r["text"])}</p><form method=post><a class=btn href="mailto:{escape(r["email"])}">Odgovori</a>'
+            f'<input type=hidden name=id value={r["id"]}><button class=btn>Obriši</button></form></article>'
+            for r in reversed(rows)
+        ))
+
     def do_POST(self):
         """/push, as the Worker's (pages/src/index.js push): the app's and the browsers' subscriptions, kept in
-        PUSH_SUBS so /push/test can notify them; an empty subject list drops one. Not checked as the Worker does."""
+        PUSH_SUBS so /push/test can notify them; an empty subject list drops one. Not checked as the Worker does.
+        /kontakt and the inbox: kontakt, inbox."""
+        if self.path in ("/kontakt", "/kontakt/"):
+            return self.kontakt()
+        if self.path == "/kontakt/poruke/":
+            return self.inbox()
         if self.path != "/push":
             return self.send_error(404)
         try:
@@ -185,6 +262,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if urlsplit(self.path).path == "/kontakt/poruke/":
+            return self.inbox()
         # A test notification to each subscription above, through ci/push.py (its keys: push-secret.json and
         # fcm-secret.json in the repo); the page says what happened to each.
         if self.path == "/push/test":

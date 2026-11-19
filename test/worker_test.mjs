@@ -2,7 +2,7 @@
 // network: KV and the cache are stand-ins. Run: node --test test/worker_test.mjs
 import assert from "node:assert/strict";
 import test from "node:test";
-import worker, { dispatch, join } from "../pages/src/index.js";
+import worker, { dispatch, join, retain, vapidJwt } from "../pages/src/index.js";
 
 globalThis.caches = { default: { match: async () => undefined, put: async () => {} } };
 
@@ -242,3 +242,88 @@ test("each cron hour starts sync.yml as its slot; a failed dispatch throws", asy
 	}
 });
 
+
+// The contact form (docs/PLAN-pravno.md 5a). D1 as far as messages need it: rows with a time, the cron's delete by age.
+function inboxDb(rows = []) {
+	const stmt = (sql, args = []) => ({
+		bind: (...a) => stmt(sql, a),
+		run: async () => {
+			if (/^INSERT INTO messages/.test(sql)) rows.push({ id: rows.length + 1, time: "2026-11-19 10:00:00", email: args[0], topic: args[1], page: args[2], text: args[3] });
+			else if (/^DELETE FROM messages WHERE id/.test(sql)) rows.splice(rows.findIndex((r) => r.id === args[0]), 1);
+			else if (/^DELETE FROM messages WHERE time/.test(sql)) {
+				const days = Number(sql.match(/-(\d+) days/)[1]);
+				for (let i = rows.length - 1; i >= 0; i--) if (Date.now() - Date.parse(rows[i].time + "Z") > days * 864e5) rows.splice(i, 1);
+			}
+			return { meta: { changes: 1 } };
+		},
+		all: async () => ({ results: [...rows].reverse() }),
+	});
+	return { rows, prepare: (sql) => stmt(sql) };
+}
+
+const send = (env, fields, headers = {}) => {
+	const body = new FormData();
+	for (const [k, v] of Object.entries(fields)) body.append(k, v);
+	return call(env, "/kontakt", { method: "POST", body, headers: { Accept: "application/json", ...headers } });
+};
+const GOOD = { email: "a@b.rs", tema: "ispravka", poruka: "Greška u godini.", str: "/nastavnik/x/", "cf-turnstile-response": "tok" };
+
+test("the contact form: each bad field is refused, a good message is kept; Turnstile must pass", async () => {
+	const real = globalThis.fetch;
+	let pass = true;
+	globalThis.fetch = async () => Response.json({ success: pass });
+	try {
+		const env = { DB: inboxDb(), TURNSTILE_SECRET: "s" };
+		for (const bad of [{ email: "nije-mejl" }, { email: "a@b" }, { email: `${"a".repeat(200)}@b.rs` }, { tema: "spam" }, { poruka: "  " }, { poruka: "x".repeat(5001) }]) {
+			const r = await send(env, { ...GOOD, ...bad });
+			assert.equal(r.status, 400, JSON.stringify(bad));
+			assert.equal((await r.json()).ok, false);
+		}
+		pass = false;
+		assert.equal((await send(env, GOOD)).status, 400);
+		pass = true;
+		assert.deepEqual(await (await send(env, GOOD)).json(), { ok: true });
+		// Without JS: no page in the form, the Referer's ?str=; a page that is not this site's is dropped.
+		await send(env, { ...GOOD, str: "" }, { Accept: "text/html", Referer: "https://masinci.org/kontakt/?str=/vest/5/&tema=ispravka" });
+		await send(env, { ...GOOD, str: "//evil.example/" });
+		assert.deepEqual(env.DB.rows.map((r) => [r.email, r.topic, r.page]), [["a@b.rs", "ispravka", "/nastavnik/x/"], ["a@b.rs", "ispravka", "/vest/5/"], ["a@b.rs", "ispravka", null]]);
+		assert.equal(env.DB.rows.length, 3);
+	} finally {
+		globalThis.fetch = real;
+	}
+});
+
+test("the inbox: 401 without the password, a stranger's HTML escaped, a delete; the cron drops one 91 days old", async () => {
+	const env = { DB: inboxDb(), INBOX_PASSWORD: "tajna" };
+	env.DB.rows.push({ id: 1, time: "2026-11-19 10:00:00", email: "a@b.rs", topic: "drugo", page: null, text: '<script>alert(1)</script>' });
+	const auth = (p) => ({ headers: { Authorization: `Basic ${btoa(`x:${p}`)}` } });
+	assert.equal((await call(env, "/kontakt/poruke/")).status, 401);
+	assert.equal((await call(env, "/kontakt/poruke/", auth("pogresna"))).status, 401);
+	const r = await call(env, "/kontakt/poruke/", auth("tajna"));
+	assert.equal(r.status, 200);
+	assert.equal(r.headers.get("Cache-Control"), "no-store");
+	const html = await r.text();
+	assert.ok(!html.includes("<script>alert") && html.includes("&#60;script&#62;alert(1)"), html);
+	const body = new FormData();
+	body.append("id", "1");
+	assert.equal((await call(env, "/kontakt/poruke/", { method: "POST", body, ...auth("tajna") })).status, 303);
+	assert.equal(env.DB.rows.length, 0);
+	const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 19).replace("T", " ");
+	env.DB.rows.push({ id: 2, time: day(91) }, { id: 3, time: day(89) });
+	await retain(env);
+	assert.deepEqual(env.DB.rows.map((r) => r.id), [3]);
+});
+
+test("the VAPID JWT verifies with the public key, for the push service's origin", async () => {
+	const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+	const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+	const raw = new Uint8Array(await crypto.subtle.exportKey("raw", pair.publicKey));
+	const pub = btoa(String.fromCharCode(...raw)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+	const jwt = await vapidJwt("https://fcm.googleapis.com/fcm/send/abc", jwk.d, pub, Date.UTC(2026, 10, 19));
+	const [h, p, s] = jwt.split(".");
+	const dec = (x) => Uint8Array.from(atob(x.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+	assert.ok(await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pair.publicKey, dec(s), new TextEncoder().encode(`${h}.${p}`)));
+	const claims = JSON.parse(new TextDecoder().decode(dec(p)));
+	assert.equal(claims.aud, "https://fcm.googleapis.com");
+	assert.equal(claims.exp, Date.UTC(2026, 10, 19) / 1000 + 12 * 3600);
+});

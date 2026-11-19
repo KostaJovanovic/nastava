@@ -1094,6 +1094,12 @@ a.ch__c:hover b, a.ch__c:hover .ch__n { color: var(--accent-t); }
 .field::placeholder { color: var(--dim); opacity: 1; }
 @media (min-width: 900px) { .field { font-size: .875rem; } }
 
+/* The contact form (kontakt.html). */
+.kf { display: grid; gap: 14px; max-width: 560px; }
+.kf__f { display: grid; gap: 6px; font-size: .875rem; color: var(--dim); }
+.kf textarea.field { height: auto; padding: 8px 10px; resize: vertical; }
+.kf__str, .kf__acts { margin: 0; font-size: .875rem; }
+
 /* ---- Stil (stil.html): the logos, colours, fonts, icons and OG images, each a download ------------------------ */
 .sl { display: grid; margin: 0; padding: 0; list-style: none; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(var(--min, 150px), 1fr)); }
 .sl > li, .sl > a { display: grid; gap: 4px; align-content: start; min-width: 0; padding: 10px; border: 1px solid var(--line-2); border-radius: var(--r); color: var(--text); font-size: .78125rem; }

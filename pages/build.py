@@ -73,6 +73,10 @@ from sitegen import output  # noqa: E402
 
 KEPT = load_kept()  # data/izostavljeno.json
 
+# The contact form's Cloudflare Turnstile widget (public: it goes in the page); its secret is the Worker's,
+# TURNSTILE_SECRET. The test key always passes (Cloudflare's, for development).
+TURNSTILE, TURNSTILE_TEST = "0x4AAAAAAGIBcWk38lsQycae", "1x00000000000000000000AA"
+
 
 def load_all(db):
     """Every source's posts as items (and what they hang on), and the news (the old sites' with them, by date): main's
@@ -247,7 +251,9 @@ def main(db_path, out, dev_mode=False):
     write(site / "profdana" / "index.html", env.get_template("profdana.html").render(dev=dev), index=False)
     write(site / "link" / "index.html", env.get_template("link.html").render(icons=link_icons(), groups=links))
     groups, sources = kontakt(db)
-    write(site / "kontakt" / "index.html", env.get_template("kontakt.html").render(groups=groups, sources=sources))
+    write(site / "kontakt-fakulteta" / "index.html", env.get_template("kontakt_fakulteta.html").render(groups=groups, sources=sources))
+    # The contact form (src/index.js kontakt): a test key on the local server, which always passes (serve.py).
+    write(site / "kontakt" / "index.html", env.get_template("kontakt.html").render(turnstile=TURNSTILE_TEST if dev else TURNSTILE))
     days = lambda: load_verzije((HERE.parent / "verzije.md").read_text(encoding="utf-8"))
     page = env.get_template("verzije.html").render(days=days())
     if dev:

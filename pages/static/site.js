@@ -1965,6 +1965,36 @@
     }
   }).catch(function () {});
 
+  /* The contact form (kontakt.html): the topic and page a link presets (?tema=, ?str=: a path of this site), and the
+     message sent in place: the Worker answers {ok, error} to Accept: application/json (src/index.js kontakt). */
+  var kf = d.querySelector('form[data-kontakt]');
+  if (kf && window.fetch) {
+    var kq = new URLSearchParams(location.search), kstr = kq.get('str') || '', ktema = kq.get('tema');
+    if (ktema && [].some.call(kf.tema.options, function (o) { return o.value === ktema; })) kf.tema.value = ktema;
+    if (/^\/(?!\/)/.test(kstr)) {
+      var kp = kf.querySelector('.kf__str');
+      kf.str.value = kp.lastChild.href = kp.lastChild.textContent = kstr;
+      kp.hidden = false;
+    }
+    kf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var res = kf.querySelector('.kf__res'), btn = kf.querySelector('button[type=submit]');
+      btn.disabled = true;
+      // URL-encoded, as the form without JS posts it (serve.py reads only that).
+      fetch(kf.action, { method: 'POST', body: new URLSearchParams(new FormData(kf)), headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (v) {
+          res.textContent = v.ok ? 'Poslato, hvala! Odgovoriću na mejl koji si ostavio.' : v.error || 'Poruka nije poslata. Pokušaj ponovo.';
+          if (v.ok) kf.poruka.value = '';
+        }, function () { res.textContent = 'Poruka nije poslata: sajt se nije javio. Pokušaj ponovo.'; })
+        .then(function () {
+          res.hidden = false;
+          btn.disabled = false;
+          if (window.turnstile) window.turnstile.reset(); // a token is good for one check only
+        });
+    });
+  }
+
   /* Visitor counter: the Worker counts each IP once per three-day period (/visit), so a browser tells it once per
      period ('posetaP': the last one told, the Worker's julianday / 3); only /statistika/ asks at every view, as it shows
      the total, and asks (?push) for the browsers with notifications on too. A prerendered page counts once shown. */

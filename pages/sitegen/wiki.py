@@ -81,7 +81,7 @@ def kontakt(db):
             page = html.get(path)
             # The page writes 011 as (+381 11); the number's last 7 digits are enough to find it.
             if html and (page is None or (mail and mail not in page) or (phone and digits(phone)[-7:] not in digits(page))):
-                print(f"[warn] /kontakt/: {mail or phone} is no longer on mf/{path}", file=sys.stderr)
+                print(f"[warn] /kontakt-fakulteta/: {mail or phone} is no longer on mf/{path}", file=sys.stderr)
             tel = phone and "+381" + digits(phone)[1:]
             sources[path] = (titles.get(path, path), wiki_href(path) if path in SHOWN else STUDY_SITE + path)
             shown.append(dict(who=who, mail=mail, phone=phone, tel=tel))

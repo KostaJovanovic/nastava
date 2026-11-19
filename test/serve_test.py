@@ -43,4 +43,43 @@ with tempfile.TemporaryDirectory() as t:
     # Not a PDF inside: no thumbnail, a 404, not an error.
     assert serve.local_file(f"/files/mail/{thumb_asset('2026-01-01-aaaaaaaa/r.pdf')}/thumb.jpg") is None
     assert serve.local_file("/files/mail/x.pdf") is None and serve.local_file(f"/files/mail/{asset_name('nope')}/n.pdf") is None
+
+# The contact form on this server: a good message kept (its page from the Referer), a bad one refused; the inbox
+# behind $INBOX_PASSWORD, escaping the message.
+import os  # noqa: E402
+import threading  # noqa: E402
+from functools import partial  # noqa: E402
+from http.server import ThreadingHTTPServer  # noqa: E402
+from urllib.error import HTTPError  # noqa: E402
+from urllib.request import Request, urlopen  # noqa: E402
+
+with tempfile.TemporaryDirectory() as t:
+    serve.MESSAGES = Path(t) / "poruke.json"
+    os.environ["INBOX_PASSWORD"] = "tajna"
+    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(serve.Handler, directory=t))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+
+    def post(path, data, **headers):
+        try:
+            with urlopen(Request(base + path, data=data.encode(), headers=headers)) as r:
+                return r.status, r.read().decode()
+        except HTTPError as e:
+            return e.code, e.read().decode()
+
+    ok = post("/kontakt", "email=a%40b.rs&tema=ispravka&poruka=%3Cb%3Ex%3C%2Fb%3E", Accept="application/json", Referer=f"{base}/kontakt/?str=/vest/5/")
+    assert ok == (200, '{"ok": true}'), ok
+    assert post("/kontakt", "email=nije&tema=ispravka&poruka=x", Accept="application/json")[0] == 400
+    assert [(m["page"], m["text"]) for m in json.loads(serve.MESSAGES.read_text(encoding="utf-8"))] == [("/vest/5/", "<b>x</b>")]
+    try:
+        urlopen(base + "/kontakt/poruke/")
+        raise AssertionError("no 401")
+    except HTTPError as e:
+        assert e.code == 401
+    import base64  # noqa: E402
+
+    with urlopen(Request(base + "/kontakt/poruke/", headers={"Authorization": "Basic " + base64.b64encode(b"x:tajna").decode()})) as r:
+        page = r.read().decode()
+    assert "&lt;b&gt;x&lt;/b&gt;" in page and "<b>x</b>" not in page, page
+    server.shutdown()
 print("serve_test: ok")

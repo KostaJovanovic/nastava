@@ -1,34 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}Kontakt fakulteta{% endblock %}
-{% block description %}Mejlovi i telefoni službi Mašinskog fakulteta u Beogradu na jednom mestu: studentska služba, molbe, dekanat, biblioteka, mreža.{% endblock %}
+{% block title %}Kontakt{% endblock %}
+{% block description %}Poruka autoru sajta masinci.org: uklanjanje, ispravka, predlog. Za fakultet vidi Kontakt fakulteta.{% endblock %}
+{#- Cloudflare Turnstile's check against bots, on this page only (privatnost.html says so). -#}
+{% block head %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endblock %}
 
-{#- The offices (known.py KONTAKT, wiki.py kontakt): rows of who | e-mail | phone, the columns lined up through the
-    page (style.css .kt), one under the other on a phone. The pages they are from in one fold at the end. -#}
+{#- The contact form (docs/PLAN-pravno.md 5a). It posts to the Worker (src/index.js kontakt; the local server:
+    serve.py), which checks Turnstile and the fields and keeps the message in D1, read at /kontakt/poruke/. Without
+    JS a plain POST and the Worker's page (sent / error); with JS (site.js) in place. A link may preset the topic and
+    the page it is about: ?tema=uklanjanje&str=/nastavnik/…/ (site.js fills them; without JS the Worker reads them
+    from the Referer). -#}
 {% block main %}
 <div class="mh">
-  <h1 id="title">Kontakt fakulteta</h1>
-  <p class="mh__sub">Mašinski fakultet, Kraljice Marije 16, 11120 Beograd 35</p>
+  <h1 id="title">Kontakt</h1>
+  <p class="mh__sub">Ovaj sajt nije sajt fakulteta. Za ispite, upis i sve ostalo sa fakultetom pogledaj <a href="/kontakt-fakulteta/">Kontakt fakulteta</a>.</p>
 </div>
-{%- for group, rows in groups %}
-<section class="st">
-  <h2 class="st__h">{{ group }}</h2>
-  <ul class="kt">
-    {%- for r in rows %}
-    <li class="kt__r"><span class="kt__who">{{ r.who }}</span><span class="kt__m">{% if r.mail %}<a href="mailto:{{ r.mail }}">{{ r.mail }}</a>{% endif %}</span><span class="kt__p">{% if r.phone %}<a href="tel:{{ r.tel }}">{{ r.phone }}</a>{% endif %}</span></li>
-    {%- endfor %}
-  </ul>
-  {%- if group == "Uprava" %}
-  <p class="kt__note">Novija verzija kontakt stranice, koju fakultet još nije objavio, navodi i prodekana za nastavu (<a href="mailto:pronast@mas.bg.ac.rs">pronast@mas.bg.ac.rs</a>, <a href="tel:+381113302249">011 3302-249</a>) i prodekana za akreditaciju i organizaciju (<a href="mailto:proorg@mas.bg.ac.rs">proorg@mas.bg.ac.rs</a>).</p>
-  {%- endif %}
-</section>
-{%- endfor %}
-{#- The house fold (the push dialog's RSS fold, style.css .leave__rss), outside a card, without its top line. -#}
-<details class="leave__rss kt__src">
-  <summary>Izvori</summary>
-  <div>
-    <p>Sve je prepisano sa sajta fakulteta:</p>
-    <ul>{% for title, href in sources %}<li><a href="{{ href }}">{{ title }}</a></li>{% endfor %}</ul>
-  </div>
-</details>
+<form class="kf" method="post" action="/kontakt" data-kontakt>
+  <label class="kf__f"><span>Tvoj mejl, da mogu da odgovorim</span>
+    <input class="field" type="email" name="email" required maxlength="200" autocomplete="email"></label>
+  <label class="kf__f"><span>Tema</span>
+    <select class="field" name="tema">
+      <option value="uklanjanje">Uklanjanje</option>
+      <option value="ispravka">Ispravka</option>
+      <option value="predlog">Predlog</option>
+      <option value="drugo" selected>Drugo</option>
+    </select></label>
+  <p class="kf__str" hidden>O stranici: <a></a></p>
+  <input type="hidden" name="str">
+  <label class="kf__f"><span>Poruka</span>
+    <textarea class="field" name="poruka" required maxlength="5000" rows="8"></textarea></label>
+  <div class="cf-turnstile" data-sitekey="{{ turnstile }}" data-language="sr"></div>
+  <p class="kf__acts"><button class="btn btn--pri" type="submit">Pošalji</button></p>
+  <p class="note kf__res" role="status" hidden></p>
+</form>
 {% endblock %}

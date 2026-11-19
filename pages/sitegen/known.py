@@ -183,7 +183,7 @@ LINKS = [
             ("eduroam", "mf:servisi/eduroam", "globe", None),
             ("VPN", "mf:servisi/vpn", "globe", None),
             ("Microsoft softver za studente", "mf:servisi/microsoft-imagine", "cloud", None),
-            ("Kontakt fakulteta", "/kontakt/", "home", None),
+            ("Kontakt fakulteta", "/kontakt-fakulteta/", "home", None),
         ],
     ),
     (
