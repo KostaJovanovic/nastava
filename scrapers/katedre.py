@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["requests", "beautifulsoup4"]
 # ///
-"""The announcements of the departments' own sites (ie, meh, bmi, pt, fluidi, hidro, ciah .mas.bg.ac.rs): only the
+"""The announcements of the departments' own sites (ie, meh, bmi, pt, fluidi, hidro, ciah .mas.bg.ac.rs; brodogradnja.org): only the
 pages that have them (SITES), each stored as shown (a new version when its text or links change), and ie's notices
 one by one (katedre_notices; build.py makes them posts of their subjects). Files are linked, not downloaded. Not
 here: the rest of a site (about, staff, galleries), the Moodles (mat, cs, it0, vaz: a login) and the sites without
@@ -55,11 +55,14 @@ SITES = {
     "fluidi": (["https://fluidi.mas.bg.ac.rs/"], r"^https://fluidi\.mas\.bg\.ac\.rs/[a-z]+/$"),
     "hidro": (["https://hidro.mas.bg.ac.rs/obavestenja.html"], r"/obavestenja\.html$"),
     "ciah": (["https://ciah.mas.bg.ac.rs/obavestenja"], r"/obavestenja$"),
+    # Not on mas.bg.ac.rs; all its news on one page (no paging).
+    "brodogradnja": (["https://brodogradnja.org/category/news/"], r"/category/news/$"),
 }
 # Each whole site's start pages (site).
 WHOLE = {
     "ie": ["https://ie.mas.bg.ac.rs/", "https://ie.mas.bg.ac.rs/predmeti.php"],
     **{s: [f"https://{s}.mas.bg.ac.rs/"] for s in ("etc", "motori", "meh", "bmi", "pt", "ppm", "fluidi", "hidro", "ciah")},
+    "brodogradnja": ["https://brodogradnja.org/"],
 }
 
 
@@ -325,6 +328,17 @@ def bmi_notices(soup):
     return raw
 
 
+def brodogradnja_notices(soup):
+    """brodogradnja's news list: a card a news item, a link to it holding its date (a span) and its title (h2)."""
+    raw = []
+    for a in soup.find_all("a", href=True):
+        h, t = a.find("h2"), a.find("span")
+        if h and t:
+            more = f'<p><a href="{a["href"]}">Pročitaj vest</a></p>'
+            raw.append(dict(label=t.get_text(strip=True), title=h.get_text(" ", strip=True), html=more, files=[]))
+    return raw
+
+
 def meh_notices(soup):
     """meh's news: an h5 (its title), its text up to the next hr. Its date: the one its title gives ("… - датум
     објаве 31.03.2019."), else the first in its text (not after today), else the month of its first upload
@@ -379,6 +393,7 @@ NOTICES = [
     (r"bmi\.mas\.bg\.ac\.rs/vesti/$", bmi_notices),
     (r"meh\.", meh_notices),
     (r"pt\.mas\.bg\.ac\.rs/api\.php", pt_notices),
+    (r"brodogradnja\.org/category/news/$", brodogradnja_notices),
 ]
 
 

@@ -707,6 +707,16 @@ assert teacher_of("hidro", "https://hidro.mas.bg.ac.rs/profesori_gajic.html", {}
 assert teacher_of("hidro", "https://hidro.mas.bg.ac.rs/istorijat.html", {}, _byk) is None
 assert teacher_of("etc", "https://etc.mas.bg.ac.rs/zradakovic/EM1.htm", {"zradakovic": _rad}, {}) is _rad
 assert teacher_of("etc", "https://etc.mas.bg.ac.rs/", {"zradakovic": _rad}, {}) is None
+assert own_title("Nastavnici Archives - Katedra za brodogradnju") == "Nastavnici"
+from sitegen.load_sajtovi import named  # noqa: E402
+from sitegen.load_sources import post_text  # noqa: E402
+
+_kal = dict(id="80", name="Милан Д. Калајџић", katedra="Катедра за бродоградњу", _tok={"milan", "d", "kalajdzic"})
+assert named("brodogradnja", "dr Milan Kalajdžić", {_kal["katedra"]: [_kal]}) is _kal
+assert named("brodogradnja", "dr Nenad Zrnić", {_kal["katedra"]: [_kal]}) is None
+assert post_text("<main><h1>Naslov</h1> <div><p>Vesti</p><p>19.10.2026.</p></div><div><p>Tekst.</p></div></main>") == (
+    "<main> <div><p>Tekst.</p></div></main>"
+)
 
 # An upis tab's summary (wiki.summary): shown while the pages it was written from are unchanged, left out after.
 from sitegen import wiki  # noqa: E402

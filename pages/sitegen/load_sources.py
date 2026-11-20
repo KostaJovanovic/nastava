@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from translit import fold
 from mail import asset_name, thumb_asset, TAG as MAIL_TAG
 from .clean import CENT_CLASSES, cent_changes, cent_tidy, clean_html, file_rows, linkify, vesti_media
-from .known import FORUMS, SAME_AS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
+from .known import FORUMS, POST_LINK, SAME_AS, SITES, SITE_NAMES, SUBJECT_PAGE, VIA
 from .load_board import book_subject
 from . import output
 from .output import HERE, PAGE_TEXT, VESTI
@@ -204,6 +204,17 @@ def katedra_forum(smerovi, subjects, name, key):
     return s
 
 
+def post_text(html):
+    """A news item's own page (brodogradnja's: POST_LINK) without its title and the category and date under it: the
+    post shows those."""
+    soup = BeautifulSoup(html, "html.parser")
+    if h := soup.h1:
+        if d := h.find_next_sibling("div"):
+            d.decompose()
+        h.decompose()
+    return str(soup)
+
+
 def load_katedre(db, smerovi, subjects):
     """katedre.py's notices of the departments' sites as posts (items), and a subject's material there (s["lit"]:
     dict(mark, n, html), ie's "Literatura" as file rows). A subject's page (SUBJECT_PAGE) is the subject it names (ie:
@@ -262,7 +273,12 @@ def load_katedre(db, smerovi, subjects):
         day = n["date"] or n["first_seen"][:10]
         # Its date is the notice's; its time the one it was first seen, when that was the same day.
         posted = n["first_seen"] if n["first_seen"][:10] == day else f"{day}T10:00:00+00:00"
-        html = linkify(clean_html(n["html"], n["url"])) + file_rows([(h, f, None) for h, f in json.loads(n["files"]) or []])
+        source, body = n["url"], n["html"]
+        if (m := POST_LINK.fullmatch(body)) and (p := db.execute(
+            "SELECT html FROM katedre_pages WHERE url = ? ORDER BY last_seen DESC LIMIT 1", (m[1],)
+        ).fetchone()):
+            source, body = m[1], post_text(p["html"])
+        html = linkify(clean_html(body, source)) + file_rows([(h, f, None) for h, f in json.loads(n["files"]) or []])
         items.append(
             dict(
                 id=f"k{n['nid']}",
@@ -278,12 +294,12 @@ def load_katedre(db, smerovi, subjects):
                 when=f"{day[8:10]}.{day[5:7]}.{day[:4]}.",
                 posted=posted,
                 author=n["site"],
-                site=dict(mark=n["site"], host=f"{n['site']}.mas.bg.ac.rs", name=SITES[n["site"]]),
+                site=dict(mark=n["site"], host=urlsplit(n["url"]).hostname, name=SITES[n["site"]]),
                 body=strip_tags(html),
                 html=html,
                 files=[],
                 gone=n["gone"],
-                source_url=n["url"],
+                source_url=source,
             )
         )
     return items

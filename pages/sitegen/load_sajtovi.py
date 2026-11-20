@@ -1,5 +1,6 @@
 """The departments' whole sites (katedre.py site, nastava.db katedre_pages): a katedra's pages on its page, in groups
-(SITE_GROUPS); a teacher's own (etc's folders, hidro's, meh's and bmi's page about one person) on theirs. Not the
+(SITE_GROUPS); a teacher's own (etc's folders, hidro's, meh's and bmi's page about one person, brodogradnja's card
+of one: CARDS) on theirs. Not the
 announcement pages (their notices are posts) nor ie's and fluidi's subject pages (on the subjects' pages)."""
 
 import hashlib
@@ -15,7 +16,7 @@ from translit import fold
 Tag._decomposed = False
 
 from .clean import clean_html
-from .known import ANNOUNCEMENTS, SITE_GROUPS, SITE_KATEDRA, SUBJECT_PAGE
+from .known import ANNOUNCEMENTS, CARDS, POST_LINK, SITE_GROUPS, SITE_KATEDRA, SUBJECT_PAGE
 
 # The blocks a site repeats on its pages (a menu, a header, a footer); hidro keeps its menu in every page's content,
 # its sections' bold names and rules too (strong, hr), and a footer that only its spacing tells apart.
@@ -64,8 +65,10 @@ def menu_names(soups, base_of):
 
 
 def own_title(title):
-    """'Industrijsko Inženjerstvo - Predmeti' -> 'Predmeti'; '' when it only names the site."""
-    return " – ".join(p.strip() for p in TITLE_SPLIT.split(title or "") if p.strip() and not TITLE_SITE.search(fold(p.strip())))
+    """'Industrijsko Inženjerstvo - Predmeti' -> 'Predmeti'; '' when it only names the site. WordPress's 'Blog
+    Archives' -> 'Blog'."""
+    parts = [re.sub(r"\s+Archives$", "", p.strip()) for p in TITLE_SPLIT.split(title or "")]
+    return " – ".join(p for p in parts if p and not TITLE_SITE.search(fold(p)))
 
 
 def slug_title(url):
@@ -85,7 +88,12 @@ def teacher_of(site, url, users, by_katedra):
     path = urlsplit(url).path
     if site == "etc":
         return users.get(path.split("/")[1].lower()) if path.count("/") >= 2 else None
-    words = name_tokens(unquote(path.rstrip("/").rsplit("/", 1)[-1])) - NOT_NAME
+    return named(site, unquote(path.rstrip("/").rsplit("/", 1)[-1]), by_katedra)
+
+
+def named(site, text, by_katedra):
+    """The one teacher of the site's katedra whose name has all of text's words."""
+    words = name_tokens(text) - NOT_NAME
     found = [t for t in by_katedra.get(SITE_KATEDRA.get(site), []) if words and words <= t["_tok"]]
     return found[0] if len(found) == 1 else None
 
@@ -114,9 +122,12 @@ def load_sajtovi(db, teachers):
         " AND last_seen = (SELECT max(last_seen) FROM katedre_pages WHERE url = k.url)"
         " ORDER BY (SELECT min(rowid) FROM katedre_pages WHERE url = k.url)"  # the crawl's order: the site's menu
     ).fetchall()
+    has_notices = db.execute("SELECT 1 FROM sqlite_master WHERE name = 'katedre_notices'").fetchone()
+    notices = db.execute("SELECT html FROM katedre_notices").fetchall() if has_notices else []
+    posts = {m[1] for (h,) in notices if (m := POST_LINK.fullmatch(h))}
     sites = defaultdict(list)
     for r in rows:
-        if not ANNOUNCEMENTS.search(r["url"]) and not SUBJECT_PAGE.search(r["url"]) and r["html"].lstrip()[:1] not in "[{":
+        if r["url"] not in posts and not ANNOUNCEMENTS.search(r["url"]) and not SUBJECT_PAGE.search(r["url"]) and r["html"].lstrip()[:1] not in "[{":
             sites[r["site"]].append(r)
     kat, mine = defaultdict(lambda: defaultdict(list)), {}
     for site, pages in sites.items():
@@ -140,6 +151,16 @@ def load_sajtovi(db, teachers):
                 if not table.decomposed and len(cells := table.find_all(["td", "th"])) == 1 and not cells[0].find("table"):
                     table.replace_with(cells[0])
                     cells[0].unwrap()
+            if CARDS.search(r["url"]):  # a card naming a teacher on their page; the others stay on the katedra's
+                for card in soup.find_all("a", href=re.compile("#")):
+                    h = card.find("h3")
+                    if h and (t := named(site, h.find(string=True) or "", by_katedra)):
+                        url = card["href"]
+                        card.name, card.attrs = "div", {}  # not the whole card one link
+                        html = clean_html(str(card.extract()), r["url"]) or ""
+                        page = dict(title="Nastavnici", url=url, html=html.replace("<img ", '<img loading="lazy" '), seen=day(r["last_seen"]))
+                        m = mine.setdefault(t["id"], dict(host=urlsplit(url).hostname, seen=page["seen"], pages=[]))
+                        m["pages"].append(page)
             text = soup.get_text(" ", strip=True)
             digest = hashlib.sha1(text.encode()).hexdigest()
             if len(text) < MIN_TEXT or digest in seen_text:  # a stub, or the same page under another URL

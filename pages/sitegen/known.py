@@ -38,6 +38,7 @@ SITES = {
     "ppm": "Katedra za poljoprivredno mašinstvo",
     "bmi": "Katedra za biomedicinsko inženjerstvo",
     "ciah": "Laboratorija CIAH",
+    "brodogradnja": "Katedra za brodogradnju",
 }
 
 # A department site's name for a subject the board and the book name otherwise (ie shortens some): the book's name,
@@ -63,13 +64,21 @@ FORUMS = {
     "fluidi": "катедра за механику флуида",
     "bmi": "катедра за биомедицинско инжењерство",
     "ciah": "лабораторија ЦИАХ",
+    "brodogradnja": "катедра за бродоградњу",
 }
 
 # The sites whose pages are each a subject's (ie's subject pages, fluidi's); the others' are the department's.
 SUBJECT_PAGE = re.compile(r"ie\.mas\.bg\.ac\.rs/predmeti_p|fluidi\.mas\.bg\.ac\.rs/[a-z]+/$")
 
 # The announcement pages (katedre.py SITES' patterns): their notices are posts, so not among a site's other pages.
-ANNOUNCEMENTS = re.compile(r"/(novosti\.php|vesti/(page/\d+/)?|obavestenja(\.html)?|api\.php\?tip=\w+)$")
+ANNOUNCEMENTS = re.compile(r"/(novosti\.php|vesti/(page/\d+/)?|obavestenja(\.html)?|api\.php\?tip=\w+|category/news/)$")
+
+# A notice that is only a link to its news item's own page (brodogradnja's list): the post shows that page's text
+# when the crawl (katedre.py site) stored it, and the katedra's page leaves it out.
+POST_LINK = re.compile(r'<p><a href="([^"]+)">Pročitaj vest</a></p>')
+
+# A site's page of teachers' cards (brodogradnja's Nastavnici): a card naming one teacher goes on that teacher's page.
+CARDS = re.compile(r"brodogradnja\.org/category/professors/$")
 
 # Each department site's katedra (load_sajtovi): its pages go on that katedra's page. etc has none: it is the
 # teachers' own folders (etc.mas.bg.ac.rs/<username>/), each on its teacher's page.
@@ -84,6 +93,7 @@ SITE_KATEDRA = {
     "hidro": "Катедра за хидрауличне машине и енергетске системе",
     # Лабораторија ЦИАХ is the Institute for Motor Vehicles' (its home page).
     "ciah": "Катедра за моторна возила",
+    "brodogradnja": "Катедра за бродоградњу",
 }
 
 # A katedra page's groups of its site's pages, in this order: the first whose pattern the page's folded path and
@@ -211,6 +221,7 @@ LINKS = [
             ("Katedra za mehanizaciju", "https://meh.mas.bg.ac.rs/", "katedra-za-mehanizaciju", None),
             ("Katedra za mehaniku fluida", "https://fluidi.mas.bg.ac.rs/", "katedra-za-mehaniku-fluida", None),
             ("Katedra za vazduhoplovstvo", "http://vaz.mas.bg.ac.rs/", "katedra-za-vazduhoplovstvo", None),
+            ("Katedra za brodogradnju", "https://brodogradnja.org/", "katedra-za-brodogradnju", None),
             ("Katedra za opšte mašinske konstrukcije", "https://omk.mas.bg.ac.rs/", "katedra-za-opste-masinske-konstrukcije", None),
             ("Katedra za matematiku", "https://mat.mas.bg.ac.rs/", "katedra-za-matematiku", None),
             ("Poljoprivredno prehrambeno mašinstvo", "https://ppm.mas.bg.ac.rs/", "katedra-za-poljoprivredno-masinstvo", None),

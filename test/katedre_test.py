@@ -97,3 +97,8 @@ assert _sum(
     '"link_url": "https://procesing.rs", "att_url": "https://pt/a.pdf", "att_name": "Program"}]',
 ) == [("02.03.2027.", "2027-03-02", "Procesing", "Kongres. https://procesing.rs", [["https://pt/a.pdf", "Program"]])]
 assert notices_of("https://pt.mas.bg.ac.rs/api.php?tip=poslovi", "[]") == [] and notices_of("https://meh.x/", "") == []
+assert _sum(
+    "https://brodogradnja.org/category/news/",
+    '<main><h1>Vesti</h1><div><a href="https://brodogradnja.org/plovidba/"><div><img src="x.jpg"/></div><div>'
+    "<p><span>19.10.2026.</span></p><h2>Plovidba Dunavom</h2></div></a></div></main>",
+) == [("19.10.2026.", "2026-10-19", "Plovidba Dunavom", "Pročitaj vest", [])]
