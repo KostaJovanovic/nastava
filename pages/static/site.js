@@ -281,19 +281,27 @@
     if (a.pathname === '/' ? here === '/' : here.indexOf(a.pathname) === 0) a.setAttribute('aria-current', 'page');
   });
 
-  /* The logo (a button, base.html). On a phone, where the header has no room for the name, a tap shows it over the
-     rest of the bar for a few seconds (style.css .brand.is-open). */
-  var brand = d.querySelector('.brand'), brandT;
+  /* The logo (a button, base.html): a tap reloads the page, everywhere (the app and the home-screen site have no
+     reload button of their own). The page it reloads into plays the tap ('logo', sessionStorage): the name, the
+     logo's drawing and the app's update check below; on the old page the reload would cut them off. */
+  var brand = d.querySelector('.brand'), brandT, refreshed = false;
+  try { refreshed = !!sessionStorage.getItem('logo'); sessionStorage.removeItem('logo'); } catch (e) {}
+  if (brand) brand.addEventListener('click', function () {
+    try { sessionStorage.setItem('logo', '1'); } catch (e) {}
+    location.reload();
+  });
+  /* On a phone, where the header has no room for the name, it shows over the rest of the bar for a few seconds
+     (style.css .brand.is-open). */
+  if (refreshed && brand && window.matchMedia && matchMedia('(max-width: 759px)').matches) {
+    brand.classList.add('is-open');
+    brandT = setTimeout(function () { brand.classList.remove('is-open'); }, 3000);
+  }
   /* And on every screen, the logo drawn away and on again (style.css .brand__mark svg.rev, .play): backwards 1.65 s,
      0.1 s of nothing, forwards 1.65 s; each step when the last line of the one before ends (the ring going, the M
-     coming). A tap during it changes nothing: it runs to its end. */
+     coming). */
   var mark = brand && brand.querySelector('.brand__mark svg'), markT;
   if (mark) {
-    brand.addEventListener('click', function () {
-      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      if (mark.classList.contains('rev') || mark.classList.contains('play')) return;
-      mark.classList.add('rev');
-    });
+    if (refreshed && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) mark.classList.add('rev');
     mark.addEventListener('animationend', function (e) {
       var c = e.target.classList;
       if (e.animationName === 'brand-erase' && c.contains('brand__ring')) {
@@ -304,14 +312,6 @@
     mark.addEventListener('animationcancel', function () {
       clearTimeout(markT);
       mark.classList.remove('play', 'rev');
-    });
-  }
-  // The name stays its 3 s from the first tap: another tap while it shows does not start them again.
-  if (brand && window.matchMedia) {
-    brand.addEventListener('click', function () {
-      if (!matchMedia('(max-width: 759px)').matches || brand.classList.contains('is-open')) return;
-      brand.classList.add('is-open');
-      brandT = setTimeout(function () { brand.classList.remove('is-open'); }, 3000);
     });
   }
 
@@ -1247,8 +1247,9 @@
   };
   if (appGet && app && app.AppUpdate) {
     app.AppUpdate.available().then(offer);
-    // A tap on the logo checks again (AppUpdate keeps it to once in 2 minutes); an older APK without recheck: nothing.
-    if (brand) brand.addEventListener('click', function () { app.AppUpdate.recheck().then(offer, function () {}); });
+    // A tap on the logo (the page it reloaded) checks again (AppUpdate keeps it to once in 2 minutes); an older APK
+    // without recheck: nothing.
+    if (refreshed) app.AppUpdate.recheck().then(offer, function () {});
   }
   /* In place of the browser's own "install the site" offer (head.js cancels it): a bar offering the APK, until
      closed or followed, then never again ("apkbar"). Not on the picker, whose foot bar takes the same place. On an
