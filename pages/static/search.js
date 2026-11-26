@@ -385,6 +385,7 @@ async function run(pages = {}) {
 	const id = ++runs;
 	const s = readState();
 	if (!s.q && !s.kind && !s.smer && !s.subjects.length && !s.authors.length && !s.from && !s.to) return showHome();
+	window.zatOpen?.();  // the board's closed note (search.html): a search is the reader asking for the archive
 	const query = s.q ? fold(s.q) : null;
 	const sort = s.q && !s.newest ? undefined : { datum: "desc" };
 	// The subjects' texts and the news apart (each its own vrsta filter); a link's ?kind= is one list.

@@ -1353,6 +1353,12 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 
 /* The home page's tables, or the results. */
 #res { display: grid; gap: var(--gap); }
+/* The board behind the faculty's challenge (search.html .zat): the home page greyed under the note, until "Vidi arhivu". */
+.zat { display: none; }
+.zatvoreno .zat { display: grid; justify-items: start; gap: 8px; padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--red); border-radius: var(--r); }
+.zat h2 { margin: 0; color: var(--fg); font: 800 1.0625rem/1.25 var(--sans); }
+.zat p { margin: 0; color: var(--text); font-size: .875rem; line-height: 1.5; }
+.zatvoreno #res { filter: grayscale(1); opacity: .45; user-select: none; }
 /* A short topic list (the home page's newest): five rows, the rest after a tap on the toggle (a checkbox, no
    script; rows.html topic_rows). While only "Moji predmeti" show (head.js), the list is short already: all of it. */
 :root:not(.moji-only) .fb--short:not(:has(.fb__more input:checked)) .fb__rows > li:nth-child(n+6) { display: none; }

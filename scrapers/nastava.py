@@ -11,7 +11,7 @@ Usage: nastava.py feed | sync | stats | open
           (ci/plan.py "provera"): it also finds deleted and moved topics
   stats   compare the counts the board shows with the stored rows; exit 1 when posts are missing
   open    print which part of the board answers past CrowdSec's challenge (since 2026-11-26): board (all of it),
-          feed (only the feed) or none; none sets the site's red banner
+          feed (only the feed) or none; none sets the site's red banner, feed or none the home page's note
 
 Each forum page lists its subforums with their topic and post counts and last post id.
 A forum is walked only when these differ from the last complete walk, and a topic is
@@ -481,7 +481,14 @@ def main():
             which = "none"
         if which == "none":
             db.execute("insert or replace into meta values ('forum_failed', strftime('%Y-%m-%dT%H:%MZ', 'now'))")
-            db.commit()
+        if which != "board":
+            # Since when (the home page's note, build.py forum_blocked, until a scrape's forum_synced is newer): kept
+            # while the block lasts, a new time once a scrape got through since.
+            db.execute(
+                "insert into meta values ('forum_blocked', strftime('%Y-%m-%dT%H:%MZ', 'now')) on conflict(key) do update "
+                "set value = excluded.value where meta.value <= coalesce((select value from meta where key = 'forum_synced'), '')"
+            )
+        db.commit()
         print(which)
     elif command in ("feed", "sync"):
         try:

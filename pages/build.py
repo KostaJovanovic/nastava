@@ -171,8 +171,12 @@ def main(db_path, out, dev_mode=False):
     try:
         env.globals["forum_checked"] = (db.execute("SELECT value FROM meta WHERE key = 'forum_synced'").fetchone() or [None])[0]
         failed = (db.execute("SELECT value FROM meta WHERE key = 'forum_failed'").fetchone() or [None])[0]
+        blocked = (db.execute("SELECT value FROM meta WHERE key = 'forum_blocked'").fetchone() or [None])[0]
     except sqlite3.OperationalError:
-        env.globals["forum_checked"] = failed = None
+        env.globals["forum_checked"] = failed = blocked = None
+    # The home page's note (search.html): the board behind the faculty's challenge since then (nastava.py open), until
+    # a scrape gets through.
+    env.globals["forum_blocked"] = blocked if blocked and blocked > (env.globals["forum_checked"] or "") else None
     # The red banner at the top of every page (base.html) while the board's last read failed.
     cron = tomllib.loads((HERE / "wrangler.toml").read_text(encoding="utf-8"))["triggers"]["crons"][0]
     env.globals["forum_failed"] = output.forum_failed(failed, env.globals["forum_checked"], cron)

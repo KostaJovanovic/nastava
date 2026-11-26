@@ -16,6 +16,22 @@
 <h1 class="vh">masinci.org: forum nastave Mašinskog fakulteta u Beogradu</h1>
 {#- Empty on the home page (style.css hides it); search.js writes the result count here. -#}
 <div class="mh"></div>
+{#- The faculty's CrowdSec challenge (since 2026-11-26) shuts out every tool but a browser: while the board is behind
+    it (build.py forum_blocked, until a scrape gets through), the board index greyed and inert under this note until
+    "Vidi arhivu" or a search (for the rest of the tab's visit). Not under a search from the URL. -#}
+{%- if forum_blocked %}
+<script>{
+  const h = document.documentElement;
+  if (!h.classList.contains("searching") && !sessionStorage.getItem("zat")) h.classList.add("zatvoreno");
+  // The button, and a search (search.js run): it draws in #res.
+  window.zatOpen = () => { if (h.classList.contains("zatvoreno")) { sessionStorage.setItem("zat", 1); h.classList.remove("zatvoreno"); document.getElementById("res").inert = false; } };
+}</script>
+<section class="zat" aria-labelledby="zat-h">
+  <h2 id="zat-h">Fakultet je zaključao forum</h2>
+  <p>Od {{ forum_blocked | dmy }} forum nastave pušta samo browsere: svi spoljni alati koji ga čitaju su blokirani, pa i ovaj sajt. Novih postova ovde nema od tada, a sve do tog dana je i dalje u arhivi.</p>
+  <button type="button" class="btn btn--pri" onclick="zatOpen()">Vidi arhivu</button>
+</section>
+{%- endif %}
 <div id="res">
   {{ forum_rows('Studije', smerovi, 'folder') }}
   {#- The lists below, at load: dropped to peek 72px above the screen's bottom (or the phone's tab bar), faded, until
@@ -113,6 +129,9 @@
   {{ topic_rows('Najnoviji threadovi', recent, place=true, short=true, mine=true, more='/objave/') }}
   {%- if vesti %}{{ vest_rows('Vesti fakulteta', vesti, more='/vesti/') }}{% endif %}
   </div></div>
+{%- if forum_blocked %}
+<script>document.getElementById("res").inert = document.documentElement.classList.contains("zatvoreno");</script>
+{%- endif %}
 {#- search.js fills #res from Pagefind with this markup. -#}
 <template id="res-tpl">
   <section class="fb fb--posts">
