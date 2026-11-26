@@ -28,9 +28,13 @@
 }</script>
 {#- One grid cell for the note and #res (style.css .zat-on): the note over the greyed index, centered. -#}
 <div class="zat-on">
-<section class="zat" aria-label="Forum fakulteta je zatvoren">
+<section class="zat" aria-labelledby="zat-h">
+  <h2 id="zat-h">Obaveštenje</h2>
   <p>Od {{ forum_blocked | dmy }} forum fakulteta je zatvoren. Ne može da mu priđe niko i ništa osim ljudi, ručno, i direktno. Blokirali su sve čitače (uključujući i <a href="https://www.mas.bg.ac.rs/studije/vesti">njihove</a>) tako da je, blago rečeno, došao kraj ovom sajtu. I dalje su pretražive sve prethodne objave, i stranica o profesorima ostaje ažurna. Izvinite na ovome.</p>
-  <button type="button" class="btn btn--pri" onclick="zatOpen()">Vidi arhivu</button>
+  <div class="zat__btns">
+    <button type="button" class="btn btn--pri" onclick="zatOpen()">Vidi arhivu</button>
+    <a class="btn" href="/nastavnici/">Nastavnici</a>
+  </div>
 </section>
 {%- endif %}
 <div id="res">

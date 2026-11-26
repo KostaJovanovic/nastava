@@ -1364,7 +1364,9 @@ html.zatvoreno { overflow: hidden; }
   display: grid; justify-items: center; gap: 10px; width: min(440px, 100% - 24px); margin-top: 48px; padding: 20px 22px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--r); text-align: center;
 }
-.zat a { color: var(--link); }
+.zat h2 { margin: 0; color: var(--fg); font: 800 1.0625rem/1.25 var(--sans); }
+.zat p a { color: var(--link); }
+.zat__btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .zat p { margin: 0; color: var(--text); font-size: .875rem; line-height: 1.5; }
 .zatvoreno #res { filter: grayscale(1); opacity: .45; user-select: none; }
 /* A short topic list (the home page's newest): five rows, the rest after a tap on the toggle (a checkbox, no
