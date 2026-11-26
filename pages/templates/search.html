@@ -26,6 +26,8 @@
   // The button, and a search (search.js run): it draws in #res.
   window.zatOpen = () => { if (h.classList.contains("zatvoreno")) { sessionStorage.setItem("zat", 1); h.classList.remove("zatvoreno"); document.getElementById("res").inert = false; } };
 }</script>
+{#- One grid cell for the note and #res (style.css .zat-on): the note over the greyed index, centered. -#}
+<div class="zat-on">
 <section class="zat" aria-labelledby="zat-h">
   <h2 id="zat-h">Fakultet je zaključao forum</h2>
   <p>Od {{ forum_blocked | dmy }} forum nastave pušta samo browsere: svi spoljni alati koji ga čitaju su blokirani, pa i ovaj sajt. Novih postova ovde nema od tada, a sve do tog dana je i dalje u arhivi.</p>
@@ -131,6 +133,7 @@
   </div></div>
 {%- if forum_blocked %}
 <script>document.getElementById("res").inert = document.documentElement.classList.contains("zatvoreno");</script>
+</div>
 {%- endif %}
 {#- search.js fills #res from Pagefind with this markup. -#}
 <template id="res-tpl">

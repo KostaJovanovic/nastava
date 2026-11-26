@@ -1353,9 +1353,17 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 
 /* The home page's tables, or the results. */
 #res { display: grid; gap: var(--gap); }
-/* The board behind the faculty's challenge (search.html .zat): the home page greyed under the note, until "Vidi arhivu". */
+/* The board behind the faculty's challenge (search.html .zat): the home page greyed under the note, until "Vidi arhivu".
+   The note and #res share one grid cell; the note centered over it, held in view while the greyed index scrolls. */
+.zat-on { display: grid; }
+.zat-on > .zat, .zat-on > #res { grid-area: 1 / 1; }
 .zat { display: none; }
-.zatvoreno .zat { display: grid; justify-items: start; gap: 8px; padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--red); border-radius: var(--r); }
+.zatvoreno .zat {
+  position: sticky; top: calc(var(--hd) + 18vh); z-index: 2; align-self: start; justify-self: center;
+  display: grid; justify-items: center; gap: 10px; width: min(440px, 100% - 24px); margin-top: 48px; padding: 20px 22px;
+  background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--red); border-radius: var(--r);
+  box-shadow: 0 12px 32px rgb(0 0 0 / .18); text-align: center;
+}
 .zat h2 { margin: 0; color: var(--fg); font: 800 1.0625rem/1.25 var(--sans); }
 .zat p { margin: 0; color: var(--text); font-size: .875rem; line-height: 1.5; }
 .zatvoreno #res { filter: grayscale(1); opacity: .45; user-select: none; }
