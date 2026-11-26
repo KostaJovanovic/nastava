@@ -94,13 +94,25 @@ if [[ ${1:-} == auto || ${1:-} == sync || ${1:-} == forum ]]; then
 	# (provera, ci/plan.py: Sunday's late run), which finds deleted and moved topics (docs/PLAN-scraping.md).
 	board=feed news=sync
 	[[ " ${parts[*]} " == *" provera "* ]] && board=sync news=full
+	# CrowdSec's challenge (since 2026-11-26) answers 200 with no board in it: which part answers past it decides what
+	# is read. Only the feed: no walk, no stats, no attachments (those pages are behind it).
+	open=$(uv run -q scrapers/nastava.py open | tr -d '\r') || open=none
+	echo "board past the challenge: $open"
+	[[ $open == feed ]] && board=feed
 	# A board that does not answer must not cost the run the other sources: noted, the rest still scraped and deployed.
-	step nastava uv run scrapers/nastava.py $board || failed+=(nastava)
-	# Right after the scrape, so a post made since then does not count as missing.
-	step stats uv run scrapers/nastava.py stats || failed+=(stats)
-	# The new posts' attachments (since October 2026): downloaded for their text (the document pages, the search), a
-	# few a day; nothing uploaded, the site links the board's file.
-	step files uv run scrapers/documents.py host || failed+=(files)
+	if [[ $open == none ]]; then
+		echo "the board and its feed answer with CrowdSec's challenge: not scraped" >&2
+		failed+=(nastava)
+	else
+		step nastava uv run scrapers/nastava.py $board || failed+=(nastava)
+	fi
+	if [[ $open == board ]]; then
+		# Right after the scrape, so a post made since then does not count as missing.
+		step stats uv run scrapers/nastava.py stats || failed+=(stats)
+		# The new posts' attachments (since October 2026): downloaded for their text (the document pages, the search), a
+		# few a day; nothing uploaded, the site links the board's file.
+		step files uv run scrapers/documents.py host || failed+=(files)
+	fi
 	# The news: the recently changed posts, one request when nothing changed (the full listing: ~46).
 	step vesti uv run scrapers/vesti.py $news || failed+=(vesti)
 	# The subjects' pages on cent.mas.bg.ac.rs: the pages list (3 requests) and the notices pages, asked "changed?".

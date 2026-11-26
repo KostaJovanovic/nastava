@@ -4,12 +4,14 @@
 # ///
 """Archive every post of nastava.mas.bg.ac.rs (phpBB, public, no login).
 
-Usage: nastava.py feed | sync | stats
+Usage: nastava.py feed | sync | stats | open
   feed    the frequent run: the board's Atom feed (its 30 newest posts, one request), then for each post not stored
           the page of its topic that has it. More than 30 new since the last run, or a forum not known yet: sync.
   sync    walk the forum tree, then fetch the topics that changed (the first run fetches all); the weekly check
           (ci/plan.py "provera"): it also finds deleted and moved topics
   stats   compare the counts the board shows with the stored rows; exit 1 when posts are missing
+  open    print which part of the board answers past CrowdSec's challenge (since 2026-11-26): board (all of it),
+          feed (only the feed) or none; none sets the site's red banner
 
 Each forum page lists its subforums with their topic and post counts and last post id.
 A forum is walked only when these differ from the last complete walk, and a topic is
@@ -86,6 +88,14 @@ def get(path):
         return None
     r.raise_for_status()
     return BeautifulSoup(r.text, "html.parser")
+
+
+def challenged(path):
+    """True when the board answers path with CrowdSec's challenge page (a 200 with no board in it)."""
+    r = session().get(BASE + path, timeout=60)
+    time.sleep(DELAY)
+    r.raise_for_status()
+    return "<title>CrowdSec Challenge" in r.text
 
 
 def text(node):
@@ -464,6 +474,15 @@ def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "sync"
     if command == "stats":
         show_stats(db)
+    elif command == "open":
+        try:
+            which = "board" if not challenged("index.php") else "feed" if not challenged(FEED) else "none"
+        except BaseException:  # no answer or a 403 (common.Blocked): nothing to read either
+            which = "none"
+        if which == "none":
+            db.execute("insert or replace into meta values ('forum_failed', strftime('%Y-%m-%dT%H:%MZ', 'now'))")
+            db.commit()
+        print(which)
     elif command in ("feed", "sync"):
         try:
             (feed if command == "feed" else sync)(db)
