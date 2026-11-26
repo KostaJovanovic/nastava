@@ -18,13 +18,13 @@
 <div class="mh"></div>
 {#- The faculty's CrowdSec challenge (since 2026-11-26) shuts out every tool but a browser: while the board is behind
     it (build.py forum_blocked, until a scrape gets through), the board index greyed and inert under this note until
-    "Vidi arhivu" or a search (for the rest of the tab's visit). Not under a search from the URL. -#}
+    "Vidi arhivu" or a search, on every load; the page does not scroll under it. Not under a search from the URL. -#}
 {%- if forum_blocked %}
 <script>{
   const h = document.documentElement;
-  if (!h.classList.contains("searching") && !sessionStorage.getItem("zat")) h.classList.add("zatvoreno");
-  // The button, and a search (search.js run): it draws in #res.
-  window.zatOpen = () => { if (h.classList.contains("zatvoreno")) { sessionStorage.setItem("zat", 1); h.classList.remove("zatvoreno"); document.getElementById("res").inert = false; } };
+  if (!h.classList.contains("searching")) h.classList.add("zatvoreno");
+  // The button, and a search (search.js run): it draws in #res. Until the next load: each one shows the note again.
+  window.zatOpen = () => { if (h.classList.contains("zatvoreno")) { h.classList.remove("zatvoreno"); document.getElementById("res").inert = false; } };
 }</script>
 {#- One grid cell for the note and #res (style.css .zat-on): the note over the greyed index, centered. -#}
 <div class="zat-on">
@@ -87,7 +87,8 @@
       // whole: the reader has them whole (a move down opened them, or "Samo moji predmeti" was on at load), so switching
       // it off leaves them so; the switch's own rise does not count.
       let whole = cl.contains("moji-only");
-      const go = (e) => down[e.type](e) && (whole = true, open());
+      // Not under the board's closed note (.zatvoreno, above): the page does not move under it.
+      const go = (e) => !cl.contains("zatvoreno") && down[e.type](e) && (whole = true, open());
       // The switch on brings the lists up in their usual .5s (style.css), ending 740 ms after the click (site.js gives
       // its time), over the end of Studije's own animation. A flip mid-way cancels the wait. Without a click (site.js's
       // first 'moji'): at once.
