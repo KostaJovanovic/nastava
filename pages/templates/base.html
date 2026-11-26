@@ -63,14 +63,15 @@
 <a class="skip" href="#sadrzaj">Preskoči na sadržaj</a>
 {#- The board's last read failed (build.py forum_failed), until a later read works. Its times UTC, as the footer's;
     head.js showFail writes them in the reader's time before the first frame. It waves as the footer's credit
-    (site.js data-wave), lower. -#}
-{%- if forum_failed %}
+    (site.js data-wave), lower. Neither of the two while the board is blocked (build.py forum_blocked): the home
+    page's note says it. -#}
+{%- if forum_failed and not forum_blocked %}
 <p class="fail" role="status" data-wave><span data-notx>Update</span> <time datetime="{{ forum_failed[0] }}">u {{ forum_failed[0][11:16] }} UTC</time> nije uspeo. Sledeći pokušaj <time datetime="{{ forum_failed[1] }}">u {{ forum_failed[1][11:16] }} UTC</time>.</p>
 <script>showFail()</script>
 {%- endif %}
 {#- The board not read in over a day (forum_checked, as the footer's): head.js showStale shows it in the reader's time,
     in place of the one above. Checked in the browser: without updates the pages are not built again. -#}
-{%- if forum_checked %}
+{%- if forum_checked and not forum_blocked %}
 <p class="fail" role="status" data-stale hidden data-wave>Fakultet je blokirao adresu, poslednji <span data-notx>update</span> <time datetime="{{ forum_checked }}">u {{ forum_checked[11:16] }} UTC, {{ forum_checked | dmy }}</time></p>
 <script>showStale()</script>
 {%- endif %}

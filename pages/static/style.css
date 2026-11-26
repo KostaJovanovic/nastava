@@ -1355,9 +1355,7 @@ a.ext:hover { border-color: var(--accent); color: var(--accent-t); }
 #res { display: grid; gap: var(--gap); }
 /* The board behind the faculty's challenge (search.html .zat): the home page greyed under the note, until "Vidi arhivu".
    The note and #res share one grid cell, the note centered over it; the page does not scroll under the note. */
-html.zatvoreno { overflow: hidden; }
-.zatvoreno .fail { display: none; }  /* the red banners (base.html): the note says it already */
-.zat-on { display: grid; }
+html.zatvoreno { overflow: hidden; }.zat-on { display: grid; }
 .zat-on > .zat, .zat-on > #res { grid-area: 1 / 1; }
 .zat { display: none; }
 .zatvoreno .zat {
